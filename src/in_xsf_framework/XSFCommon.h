@@ -45,6 +45,15 @@ template<typename T> inline std::basic_string<T> ExtractDirectoryFromPath(const 
 	return lastSlash != std::basic_string<T>::npos ? fullPath.substr(0, lastSlash + 1) : std::basic_string<T>();
 }
 
+// This gets the filename for the path
+template<typename T> inline std::basic_string<T> ExtractFilenameFromPath(const std::basic_string<T> &fullPath)
+{
+	size_t lastSlash = fullPath.rfind('\\');
+	if (lastSlash == std::basic_string<T>::npos)
+		lastSlash = fullPath.rfind('/');
+	return lastSlash != std::basic_string<T>::npos ? fullPath.substr(lastSlash + 1) : std::basic_string<T>();
+}
+
 // Code from the following answer on Stack Overflow:
 // http://stackoverflow.com/a/15479212
 template<typename T> static inline T NextHighestPowerOf2(T value)

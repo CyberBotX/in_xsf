@@ -447,7 +447,7 @@ String XSFFile::GetFilename() const
 
 String XSFFile::GetFilenameWithoutPath() const
 {
-	return ExtractDirectoryFromPath(this->fileName.GetStr());
+	return ExtractFilenameFromPath(this->fileName.GetStr());
 }
 
 void XSFFile::SaveFile() const
