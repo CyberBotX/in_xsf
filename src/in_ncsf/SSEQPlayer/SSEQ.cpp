@@ -43,7 +43,7 @@ void SSEQ::Read(PseudoFile &file)
 		throw std::runtime_error("SSEQ DATA structure invalid");
 	uint32_t size = file.ReadLE<uint32_t>();
 	uint32_t dataOffset = file.ReadLE<uint32_t>();
-	this->data.resize(size, 0);
+	this->data.resize(size - 12, 0);
 	file.pos = startOfSSEQ + dataOffset;
 	file.ReadLE(this->data);
 }
