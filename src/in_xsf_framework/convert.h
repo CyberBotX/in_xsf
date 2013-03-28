@@ -1,7 +1,7 @@
 /*
  * Common conversion functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-28
  */
 
 #ifndef _CONVERT_H_
@@ -66,7 +66,7 @@ template<typename T, typename S> inline T convertTo(const std::basic_string<S> &
 class ConvertFuncs
 {
 private:
-	static inline bool IsDigitsOnly(const std::string input, const std::locale &loc = std::locale::classic())
+	static inline bool IsDigitsOnly(const std::string &input, const std::locale &loc = std::locale::classic())
 	{
 		auto inputChars = std::vector<char>(input.begin(), input.end());
 		size_t length = inputChars.size();
