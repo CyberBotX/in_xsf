@@ -1,7 +1,7 @@
 /*
  * Common conversion functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-28
+ * Last modification on 2013-03-30
  */
 
 #ifndef _CONVERT_H_

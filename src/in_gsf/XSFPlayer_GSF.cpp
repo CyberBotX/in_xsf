@@ -1,7 +1,7 @@
 /*
  * xSF - GSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Based on a modified viogsf v0.08
  *
@@ -106,7 +106,7 @@ public:
 		}
 	}
 
-	void setThrottle(unsigned short throttle)
+	void setThrottle(unsigned short)
 	{
 	}
 };
@@ -207,14 +207,14 @@ bool XSFPlayer_GSF::Load()
 
 	cpuIsMultiBoot = (loaderwork.entry >> 24) == 2;
 
-	CPULoadRom(NULL);
+	CPULoadRom(nullptr);
 
 	soundSetSampleRate(this->sampleRate);
 	soundInit();
 	soundReset();
 	soundSetEnable(0x3FF);
 
-	CPUInit(NULL, false);
+	CPUInit(nullptr, false);
 	CPUReset();
 
 	return XSFPlayer::Load();

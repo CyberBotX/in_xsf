@@ -18,7 +18,7 @@
 #include "XSFCommon.h"
 
 //#include "Global.h"
-#include "types.h"
+#include "../types.h"
 #include "SoundTouch/SoundTouch.h"
 #include "SndOut.h"
 //#include "SoundTouch/WavFile.h"

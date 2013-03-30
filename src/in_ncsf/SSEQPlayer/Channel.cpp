@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -18,7 +18,7 @@
 #include "common.h"
 
 NDSSoundRegister::NDSSoundRegister() : volumeMul(0), volumeDiv(0), panning(0), waveDuty(0), repeatMode(0), format(0), enable(false),
-	source(NULL), timer(0), psgX(0), psgLast(0), psgLastCount(0), samplePosition(0), sampleIncrease(0), loopStart(0), length(0)
+	source(nullptr), timer(0), psgX(0), psgLast(0), psgLastCount(0), samplePosition(0), sampleIncrease(0), loopStart(0), length(0)
 {
 }
 
@@ -39,13 +39,13 @@ void NDSSoundRegister::SetControlRegister(uint32_t reg)
 	this->enable = (reg >> 31) & 0x01;
 }
 
-TempSndReg::TempSndReg() : CR(0), SOURCE(NULL), TIMER(0), REPEAT_POINT(0), LENGTH(0)
+TempSndReg::TempSndReg() : CR(0), SOURCE(nullptr), TIMER(0), REPEAT_POINT(0), LENGTH(0)
 {
 }
 
 Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0), manualSweep(false), flags(), pan(0), extAmpl(0), velocity(0), extPan(0),
 	key(0), ampl(0), extTune(0), orgKey(0), modType(0), modSpeed(0), modDepth(0), modRange(0), modDelay(0), modDelayCnt(0), modCounter(0),
-	sweepLen(0), sweepCnt(0), sweepPitch(0), attackLvl(0), sustainLvl(0x7F), decayRate(0), releaseRate(0xFFFF), noteLength(-1), vol(0), ply(NULL), reg()
+	sweepLen(0), sweepCnt(0), sweepPitch(0), attackLvl(0), sustainLvl(0x7F), decayRate(0), releaseRate(0xFFFF), noteLength(-1), vol(0), ply(nullptr), reg()
 {
 }
 

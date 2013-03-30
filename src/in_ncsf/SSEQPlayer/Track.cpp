@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Track structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -32,9 +32,9 @@ void Track::Zero()
 
 	this->state.reset();
 	this->num = this->prio = 0;
-	this->ply = NULL;
+	this->ply = nullptr;
 
-	this->startPos = this->pos = NULL;
+	this->startPos = this->pos = nullptr;
 	memset(this->stack, 0, sizeof(this->stack));
 	this->stackPos = 0;
 	memset(this->loopCount, 0, sizeof(this->loopCount));
@@ -94,11 +94,11 @@ int Track::NoteOn(int key, int vel, int len)
 		return -1;
 
 	bool bIsPCM = true;
-	Channel *chn;
-	int nCh;
+	Channel *chn = nullptr;
+	int nCh = -1;
 
 	auto &instrument = sbnk->instruments[this->patch];
-	const SBNKInstrumentRange *noteDef = NULL;
+	const SBNKInstrumentRange *noteDef = nullptr;
 	int fRecord = instrument.record;
 
 	if (fRecord == 16)
@@ -208,7 +208,7 @@ int Track::NoteOnTie(int key, int vel)
 {
 	// Find an existing note
 	int i;
-	Channel *chn;
+	Channel *chn = nullptr;
 	for (i = 0; i < 16; ++i)
 	{
 		chn = &this->ply->channels[i];

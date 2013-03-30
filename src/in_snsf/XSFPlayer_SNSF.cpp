@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Based on a modified in_snsf by Caitsith2
  * http://snsf.caitsith2.net/

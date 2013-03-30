@@ -50,7 +50,7 @@ private:
 		const ct_in *ipc = &in[0];
 		do
 		{
-			ct_out *opc = NULL;
+			ct_out *opc = nullptr;
 			result = this->cv(facet, state, ipc, &in[0] + in.length(), ipc, buf, buf + buf_size, opc);
 			os << std::basic_string<ct_out>(buf, opc - buf);
 		} while (ipc < &in[0] + in.length() && result != codecvt_facet::error);

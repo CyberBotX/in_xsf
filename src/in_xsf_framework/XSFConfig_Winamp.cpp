@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp-specification configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-03-30
  *
  * Partially based on the vio*sf framework
  */
@@ -42,7 +42,7 @@ XSFConfigIO_Winamp::XSFConfigIO_Winamp() : iniFilename(L"")
 		do
 		{
 			executablePath.resize(executablePath.size() * 2);
-			result = GetModuleFileNameW(NULL, &executablePath[0], executablePath.size());
+			result = GetModuleFileNameW(nullptr, &executablePath[0], executablePath.size());
 		} while (result == executablePath.size());
 
 		if (!result)

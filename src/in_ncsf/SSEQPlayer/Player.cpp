@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -11,7 +11,7 @@
 #include "Player.h"
 #include "common.h"
 
-Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), masterVol(0), sseq(NULL), sampleRate(0), interpolation(INTERPOLATION_NONE)
+Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), masterVol(0), sseq(nullptr), sampleRate(0), interpolation(INTERPOLATION_NONE)
 {
 	memset(this->trackIds, 0, sizeof(this->trackIds));
 	for (size_t i = 0; i < 16; ++i)
@@ -25,7 +25,7 @@ bool Player::Setup(const SSEQ *sseqToPlay)
 	int firstTrack = this->TrackAlloc();
 	if (firstTrack == -1)
 		return false;
-	this->tracks[firstTrack].Init(firstTrack, this, NULL, 0);
+	this->tracks[firstTrack].Init(firstTrack, this, nullptr, 0);
 
 	this->nTracks = 1;
 	this->trackIds[0] = firstTrack;

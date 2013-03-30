@@ -1985,7 +1985,7 @@ void DmaController::doCopy()
 	//determine how we're going to copy
 	bool bogarted = false;
 	uint32_t sz = (bitWidth==EDMABitWidth_16)?2:4;
-	uint32_t dstinc = 0,srcinc;
+	uint32_t dstinc = 0,srcinc = 0;
 	switch(dar) {
 		case EDMADestinationUpdate_Increment       :  dstinc =  sz; break;
 		case EDMADestinationUpdate_Decrement       :  dstinc = (uint32_t)-(int32_t)sz; break;

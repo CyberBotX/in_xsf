@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-03-30
  *
  * Partially based on the vio*sf framework
  */
@@ -13,7 +13,7 @@
 
 extern XSFConfig *xSFConfig;
 
-XSFPlayer::XSFPlayer() : xSF(NULL), sampleRate(0), detectedSilenceSample(0), detectedSilenceSec(0), skipSilenceOnStartSec(5), lengthSample(0), fadeSample(0), currentSample(0),
+XSFPlayer::XSFPlayer() : xSF(nullptr), sampleRate(0), detectedSilenceSample(0), detectedSilenceSec(0), skipSilenceOnStartSec(5), lengthSample(0), fadeSample(0), currentSample(0),
 	prevSampleL(XSFPlayer::CHECK_SILENCE_BIAS), prevSampleR(XSFPlayer::CHECK_SILENCE_BIAS), lengthInMS(-1), fadeInMS(-1), volume(1.0), ignoreVolume(false)
 {
 }

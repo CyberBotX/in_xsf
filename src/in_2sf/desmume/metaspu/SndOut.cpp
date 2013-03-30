@@ -18,7 +18,7 @@
 #include <cassert>
 
 //#include "Global.h"
-#include "types.h"
+#include "../types.h"
 #include "SndOut.h"
 
 //----------------

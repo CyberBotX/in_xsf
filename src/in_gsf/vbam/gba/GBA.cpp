@@ -1353,7 +1353,7 @@ int CPULoadRom(const char *szFile)
     return 0;
   }
 
-  u8 *whereToLoad = cpuIsMultiBoot ? workRAM : rom;
+  //u8 *whereToLoad = cpuIsMultiBoot ? workRAM : rom;
 
 #ifndef NO_DEBUGGER
   if(CPUIsELF(szFile)) {
@@ -3575,7 +3575,7 @@ void CPULoop(int ticks)
               if(count == 60) {
                 u32 time = /*systemGetClock()*/0;
                 if(time != lastTime) {
-                  u32 t = 100000/(time - lastTime);
+                  //u32 t = 100000/(time - lastTime);
                   //systemShowSpeed(t);
                 } else
                   //systemShowSpeed(0);

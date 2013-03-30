@@ -1,7 +1,7 @@
 /*
  * xSF - GSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Partially based on the vio*sf framework
  */
@@ -129,7 +129,7 @@ void XSFConfig_GSF::SaveSpecificConfigDialog(HWND hwndDlg)
 		this->mutes[x] = !!SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_GETSEL, x, 0);
 }
 
-void XSFConfig_GSF::CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad)
+void XSFConfig_GSF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 {
 	if (!preLoad)
 	{

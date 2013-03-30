@@ -403,8 +403,8 @@ static bool mmu_loadstate(EMUFILE* is, int)
 
 	if(version == 0 || version == 1)
 	{
-		uint32_t bupmem_size;
-		uint32_t addr_size;
+		uint32_t bupmem_size = 0;
+		uint32_t addr_size = 0xFFFFFFFF;
 
 		if(version == 0)
 		{

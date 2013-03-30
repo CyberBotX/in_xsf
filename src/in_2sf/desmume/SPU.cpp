@@ -1041,7 +1041,7 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS>
 	{
 		if(CHANNELS != -1)
 		{
-			int32_t data;
+			int32_t data = 0;
 			switch(FORMAT)
 			{
 				case 0: Fetch8BitData<INTERPOLATE_MODE>(chan, &data); break;

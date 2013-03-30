@@ -1,7 +1,7 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  */
 
 #ifndef DIALOG_BUILDER_H
@@ -400,7 +400,7 @@ class DialogTemplate
 		friend class DialogTemplate;
 		DialogControl() : controlType(NO_CONTROL), style(0), exstyle(0), rect(), id(-1), relativePosition() { }
 		DialogControl(const DialogControl &control) : controlType(control.controlType), style(control.style), exstyle(control.exstyle), rect(control.rect), id(control.id),
-			relativePosition(control.relativePosition.get() ? control.relativePosition->Clone() : NULL) { }
+			relativePosition(control.relativePosition.get() ? control.relativePosition->Clone() : nullptr) { }
 		DialogControl &operator=(const DialogControl &control)
 		{
 			this->controlType = control.controlType;

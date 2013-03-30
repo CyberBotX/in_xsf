@@ -177,7 +177,6 @@
 
 
 #include <math.h>
-#include "snes9x.h"
 #include "apu.h"
 //#include "snapshot.h"
 //#include "display.h"

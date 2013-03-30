@@ -1,7 +1,7 @@
 /*
  * xSF - 2SF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Based on a modified vio2sf v0.22c
  *
@@ -196,7 +196,7 @@ static void load_setstate()
 
 		/* Read ARM7 cpu registers */
 		//load_getu32(&NDS_ARM7.proc_ID, 1);
-		load_getu32(NULL, 1);
+		load_getu32(nullptr, 1);
 		load_getu32(&NDS_ARM7.instruction, 1);
 		load_getu32(&NDS_ARM7.instruct_adr, 1);
 		load_getu32(&NDS_ARM7.next_instruction, 1);
@@ -231,18 +231,18 @@ static void load_setstate()
 		bool tmpbool;
 		//load_getbool(&NDS_ARM7.wIRQ, 1);
 		//loaderwork.stateptr += 4;
-		load_getbool(NULL, 1);
+		load_getbool(nullptr, 1);
 		//load_getbool(&NDS_ARM7.halt_IE_and_IF, 1);
 		//load_getbool(&NDS_ARM7.wirq, 1);
 		//loaderwork.stateptr += 4;
-		//load_getbool(NULL, 1);
+		//load_getbool(nullptr, 1);
 		//load_getbool(&NDS_ARM7.intrWaitARM_state, 1);
 		load_getbool(&tmpbool, 1);
 		//NDS_ARM7.intrWaitARM_state = tmpbool;
 
 		/* Read ARM9 cpu registers */
 		//load_getu32(&NDS_ARM9.proc_ID, 1);
-		load_getu32(NULL, 1);
+		load_getu32(nullptr, 1);
 		load_getu32(&NDS_ARM9.instruction, 1);
 		load_getu32(&NDS_ARM9.instruct_adr, 1);
 		load_getu32(&NDS_ARM9.next_instruction, 1);
@@ -276,11 +276,11 @@ static void load_setstate()
 		load_getbool(&NDS_ARM9.waitIRQ, 1);
 		//load_getbool(&NDS_ARM9.wIRQ, 1);
 		//loaderwork.stateptr += 4;
-		load_getbool(NULL, 1);
+		load_getbool(nullptr, 1);
 		//load_getbool(&NDS_ARM9.halt_IE_and_IF, 1);
 		//load_getbool(&NDS_ARM9.wirq, 1);
 		//loaderwork.stateptr += 4;
-		//load_getbool(NULL, 1);
+		//load_getbool(nullptr, 1);
 		//load_getbool(&NDS_ARM9.intrWaitARM_state, 1);
 		load_getbool(&tmpbool, 1);
 		//NDS_ARM9.intrWaitARM_state = tmpbool;
@@ -288,9 +288,9 @@ static void load_setstate()
 		/* Read in other internal variables that are important */
 		//int32_t tmps32;
 		//load_gets32(&nds.ARM9Cycle, 1);
-		load_gets32(NULL, 1);
+		load_gets32(nullptr, 1);
 		//load_gets32(&nds.ARM7Cycle, 1);
-		load_gets32(NULL, 1);
+		load_gets32(nullptr, 1);
 		load_gets32(&nds.cycles, 1);
 		int32_t tmps32_array[4];
 		//load_getu64(nds.timerCycle[0], 4);
@@ -304,33 +304,33 @@ static void load_setstate()
 		//bool tmpbool_array[4];
 		//load_getbool(nds.timerOver[0], 4);
 		//loaderwork.stateptr += 16;
-		load_getbool(NULL, 4);
+		load_getbool(nullptr, 4);
 		//load_getbool(nds.timerOver[1], 4);
 		//loaderwork.stateptr += 16;
-		load_getbool(NULL, 4);
+		load_getbool(nullptr, 4);
 		//load_gets32(&nds.nextHBlank, 1);
 		//loaderwork.stateptr += 4;
-		load_gets32(NULL, 1);
+		load_gets32(nullptr, 1);
 		load_getu32(&nds.VCount, 1);
 		load_getu32(&nds.old, 1);
 		//load_gets32(&nds.diff, 1);
 		//loaderwork.stateptr += 4;
-		load_gets32(NULL, 1);
+		load_gets32(nullptr, 1);
 		//load_getbool(&nds.lignerendu, 1);
 		//loaderwork.stateptr += 4;
-		load_getbool(NULL, 1);
-		load_getu16(NULL, 1);
-		load_getu16(NULL, 1);
+		load_getbool(nullptr, 1);
+		load_getu16(nullptr, 1);
+		load_getu16(nullptr, 1);
 
 		/* Read in memory/registers specific to the ARM9 */
 		//load_getu8 (MMU.ARM9_ITCM, 0x8000);
-		load_getu8(NULL, 0x8000);
+		load_getu8(nullptr, 0x8000);
 		load_getu8 (MMU.ARM9_DTCM, 0x4000);
 		//load_getu8 (MMU.MAIN_MEM, 0x1000000);
 		//load_getu8(MMU.MAIN_MEM, 0x800000);
-		//load_getu8(NULL, 0x800000);
-		//load_getu8(NULL, 0x1000000);
-		load_getu8(NULL, 0xFF8000);
+		//load_getu8(nullptr, 0x800000);
+		//load_getu8(nullptr, 0x1000000);
+		load_getu8(nullptr, 0xFF8000);
 		load_getu8(MMU.ARM9_ITCM, 0x8000);
 		load_getu8 (MMU.MAIN_MEM/*+0x400000*/, 0x400000);
 		load_getu8 (MMU.ARM9_REG, 0x10000);
@@ -339,19 +339,19 @@ static void load_setstate()
 		//uint8_t tmpu8_ABG[0x80000];
 		//load_getu8 (ARM9Mem.ARM9_ABG, 0x80000);
 		//loaderwork.stateptr += 0x80000;
-		load_getu8(NULL, 0x80000);
+		load_getu8(nullptr, 0x80000);
 		//uint8_t tmpu8_BBG[0x20000];
 		//load_getu8 (ARM9Mem.ARM9_BBG, 0x20000);
 		//loaderwork.stateptr += 0x20000;
-		load_getu8(NULL, 0x20000);
+		load_getu8(nullptr, 0x20000);
 		//uint8_t tmpu8_AOBJ[0x40000];
 		//load_getu8 (ARM9Mem.ARM9_AOBJ, 0x40000);
 		//loaderwork.stateptr += 0x40000;
-		load_getu8(NULL, 0x40000);
+		load_getu8(nullptr, 0x40000);
 		//uint8_t tmpu8_BOBJ[0x20000];
 		//load_getu8 (ARM9Mem.ARM9_BOBJ, 0x20000);
 		//loaderwork.stateptr += 0x20000;
-		load_getu8(NULL, 0x20000);
+		load_getu8(nullptr, 0x20000);
 		load_getu8 (MMU.ARM9_LCD, 0xA4000);
 		//loaderwork.stateptr += 12;
 
@@ -422,14 +422,14 @@ static SoundInterface_struct SNDIF_2SF =
 	SNDIFMuteAudio,
 	SNDIFUnMuteAudio,
 	SNDIFSetVolume,
-	NULL
+	nullptr
 };
 
 SoundInterface_struct *SNDCoreList[] =
 {
 	&SNDIF_2SF,
 	&SNDDummy,
-	NULL
+	nullptr
 };
 
 static void Map2SFSection(const std::vector<uint8_t> &section, bool isSave)

@@ -21,7 +21,7 @@
 #include <vector>
 #include <cassert>
 
-#include "types.h"
+#include "../types.h"
 #include "metaspu.h"
 
 //for pcsx2 method

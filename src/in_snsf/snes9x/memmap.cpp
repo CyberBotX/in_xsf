@@ -2506,8 +2506,8 @@ void CMemory::InitROM()
 
 	Checksum_Calculate();
 
-	bool isChecksumOK = (ROMChecksum + ROMComplementChecksum == 0xffff) &
-						 (ROMChecksum == CalculatedChecksum);
+	/*bool isChecksumOK = (ROMChecksum + ROMComplementChecksum == 0xffff) &
+						 (ROMChecksum == CalculatedChecksum);*/
 
 	//// Build more ROM information
 

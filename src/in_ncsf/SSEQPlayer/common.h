@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-3
  *
  * Some code from FeOS Sound System
  * By fincs
@@ -25,7 +25,7 @@ struct PseudoFile
 	std::vector<uint8_t> *data;
 	uint32_t pos;
 
-	PseudoFile() : data(NULL), pos(0)
+	PseudoFile() : data(nullptr), pos(0)
 	{
 	}
 

@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Partially based on the vio*sf framework
  */
@@ -174,7 +174,7 @@ void XSFConfig::GenerateDialogs()
 
 INT_PTR CALLBACK XSFConfig::ConfigDialogProcStatic(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	XSFConfig *thisPtr = NULL;
+	XSFConfig *thisPtr = nullptr;
 
 	if (uMsg == WM_INITDIALOG)
 	{
@@ -193,7 +193,7 @@ INT_PTR CALLBACK XSFConfig::ConfigDialogProcStatic(HWND hwndDlg, UINT uMsg, WPAR
 
 INT_PTR CALLBACK XSFConfig::InfoDialogProcStatic(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	XSFConfig *thisPtr = NULL;
+	XSFConfig *thisPtr = nullptr;
 
 	if (uMsg == WM_INITDIALOG)
 	{
@@ -210,7 +210,7 @@ INT_PTR CALLBACK XSFConfig::InfoDialogProcStatic(HWND hwndDlg, UINT uMsg, WPARAM
 		return false;
 }
 
-INT_PTR CALLBACK XSFConfig::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK XSFConfig::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM)
 {
 	switch (uMsg)
 	{
@@ -269,7 +269,7 @@ INT_PTR CALLBACK XSFConfig::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPa
 
 extern XSFFile *xSFFileInInfo;
 
-INT_PTR CALLBACK XSFConfig::InfoDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK XSFConfig::InfoDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM)
 {
 	switch (uMsg)
 	{

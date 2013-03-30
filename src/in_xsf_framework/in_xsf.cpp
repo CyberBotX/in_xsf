@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-03-30
  *
  * Partially based on the vio*sf framework
  */
@@ -13,10 +13,10 @@
 #include <winamp/wa_ipc.h>
 
 extern In_Module inMod;
-const XSFFile *xSFFile = NULL;
-XSFFile *xSFFileInInfo = NULL;
-XSFPlayer *xSFPlayer = NULL;
-XSFConfig *xSFConfig = NULL;
+const XSFFile *xSFFile = nullptr;
+XSFFile *xSFFileInInfo = nullptr;
+XSFPlayer *xSFPlayer = nullptr;
+XSFConfig *xSFConfig = nullptr;
 bool paused;
 int seek_needed;
 double decode_pos_ms;
@@ -36,7 +36,7 @@ DWORD WINAPI playThread(void *b)
 			decode_pos_ms = seek_needed - (seek_needed % 1000);
 			seek_needed = -1;
 			auto dummyBuffer = std::vector<uint8_t>(576 * NumChannels * (BitsPerSample / 8));
-			xSFPlayer->Seek(static_cast<unsigned>(decode_pos_ms), NULL, dummyBuffer, inMod.outMod);
+			xSFPlayer->Seek(static_cast<unsigned>(decode_pos_ms), nullptr, dummyBuffer, inMod.outMod);
 		}
 
 		if (done)
@@ -149,7 +149,7 @@ int infoBox(const in_char *file, HWND hwndParent)
 	return INFOBOX_EDITED;
 }
 
-int isOurFile(const in_char *fn)
+int isOurFile(const in_char *)
 {
 	return 0;
 }
@@ -178,7 +178,7 @@ int play(const in_char *fn)
 
 		xSFPlayer = tmpxSFPlayer.release();
 		killThread = false;
-		thread_handle = CreateThread(NULL, 0, playThread, &killThread, 0, NULL);
+		thread_handle = CreateThread(nullptr, 0, playThread, &killThread, 0, nullptr);
 		return 0;
 	}
 	catch (const std::exception &)
@@ -220,8 +220,8 @@ void stop()
 	inMod.outMod->Close();
 	inMod.SAVSADeInit();
 	delete xSFPlayer;
-	xSFPlayer = NULL;
-	xSFFile = NULL;
+	xSFPlayer = nullptr;
+	xSFFile = nullptr;
 }
 
 int getLength()
@@ -251,7 +251,7 @@ void setPan(int pan)
 	inMod.outMod->SetPan(pan);
 }
 
-void eqSet(int on, char data[10], int preamp)
+void eqSet(int, char [10], int)
 {
 }
 
@@ -259,8 +259,8 @@ In_Module inMod =
 {
 	IN_VER,
 	const_cast<char *>(XSFPlayer::WinampDescription), /* Unsafe but Winamp's SDK requires this */
-	NULL, /* Filled by Winamp */
-	NULL, /* Filled by Winamp */
+	nullptr, /* Filled by Winamp */
+	nullptr, /* Filled by Winamp */
 	const_cast<char *>(XSFPlayer::WinampExts), /* Unsafe but Winamp's SDK requires this */
 	1,
 	IN_MODULE_FLAG_USES_OUTPUT_PLUGIN | IN_MODULE_FLAG_REPLAYGAIN,
@@ -281,11 +281,11 @@ In_Module inMod =
 	setOutputTime,
 	setVolume,
 	setPan,
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, /* Vis stuff, filled by Winamp */
-	NULL, NULL, /* DSP stuff, filled by Winamp */
+	nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, /* Vis stuff, filled by Winamp */
+	nullptr, nullptr, /* DSP stuff, filled by Winamp */
 	eqSet,
-	NULL, /* Filled by Winamp */
-	NULL /* Filled by Winamp */
+	nullptr, /* Filled by Winamp */
+	nullptr /* Filled by Winamp */
 };
 
 extern "C" __declspec(dllexport) In_Module *winampGetInModule2()
@@ -393,7 +393,7 @@ extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
 	return 1;
 }
 
-extern "C" __declspec(dllexport) int winampClearExtendedFileInfoW(const wchar_t *fn)
+extern "C" __declspec(dllexport) int winampClearExtendedFileInfoW(const wchar_t *)
 {
 	return 0;
 }
@@ -438,7 +438,7 @@ extern "C" __declspec(dllexport) size_t winampGetExtendedRead_getData(intptr_t h
 	if (extendedSeekNeeded != -1)
 	{
 		auto dummyBuffer = std::vector<uint8_t>(576 * NumChannels * (BitsPerSample / 8));
-		if (tmpxSFPlayer->Seek(static_cast<unsigned>(extendedSeekNeeded), killswitch, dummyBuffer, NULL))
+		if (tmpxSFPlayer->Seek(static_cast<unsigned>(extendedSeekNeeded), killswitch, dummyBuffer, nullptr))
 			return 0;
 		extendedSeekNeeded = -1;
 	}
@@ -457,7 +457,7 @@ extern "C" __declspec(dllexport) size_t winampGetExtendedRead_getData(intptr_t h
 	return copied;
 }
 
-extern "C" __declspec(dllexport) int winampGetExtendedRead_setTime(intptr_t handle, int millisecs)
+extern "C" __declspec(dllexport) int winampGetExtendedRead_setTime(intptr_t, int millisecs)
 {
 	extendedSeekNeeded = millisecs;
 	return 1;

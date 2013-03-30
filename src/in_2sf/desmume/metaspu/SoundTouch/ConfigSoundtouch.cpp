@@ -18,7 +18,7 @@
 //TODO - need to make a generic way for saving these configs and add in the windows
 //rc configurator
 
-#include "types.h"
+#include "../../types.h"
 //#include "Global.h"
 #include "Dialogs.h"
 
