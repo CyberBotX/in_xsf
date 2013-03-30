@@ -21,7 +21,7 @@ void DialogTemplate::DialogGroup::CalculatePositions(bool doRightAndBottom)
 	short x = 0, num = this->controls.empty() ? 0 : this->controls.size();
 	for (; x < num; ++x)
 	{
-		DialogControl *control = this->controls[x];
+		auto &control = this->controls[x];
 		if (control->relativePosition.get())
 		{
 			bool valid = true;
@@ -58,10 +58,8 @@ void DialogTemplate::DialogGroup::CalculatePositions(bool doRightAndBottom)
 void DialogTemplate::DialogGroup::CalculateSize()
 {
 	short maxX = 0, maxY = 0, maxOtherWidth = 0, maxOtherHeight = 0;
-	for (DialogTemplate::Controls::const_iterator curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
+	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
-		DialogControl *control = *curr;
-
 		bool usePosition = true;
 		if (control->relativePosition.get())
 		{
@@ -92,7 +90,7 @@ void DialogTemplate::DialogGroup::CalculateSize()
 			if (control->rect.position.y + control->GetControlHeight() > maxY)
 				maxY = control->rect.position.y + control->GetControlHeight();
 		}
-	}
+	});
 	this->rect.size.width = (maxX - this->rect.position.x) + maxOtherWidth + 4;
 	this->rect.size.height = (maxY - this->rect.position.y) + maxOtherHeight + 7;
 }
@@ -100,8 +98,7 @@ void DialogTemplate::DialogGroup::CalculateSize()
 uint16_t DialogTemplate::DialogGroup::GetControlCount() const
 {
 	uint16_t count = 1;
-	for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
-		count += (*curr)->GetControlCount();
+	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control) { count += control->GetControlCount(); });
 	return count;
 }
 
@@ -120,11 +117,11 @@ std::vector<uint8_t> DialogTemplate::DialogGroup::GenerateControlTemplate() cons
 	*reinterpret_cast<uint16_t *>(&data[20]) = 0x0080;
 	memcpy(reinterpret_cast<wchar_t *>(&data[22]), this->groupName.c_str(), this->groupName.length() * sizeof(wchar_t));
 
-	for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
+	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
-		auto controlData = (*curr)->GenerateControlTemplate();
+		auto controlData = control->GenerateControlTemplate();
 		data.insert(data.end(), controlData.begin(), controlData.end());
-	}
+	});
 
 	return data;
 }
@@ -165,53 +162,52 @@ std::vector<uint8_t> DialogTemplate::DialogControlWithLabel::GenerateControlTemp
 uint16_t DialogTemplate::GetTotalControlCount() const
 {
 	uint16_t count = 0;
-	for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
-		count += (*curr)->GetControlCount();
+	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control) { count += control->GetControlCount(); });
 	return count;
 }
 
 void DialogTemplate::AddGroupControl(const DialogControlBuilder<DialogGroupBuilder> &builder)
 {
-	DialogGroup *newGroup = DialogGroup::CreateControl(builder);
+	std::unique_ptr<DialogControl> newGroup = DialogGroup::CreateControl(builder);
 	if (builder.index == -1)
-		this->controls.push_back(newGroup);
+		this->controls.push_back(std::move(newGroup));
 	else
-		this->controls.insert(this->controls.begin() + builder.index, newGroup);
+		this->controls.insert(this->controls.begin() + builder.index, std::move(newGroup));
 }
 
 void DialogTemplate::AddEditBoxControl(const DialogControlBuilder<DialogEditBoxBuilder> &builder)
 {
-	this->AddControlToGroup(DialogEditBox::CreateControl(builder), builder);
+	this->AddControlToGroup(std::move(DialogEditBox::CreateControl(builder)), builder);
 }
 
 void DialogTemplate::AddLabelControl(const DialogControlBuilder<DialogLabelBuilder> &builder)
 {
-	this->AddControlToGroup(DialogLabel::CreateControl(builder), builder);
+	this->AddControlToGroup(std::move(DialogLabel::CreateControl(builder)), builder);
 }
 
 void DialogTemplate::AddCheckBoxControl(const DialogControlBuilder<DialogCheckBoxBuilder> &builder)
 {
-	this->AddControlToGroup(DialogButton::CreateControl(builder), builder);
+	this->AddControlToGroup(std::move(DialogButton::CreateControl(builder)), builder);
 }
 
 void DialogTemplate::AddButtonControl(const DialogControlBuilder<DialogButtonBuilder> &builder)
 {
-	this->AddControlToGroup(DialogButton::CreateControl(builder), builder);
+	this->AddControlToGroup(std::move(DialogButton::CreateControl(builder)), builder);
 }
 
 void DialogTemplate::AddListBoxControl(const DialogControlBuilder<DialogListBoxBuilder> &builder)
 {
-	this->AddControlToGroup(DialogListBox::CreateControl(builder), builder);
+	this->AddControlToGroup(std::move(DialogListBox::CreateControl(builder)), builder);
 }
 
 void DialogTemplate::AddComboBoxControl(const DialogControlBuilder<DialogComboBoxBuilder> &builder)
 {
-	this->AddControlToGroup(DialogComboBox::CreateControl(builder), builder);
+	this->AddControlToGroup(std::move(DialogComboBox::CreateControl(builder)), builder);
 }
 
 bool DialogTemplate::CalculateControlPosition(short index, bool doRightAndBottom)
 {
-	DialogControl *control = this->controls[index];
+	auto &control = this->controls[index];
 	bool valid = true;
 	if (control->relativePosition.get())
 	{
@@ -248,10 +244,8 @@ bool DialogTemplate::CalculateControlPosition(short index, bool doRightAndBottom
 void DialogTemplate::CalculateSize()
 {
 	short maxX = 0, maxY = 0, maxOtherWidth = 0, maxOtherHeight = 0;
-	for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
+	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
-		DialogControl *control = *curr;
-
 		bool usePosition = true;
 		if (control->relativePosition.get())
 		{
@@ -282,7 +276,7 @@ void DialogTemplate::CalculateSize()
 			if (control->rect.position.y + control->GetControlHeight() > maxY)
 				maxY = control->rect.position.y + control->GetControlHeight();
 		}
-	}
+	});
 	this->size.width = maxX + maxOtherWidth + 7;
 	this->size.height = maxY + maxOtherHeight + 7;
 }
@@ -293,13 +287,13 @@ void DialogTemplate::AutoSize()
 	short x = 0, num = this->controls.empty() ? 0 : this->controls.size(), maxGroupWidth = 0;
 	for (; x < num; ++x)
 	{
-		DialogControl *control = this->controls[x];
+		auto &control = this->controls[x];
 		bool valid = this->CalculateControlPosition(x, false);
 		if (valid && control->controlType == GROUP_CONTROL)
 		{
-			dynamic_cast<DialogGroup *>(control)->CalculatePositions(false);
+			dynamic_cast<DialogGroup *>(control.get())->CalculatePositions(false);
 			// Techically step 2, but calculate the size of the group
-			dynamic_cast<DialogGroup *>(control)->CalculateSize();
+			dynamic_cast<DialogGroup *>(control.get())->CalculateSize();
 			if (control->rect.size.width > maxGroupWidth)
 				maxGroupWidth = control->rect.size.width;
 		}
@@ -307,11 +301,11 @@ void DialogTemplate::AutoSize()
 	// Step 2: Resize all group controls to be the same width, and then within the group, recalculate positions for all controls
 	for (x = 0; x < num; ++x)
 	{
-		DialogControl *control = this->controls[x];
+		auto &control = this->controls[x];
 		if (control->controlType != GROUP_CONTROL)
 			continue;
 		control->rect.size.width = maxGroupWidth;
-		dynamic_cast<DialogGroup *>(control)->CalculatePositions(true);
+		dynamic_cast<DialogGroup *>(control.get())->CalculatePositions(true);
 	}
 	// Step 3: Resize the dialog box itself
 	this->CalculateSize();
@@ -337,11 +331,11 @@ const DLGTEMPLATE *DialogTemplate::GenerateTemplate()
 		memcpy(reinterpret_cast<wchar_t *>(&this->templateData[24 + sizeof(wchar_t) * (this->title.length() + 1)]), this->fontName.c_str(), this->fontName.length() * sizeof(wchar_t));
 	}
 
-	for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
+	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
-		auto controlData = (*curr)->GenerateControlTemplate();
+		auto controlData = control->GenerateControlTemplate();
 		this->templateData.insert(this->templateData.end(), controlData.begin(), controlData.end());
-	}
+	});
 
 	return reinterpret_cast<const DLGTEMPLATE *>(&this->templateData[0]);
 }

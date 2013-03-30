@@ -71,7 +71,7 @@ private:
 		auto inputChars = std::vector<char>(input.begin(), input.end());
 		size_t length = inputChars.size();
 		auto masks = std::vector<std::ctype<char>::mask>(length);
-		std::use_facet<std::ctype<char> >(loc).is(&inputChars[0], &inputChars[length], &masks[0]);
+		std::use_facet<std::ctype<char>>(loc).is(&inputChars[0], &inputChars[length], &masks[0]);
 		for (size_t x = 0; x < length; ++x)
 			if (inputChars[x] != '.' && !(masks[x] & std::ctype<char>::digit))
 				return false;

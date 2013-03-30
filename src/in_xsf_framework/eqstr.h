@@ -31,7 +31,7 @@ struct eq_str : std::binary_function<std::string, std::string, bool>
 	{
 		for (int i = CHAR_MIN; i <= CHAR_MAX; ++i)
 			this->tab[i - CHAR_MIN] = static_cast<char>(i);
-		std::use_facet<std::ctype<char> >(L).toupper(this->tab, this->tab + (CHAR_MAX - CHAR_MIN + 1));
+		std::use_facet<std::ctype<char>>(L).toupper(this->tab, this->tab + (CHAR_MAX - CHAR_MIN + 1));
 	}
 
 	bool operator()(const std::string &x, const std::string &y) const

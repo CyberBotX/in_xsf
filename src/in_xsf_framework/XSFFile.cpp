@@ -466,10 +466,10 @@ void XSFFile::SaveFile() const
 	if (!allTags.empty())
 	{
 		xSF.write("[TAG]", 5);
-		for (auto curr = allTags.begin(), end = allTags.end(); curr != end; ++curr)
+		std::for_each(allTags.begin(), allTags.end(), [&](const std::string &tag)
 		{
-			xSF.write(curr->c_str(), curr->length());
+			xSF.write(tag.c_str(), tag.length());
 			xSF.write("\n", 1);
-		}
+		});
 	}
 }

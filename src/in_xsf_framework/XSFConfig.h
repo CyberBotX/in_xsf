@@ -45,7 +45,7 @@ protected:
 	std::wstring titleFormat;
 	DialogTemplate configDialog, configDialogProperty, infoDialog;
 	std::vector<unsigned> supportedSampleRates;
-	std::auto_ptr<XSFConfigIO> configIO;
+	std::unique_ptr<XSFConfigIO> configIO;
 
 	XSFConfig();
 	std::wstring GetTextFromWindow(HWND hwnd);

@@ -61,9 +61,9 @@ bool XSFPlayer_NCSF::RecursiveLoadNCSF(XSFFile *xSFToLoad, int level)
 	if (level <= 10 && xSFToLoad->GetTagExists("_lib"))
 	{
 #ifdef _WIN32
-		auto libxSF = std::auto_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetWStr()) + xSFToLoad->GetTagValue("_lib").GetWStr(), 8, 12));
+		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetWStr()) + xSFToLoad->GetTagValue("_lib").GetWStr(), 8, 12));
 #else
-		auto libxSF = std::auto_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetAnsi()) + xSFToLoad->GetTagValue("_lib").GetAnsi(), 8, 12));
+		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetAnsi()) + xSFToLoad->GetTagValue("_lib").GetAnsi(), 8, 12));
 #endif
 		if (!this->RecursiveLoadNCSF(libxSF.get(), level + 1))
 			return false;
@@ -82,9 +82,9 @@ bool XSFPlayer_NCSF::RecursiveLoadNCSF(XSFFile *xSFToLoad, int level)
 		{
 			found = true;
 #ifdef _WIN32
-			auto libxSF = std::auto_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetWStr()) + xSFToLoad->GetTagValue(libTag).GetWStr(), 8, 12));
+			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetWStr()) + xSFToLoad->GetTagValue(libTag).GetWStr(), 8, 12));
 #else
-			auto libxSF = std::auto_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetAnsi()) + xSFToLoad->GetTagValue(libTag).GetAnsi(), 8, 12));
+			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSFToLoad->GetFilename().GetAnsi()) + xSFToLoad->GetTagValue(libTag).GetAnsi(), 8, 12));
 #endif
 			if (!this->RecursiveLoadNCSF(libxSF.get(), level + 1))
 				return false;

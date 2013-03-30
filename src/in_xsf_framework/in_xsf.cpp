@@ -117,13 +117,20 @@ void getFileInfo(const in_char *file, in_char *title, int *length_in_ms)
 
 int infoBox(const in_char *file, HWND hwndParent)
 {
-	auto xSF = std::auto_ptr<XSFFile>(new XSFFile());
+	auto xSF = std::unique_ptr<XSFFile>(new XSFFile());
 	if (!file || !*file)
 		*xSF = *xSFFile;
 	else
 	{
-		auto tmpxSF = std::auto_ptr<XSFFile>(new XSFFile(file));
-		*xSF = *tmpxSF;
+		try
+		{
+			auto tmpxSF = std::unique_ptr<XSFFile>(new XSFFile(file));
+			*xSF = *tmpxSF;
+		}
+		catch (const std::exception &)
+		{
+			return INFOBOX_UNCHANGED;
+		}
 	}
 	// TODO: Eventually make a dialog box for editing the info
 	/*xSFFileInInfo = xSF.get();
@@ -151,7 +158,7 @@ int play(const in_char *fn)
 {
 	try
 	{
-		auto tmpxSFPlayer = std::auto_ptr<XSFPlayer>(XSFPlayer::Create(fn));
+		auto tmpxSFPlayer = std::unique_ptr<XSFPlayer>(XSFPlayer::Create(fn));
 		xSFConfig->CopyConfigToMemory(tmpxSFPlayer.get(), true);
 		if (!tmpxSFPlayer->Load())
 			return 1;
@@ -356,7 +363,7 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *f
 	}
 }
 
-std::auto_ptr<XSFFile> extendedXSFFile;
+std::unique_ptr<XSFFile> extendedXSFFile;
 
 int wrapperWinampSetExtendedFileInfo(const char *data, const wchar_t *val)
 {
@@ -391,7 +398,7 @@ extern "C" __declspec(dllexport) int winampClearExtendedFileInfoW(const wchar_t 
 	return 0;
 }
 
-intptr_t wrapperWinampGetExtendedRead_open(std::auto_ptr<XSFPlayer> tmpxSFPlayer, int *size, int *bps, int *nch, int *srate)
+intptr_t wrapperWinampGetExtendedRead_open(std::unique_ptr<XSFPlayer> tmpxSFPlayer, int *size, int *bps, int *nch, int *srate)
 {
 	xSFConfig->CopyConfigToMemory(tmpxSFPlayer.get(), true);
 	if (!tmpxSFPlayer->Load())
@@ -411,14 +418,14 @@ intptr_t wrapperWinampGetExtendedRead_open(std::auto_ptr<XSFPlayer> tmpxSFPlayer
 
 extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_open(const char *fn, int *size, int *bps, int *nch, int *srate)
 {
-	auto tmpxSFPlayer = std::auto_ptr<XSFPlayer>(XSFPlayer::Create(fn));
-	return wrapperWinampGetExtendedRead_open(tmpxSFPlayer, size, bps, nch, srate);
+	auto tmpxSFPlayer = std::unique_ptr<XSFPlayer>(XSFPlayer::Create(fn));
+	return wrapperWinampGetExtendedRead_open(std::move(tmpxSFPlayer), size, bps, nch, srate);
 }
 
 extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wchar_t *fn, int *size, int *bps, int *nch, int *srate)
 {
-	auto tmpxSFPlayer = std::auto_ptr<XSFPlayer>(XSFPlayer::Create(fn));
-	return wrapperWinampGetExtendedRead_open(tmpxSFPlayer, size, bps, nch, srate);
+	auto tmpxSFPlayer = std::unique_ptr<XSFPlayer>(XSFPlayer::Create(fn));
+	return wrapperWinampGetExtendedRead_open(std::move(tmpxSFPlayer), size, bps, nch, srate);
 }
 
 int extendedSeekNeeded = -1;

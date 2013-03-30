@@ -18,9 +18,9 @@
 
 struct SDAT
 {
-	std::auto_ptr<SSEQ> sseq;
-	std::auto_ptr<SBNK> sbnk;
-	std::auto_ptr<SWAR> swar[4];
+	std::unique_ptr<SSEQ> sseq;
+	std::unique_ptr<SBNK> sbnk;
+	std::unique_ptr<SWAR> swar[4];
 
 	SDAT(PseudoFile &file, uint32_t sseqToLoad);
 private:

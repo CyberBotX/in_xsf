@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <algorithm>
 #include <stdexcept>
 #include "pstdint.h"
 #include "windowsh_wrapper.h"
@@ -162,7 +163,7 @@ protected:
 	Rect<short> rect;
 	short id;
 	int index;
-	std::auto_ptr<RelativePosition> relativePosition;
+	std::unique_ptr<RelativePosition> relativePosition;
 
 	T &me() { return dynamic_cast<T &>(*this); }
 public:
@@ -385,7 +386,7 @@ class DialogTemplate
 {
 	class DialogControl;
 
-	typedef std::vector<DialogControl *> Controls;
+	typedef std::vector<std::unique_ptr<DialogControl>> Controls;
 
 	class DialogControl
 	{
@@ -394,7 +395,7 @@ class DialogTemplate
 		uint32_t style, exstyle;
 		Rect<short> rect;
 		short id;
-		std::auto_ptr<RelativePosition> relativePosition;
+		std::unique_ptr<RelativePosition> relativePosition;
 
 		friend class DialogTemplate;
 		DialogControl() : controlType(NO_CONTROL), style(0), exstyle(0), rect(), id(-1), relativePosition() { }
@@ -416,9 +417,9 @@ class DialogTemplate
 		}
 	public:
 		virtual ~DialogControl() { }
-		template<typename Control, typename Builder> static Control *CreateControl(const DialogControlBuilder<Builder> &builder)
+		template<typename Control, typename Builder> static std::unique_ptr<Control> CreateControl(const DialogControlBuilder<Builder> &builder)
 		{
-			Control *control = new Control();
+			auto control = std::unique_ptr<Control>(new Control());
 
 			control->controlType = builder.controlType;
 			control->style = builder.style;
@@ -447,30 +448,23 @@ class DialogTemplate
 		DialogGroup() : DialogControl(), controls(), groupName(L"") { }
 		DialogGroup(const DialogGroup &control) : DialogControl(control), controls(), groupName(control.groupName)
 		{
-			for (auto curr = control.controls.begin(), end = control.controls.end(); curr != end; ++curr)
-				this->controls.push_back((*curr)->Clone());
+			std::for_each(control.controls.begin(), control.controls.end(), [&](const std::unique_ptr<DialogControl> &control) { this->controls.push_back(std::unique_ptr<DialogControl>(control->Clone())); });
 		}
 		DialogGroup &operator=(const DialogGroup &control)
 		{
 			DialogControl::operator=(control);
 
-			if (!this->controls.empty())
-				this->ClearControls();
-			for (auto curr = control.controls.begin(), end = control.controls.end(); curr != end; ++curr)
-				this->controls.push_back((*curr)->Clone());
+			this->controls.clear();
+			std::for_each(control.controls.begin(), control.controls.end(), [&](const std::unique_ptr<DialogControl> &control) { this->controls.push_back(std::unique_ptr<DialogControl>(control->Clone())); });
+
+			this->groupName = control.groupName;
 
 			return *this;
 		}
-		void ClearControls()
-		{
-			for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
-				delete *curr;
-		}
 	public:
-		~DialogGroup() { this->ClearControls(); }
-		static DialogGroup *CreateControl(const DialogControlBuilder<DialogGroupBuilder> &builder)
+		static std::unique_ptr<DialogGroup> CreateControl(const DialogControlBuilder<DialogGroupBuilder> &builder)
 		{
-			DialogGroup *control = DialogControl::CreateControl<DialogGroup>(builder);
+			auto control = DialogControl::CreateControl<DialogGroup>(builder);
 
 			control->groupName = dynamic_cast<const DialogGroupBuilder &>(builder).groupName;
 
@@ -501,9 +495,9 @@ class DialogTemplate
 			return *this;
 		}
 	public:
-		template<typename Control, typename Builder> static Control *CreateControl(const DialogControlBuilder<Builder> &builder, uint16_t Type)
+		template<typename Control, typename Builder> static std::unique_ptr<Control> CreateControl(const DialogControlBuilder<Builder> &builder, uint16_t Type)
 		{
-			Control *control = DialogControl::CreateControl<Control>(builder);
+			auto control = DialogControl::CreateControl<Control>(builder);
 
 			control->type = Type;
 
@@ -533,9 +527,9 @@ class DialogTemplate
 			return *this;
 		}
 	public:
-		template<typename Control, typename Builder> static Control *CreateControl(const DialogControlBuilder<Builder> &builder, uint16_t Type)
+		template<typename Control, typename Builder> static std::unique_ptr<Control> CreateControl(const DialogControlBuilder<Builder> &builder, uint16_t Type)
 		{
-			Control *control = DialogControl::CreateControl<Control>(builder);
+			auto control = DialogControl::CreateControl<Control>(builder);
 
 			control->type = Type;
 			control->label = dynamic_cast<const DialogControlWithLabelBuilder<Builder> &>(builder).label;
@@ -553,7 +547,7 @@ class DialogTemplate
 		friend class DialogControl;
 		DialogEditBox() : DialogControlWithoutLabel() { }
 	public:
-		static DialogEditBox *CreateControl(const DialogControlBuilder<DialogEditBoxBuilder> &builder)
+		static std::unique_ptr<DialogEditBox> CreateControl(const DialogControlBuilder<DialogEditBoxBuilder> &builder)
 		{
 			return DialogControlWithoutLabel::CreateControl<DialogEditBox>(builder, 0x0081);
 		}
@@ -566,7 +560,7 @@ class DialogTemplate
 		friend class DialogControl;
 		DialogLabel() : DialogControlWithLabel() { }
 	public:
-		static DialogLabel *CreateControl(const DialogControlBuilder<DialogLabelBuilder> &builder)
+		static std::unique_ptr<DialogLabel> CreateControl(const DialogControlBuilder<DialogLabelBuilder> &builder)
 		{
 			return DialogControlWithLabel::CreateControl<DialogLabel>(builder, 0x0082);
 		}
@@ -579,7 +573,7 @@ class DialogTemplate
 		friend class DialogControl;
 		DialogButton() : DialogControlWithLabel() { }
 	public:
-		template<typename Builder> static DialogButton *CreateControl(const DialogControlBuilder<Builder> &builder)
+		template<typename Builder> static std::unique_ptr<DialogButton> CreateControl(const DialogControlBuilder<Builder> &builder)
 		{
 			return DialogControlWithLabel::CreateControl<DialogButton>(builder, 0x0080);
 		}
@@ -592,7 +586,7 @@ class DialogTemplate
 		friend class DialogControl;
 		DialogListBox() : DialogControlWithoutLabel() { }
 	public:
-		static DialogListBox *CreateControl(const DialogControlBuilder<DialogListBoxBuilder> &builder)
+		static std::unique_ptr<DialogListBox> CreateControl(const DialogControlBuilder<DialogListBoxBuilder> &builder)
 		{
 			return DialogControlWithoutLabel::CreateControl<DialogListBox>(builder, 0x0083);
 		}
@@ -605,7 +599,7 @@ class DialogTemplate
 		friend class DialogControl;
 		DialogComboBox() : DialogControlWithoutLabel() { }
 	public:
-		static DialogComboBox *CreateControl(const DialogControlBuilder<DialogComboBoxBuilder> &builder)
+		static std::unique_ptr<DialogComboBox> CreateControl(const DialogControlBuilder<DialogComboBoxBuilder> &builder)
 		{
 			return DialogControlWithoutLabel::CreateControl<DialogComboBox>(builder, 0x0085);
 		}
@@ -617,32 +611,32 @@ class DialogTemplate
 	std::wstring fontName;
 	uint16_t fontSizeInPts;
 	Size<short> size;
-	Controls controls;
+	DialogTemplate::Controls controls;
 	std::vector<uint8_t> templateData;
 
-	template<typename Builder> void AddControlToGroup(DialogControl *control, const DialogControlBuilder<Builder> &builder)
+	template<typename Builder> void AddControlToGroup(std::unique_ptr<DialogControl> &&control, const DialogControlBuilder<Builder> &builder)
 	{
 		const DialogInGroupBuilder<Builder> &groupBuilder = dynamic_cast<const DialogInGroupBuilder<Builder> &>(builder);
 		if (groupBuilder.groupName.empty())
 		{
 			if (builder.index == -1)
-				this->controls.push_back(control);
+				this->controls.push_back(std::move(control));
 			else
-				this->controls.insert(this->controls.begin() + builder.index, control);
+				this->controls.insert(this->controls.begin() + builder.index, std::move(control));
 		}
 		else
 		{
-			for (DialogTemplate::Controls::iterator curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
+			for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
 			{
 				if ((*curr)->controlType != GROUP_CONTROL)
 					continue;
-				DialogGroup *group = dynamic_cast<DialogGroup *>(*curr);
+				DialogGroup *group = dynamic_cast<DialogGroup *>(curr->get());
 				if (group->groupName == groupBuilder.groupName)
 				{
 					if (builder.index == -1)
-						group->controls.push_back(control);
+						group->controls.push_back(std::move(control));
 					else
-						group->controls.insert(group->controls.begin() + builder.index, control);
+						group->controls.insert(group->controls.begin() + builder.index, std::move(control));
 					return;
 				}
 			}
@@ -652,11 +646,6 @@ class DialogTemplate
 	uint16_t GetTotalControlCount() const;
 	bool CalculateControlPosition(short index, bool doRightAndBottom = false);
 	void CalculateSize();
-	void ClearControls()
-	{
-		for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
-			delete *curr;
-	}
 public:
 	DialogTemplate() : title(L""), style(0), exstyle(0), fontName(L""), fontSizeInPts(0), size(), controls(), templateData() { }
 	DialogTemplate(const DialogBuilder &builder) : title(builder.title), style(builder.style), exstyle(builder.exstyle), fontName(builder.fontName), fontSizeInPts(builder.fontSizeInPts),
@@ -664,8 +653,7 @@ public:
 	DialogTemplate(const DialogTemplate &dlg) : title(dlg.title), style(dlg.style), exstyle(dlg.style), fontName(dlg.fontName), fontSizeInPts(dlg.fontSizeInPts), size(dlg.size),
 		controls(), templateData()
 	{
-		for (auto curr = dlg.controls.begin(), end = dlg.controls.end(); curr != end; ++curr)
-			this->controls.push_back((*curr)->Clone());
+		std::for_each(dlg.controls.begin(), dlg.controls.end(), [&](const std::unique_ptr<DialogControl> &control) { this->controls.push_back(std::unique_ptr<DialogControl>(control->Clone())); });
 	}
 	DialogTemplate &operator=(const DialogBuilder &builder)
 	{
@@ -675,8 +663,8 @@ public:
 		this->fontName = builder.fontName;
 		this->fontSizeInPts = builder.fontSizeInPts;
 		this->size = builder.size;
-		if (builder.resetControls && !this->controls.empty())
-			this->ClearControls();
+		if (builder.resetControls)
+			this->controls.clear();
 
 		return *this;
 	}
@@ -688,14 +676,11 @@ public:
 		this->fontName = dlg.fontName;
 		this->fontSizeInPts = dlg.fontSizeInPts;
 		this->size = dlg.size;
-		if (!this->controls.empty())
-			this->ClearControls();
-		for (auto curr = dlg.controls.begin(), end = dlg.controls.end(); curr != end; ++curr)
-			this->controls.push_back((*curr)->Clone());
+		this->controls.clear();
+		std::for_each(dlg.controls.begin(), dlg.controls.end(), [&](const std::unique_ptr<DialogControl> &control) { this->controls.push_back(std::unique_ptr<DialogControl>(control->Clone())); });
 
 		return *this;
 	}
-	~DialogTemplate() { this->ClearControls(); }
 	void AddGroupControl(const DialogControlBuilder<DialogGroupBuilder> &builder);
 	void AddEditBoxControl(const DialogControlBuilder<DialogEditBoxBuilder> &builder);
 	void AddLabelControl(const DialogControlBuilder<DialogLabelBuilder> &builder);
