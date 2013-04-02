@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-04-01
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -35,6 +35,8 @@ struct Player
 
 	bool Setup(const SSEQ *sseq);
 	void ClearState();
+	void FreeTracks();
+	void Stop(bool bKillSound);
 	int ChannelAlloc(int type, int prio);
 	int TrackAlloc();
 	void Run();

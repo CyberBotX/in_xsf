@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-01
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -57,6 +57,35 @@ void Player::ClearState()
 	this->tempoCount = 0;
 	this->tempoRate = 0x100;
 	this->masterVol = 0; // this is actually the highest level
+}
+
+void Player::FreeTracks()
+{
+	for (uint8_t i = 0; i < this->nTracks; ++i)
+		this->tracks[this->trackIds[i]].Free();
+	this->nTracks = 0;
+}
+
+void Player::Stop(bool bKillSound)
+{
+	this->ClearState();
+	for (uint8_t i = 0; i < this->nTracks; ++i)
+	{
+		uint8_t trackId = this->trackIds[i];
+		this->tracks[trackId].ClearState();
+		for (int j = 0; j < 16; ++j)
+		{
+			Channel &chn = this->channels[j];
+			if (chn.state != CS_NONE && chn.trackId == trackId)
+			{
+				if (bKillSound)
+					chn.Kill();
+				else
+					chn.Release();
+			}
+		}
+	}
+	this->FreeTracks();
 }
 
 int Player::ChannelAlloc(int type, int priority)

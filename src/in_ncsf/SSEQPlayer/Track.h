@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Track structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-04-01
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -52,6 +52,7 @@ struct Track
 	void Init(uint8_t handle, Player *ply, const uint8_t *pos, int n);
 	void Zero();
 	void ClearState();
+	void Free();
 	int NoteOn(int key, int vel, int len);
 	int NoteOnTie(int key, int vel);
 	void ReleaseAllNotes();

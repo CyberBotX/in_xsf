@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Track structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-01
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -84,6 +84,12 @@ void Track::ClearState()
 	this->modSpeed = 16;
 	this->modDelay = 10;
 	this->modDepth = 0;
+}
+
+void Track::Free()
+{
+	this->state.reset();
+	this->updateFlags.reset();
 }
 
 int Track::NoteOn(int key, int vel, int len)

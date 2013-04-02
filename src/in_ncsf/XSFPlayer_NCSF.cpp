@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-01
  *
  * Partially based on the vio*sf framework
  *
@@ -192,6 +192,11 @@ void XSFPlayer_NCSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset,
 			this->secondsUntilNextClock += SecondsPerClockCycle;
 		}
 	}
+}
+
+void XSFPlayer_NCSF::Terminate()
+{
+	this->player.Stop(true);
 }
 
 void XSFPlayer_NCSF::SetInterpolation(unsigned interpolation)
