@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-02
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -576,17 +576,97 @@ static const int16_t wavedutytbl[8][8] =
 static const double M_PI = 3.14159265358979323846;
 #endif
 
-int32_t Channel::Interpolate(int32_t a, int32_t b, double ratio)
+// Linear and Cosine interpolation code originally from DeSmuME
+// B-spline, Hermite, and Optimal come from Olli Niemitalo:
+// http://www.student.oulu.fi/~oniemita/dsp/deip.pdf
+int32_t Channel::Interpolate()
 {
-	float ratiof = static_cast<float>(ratio);
-	ratiof -= static_cast<int32_t>(ratiof);
-	if (this->ply->interpolation == INTERPOLATION_COSINE)
+	double ratio = this->reg.samplePosition;
+	ratio -= static_cast<int32_t>(ratio);
+
+	uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition);
+	const auto &data = &this->reg.source->data[loc];
+	int32_t a = data[0], b;
+	if (loc + 1 < this->reg.loopStart + this->reg.length)
+		b = data[1];
+	else
 	{
-		double ratio2 = (1.0 - std::cos(ratiof * M_PI)) * 0.5;
-		return static_cast<int32_t>((1 - ratio2) * a + ratio2 * b);
+		if (loc)
+		{
+			int32_t am1 = data[-1];
+			b = 2 * a - am1;
+		}
+		else
+			b = a;
+	}
+
+	if (this->ply->interpolation == INTERPOLATION_BSPLINE || this->ply->interpolation == INTERPOLATION_HERMITE || this->ply->interpolation == INTERPOLATION_OPTIMAL)
+	{
+		int32_t c, z;
+		if (loc + 2 < this->reg.loopStart + this->reg.length)
+			c = data[2];
+		else
+		{
+			if (loc)
+			{
+				int32_t am1 = data[-1];
+				c = 3 * a - 2 * am1;
+			}
+			else
+				c = a;
+		}
+		if (loc)
+			z = data[-1];
+		else
+		{
+			if (loc + 1 < this->reg.loopStart + this->reg.length)
+			{
+				int32_t ap1 = data[1];
+				z = 2 * a - ap1;
+			}
+			else
+				z = a;
+		}
+
+		double c0, c1, c2, c3;
+
+		if (this->ply->interpolation == INTERPOLATION_BSPLINE)
+		{
+			double zpb = z + b;
+			c0 = 1 / 6.0 * zpb + 2 / 3.0 * a;
+			c1 = 0.5 * (b - z);
+			c2 = 0.5 * zpb - a;
+			c3 = 0.5 * (a - b) + 1 / 6.0 * (c - z);
+			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
+		}
+		if (this->ply->interpolation == INTERPOLATION_HERMITE)
+		{
+			c0 = a;
+			c1 = 0.5 * (b - z);
+			c2 = z - 2.5 * a + 2 * b - 0.5 * c;
+			c3 = 0.5 * (c - z) + 1.5 * (a - b);
+			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
+		}
+		else
+		{
+			ratio -= 0.5;
+			double even1 = b + a, odd1 = b - a;
+			double even2 = c + z, odd2 = c - z;
+			c0 = even1 * 0.46835497211269561 + even2 * 0.03164502784253309;
+			c1 = odd1 * 0.56001293337091440 + odd2 * 0.14666238593949288;
+			c2 = even1 * -0.250038759826233691 + even2 * 0.25003876124297131;
+			c3 = odd1 * -0.49949850957839148 + odd2 * 0.16649935475113800;
+			double c4 = even1 * 0.00016095224137360 + even2 * -0.00016095810460478;
+			return static_cast<int32_t>((((c4 * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
+		}
+	}
+	else if (this->ply->interpolation == INTERPOLATION_COSINE)
+	{
+		double ratio2 = (1.0 - std::cos(ratio * M_PI)) * 0.5;
+		return static_cast<int32_t>(a + ratio2 * (b - a));
 	}
 	else
-		return static_cast<int32_t>((1 - ratiof) * a + ratiof * b);
+		return static_cast<int32_t>(a + ratio * (b - a));
 }
 
 int32_t Channel::GenerateSample()
@@ -599,16 +679,7 @@ int32_t Channel::GenerateSample()
 		if (this->ply->interpolation == INTERPOLATION_NONE)
 			return this->reg.source->data[static_cast<uint32_t>(this->reg.samplePosition)];
 		else
-		{
-			uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition);
-			int32_t a = this->reg.source->data[loc], b;
-			if (loc < static_cast<uint32_t>(this->reg.loopStart + this->reg.length - 1))
-			{
-				b = this->reg.source->data[loc + 1];
-				a = this->Interpolate(a, b, this->reg.samplePosition);
-			}
-			return a;
-		}
+			return this->Interpolate();
 	}
 	else
 	{

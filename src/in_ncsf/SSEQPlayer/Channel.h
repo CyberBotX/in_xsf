@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-04-02
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -15,6 +15,7 @@
 #define SSEQPLAYER_CHANNEL_H
 
 #include <bitset>
+#include <tuple>
 #include "SWAV.h"
 #include "Track.h"
 #include "pstdint.h"
@@ -135,7 +136,7 @@ struct Channel
 	void Kill();
 	void UpdateTrack();
 	void Update();
-	int32_t Interpolate(int32_t a, int32_t b, double ratio);
+	int32_t Interpolate();
 	int32_t GenerateSample();
 	void IncrementSample();
 };

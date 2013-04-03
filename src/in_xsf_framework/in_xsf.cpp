@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-02
  *
  * Partially based on the vio*sf framework
  */
@@ -258,7 +258,7 @@ void eqSet(int, char [10], int)
 In_Module inMod =
 {
 	IN_VER,
-	const_cast<char *>(XSFPlayer::WinampDescription), /* Unsafe but Winamp's SDK requires this */
+	const_cast<char *>(XSFConfig::CommonNameWithVersion().GetStrC()), /* Unsafe but Winamp's SDK requires this */
 	nullptr, /* Filled by Winamp */
 	nullptr, /* Filled by Winamp */
 	const_cast<char *>(XSFPlayer::WinampExts), /* Unsafe but Winamp's SDK requires this */

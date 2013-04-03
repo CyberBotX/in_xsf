@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-04-02
  *
  * Partially based on the vio*sf framework
  */
@@ -42,8 +42,8 @@ public:
 
 unsigned XSFConfig::initSampleRate = 44100;
 std::wstring XSFConfig::commonName = L"NCSF Decoder";
-std::wstring XSFConfig::versionNumber = L"1.0";
-unsigned XSFConfig_NCSF::initInterpolation = 2;
+std::wstring XSFConfig::versionNumber = L"1.1";
+unsigned XSFConfig_NCSF::initInterpolation = 5;
 std::wstring XSFConfig_NCSF::initMutes = L"0000000000000000";
 
 XSFConfig *XSFConfig::Create()
@@ -82,7 +82,7 @@ void XSFConfig_NCSF::SaveSpecificConfig()
 void XSFConfig_NCSF::GenerateSpecificDialogs()
 {
 	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Interpolation").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_BOTTOMLEFT, Point<short>(0, 10), 2).IsLeftJustified());
-	this->configDialog.AddComboBoxControl(DialogComboBoxBuilder().WithSize(78, 14).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_TOPRIGHT, Point<short>(5, -3)).WithID(idInterpolation).
+	this->configDialog.AddComboBoxControl(DialogComboBoxBuilder().WithSize(90, 14).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_TOPRIGHT, Point<short>(5, -3)).WithID(idInterpolation).
 		IsDropDownList().WithTabStop());
 	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Mute").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_BOTTOMLEFT, Point<short>(0, 10), 2).IsLeftJustified());
 	this->configDialog.AddListBoxControl(DialogListBoxBuilder().WithSize(78, 45).WithExactHeight().InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_TOPRIGHT, Point<short>(5, -3)).WithID(idMutes).
@@ -98,6 +98,9 @@ INT_PTR CALLBACK XSFConfig_NCSF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARA
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"No Interpolation"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Linear Interpolation"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Cosine Interpolation"));
+			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"B-spline Interpolation"));
+			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Hermite Interpolation"));
+			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Optimal Interpolation"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_SETCURSEL, this->interpolation, 0);
 			// Mutes
 			for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)

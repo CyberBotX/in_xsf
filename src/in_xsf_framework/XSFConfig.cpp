@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-02
  *
  * Partially based on the vio*sf framework
  */
@@ -46,6 +46,12 @@ PeakType XSFConfig::initPeakType = PEAKTYPE_REPLAYGAIN_TRACK;
 XSFConfig::XSFConfig() : playInfinitely(false), skipSilenceOnStartSec(0), detectSilenceSec(0), defaultLength(0), defaultFade(0), volume(0.0), volumeType(VOLUMETYPE_NONE), peakType(PEAKTYPE_NONE),
 	sampleRate(0), titleFormat(L""), configDialog(), configDialogProperty(), infoDialog(), supportedSampleRates(), configIO(XSFConfigIO::Create())
 {
+}
+
+const String &XSFConfig::CommonNameWithVersion()
+{
+	static const auto commonNameWithVersion = String(XSFConfig::commonName + L" v" + XSFConfig::versionNumber);
+	return commonNameWithVersion;
 }
 
 std::wstring XSFConfig::GetTextFromWindow(HWND hwnd)

@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Constants/Macros
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-04-02
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -51,6 +51,6 @@ const uint32_t SOUND_FORMAT_PSG = 3 << 29;
 inline uint32_t SOUND_FORMAT(int n) { return n << 29; }
 const uint32_t SCHANNEL_ENABLE = BIT(31);
 
-enum Interpolation { INTERPOLATION_NONE, INTERPOLATION_LINEAR, INTERPOLATION_COSINE };
+enum Interpolation { INTERPOLATION_NONE, INTERPOLATION_LINEAR, INTERPOLATION_COSINE, INTERPOLATION_BSPLINE, INTERPOLATION_HERMITE, INTERPOLATION_OPTIMAL };
 
 #endif

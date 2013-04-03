@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-02
  *
  * Partially based on the vio*sf framework
  */
@@ -69,6 +69,7 @@ public:
 	static std::wstring versionNumber;
 	// The Create function is not defined in XSFConfig.cpp, it should be defined in your own config's source and return a pointer to your config's class.
 	static XSFConfig *Create();
+	static const String &CommonNameWithVersion();
 
 	virtual ~XSFConfig() { }
 	void LoadConfig();
