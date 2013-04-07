@@ -101,7 +101,18 @@ void getFileInfo(const in_char *file, in_char *title, int *length_in_ms)
 		xSF = xSFFile;
 	else
 	{
-		xSF = new XSFFile(file);
+		try
+		{
+			xSF = new XSFFile(file);
+		}
+		catch (const std::exception &)
+		{
+			if (title)
+				String("").CopyToString(title);
+			if (length_in_ms)
+				*length_in_ms = -1000;
+			return;
+		}
 		toFree = true;
 	}
 	if (title)
@@ -309,23 +320,30 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, c
 	}
 	else
 	{
-		XSFFile file = XSFFile(fn);
-		std::string tagToGet = data;
-		if (eqstr(data, "album"))
-			tagToGet = "game";
-		if (!file.GetTagExists(tagToGet))
+		try
 		{
-			if (eqstr(tagToGet, "replaygain_track_gain"))
+			XSFFile file = XSFFile(fn);
+			std::string tagToGet = data;
+			if (eqstr(data, "album"))
+				tagToGet = "game";
+			if (!file.GetTagExists(tagToGet))
+			{
+				if (eqstr(tagToGet, "replaygain_track_gain"))
+					return 1;
+				return 0;
+			}
+			else if (eqstr(tagToGet, "length"))
+			{
+				strcpy(dest, stringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade())).c_str());
 				return 1;
-			return 0;
-		}
-		else if (eqstr(tagToGet, "length"))
-		{
-			strcpy(dest, stringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade())).c_str());
+			}
+			file.GetTagValue(tagToGet).Substring(0, destlen - 1).CopyToString(dest, true);
 			return 1;
 		}
-		file.GetTagValue(tagToGet).Substring(0, destlen - 1).CopyToString(dest, true);
-		return 1;
+		catch (const std::exception &)
+		{
+			return 0;
+		}
 	}
 }
 
@@ -343,23 +361,30 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *f
 	}
 	else
 	{
-		XSFFile file = XSFFile(fn);
-		std::string tagToGet = data;
-		if (eqstr(data, "album"))
-			tagToGet = "game";
-		if (!file.GetTagExists(tagToGet))
+		try
 		{
-			if (eqstr(tagToGet, "replaygain_track_gain"))
+			XSFFile file = XSFFile(fn);
+			std::string tagToGet = data;
+			if (eqstr(data, "album"))
+				tagToGet = "game";
+			if (!file.GetTagExists(tagToGet))
+			{
+				if (eqstr(tagToGet, "replaygain_track_gain"))
+					return 1;
+				return 0;
+			}
+			else if (eqstr(tagToGet, "length"))
+			{
+				wcscpy(dest, wstringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade())).c_str());
 				return 1;
-			return 0;
-		}
-		else if (eqstr(tagToGet, "length"))
-		{
-			wcscpy(dest, wstringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade())).c_str());
+			}
+			file.GetTagValue(tagToGet).Substring(0, destlen - 1).CopyToString(dest);
 			return 1;
 		}
-		file.GetTagValue(tagToGet).Substring(0, destlen - 1).CopyToString(dest);
-		return 1;
+		catch (const std::exception &)
+		{
+			return 0;
+		}
 	}
 }
 
@@ -373,16 +398,30 @@ int wrapperWinampSetExtendedFileInfo(const char *data, const wchar_t *val)
 
 extern "C" __declspec(dllexport) int winampSetExtendedFileInfo(const char *fn, const char *data, const wchar_t *val)
 {
-	if (!extendedXSFFile.get() || extendedXSFFile->GetFilename().GetStr() != fn)
-		extendedXSFFile.reset(new XSFFile(fn));
-	return wrapperWinampSetExtendedFileInfo(data, val);
+	try
+	{
+		if (!extendedXSFFile.get() || extendedXSFFile->GetFilename().GetStr() != fn)
+			extendedXSFFile.reset(new XSFFile(fn));
+		return wrapperWinampSetExtendedFileInfo(data, val);
+	}
+	catch (const std::exception &)
+	{
+		return 0;
+	}
 }
 
 extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *fn, const char *data, const wchar_t *val)
 {
-	if (!extendedXSFFile.get() || extendedXSFFile->GetFilename().GetWStr() != fn)
-		extendedXSFFile.reset(new XSFFile(fn));
-	return wrapperWinampSetExtendedFileInfo(data, val);
+	try
+	{
+		if (!extendedXSFFile.get() || extendedXSFFile->GetFilename().GetWStr() != fn)
+			extendedXSFFile.reset(new XSFFile(fn));
+		return wrapperWinampSetExtendedFileInfo(data, val);
+	}
+	catch (const std::exception &)
+	{
+		return 0;
+	}
 }
 
 extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
@@ -418,14 +457,28 @@ intptr_t wrapperWinampGetExtendedRead_open(std::unique_ptr<XSFPlayer> tmpxSFPlay
 
 extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_open(const char *fn, int *size, int *bps, int *nch, int *srate)
 {
-	auto tmpxSFPlayer = std::unique_ptr<XSFPlayer>(XSFPlayer::Create(fn));
-	return wrapperWinampGetExtendedRead_open(std::move(tmpxSFPlayer), size, bps, nch, srate);
+	try
+	{
+		auto tmpxSFPlayer = std::unique_ptr<XSFPlayer>(XSFPlayer::Create(fn));
+		return wrapperWinampGetExtendedRead_open(std::move(tmpxSFPlayer), size, bps, nch, srate);
+	}
+	catch (const std::exception &)
+	{
+		return 0;
+	}
 }
 
 extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wchar_t *fn, int *size, int *bps, int *nch, int *srate)
 {
-	auto tmpxSFPlayer = std::unique_ptr<XSFPlayer>(XSFPlayer::Create(fn));
-	return wrapperWinampGetExtendedRead_open(std::move(tmpxSFPlayer), size, bps, nch, srate);
+	try
+	{
+		auto tmpxSFPlayer = std::unique_ptr<XSFPlayer>(XSFPlayer::Create(fn));
+		return wrapperWinampGetExtendedRead_open(std::move(tmpxSFPlayer), size, bps, nch, srate);
+	}
+	catch (const std::exception &)
+	{
+		return 0;
+	}
 }
 
 int extendedSeekNeeded = -1;
