@@ -24,6 +24,7 @@ class XSFPlayer_NCSF : public XSFPlayer
 	std::vector<uint8_t> sdatData;
 	std::unique_ptr<SDAT> sdat;
 	Player player;
+	uint8_t sseqVol;
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	std::bitset<16> mutes;
 

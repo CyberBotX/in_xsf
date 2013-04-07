@@ -25,6 +25,7 @@ struct INFOEntrySEQ : INFOEntry
 {
 	uint16_t fileID;
 	uint16_t bank;
+	uint8_t vol;
 
 	INFOEntrySEQ();
 

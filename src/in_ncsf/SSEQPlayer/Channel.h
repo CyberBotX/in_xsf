@@ -58,6 +58,8 @@ struct NDSSoundRegister
 	// Length Register
 	uint32_t length;
 
+	uint32_t totalLength;
+
 	NDSSoundRegister();
 
 	void ClearControlRegister();

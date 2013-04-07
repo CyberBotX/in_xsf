@@ -9,7 +9,7 @@
 
 #include "INFOEntry.h"
 
-INFOEntrySEQ::INFOEntrySEQ() : fileID(0), bank(0)
+INFOEntrySEQ::INFOEntrySEQ() : fileID(0), bank(0), vol(0)
 {
 }
 
@@ -18,7 +18,9 @@ void INFOEntrySEQ::Read(PseudoFile &file)
 	this->fileID = file.ReadLE<uint16_t>();
 	file.ReadLE<uint16_t>(); // unknown
 	this->bank = file.ReadLE<uint16_t>();
-	file.ReadLE<uint8_t>(); // vol
+	this->vol = file.ReadLE<uint8_t>();
+	if (!this->vol)
+		this->vol = 0x7F; // Prevents nothing for volume
 	file.ReadLE<uint8_t>(); // cpr
 	file.ReadLE<uint8_t>(); // ppr
 	file.ReadLE<uint8_t>(); // ply

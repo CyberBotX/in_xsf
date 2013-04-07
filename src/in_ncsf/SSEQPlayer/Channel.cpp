@@ -18,7 +18,7 @@
 #include "common.h"
 
 NDSSoundRegister::NDSSoundRegister() : volumeMul(0), volumeDiv(0), panning(0), waveDuty(0), repeatMode(0), format(0), enable(false),
-	source(nullptr), timer(0), psgX(0), psgLast(0), psgLastCount(0), samplePosition(0), sampleIncrease(0), loopStart(0), length(0)
+	source(nullptr), timer(0), psgX(0), psgLast(0), psgLastCount(0), samplePosition(0), sampleIncrease(0), loopStart(0), length(0), totalLength(0)
 {
 }
 
@@ -418,6 +418,7 @@ void Channel::Update()
 			this->reg.source = this->tempReg.SOURCE;
 			this->reg.loopStart = this->tempReg.REPEAT_POINT;
 			this->reg.length = this->tempReg.LENGTH;
+			this->reg.totalLength = this->reg.loopStart + this->reg.length;
 			this->ampl = AMPL_THRESHOLD;
 			this->state = CS_ATTACK;
 			// Fall down
@@ -587,7 +588,7 @@ int32_t Channel::Interpolate()
 	uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition);
 	const auto &data = &this->reg.source->data[loc];
 	int32_t a = data[0], b;
-	if (loc + 1 < this->reg.loopStart + this->reg.length)
+	if (loc + 1 < this->reg.totalLength)
 		b = data[1];
 	else
 	{
@@ -603,7 +604,7 @@ int32_t Channel::Interpolate()
 	if (this->ply->interpolation == INTERPOLATION_BSPLINE || this->ply->interpolation == INTERPOLATION_HERMITE || this->ply->interpolation == INTERPOLATION_OPTIMAL)
 	{
 		int32_t c, z;
-		if (loc + 2 < this->reg.loopStart + this->reg.length)
+		if (loc + 2 < this->reg.totalLength)
 			c = data[2];
 		else
 		{
@@ -619,7 +620,7 @@ int32_t Channel::Interpolate()
 			z = data[-1];
 		else
 		{
-			if (loc + 1 < this->reg.loopStart + this->reg.length)
+			if (loc + 1 < this->reg.totalLength)
 			{
 				int32_t ap1 = data[1];
 				z = 2 * a - ap1;
@@ -639,7 +640,7 @@ int32_t Channel::Interpolate()
 			c3 = 0.5 * (a - b) + 1 / 6.0 * (c - z);
 			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
 		}
-		if (this->ply->interpolation == INTERPOLATION_HERMITE)
+		else if (this->ply->interpolation == INTERPOLATION_HERMITE)
 		{
 			c0 = a;
 			c1 = 0.5 * (b - z);
@@ -717,11 +718,11 @@ int32_t Channel::GenerateSample()
 void Channel::IncrementSample()
 {
 	this->reg.samplePosition += this->reg.sampleIncrease;
-	if (this->reg.format != 3 && this->reg.samplePosition >= (this->reg.loopStart + this->reg.length))
+	if (this->reg.format != 3 && this->reg.samplePosition >= this->reg.totalLength)
 	{
 		if (this->reg.repeatMode == 1)
 		{
-			while (this->reg.samplePosition >= (this->reg.loopStart + this->reg.length))
+			while (this->reg.samplePosition >= this->reg.totalLength)
 				this->reg.samplePosition -= this->reg.length;
 		}
 		else
