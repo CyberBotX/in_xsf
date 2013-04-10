@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-02
+ * Last modification on 2013-04-10
  *
  * Partially based on the vio*sf framework
  */
@@ -73,6 +73,8 @@ DWORD WINAPI playThread(void *b)
 void config(HWND hwndParent)
 {
 	xSFConfig->CallConfigDialog(inMod.hDllInstance, hwndParent);
+	if (xSFPlayer)
+		xSFConfig->CopyConfigToMemory(xSFPlayer, false);
 }
 
 void about(HWND hwndParent)

@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-02
+ * Last modification on 2013-04-10
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -586,52 +586,108 @@ int32_t Channel::Interpolate()
 	ratio -= static_cast<int32_t>(ratio);
 
 	uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition);
-	const auto &data = &this->reg.source->data[loc];
+	const auto &data = &this->reg.source->dataptr[loc];
 	int32_t a = data[0], b;
 	if (loc + 1 < this->reg.totalLength)
 		b = data[1];
 	else
-	{
-		if (loc)
-		{
-			int32_t am1 = data[-1];
-			b = 2 * a - am1;
-		}
-		else
-			b = a;
-	}
+		b = a;
 
-	if (this->ply->interpolation == INTERPOLATION_BSPLINE || this->ply->interpolation == INTERPOLATION_HERMITE || this->ply->interpolation == INTERPOLATION_OPTIMAL)
+	double c0, c1, c2, c3, c4, c5;
+	if (this->ply->interpolation > INTERPOLATION_2POINTOPTIMAL)
 	{
 		int32_t c, z;
 		if (loc + 2 < this->reg.totalLength)
 			c = data[2];
 		else
-		{
-			if (loc)
-			{
-				int32_t am1 = data[-1];
-				c = 3 * a - 2 * am1;
-			}
-			else
-				c = a;
-		}
+			c = a;
 		if (loc)
 			z = data[-1];
 		else
+			z = a;
+
+		if (this->ply->interpolation > INTERPOLATION_4POINTOPTIMAL)
 		{
-			if (loc + 1 < this->reg.totalLength)
+			int32_t d, y;
+			if (loc + 3 < this->reg.totalLength)
+				d = data[3];
+			else
+				d = a;
+			if (loc > 1)
+				y = data[-2];
+			else
+				y = a;
+
+			if (this->ply->interpolation == INTERPOLATION_6POINTHERMITE)
 			{
-				int32_t ap1 = data[1];
-				z = 2 * a - ap1;
+				double eighthym2 = 0.125 * y;
+				double eleventwentyfourthy2 = 11 / 24.0 * c;
+				double twelfthy3 = 1 / 12.0 * d;
+				c0 = a;
+				c1 = 1 / 12.0 * (y - c) + 2 / 3.0 * (b - z);
+				c2 = 13 / 12.0 * z - 25 / 12.0 * a + 1.5 * b - eleventwentyfourthy2 + twelfthy3 - eighthym2;
+				c3 = 5 / 12.0 * a - 7 / 12.0 * b + 7 / 24.0 * c - 1 / 24.0 * (y + z + d);
+				c4 = eighthym2 - 7 / 12.0 * z + 13 / 12.0 * a - b + eleventwentyfourthy2 - twelfthy3;
+				c5 = 1 / 24.0 * (d - y) + 5 / 24.0 * (z - c) + 5 / 12.0 * (b - a);
+				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
+			}
+			else if (this->ply->interpolation == INTERPOLATION_6POINTLAGRANGE)
+			{
+				float ym1py1 = z + b;
+				float twentyfourthym2py2 = 1 / 24.0 * (y + c);
+				float c0 = a;
+				float c1 = 1 / 20.0 * y - 0.5 * z - 1 / 3.0 * a + b - 0.25 * c + 1 / 30.0 * d;
+				float c2 = 2 / 3.0 * ym1py1 - 1.25 * a - twentyfourthym2py2;
+				float c3 = 5 / 12.0 * a - 7 / 12.0 * b + 7 / 24.0 * c - 1 / 24.0 * (y + z + d);
+				float c4 = 0.25 * a - 1 / 6.0 * ym1py1 + twentyfourthym2py2;
+				float c5 = 1 / 120.0 * (d - y) + 1 / 24.0 * (z - c) + 1 / 12.0 * (b - a);
+				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
+			}
+			else if (this->ply->interpolation == INTERPOLATION_6POINTBSPLINE)
+			{
+				double ym2py2 = y + c, ym1py1 = z + b;
+				double y2mym2 = c - y, y1mym1 = b - z;
+				double sixthym1py1 = 1 / 6.0 * ym1py1;
+				c0 = 1 / 120.0 * ym2py2 + 13 / 60.0 * ym1py1 + 0.55 * a;
+				c1 = 1 / 24.0 * y2mym2 + 5 / 12.0 * y1mym1;
+				c2 = 1 / 12.0 * ym2py2 + sixthym1py1 - 0.5 * a;
+				c3 = 1 / 12.0 * y2mym2 - 1 / 6.0 * y1mym1;
+				c4 = 1 / 24.0 * ym2py2 - sixthym1py1 + 0.25 * a;
+				c5 = 1 / 120.0 * (d - y) + 1 / 24.0 * (z - c) + 1 / 12.0 * (b - a);
+				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 			}
 			else
-				z = a;
+			{
+				ratio -= 0.5;
+				double even1 = b + a, odd1 = b - a;
+				double even2 = c + z, odd2 = c - z;
+				double even3 = d + y, odd3 = d - y;
+				c0 = even1 * 0.41809989254549901 + even2 * 0.08049339946273310 + even3 * 0.00140670799165932;
+				c1 = odd1 * 0.32767596257424964 + odd2 * 0.20978189376640677 + odd3 * 0.00859567104974701;
+				c2 = even1 * -0.206944618112960001 + even2 * 0.18541689550861262 + even3 * 0.02152772260740132;
+				c3 = odd1 * -0.21686095413034051 + odd2 * 0.02509557922091643 + odd3 * 0.02831484751363800;
+				c4 = even1 * 0.04163046817137675 + even2 * -0.06244556931623735 + even3 * 0.02081510113314315;
+				c5 = odd1 * 0.07990500783668089 + odd2 * -0.03994519162531633 + odd3 * 0.00798609327859495;
+				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
+			}
 		}
-
-		double c0, c1, c2, c3;
-
-		if (this->ply->interpolation == INTERPOLATION_BSPLINE)
+		else if (this->ply->interpolation == INTERPOLATION_4POINTHERMITE)
+		{
+			c0 = a;
+			c1 = 0.5 * (b - z);
+			c2 = z - 2.5 * a + 2 * b - 0.5 * c;
+			c3 = 0.5 * (c - z) + 1.5 * (a - b);
+			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
+		}
+		else if (this->ply->interpolation == INTERPOLATION_4POINTLAGRANGE)
+		{
+			float c0 = a;
+			float c1 = b - 1 / 3.0 * z - 0.5 * a - 1 / 6.0 * c;
+			float c2 = 0.5 * (z + b) - a;
+			float c3 = 1 / 6.0 * (c - z) + 0.5 * (a - b);
+			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
+		}
+		else if (this->ply->interpolation == INTERPOLATION_4POINTBSPLINE)
 		{
 			double zpb = z + b;
 			c0 = 1 / 6.0 * zpb + 2 / 3.0 * a;
@@ -640,26 +696,28 @@ int32_t Channel::Interpolate()
 			c3 = 0.5 * (a - b) + 1 / 6.0 * (c - z);
 			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
 		}
-		else if (this->ply->interpolation == INTERPOLATION_HERMITE)
-		{
-			c0 = a;
-			c1 = 0.5 * (b - z);
-			c2 = z - 2.5 * a + 2 * b - 0.5 * c;
-			c3 = 0.5 * (c - z) + 1.5 * (a - b);
-			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
-		}
 		else
 		{
 			ratio -= 0.5;
 			double even1 = b + a, odd1 = b - a;
 			double even2 = c + z, odd2 = c - z;
-			c0 = even1 * 0.46835497211269561 + even2 * 0.03164502784253309;
-			c1 = odd1 * 0.56001293337091440 + odd2 * 0.14666238593949288;
-			c2 = even1 * -0.250038759826233691 + even2 * 0.25003876124297131;
-			c3 = odd1 * -0.49949850957839148 + odd2 * 0.16649935475113800;
-			double c4 = even1 * 0.00016095224137360 + even2 * -0.00016095810460478;
+			c0 = even1 * 0.46822774170144532 + even2 * 0.03177225758005808;
+			c1 = odd1 * 0.55890365706150436 + odd2 * 0.14703258836343669;
+			c2 = even1 * -0.250153411893796031 + even2 * 0.25015343462990891;
+			c3 = odd1 * -0.49800710906733769 + odd2 * 0.16600005174304033;
+			c4 = even1 * 0.00064264050033187 + even2 * -0.00064273459469381;
 			return static_cast<int32_t>((((c4 * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 		}
+	}
+	else if (this->ply->interpolation == INTERPOLATION_2POINTOPTIMAL)
+	{
+		ratio -= 0.5;
+		double even1 = b + a, odd1 = b - a;
+		c0 = even1 * 0.50001096675880796;
+		c1 = odd1 * 1.03585606328743830;
+		c2 = even1 * -0.000131601105693441;
+		c3 = odd1 * -0.38606621963374965;
+		return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
 	}
 	else if (this->ply->interpolation == INTERPOLATION_COSINE)
 	{
@@ -678,7 +736,7 @@ int32_t Channel::GenerateSample()
 	if (this->reg.format != 3)
 	{
 		if (this->ply->interpolation == INTERPOLATION_NONE)
-			return this->reg.source->data[static_cast<uint32_t>(this->reg.samplePosition)];
+			return this->reg.source->dataptr[static_cast<uint32_t>(this->reg.samplePosition)];
 		else
 			return this->Interpolate();
 	}

@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - SDAT SWAV (Waveform/Sample) structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-04-10
  *
  * Nintendo DS Nitro Composer (SDAT) Specification document found at
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
@@ -21,6 +21,7 @@ struct SWAV
 	uint32_t loopOffset;
 	uint32_t nonLoopLength;
 	std::vector<int16_t> data;
+	const int16_t *dataptr;
 
 	SWAV();
 
