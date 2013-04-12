@@ -1,7 +1,7 @@
 /* Simple resampler based on bsnes's ruby audio library */
 
-#ifndef __OPTIMAL_RESAMPLER_H
-#define __OPTIMAL_RESAMPLER_H
+#ifndef __OSCULATING_RESAMPLER_H
+#define __OSCULATING_RESAMPLER_H
 
 #include <cmath>
 #include "resampler.h"
@@ -11,28 +11,30 @@
 //template<typename T1, typename T2> static inline T1 CLAMP(T1 x, T2 low, T2 high) { return x > high ? high : (x < low ? low : x); }
 //template<typename T> static inline short SHORT_CLAMP(T n) { return static_cast<short>(CLAMP(n, -32768, 32767)); }
 
-class OptimalResampler : public Resampler
+class OsculatingResampler : public Resampler
 {
 protected:
 	double r_step;
 	double r_frac;
-	int r_left[4], r_right[4];
+	int r_left[6], r_right[6];
 
-	double optimal(double x, double a, double b, double c, double d)
+	double osculating(double x, double a, double b, double c, double d, double e, double f)
 	{
 		double z = x - 0.5;
-		double even1 = c + b, odd1 = c - b;
-		double even2 = d + a, odd2 = d - a;
-		double c0 = even1 * 0.46822774170144532 + even2 * 0.03177225758005808;
-		double c1 = odd1 * 0.55890365706150436 + odd2 * 0.14703258836343669;
-		double c2 = even1 * -0.250153411893796031 + even2 * 0.25015343462990891;
-		double c3 = odd1 * -0.49800710906733769 + odd2 * 0.16600005174304033;
-		double c4 = even1 * 0.00064264050033187 + even2 * -0.00064273459469381;
-		return (((c4 * z + c3) * z + c2) * z + c1) * z + c0;
+		double even1 = a + f, odd1 = a - f;
+		double even2 = b + e, odd2 = b - e;
+		double even3 = c + d, odd3 = c - d;
+		double c0 = 0.01171875 * even1 - 0.09765625 * even2 + 0.5859375 * even3;
+		double c1 = 0.2109375 * odd2 - 281 / 192.0 * odd3 - 13 / 384.0 * odd1;
+		double c2 = 0.40625 * even2 - 17 / 48.0 * even3 - 5 / 96.0 * even1;
+		double c3 = 0.1875 * odd1 - 53 / 48.0 * odd2 + 2.375 * odd3;
+		double c4 = 1 / 48.0*even1 - 0.0625 * even2 + 1 / 24.0 * even3;
+		double c5 = 25 / 24.0 * odd2 - 25 / 12.0 * odd3 - 5 / 24.0 * odd1;
+		return ((((c5 * z + c4) * z + c3) * z + c2) * z + c1) * z + c0;
 	}
 
 public:
-	OptimalResampler(int num_samples) : Resampler(num_samples)
+	OsculatingResampler(int num_samples) : Resampler(num_samples)
 	{
 		this->clear();
 	}
@@ -47,8 +49,8 @@ public:
 	{
 		ring_buffer::clear ();
 		this->r_frac = 1.0;
-		this->r_left[0] = this->r_left[1] = this->r_left[2] = this->r_left[3] = 0;
-		this->r_right[0] = this->r_right[1] = this->r_right[2] = this->r_right[3] = 0;
+		this->r_left[0] = this->r_left[1] = this->r_left[2] = this->r_left[3] = this->r_left[4] = this->r_left[5] = 0;
+		this->r_right[0] = this->r_right[1] = this->r_right[2] = this->r_right[3] = this->r_right[4] = this->r_right[5] = 0;
 	}
 
 	void read(short *data, int num_samples)
@@ -81,8 +83,8 @@ public:
 
 			while (this->r_frac <= 1.0 && o_position < num_samples)
 			{
-				data[o_position] = SHORT_CLAMP(optimal(this->r_frac, this->r_left[0], this->r_left[1], this->r_left[2], this->r_left[3]));
-				data[o_position + 1] = SHORT_CLAMP(optimal(this->r_frac, this->r_right[0], this->r_right[1], this->r_right[2], this->r_right[3]));
+				data[o_position] = SHORT_CLAMP(osculating(this->r_frac, this->r_left[0], this->r_left[1], this->r_left[2], this->r_left[3], this->r_left[4], this->r_left[5]));
+				data[o_position + 1] = SHORT_CLAMP(osculating(this->r_frac, this->r_right[0], this->r_right[1], this->r_right[2], this->r_right[3], this->r_right[4], this->r_right[5]));
 
 				o_position += 2;
 
@@ -94,12 +96,16 @@ public:
 				this->r_left[0] = this->r_left[1];
 				this->r_left[1] = this->r_left[2];
 				this->r_left[2] = this->r_left[3];
-				this->r_left[3] = s_left;
+				this->r_left[3] = this->r_left[4];
+				this->r_left[4] = this->r_left[5];
+				this->r_left[5] = s_left;
 
 				this->r_right[0] = this->r_right[1];
 				this->r_right[1] = this->r_right[2];
 				this->r_right[2] = this->r_right[3];
-				this->r_right[3] = s_right;
+				this->r_right[3] = this->r_right[4];
+				this->r_right[4] = this->r_right[5];
+				this->r_right[5] = s_right;
 
 				this->r_frac -= 1.0;
 
@@ -122,4 +128,4 @@ public:
 	}
 };
 
-#endif /* __OPTIMAL_RESAMPLER_H */
+#endif /* __OSCULATING_RESAMPLER_H */

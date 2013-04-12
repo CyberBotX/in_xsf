@@ -183,7 +183,7 @@
 #include "linear_resampler.h"
 #include "hermite_resampler.h"
 #include "bspline_resampler.h"
-#include "optimal_resampler.h"
+#include "osculating_resampler.h"
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -478,7 +478,7 @@ template<class ResamplerClass> bool S9xInitSound (int buffer_ms, int lag_ms)
 template bool S9xInitSound<LinearResampler>(int, int);
 template bool S9xInitSound<HermiteResampler>(int, int);
 template bool S9xInitSound<BsplineResampler>(int, int);
-template bool S9xInitSound<OptimalResampler>(int, int);
+template bool S9xInitSound<OsculatingResampler>(int, int);
 
 void S9xSetSoundControl (uint8_t voice_switch)
 {

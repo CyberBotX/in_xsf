@@ -25,7 +25,7 @@
 #include "snes9x/apu/linear_resampler.h"
 #include "snes9x/apu/hermite_resampler.h"
 #include "snes9x/apu/bspline_resampler.h"
-#include "snes9x/apu/optimal_resampler.h"
+#include "snes9x/apu/osculating_resampler.h"
 #include "snes9x/memmap.h"
 
 class XSFPlayer_SNSF : public XSFPlayer
@@ -231,7 +231,7 @@ bool XSFPlayer_SNSF::Load()
 	S9xInitAPU();
 	XSFConfig_SNSF *xSFConfig_SNSF = dynamic_cast<XSFConfig_SNSF *>(xSFConfig);
 	if (xSFConfig_SNSF->resampler == 3)
-		S9xInitSound<OptimalResampler>(10, 0);
+		S9xInitSound<OsculatingResampler>(10, 0);
 	if (xSFConfig_SNSF->resampler == 2)
 		S9xInitSound<BsplineResampler>(10, 0);
 	else if (xSFConfig_SNSF->resampler == 1)

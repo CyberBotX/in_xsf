@@ -16,16 +16,20 @@ class BsplineResampler : public Resampler
 protected:
 	double r_step;
 	double r_frac;
-	int r_left[4], r_right[4];
+	int r_left[6], r_right[6];
 
-	double bspline(double x, double a, double b, double c, double d)
+	double bspline(double x, double a, double b, double c, double d, double e, double f)
 	{
-		double ym1py1 = a + c;
-		double c0 = 1 / 6.0 * ym1py1 + 2 / 3.0 * b;
-		double c1 = 0.5 * (c - a);
-		double c2 = 0.5 * ym1py1 - b;
-		double c3 = 0.5 * (b - c) + 1 / 6.0 * (d - a);
-		return ((c3 * x + c2) * x + c1) * x + c0;
+		float ym2py2 = a + e, ym1py1 = b + d;
+		float y2mym2 = e - a, y1mym1 = d - b;
+		float sixthym1py1 = 1 / 6.0 * ym1py1;
+		float c0 = 1 / 120.0 * ym2py2 + 13 / 60.0 * ym1py1 + 0.55 * c;
+		float c1 = 1 / 24.0 * y2mym2 + 5 / 12.0 * y1mym1;
+		float c2 = 1 / 12.0 * ym2py2 + sixthym1py1 - 0.5 * c;
+		float c3 = 1 / 12.0 * y2mym2 - 1 / 6.0 * y1mym1;
+		float c4 = 1 / 24.0 * ym2py2 - sixthym1py1 + 0.25 * c;
+		float c5 = 1 / 120.0 * (f - a) + 1 / 24.0 * (b - e) + 1 / 12.0 * (d - c);
+		return ((((c5 * x + c4) * x + c3) * x + c2) * x + c1) * x + c0;
 	}
 
 public:
@@ -44,8 +48,8 @@ public:
 	{
 		ring_buffer::clear ();
 		this->r_frac = 1.0;
-		this->r_left[0] = this->r_left[1] = this->r_left[2] = this->r_left[3] = 0;
-		this->r_right[0] = this->r_right[1] = this->r_right[2] = this->r_right[3] = 0;
+		this->r_left[0] = this->r_left[1] = this->r_left[2] = this->r_left[3] = this->r_left[4] = this->r_left[5] = 0;
+		this->r_right[0] = this->r_right[1] = this->r_right[2] = this->r_right[3] = this->r_right[4] = this->r_right[5] = 0;
 	}
 
 	void read(short *data, int num_samples)
@@ -78,8 +82,8 @@ public:
 
 			while (this->r_frac <= 1.0 && o_position < num_samples)
 			{
-				data[o_position] = SHORT_CLAMP(bspline(this->r_frac, this->r_left[0], this->r_left[1], this->r_left[2], this->r_left[3]));
-				data[o_position + 1] = SHORT_CLAMP(bspline(this->r_frac, this->r_right[0], this->r_right[1], this->r_right[2], this->r_right[3]));
+				data[o_position] = SHORT_CLAMP(bspline(this->r_frac, this->r_left[0], this->r_left[1], this->r_left[2], this->r_left[3], this->r_left[4], this->r_left[5]));
+				data[o_position + 1] = SHORT_CLAMP(bspline(this->r_frac, this->r_right[0], this->r_right[1], this->r_right[2], this->r_right[3], this->r_right[4], this->r_right[5]));
 
 				o_position += 2;
 
@@ -91,12 +95,16 @@ public:
 				this->r_left[0] = this->r_left[1];
 				this->r_left[1] = this->r_left[2];
 				this->r_left[2] = this->r_left[3];
-				this->r_left[3] = s_left;
+				this->r_left[3] = this->r_left[4];
+				this->r_left[4] = this->r_left[5];
+				this->r_left[5] = s_left;
 
 				this->r_right[0] = this->r_right[1];
 				this->r_right[1] = this->r_right[2];
 				this->r_right[2] = this->r_right[3];
-				this->r_right[3] = s_right;
+				this->r_right[3] = this->r_right[4];
+				this->r_right[4] = this->r_right[5];
+				this->r_right[5] = s_right;
 
 				this->r_frac -= 1.0;
 
