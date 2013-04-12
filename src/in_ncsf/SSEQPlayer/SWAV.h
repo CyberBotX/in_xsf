@@ -26,7 +26,7 @@ struct SWAV
 	SWAV();
 
 	void Read(PseudoFile &file);
-	void DecodeADPCM(const std::vector<uint8_t> &data);
+	void DecodeADPCM(const uint8_t *origData, uint32_t len);
 };
 
 #endif
