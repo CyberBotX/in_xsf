@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-10
+ * Last modification on 2013-04-12
  *
  * Partially based on the vio*sf framework
  */
@@ -42,8 +42,8 @@ public:
 
 unsigned XSFConfig::initSampleRate = 44100;
 std::wstring XSFConfig::commonName = L"NCSF Decoder";
-std::wstring XSFConfig::versionNumber = L"1.3";
-unsigned XSFConfig_NCSF::initInterpolation = 7;
+std::wstring XSFConfig::versionNumber = L"1.4";
+unsigned XSFConfig_NCSF::initInterpolation = 5;
 std::wstring XSFConfig_NCSF::initMutes = L"0000000000000000";
 
 XSFConfig *XSFConfig::Create()
@@ -98,15 +98,9 @@ INT_PTR CALLBACK XSFConfig_NCSF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARA
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"None"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Linear"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Cosine"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"2-point, 3rd-order Optimal 16x"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"4-point, 3rd-order Hermite"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"4-point, 3rd-order Lagrange"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"4-point, 3rd-order B-spline"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"4-point, 4th-order Optimal 16x"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"6-point, 5th-order Hermite"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"6-point, 5th-order Lagrange"));
+			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"6-point, 5th-order Osculating"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"6-point, 5th-order B-spline"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"6-point, 5th-order Optimal 16x"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_SETCURSEL, this->interpolation, 0);
 			// Mutes
 			for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
