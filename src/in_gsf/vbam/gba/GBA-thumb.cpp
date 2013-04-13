@@ -1417,10 +1417,18 @@ static INSN_REGPARM void thumb45_3(u32 opcode)
   CMP_RD_RS;
 }
 
+// MOV Rd, Rs
+static INSN_REGPARM void thumb46_0(u32 opcode)
+{
+        reg[opcode&7].I = reg[((opcode>>3)&7)].I;
+        clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
+}
+
 // MOV Rd, Hs
 static INSN_REGPARM void thumb46_1(u32 opcode)
 {
   reg[opcode&7].I = reg[((opcode>>3)&7)+8].I;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
 }
 
 // MOV Hd, Rs
@@ -1467,16 +1475,14 @@ static INSN_REGPARM void thumb47(u32 opcode)
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC)
-        + codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 3;
+    clockTicks = codeTicksAccessSeq16(armNextPC)*2 + codeTicksAccess16(armNextPC) + 3;
   } else {
     armState = true;
     reg[15].I &= 0xFFFFFFFC;
     armNextPC = reg[15].I;
     reg[15].I += 4;
     ARM_PREFETCH;
-    clockTicks = codeTicksAccessSeq32(armNextPC)
-        + codeTicksAccessSeq32(armNextPC) + codeTicksAccess32(armNextPC) + 3;
+    clockTicks = codeTicksAccessSeq32(armNextPC)*2 + codeTicksAccess32(armNextPC) + 3;
   }
 }
 
@@ -1570,7 +1576,7 @@ static INSN_REGPARM void thumb5E(u32 opcode)
   if (busPrefetchCount == 0)
     busPrefetch = busPrefetchEnable;
   u32 address = reg[(opcode>>3)&7].I + reg[(opcode>>6)&7].I;
-  reg[opcode&7].I = (s16)CPUReadHalfWordSigned(address);
+  reg[opcode&7].I = (u32)CPUReadHalfWordSigned(address);
   clockTicks = 3 + dataTicksAccess16(address) + codeTicksAccess16(armNextPC);
 }
 
@@ -1663,6 +1669,7 @@ static INSN_REGPARM void thumbA0(u32 opcode)
 {
   u8 regist = (opcode >> 8) & 7;
   reg[regist].I = (reg[15].I & 0xFFFFFFFC) + ((opcode&255)<<2);
+  clockTicks = 1 + codeTicksAccess16(armNextPC);
 }
 
 // ADD R0~R7, SP, Imm
@@ -1670,6 +1677,7 @@ static INSN_REGPARM void thumbA8(u32 opcode)
 {
   u8 regist = (opcode >> 8) & 7;
   reg[regist].I = reg[13].I + ((opcode&255)<<2);
+  clockTicks = 1 + codeTicksAccess16(armNextPC);
 }
 
 // ADD SP, Imm
@@ -1679,6 +1687,7 @@ static INSN_REGPARM void thumbB0(u32 opcode)
   if(opcode & 0x80)
     offset = -offset;
   reg[13].I += offset;
+  clockTicks = 1 + codeTicksAccess16(armNextPC);
 }
 
 // Push and pop ///////////////////////////////////////////////////////////
@@ -1876,13 +1885,13 @@ static INSN_REGPARM void thumbC8(u32 opcode)
 static INSN_REGPARM void thumbD0(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(Z_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1891,13 +1900,13 @@ static INSN_REGPARM void thumbD0(u32 opcode)
 static INSN_REGPARM void thumbD1(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(!Z_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1906,13 +1915,13 @@ static INSN_REGPARM void thumbD1(u32 opcode)
 static INSN_REGPARM void thumbD2(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(C_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1921,13 +1930,13 @@ static INSN_REGPARM void thumbD2(u32 opcode)
 static INSN_REGPARM void thumbD3(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(!C_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1936,13 +1945,13 @@ static INSN_REGPARM void thumbD3(u32 opcode)
 static INSN_REGPARM void thumbD4(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(N_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1951,13 +1960,13 @@ static INSN_REGPARM void thumbD4(u32 opcode)
 static INSN_REGPARM void thumbD5(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(!N_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1966,13 +1975,13 @@ static INSN_REGPARM void thumbD5(u32 opcode)
 static INSN_REGPARM void thumbD6(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(V_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1981,13 +1990,13 @@ static INSN_REGPARM void thumbD6(u32 opcode)
 static INSN_REGPARM void thumbD7(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(!V_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -1996,13 +2005,13 @@ static INSN_REGPARM void thumbD7(u32 opcode)
 static INSN_REGPARM void thumbD8(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(C_FLAG && !Z_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -2011,13 +2020,13 @@ static INSN_REGPARM void thumbD8(u32 opcode)
 static INSN_REGPARM void thumbD9(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(!C_FLAG || Z_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -2026,13 +2035,13 @@ static INSN_REGPARM void thumbD9(u32 opcode)
 static INSN_REGPARM void thumbDA(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(N_FLAG == V_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -2041,13 +2050,13 @@ static INSN_REGPARM void thumbDA(u32 opcode)
 static INSN_REGPARM void thumbDB(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(N_FLAG != V_FLAG) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -2056,13 +2065,13 @@ static INSN_REGPARM void thumbDB(u32 opcode)
 static INSN_REGPARM void thumbDC(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC) + 1;
   if(!Z_FLAG && (N_FLAG == V_FLAG)) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -2071,13 +2080,13 @@ static INSN_REGPARM void thumbDC(u32 opcode)
 static INSN_REGPARM void thumbDD(u32 opcode)
 {
   UPDATE_OLDREG;
+  clockTicks = codeTicksAccessSeq16(armNextPC);
   if(Z_FLAG || (N_FLAG != V_FLAG)) {
     reg[15].I += ((s8)(opcode & 0xFF)) << 1;
     armNextPC = reg[15].I;
     reg[15].I += 2;
     THUMB_PREFETCH;
-    clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-        codeTicksAccess16(armNextPC)+3;
+    clockTicks += codeTicksAccessSeq16(armNextPC) + codeTicksAccess16(armNextPC) + 2;
     busPrefetchCount=0;
   }
 }
@@ -2088,8 +2097,8 @@ static INSN_REGPARM void thumbDD(u32 opcode)
 static INSN_REGPARM void thumbDF(u32 opcode)
 {
   u32 address = 0;
-  clockTicks = codeTicksAccessSeq16(address) + codeTicksAccessSeq16(address) +
-      codeTicksAccess16(address)+3;
+  //clockTicks = codeTicksAccessSeq16(address)*2 + codeTicksAccess16(address)+3;
+  clockTicks = 3;
   busPrefetchCount=0;
   CPUSoftwareInterrupt(opcode & 0xFF);
 }
@@ -2104,8 +2113,7 @@ static INSN_REGPARM void thumbE0(u32 opcode)
   armNextPC = reg[15].I;
   reg[15].I += 2;
   THUMB_PREFETCH;
-  clockTicks = codeTicksAccessSeq16(armNextPC) + codeTicksAccessSeq16(armNextPC) +
-      codeTicksAccess16(armNextPC) + 3;
+  clockTicks = codeTicksAccessSeq16(armNextPC)*2 + codeTicksAccess16(armNextPC)+3;
   busPrefetchCount=0;
 }
 
@@ -2135,8 +2143,7 @@ static INSN_REGPARM void thumbF8(u32 opcode)
   reg[15].I += 2;
   reg[14].I = temp|1;
   THUMB_PREFETCH;
-  clockTicks = codeTicksAccessSeq16(armNextPC) +
-      codeTicksAccess16(armNextPC) + codeTicksAccessSeq16(armNextPC) + 3;
+  clockTicks = codeTicksAccessSeq16(armNextPC)*2 + codeTicksAccess16(armNextPC) + 3;
   busPrefetchCount = 0;
 }
 
@@ -2185,7 +2192,7 @@ static insnfunc_t thumbInsnTable[1024] = {
   thumb40_0,thumb40_1,thumb40_2,thumb40_3,thumb41_0,thumb41_1,thumb41_2,thumb41_3,  // 40
   thumb42_0,thumb42_1,thumb42_2,thumb42_3,thumb43_0,thumb43_1,thumb43_2,thumb43_3,
   thumbUI,thumb44_1,thumb44_2,thumb44_3,thumbUI,thumb45_1,thumb45_2,thumb45_3,
-  thumbUI,thumb46_1,thumb46_2,thumb46_3,thumb47,thumb47,thumbUI,thumbUI,
+  thumb46_0,thumb46_1,thumb46_2,thumb46_3,thumb47,thumb47,thumbUI,thumbUI,
   thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,  // 48
   thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,
   thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,thumb48,

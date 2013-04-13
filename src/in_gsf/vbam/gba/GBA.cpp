@@ -44,7 +44,6 @@ bool busPrefetchEnable = false;
 u32 busPrefetchCount = 0;
 int cpuDmaTicksToUpdate = 0;
 int cpuDmaCount = 0;
-bool cpuDmaHack = false;
 u32 cpuDmaLast = 0;
 int dummyAddress = 0;
 
@@ -936,7 +935,7 @@ bool CPUReadGSASnapshot(const char *fileName)
   fseek(file, 0x0, SEEK_SET);
   fread(&i, 1, 4, file);
   fseek(file, i, SEEK_CUR); // Skip SharkPortSave
-  fseek(file, 4, SEEK_CUR); // skip some sort of flag
+//  fseek(file, 4, SEEK_CUR); // skip some sort of flag
   fread(&i, 1, 4, file); // name length
   fseek(file, i, SEEK_CUR); // skip name
   fread(&i, 1, 4, file); // desc length
@@ -1812,8 +1811,8 @@ void CPUSoftwareInterrupt(int comment)
   case 0x02:
 #ifdef GBA_LOGGING
     if(systemVerbose & VERBOSE_SWI) {
-      log("Halt: (VCOUNT = %2d)\n",
-          VCOUNT);
+      /*log("Halt: (VCOUNT = %2d)\n",
+          VCOUNT);*/
     }
 #endif
     holdState = true;
@@ -1823,8 +1822,8 @@ void CPUSoftwareInterrupt(int comment)
   case 0x03:
 #ifdef GBA_LOGGING
     if(systemVerbose & VERBOSE_SWI) {
-      log("Stop: (VCOUNT = %2d)\n",
-          VCOUNT);
+      /*log("Stop: (VCOUNT = %2d)\n",
+          VCOUNT);*/
     }
 #endif
     holdState = true;
@@ -2190,7 +2189,6 @@ void CPUCheckDMA(int reason, int dmamask)
       doDMA(dma0Source, dma0Dest, sourceIncrement, destIncrement,
             DM0CNT_L ? DM0CNT_L : 0x4000,
             DM0CNT_H & 0x0400);
-      cpuDmaHack = true;
 
       if(DM0CNT_H & 0x4000) {
         IF |= 0x0100;
@@ -2259,7 +2257,6 @@ void CPUCheckDMA(int reason, int dmamask)
               DM1CNT_L ? DM1CNT_L : 0x4000,
               DM1CNT_H & 0x0400);
       }
-      cpuDmaHack = true;
 
       if(DM1CNT_H & 0x4000) {
         IF |= 0x0200;
@@ -2329,7 +2326,6 @@ void CPUCheckDMA(int reason, int dmamask)
               DM2CNT_L ? DM2CNT_L : 0x4000,
               DM2CNT_H & 0x0400);
       }
-      cpuDmaHack = true;
 
       if(DM2CNT_H & 0x4000) {
         IF |= 0x0400;
@@ -3412,8 +3408,6 @@ void CPUReset()
 
   //systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
 
-  cpuDmaHack = false;
-
   lastTime = /*systemGetClock()*/0;
 
   SWITicks = 0;
@@ -3512,7 +3506,6 @@ void CPULoop(int ticks)
 
       clockTicks = cpuNextEvent;
       cpuTotalTicks = 0;
-      cpuDmaHack = false;
 
     updateLoop:
 
@@ -3914,7 +3907,6 @@ void CPULoop(int ticks)
         cpuDmaTicksToUpdate -= clockTicks;
         if(cpuDmaTicksToUpdate < 0)
           cpuDmaTicksToUpdate = 0;
-        cpuDmaHack = true;
         goto updateLoop;
       }
 

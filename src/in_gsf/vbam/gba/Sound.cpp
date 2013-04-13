@@ -42,7 +42,7 @@ extern bool stopState;      // TODO: silence sound when true
 
 int const SOUND_CLOCK_TICKS_ = 167772; // 1/100 second
 
-static u16   soundFinalWave [1600];
+static u16   soundFinalWave [6400];
 long  soundSampleRate    = 44100;
 bool  soundInterpolation = true;
 bool  soundPaused        = true;
@@ -452,6 +452,13 @@ static void remake_stereo_buffer()
 	pcm [0].pcm.init();
 	pcm [1].pcm.init();
 
+	// APU
+	if ( !gb_apu )
+	{
+		gb_apu = new Gb_Apu; // TODO: handle out of memory
+		reset_apu();
+	}
+
 	// Stereo_Buffer
 	delete stereo_buffer;
 	stereo_buffer = 0;
@@ -465,13 +472,7 @@ static void remake_stereo_buffer()
 	pcm [1].which = 1;
 	apply_filtering();
 
-	// APU
-	if ( !gb_apu )
-	{
-		gb_apu = new Gb_Apu; // TODO: handle out of memory
-		reset_apu();
-	}
-
+	// Volume Level
 	apply_muting();
 	apply_volume();
 }
