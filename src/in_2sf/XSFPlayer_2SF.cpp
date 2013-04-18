@@ -1,13 +1,13 @@
 /*
  * xSF - 2SF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-17
  *
  * Based on a modified vio2sf v0.22c
  *
  * Partially based on the vio*sf framework
  *
- * Utilizes a modified DeSmuME v0.9.8 for playback
+ * Utilizes a modified DeSmuME v0.9.9 SVN for playback
  * http://desmume.org/
  */
 
@@ -16,10 +16,7 @@
 #include "convert.h"
 #include "XSFPlayer.h"
 #include "XSFCommon.h"
-#include "desmume/armcpu.h"
-#include "desmume/saves.h"
 #include "desmume/NDSSystem.h"
-#include "desmume/cp15.h"
 
 class XSFPlayer_2SF : public XSFPlayer
 {
@@ -105,6 +102,8 @@ static SoundInterface_struct SNDIF_2SF =
 	SNDIFMuteAudio,
 	SNDIFUnMuteAudio,
 	SNDIFSetVolume,
+	nullptr,
+	nullptr,
 	nullptr
 };
 
@@ -217,6 +216,7 @@ bool XSFPlayer_2SF::Load()
 		gameInfo.loadData(reinterpret_cast<char *>(&this->rom[0]), this->rom.size() - 1);
 	}
 
+	CommonSettings.use_jit = true;
 	NDS_Reset();
 
 	execute = true;

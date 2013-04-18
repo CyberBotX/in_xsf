@@ -15,11 +15,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <string>
+#ifndef VERSION_H
+#define VERSION_H
 
-#include "types.h"
-
-//uint32_t EMU_DESMUME_VERSION_NUMERIC();
 const char *EMU_DESMUME_VERSION_STRING();
 const char *EMU_DESMUME_NAME_AND_VERSION();
-//const char *EMU_DESMUME_COMPILER_DETAIL();
+
+#endif

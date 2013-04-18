@@ -18,18 +18,19 @@
 #ifndef _FIRMWARE_H_
 #define _FIRMWARE_H_
 
-#include "common.h"
+#include <memory>
+#include "types.h"
 
 // the count of bytes copied from the firmware into memory
-static const int NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT = 0x70;
+const int NDS_FW_USER_SETTINGS_MEM_BYTE_COUNT = 0x70;
 
 #define FW_CONFIG_FILE_EXT "dfc"
 
 class CFIRMWARE
 {
 private:
-	uint8_t *tmp_data9;
-	uint8_t *tmp_data7;
+	std::unique_ptr<uint8_t[]> tmp_data9;
+	std::unique_ptr<uint8_t[]> tmp_data7;
 	uint32_t size9, size7;
 
 	uint32_t keyBuf[0x412];
@@ -41,15 +42,12 @@ private:
 	void applyKeycode(uint32_t modulo);
 	bool initKeycode(uint32_t idCode, int level, uint32_t modulo);
 	uint16_t getBootCodeCRC16();
-	uint32_t decrypt(const uint8_t *in, uint8_t* &out);
-	uint32_t decompress(const uint8_t *in, uint8_t* &out);
-
+	uint32_t decrypt(const uint8_t *in, std::unique_ptr<uint8_t[]> &out);
+	uint32_t decompress(const uint8_t *in, std::unique_ptr<uint8_t[]> &out);
 public:
-	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0) {}
+	CFIRMWARE(): size9(0), size7(0), ARM9bootAddr(0), ARM7bootAddr(0), patched(0) { }
 
 	bool load();
-
-	static std::string GetExternalFilePath();
 
 	struct HEADER
 	{
@@ -81,8 +79,6 @@ public:
 };
 
 int copy_firmware_user_data(uint8_t *dest_buffer, const uint8_t *fw_data);
-//int NDS_CreateDummyFirmware(struct NDS_fw_config_data *user_settings);
 void NDS_FillDefaultFirmwareConfigData(struct NDS_fw_config_data *fw_config);
-//void NDS_PatchFirmwareMAC();
 
 #endif

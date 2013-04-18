@@ -17,10 +17,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.8 $
+// Last changed  : $Date: 2012-06-13 16:29:53 -0300 (qua, 13 jun 2012) $
+// File revision : $Revision: 4 $
 //
-// $Id: FIFOSamplePipe.h,v 1.8 2006/02/05 16:44:06 Olli Exp $
+// $Id: FIFOSamplePipe.h 143 2012-06-13 19:29:53Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -49,7 +49,6 @@
 #define FIFOSamplePipe_H
 
 #include <cassert>
-#include <cstdlib>
 #include "STTypes.h"
 
 namespace soundtouch
@@ -59,6 +58,9 @@ namespace soundtouch
 class FIFOSamplePipe
 {
 public:
+	// virtual default destructor
+	virtual ~FIFOSamplePipe() { }
+
 	/// Returns a pointer to the beginning of the output samples.
 	/// This function is provided for accessing the output samples directly.
 	/// Please be careful for not to corrupt the book-keeping!
@@ -66,12 +68,12 @@ public:
 	/// When using this function to output samples, also remember to 'remove' the
 	/// output samples from the buffer by calling the
 	/// 'receiveSamples(numSamples)' function
-	virtual SAMPLETYPE *ptrBegin() const = 0;
+	virtual SAMPLETYPE *ptrBegin() = 0;
 
 	/// Adds 'numSamples' pcs of samples from the 'samples' memory position to
 	/// the sample buffer.
 	virtual void putSamples(const SAMPLETYPE *samples,  ///< Pointer to samples.
-                            uint32_t numSamples                         ///< Number of samples to insert.
+                            uint32_t numSamples         ///< Number of samples to insert.
                             ) = 0;
 
 	// Moves samples from the 'other' pipe instance to this instance.
@@ -109,6 +111,10 @@ public:
 
 	/// Clears all the samples.
 	virtual void clear() = 0;
+
+	/// allow trimming (downwards) amount of samples in pipeline.
+	/// Returns adjusted amount of samples
+	virtual uint32_t adjustAmountOfSamples(uint32_t numSamples) = 0;
 };
 
 /// Base-class for sound processing routines working in FIFO principle. With this base
@@ -128,23 +134,23 @@ protected:
 	/// Sets output pipe.
 	void setOutPipe(FIFOSamplePipe *pOutput)
 	{
-		assert(!output);
+		assert(!this->output);
 		assert(pOutput);
-		output = pOutput;
+		this->output = pOutput;
 	}
 
 	/// Constructor. Doesn't define output pipe; it has to be set be
 	/// 'setOutPipe' function.
 	FIFOProcessor()
 	{
-		output = NULL;
+		this->output = nullptr;
 	}
 
 	/// Constructor. Configures output pipe.
 	FIFOProcessor(FIFOSamplePipe *pOutput   ///< Output pipe.
                  )
 	{
-		output = pOutput;
+		this->output = pOutput;
 	}
 
 	/// Destructor.
@@ -159,9 +165,9 @@ protected:
 	/// When using this function to output samples, also remember to 'remove' the
 	/// output samples from the buffer by calling the
 	/// 'receiveSamples(numSamples)' function
-	virtual SAMPLETYPE *ptrBegin() const
+	virtual SAMPLETYPE *ptrBegin()
 	{
-		return output->ptrBegin();
+		return this->output->ptrBegin();
 	}
 
 public:
@@ -174,7 +180,7 @@ public:
                                 uint32_t maxSamples                    ///< How many samples to receive at max.
                                 )
 	{
-		return output->receiveSamples(outBuffer, maxSamples);
+		return this->output->receiveSamples(outBuffer, maxSamples);
 	}
 
 	/// Adjusts book-keeping so that given number of samples are removed from beginning of the
@@ -185,19 +191,26 @@ public:
 	virtual uint32_t receiveSamples(uint32_t maxSamples   ///< Remove this many samples from the beginning of pipe.
                                 )
 	{
-		return output->receiveSamples(maxSamples);
+		return this->output->receiveSamples(maxSamples);
 	}
 
 	/// Returns number of samples currently available.
 	virtual uint32_t numSamples() const
 	{
-		return output->numSamples();
+		return this->output->numSamples();
 	}
 
 	/// Returns nonzero if there aren't any samples available for outputting.
 	virtual bool isEmpty() const
 	{
-		return output->isEmpty();
+		return this->output->isEmpty();
+	}
+
+	/// allow trimming (downwards) amount of samples in pipeline.
+	/// Returns adjusted amount of samples
+	virtual uint32_t adjustAmountOfSamples(uint32_t numSamples)
+	{
+		return this->output->adjustAmountOfSamples(numSamples);
 	}
 };
 

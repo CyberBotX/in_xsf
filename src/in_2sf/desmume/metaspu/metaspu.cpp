@@ -20,7 +20,6 @@
 #include <queue>
 #include <vector>
 #include <cassert>
-
 #include "../types.h"
 #include "metaspu.h"
 
@@ -30,68 +29,51 @@
 #include "SndOut.h"
 #endif
 
-/*template<typename T> inline T _abs(T val)
-{
-	if(val<0) return -val;
-	else return val;
-}*/
-
-/*template<typename T> inline T moveValueTowards(T val, T target, T incr)
-{
-	incr = _abs(incr);
-	T delta = _abs(target-val);
-	if(val<target) val += incr;
-	else if(val>target) val -= incr;
-	T newDelta = _abs(target-val);
-	if(newDelta >= delta)
-		val = target;
-	return val;
-}*/
-
 class ZeromusSynchronizer : public ISynchronizingAudioBuffer
 {
 public:
-	ZeromusSynchronizer()
-		: mixqueue_go(false)
-		,
-		#ifdef NDEBUG
-		adjustobuf(200,1000)
-		#else
-		adjustobuf(22000,44000)
-		#endif
+	ZeromusSynchronizer() : mixqueue_go(false),
+#ifdef NDEBUG
+		adjustobuf(200, 1000)
+#else
+		adjustobuf(22000, 44000)
+#endif
 	{
-
 	}
 
 	bool mixqueue_go;
 
-	virtual void enqueue_samples(int16_t* buf, int samples_provided)
+	virtual void enqueue_samples(int16_t *buf, int samples_provided)
 	{
-		for(int i=0;i<samples_provided;i++) {
+		for (int i = 0; i < samples_provided; ++i)
+		{
 			int16_t left = *buf++;
 			int16_t right = *buf++;
-			adjustobuf.enqueue(left,right);
+			this->adjustobuf.enqueue(left, right);
 		}
 	}
 
-	//returns the number of samples actually supplied, which may not match the number requested
-	virtual int output_samples(int16_t* buf, int samples_requested)
+	// returns the number of samples actually supplied, which may not match the number requested
+	virtual int output_samples(int16_t *buf, int samples_requested)
 	{
 		int done = 0;
-		if(!mixqueue_go) {
-			if(adjustobuf.size > 200)
-				mixqueue_go = true;
+		if (!this->mixqueue_go)
+		{
+			if (this->adjustobuf.size > 200)
+				this->mixqueue_go = true;
 		}
 		else
 		{
-			for(int i=0;i<samples_requested;i++) {
-				if(adjustobuf.size==0) {
-					mixqueue_go = false;
+			for (int i = 0; i < samples_requested; ++i)
+			{
+				if (!this->adjustobuf.size)
+				{
+					this->mixqueue_go = false;
 					break;
 				}
-				done++;
+				++done;
 				int16_t left, right;
-				adjustobuf.dequeue(left,right);
+				this->adjustobuf.dequeue(left, right);
 				*buf++ = left;
 				*buf++ = right;
 			}
@@ -104,17 +86,14 @@ private:
 	class Adjustobuf
 	{
 	public:
-		Adjustobuf(int _minLatency, int _maxLatency)
-			: minLatency(_minLatency)
-			, maxLatency(_maxLatency)
-			, size(0)
+		Adjustobuf(int _minLatency, int _maxLatency) : minLatency(_minLatency), maxLatency(_maxLatency), size(0)
 		{
-			rollingTotalSize = 0;
-			targetLatency = (maxLatency + minLatency)/2;
-			rate = 1.0f;
-			cursor = 0.0f;
-			curr[0] = curr[1] = 0;
-			kAverageSize = 80000;
+			this->rollingTotalSize = 0;
+			this->targetLatency = (this->maxLatency + this->minLatency) / 2;
+			this->rate = 1.0f;
+			this->cursor = 0.0f;
+			this->curr[0] = this->curr[1] = 0;
+			this->kAverageSize = 80000;
 		}
 
 		float rate, cursor;
@@ -127,9 +106,9 @@ private:
 
 		void enqueue(int16_t left, int16_t right)
 		{
-			buffer.push(left);
-			buffer.push(right);
-			size++;
+			this->buffer.push(left);
+			this->buffer.push(right);
+			++this->size;
 		}
 
 		int64_t rollingTotalSize;
@@ -138,50 +117,51 @@ private:
 
 		void addStatistic()
 		{
-			statsHistory.push(size);
-			rollingTotalSize += size;
-			if(statsHistory.size()>kAverageSize)
+			this->statsHistory.push(this->size);
+			this->rollingTotalSize += this->size;
+			if (this->statsHistory.size() > this->kAverageSize)
 			{
-				rollingTotalSize -= statsHistory.front();
-				statsHistory.pop();
+				this->rollingTotalSize -= this->statsHistory.front();
+				this->statsHistory.pop();
 
-				float averageSize = (float)(rollingTotalSize / kAverageSize);
+				float averageSize = static_cast<float>(rollingTotalSize / kAverageSize);
 				//static int ctr=0;  ctr++; if((ctr&127)==0) printf("avg size: %f curr size: %d rate: %f\n",averageSize,size,rate);
 				{
 					float targetRate;
-					if(averageSize < targetLatency)
-					{
-						targetRate = 1.0f - (targetLatency-averageSize)/kAverageSize;
-					}
-					else if(averageSize > targetLatency) {
-						targetRate = 1.0f + (averageSize-targetLatency)/kAverageSize;
-					} else targetRate = 1.0f;
+					if (averageSize < this->targetLatency)
+						targetRate = 1.0f - (this->targetLatency - averageSize) / this->kAverageSize;
+					else if (averageSize > this->targetLatency)
+						targetRate = 1.0f + (averageSize - this->targetLatency) / this->kAverageSize;
+					else
+						targetRate = 1.0f;
 
 					//rate = moveValueTowards(rate,targetRate,0.001f);
-					rate = targetRate;
+					this->rate = targetRate;
 				}
-
 			}
-
-
 		}
 
-		void dequeue(int16_t& left, int16_t& right)
+		void dequeue(int16_t &left, int16_t &right)
 		{
 			left = right = 0;
-			addStatistic();
-			if(size==0) { return; }
-			cursor += rate;
-			while(cursor>1.0f) {
-				cursor -= 1.0f;
-				if(size>0) {
-					curr[0] = buffer.front(); buffer.pop();
-					curr[1] = buffer.front(); buffer.pop();
-					size--;
+			this->addStatistic();
+			if (!this->size)
+				return;
+			this->cursor += this->rate;
+			while (this->cursor > 1.0f)
+			{
+				this->cursor -= 1.0f;
+				if (this->size > 0)
+				{
+					this->curr[0] = this->buffer.front();
+					this->buffer.pop();
+					this->curr[1] = this->buffer.front();
+					this->buffer.pop();
+					--this->size;
 				}
 			}
-			left = curr[0];
-			right = curr[1];
+			left = this->curr[0];
+			right = this->curr[1];
 		}
 	} adjustobuf;
 };
@@ -192,18 +172,18 @@ private:
 	struct ssamp
 	{
 		int16_t l, r;
-		ssamp() {}
-		ssamp(int16_t ll, int16_t rr) : l(ll), r(rr) {}
+		ssamp() { }
+		ssamp(int16_t ll, int16_t rr) : l(ll), r(rr) { }
 	};
 
 	std::vector<ssamp> sampleQueue;
 
 	// returns values going between 0 and y-1 in a saw wave pattern, based on x
-	static inline int pingpong(int x, int y)
+	static int pingpong(int x, int y)
 	{
-		x %= 2*y;
-		if(x >= y)
-			x = 2*y - x - 1;
+		x %= 2 * y;
+		if (x >= y)
+			x = 2 * y - x - 1;
 		return x;
 
 		// in case we want to switch to odd buffer sizes for more sharpness
@@ -213,11 +193,11 @@ private:
 		//return x;
 	}
 
-	static inline ssamp crossfade (ssamp lhs, ssamp rhs,  int cur, int start, int end)
+	static ssamp crossfade(const ssamp &lhs, const ssamp &rhs, int cur, int start, int end)
 	{
-		if(cur <= start)
+		if (cur <= start)
 			return lhs;
-		if(cur >= end)
+		if (cur >= end)
 			return rhs;
 
 		// in case we want sine wave interpolation instead of linear here
@@ -228,62 +208,61 @@ private:
 		int outNum = end - cur;
 		int denom = end - start;
 
-		int lrv = ((int)lhs.l * outNum + (int)rhs.l * inNum) / denom;
-		int rrv = ((int)lhs.r * outNum + (int)rhs.r * inNum) / denom;
+		int lrv = (static_cast<int>(lhs.l) * outNum + static_cast<int>(rhs.l) * inNum) / denom;
+		int rrv = (static_cast<int>(lhs.r) * outNum + static_cast<int>(rhs.r) * inNum) / denom;
 
-		return ssamp(lrv,rrv);
+		return ssamp(lrv, rrv);
 	}
 
-	static inline void emit_sample(int16_t*& outbuf, ssamp sample)
+	static void emit_sample(int16_t *&outbuf, const ssamp &sample)
 	{
 		*outbuf++ = sample.l;
 		*outbuf++ = sample.r;
 	}
 
-	static inline void emit_samples(int16_t*& outbuf, const ssamp* samplebuf, int samples)
+	static void emit_samples(int16_t *&outbuf, const ssamp *samplebuf, int samples)
 	{
-		for(int i=0;i<samples;i++)
-			emit_sample(outbuf,samplebuf[i]);
+		for (int i = 0; i < samples; ++i)
+			NitsujaSynchronizer::emit_sample(outbuf, samplebuf[i]);
 	}
 
 public:
-	NitsujaSynchronizer()
-	{}
+	NitsujaSynchronizer() { }
 
-	virtual void enqueue_samples(int16_t* buf, int samples_provided)
+	virtual void enqueue_samples(int16_t *buf, int samples_provided)
 	{
-		for(int i=0;i<samples_provided;i++)
+		for (int i = 0; i < samples_provided; ++i)
 		{
-			sampleQueue.push_back(ssamp(buf[0],buf[1]));
+			this->sampleQueue.push_back(ssamp(buf[0], buf[1]));
 			buf += 2;
 		}
 	}
 
-	virtual int output_samples(int16_t* buf, int samples_requested)
+	virtual int output_samples(int16_t *buf, int samples_requested)
 	{
 		int audiosize = samples_requested;
-		int queued = sampleQueue.size();
+		int queued = this->sampleQueue.size();
 
 		// I am too lazy to deal with odd numbers
 		audiosize &= ~1;
 		queued &= ~1;
 
-		if(queued > 0x200 && audiosize > 0) // is there any work to do?
+		if (queued > 0x200 && audiosize > 0) // is there any work to do?
 		{
 			// are we going at normal speed?
 			// or more precisely, are the input and output queues/buffers of similar size?
-			if(queued > 900 || audiosize > queued * 2)
+			if (queued > 900 || audiosize > queued * 2)
 			{
 				// not normal speed. we have to resample it somehow in this case.
-				if(audiosize <= queued)
+				if (audiosize <= queued)
 				{
 					// fast forward speed
 					// this is the easy case, just crossfade it and it sounds ok
-					for(int i = 0; i < audiosize; i++)
+					for (int i = 0; i < audiosize; ++i)
 					{
 						int j = i + queued - audiosize;
-						ssamp outsamp = crossfade(sampleQueue[i],sampleQueue[j], i,0,audiosize);
-						emit_sample(buf,outsamp);
+						ssamp outsamp = this->crossfade(this->sampleQueue[i], this->sampleQueue[j], i, 0, audiosize);
+						this->emit_sample(buf, outsamp);
 					}
 				}
 				else
@@ -322,19 +301,19 @@ public:
 						static const int worstdiff = 99999999;
 						int beststartdiff = worstdiff;
 						int bestenddiff = worstdiff;
-						for(int i = 0; i < 128; i+=2)
+						for(int i = 0; i < 128; i += 2)
 						{
-							int diff = abs(sampleQueue[i].l - sampleQueue[i+1].l) + abs(sampleQueue[i].r - sampleQueue[i+1].r);
-							if(diff < beststartdiff)
+							int diff = std::abs(this->sampleQueue[i].l - this->sampleQueue[i + 1].l) + std::abs(this->sampleQueue[i].r - this->sampleQueue[i + 1].r);
+							if (diff < beststartdiff)
 							{
 								beststartdiff = diff;
 								beststart = i;
 							}
 						}
-						for(int i = queued-3; i > queued-3-128; i-=2)
+						for (int i = queued - 3; i > queued - 3 - 128; i -= 2)
 						{
-							int diff = abs(sampleQueue[i].l - sampleQueue[i+1].l) + abs(sampleQueue[i].r - sampleQueue[i+1].r);
-							if(diff < bestenddiff)
+							int diff = std::abs(this->sampleQueue[i].l - this->sampleQueue[i + 1].l) + std::abs(this->sampleQueue[i].r - this->sampleQueue[i + 1].r);
+							if (diff < bestenddiff)
 							{
 								bestenddiff = diff;
 								bestend = i+1;
@@ -345,17 +324,14 @@ public:
 						queued = bestend - beststart;
 
 						int oksize = queued;
-						while(oksize + queued*2 + beststart + extraAtEnd <= samples_requested)
-							oksize += queued*2;
+						while (oksize + queued * 2 + beststart + extraAtEnd <= samples_requested)
+							oksize += queued * 2;
 						audiosize = oksize;
 
-						for(int x = 0; x < beststart; x++)
-						{
-							emit_sample(buf,sampleQueue[x]);
-						}
-						sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + beststart);
+						for (int x = 0; x < beststart; ++x)
+							this->emit_sample(buf, this->sampleQueue[x]);
+						this->sampleQueue.erase(this->sampleQueue.begin(), this->sampleQueue.begin() + beststart);
 					}
-
 
 					int midpointX = audiosize >> 1;
 					int midpointY = queued >> 1;
@@ -367,19 +343,19 @@ public:
 					// so here's a stupid search for the value for now:
 
 					int prevA = 999999;
-					int midpointXOffset = queued/2;
-					while(true)
+					int midpointXOffset = queued / 2;
+					while (true)
 					{
-						int a = abs(pingpong(midpointX - midpointXOffset, queued) - midpointY) - midpointXOffset;
-						if(((a > 0) != (prevA > 0) || (a < 0) != (prevA < 0)) && prevA != 999999)
+						int a = std::abs(this->pingpong(midpointX - midpointXOffset, queued) - midpointY) - midpointXOffset;
+						if (((a > 0) != (prevA > 0) || (a < 0) != (prevA < 0)) && prevA != 999999)
 						{
-							if((a + prevA)&1) // there's some sort of off-by-one problem with this search since we're moving diagonally...
-								midpointXOffset++; // but this fixes it most of the time...
+							if ((a + prevA) & 1) // there's some sort of off-by-one problem with this search since we're moving diagonally...
+								++midpointXOffset; // but this fixes it most of the time...
 							break; // found it
 						}
 						prevA = a;
-						midpointXOffset--;
-						if(midpointXOffset < 0)
+						--midpointXOffset;
+						if (midpointXOffset < 0)
 						{
 							midpointXOffset = 0;
 							break; // failed to find it. the two sides probably meet exactly in the center.
@@ -389,41 +365,41 @@ public:
 					int leftMidpointX = midpointX - midpointXOffset;
 					int rightMidpointX = midpointX + midpointXOffset;
 					int leftMidpointY = pingpong(leftMidpointX, queued);
-					int rightMidpointY = (queued-1) - pingpong((int)audiosize-1 - rightMidpointX + queued*2, queued);
+					int rightMidpointY = (queued - 1) - this->pingpong(audiosize - 1 - rightMidpointX + queued * 2, queued);
 
 					// output the left almost-half of the sound (section "A")
-					for(int x = 0; x < leftMidpointX; x++)
+					for (int x = 0; x < leftMidpointX; ++x)
 					{
-						int i = pingpong(x, queued);
-						emit_sample(buf,sampleQueue[i]);
+						int i = this->pingpong(x, queued);
+						this->emit_sample(buf, this->sampleQueue[i]);
 					}
 
 					// output the middle stretch (section "B")
 					int y = leftMidpointY;
-					int dyMidLeft  = (leftMidpointY  < midpointY) ? 1 : -1;
-					int dyMidRight = (rightMidpointY > midpointY) ? 1 : -1;
-					for(int x = leftMidpointX; x < midpointX; x++, y+=dyMidLeft)
-						emit_sample(buf,sampleQueue[y]);
-					for(int x = midpointX; x < rightMidpointX; x++, y+=dyMidRight)
-						emit_sample(buf,sampleQueue[y]);
+					int dyMidLeft = leftMidpointY < midpointY ? 1 : -1;
+					int dyMidRight = rightMidpointY > midpointY ? 1 : -1;
+					for (int x = leftMidpointX; x < midpointX; ++x, y += dyMidLeft)
+						this->emit_sample(buf, this->sampleQueue[y]);
+					for (int x = midpointX; x < rightMidpointX; ++x, y += dyMidRight)
+						this->emit_sample(buf, this->sampleQueue[y]);
 
 					// output the end of the queued sound (section "C")
-					for(int x = rightMidpointX; x < audiosize; x++)
+					for (int x = rightMidpointX; x < audiosize; ++x)
 					{
-						int i = (queued-1) - pingpong((int)audiosize-1 - x + queued*2, queued);
-						emit_sample(buf,sampleQueue[i]);
+						int i = (queued - 1) - this->pingpong(audiosize - 1 - x + queued * 2, queued);
+						this->emit_sample(buf, sampleQueue[i]);
 					}
 
-					for(int x = 0; x < extraAtEnd; x++)
+					for (int x = 0; x < extraAtEnd; ++x)
 					{
 						int i = queued + x;
-						emit_sample(buf,sampleQueue[i]);
+						this->emit_sample(buf, this->sampleQueue[i]);
 					}
 					queued += extraAtEnd;
 					audiosize += beststart + extraAtEnd;
 				} //end else
 
-				sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + queued);
+				this->sampleQueue.erase(this->sampleQueue.begin(), this->sampleQueue.begin() + queued);
 				return audiosize;
 			}
 			else
@@ -437,31 +413,23 @@ public:
 				// but that's ok! because all of these branches sound similar enough that we can get away with it.
 				// so the two cases actually complement each other.
 
-				if(audiosize >= queued)
+				if (audiosize >= queued)
 				{
-					emit_samples(buf,&sampleQueue[0],queued);
-					sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin() + queued);
+					this->emit_samples(buf, &this->sampleQueue[0], queued);
+					this->sampleQueue.erase(this->sampleQueue.begin(), this->sampleQueue.begin() + queued);
 					return queued;
 				}
 				else
 				{
-					emit_samples(buf,&sampleQueue[0],audiosize);
-					sampleQueue.erase(sampleQueue.begin(), sampleQueue.begin()+audiosize);
+					this->emit_samples(buf, &this->sampleQueue[0], audiosize);
+					this->sampleQueue.erase(this->sampleQueue.begin(), this->sampleQueue.begin() + audiosize);
 					return audiosize;
 				}
-
 			} //end normal speed
-
 		} //end if there is any work to do
 		else
-		{
 			return 0;
-		}
-
 	} //output_samples
-
-private:
-
 }; //NitsujaSynchronizer
 
 #ifdef _MSC_VER
@@ -473,46 +441,50 @@ public:
 	{
 		SndBuffer::Init();
 	}
-	virtual void enqueue_samples(int16_t* buf, int samples_provided)
+	virtual void enqueue_samples(int16_t *buf, int samples_provided)
 	{
-		for(int i=0;i<samples_provided;i++)
+		for (int i = 0; i < samples_provided; ++i)
 		{
-			StereoOut32 so32(buf[0],buf[1]);
+			auto so32 = StereoOut32(buf[0], buf[1]);
 			SndBuffer::Write(so32);
-			buf++;
-			buf++;
+			buf += 2;
 		}
 	}
 
-	virtual int output_samples(int16_t* buf, int samples_requested)
+	virtual int output_samples(int16_t *buf, int samples_requested)
 	{
-		for(int i=0;i<samples_requested;i++) {
-			if(readySamples.size()==0) {
+		for (int i = 0; i < samples_requested; ++i)
+		{
+			if (!this->readySamples.size())
+			{
 				//SndOutPacketSize
-				StereoOut16 temp[SndOutPacketSize*2];
-				SndBuffer::ReadSamples( temp );
-				for(int i=0;i<SndOutPacketSize;i++) {
-					readySamples.push(temp[i].Left);
-					readySamples.push(temp[i].Right);
+				StereoOut16 temp[SndOutPacketSize * 2];
+				SndBuffer::ReadSamples(temp);
+				for (int i = 0; i < SndOutPacketSize; ++i)
+				{
+					this->readySamples.push(temp[i].Left);
+					this->readySamples.push(temp[i].Right);
 				}
 			}
-			*buf++ = readySamples.front(); readySamples.pop();
-			*buf++ = readySamples.front(); readySamples.pop();
+			*buf++ = this->readySamples.front();
+			this->readySamples.pop();
+			*buf++ = this->readySamples.front();
+			this->readySamples.pop();
 		}
 		return samples_requested;
 	}
 };
 #endif
 
-ISynchronizingAudioBuffer* metaspu_construct(ESynchMethod method)
+ISynchronizingAudioBuffer *metaspu_construct(ESynchMethod method)
 {
 	switch(method)
 	{
-	case ESynchMethod_N: return new NitsujaSynchronizer();
-	case ESynchMethod_Z: return new ZeromusSynchronizer();
-	#ifdef _MSC_VER
-	case ESynchMethod_P: return new PCSX2Synchronizer();
-	#endif
-	default: return NULL;
+		case ESynchMethod_N: return new NitsujaSynchronizer();
+		case ESynchMethod_Z: return new ZeromusSynchronizer();
+#ifdef _MSC_VER
+		case ESynchMethod_P: return new PCSX2Synchronizer();
+#endif
+		default: return nullptr;
 	}
 }

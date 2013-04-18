@@ -10,10 +10,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/03/19 10:05:49 $
-// File revision : $Revision: 1.13 $
+// Last changed  : $Date: 2011-09-02 15:56:11 -0300 (sex, 02 set 2011) $
+// File revision : $Revision: 4 $
 //
-// $Id: RateTransposer.cpp,v 1.13 2006/03/19 10:05:49 Olli Exp $
+// $Id: RateTransposer.cpp 131 2011-09-02 18:56:11Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -50,7 +50,7 @@ class RateTransposerInteger : public RateTransposer
 {
 protected:
 	int iSlopeCount;
-	uint32_t uRate;
+	int iRate;
 	SAMPLETYPE sPrevSampleL, sPrevSampleR;
 
 	virtual void resetRegisters();
@@ -73,7 +73,6 @@ class RateTransposerFloat : public RateTransposer
 {
 protected:
 	float fSlopeCount;
-	float fRateStep;
 	SAMPLETYPE sPrevSampleL, sPrevSampleR;
 
 	virtual void resetRegisters();
@@ -86,253 +85,195 @@ public:
 	virtual ~RateTransposerFloat();
 };
 
-/*#ifndef min
-#define min(a,b) ((a > b) ? b : a)
-#define max(a,b) ((a < b) ? b : a)
-#endif*/
-
-
 // Operator 'new' is overloaded so that it automatically creates a suitable instance
 // depending on if we've a MMX/SSE/etc-capable CPU available or not.
-void * RateTransposer::operator new(size_t)
+void *RateTransposer::operator new(size_t)
 {
-    // Notice! don't use "new TDStretch" directly, use "newInstance" to create a new instance instead!
-    //assert(false);
-    //return NULL;
+	// Notice! don't use "new TDStretch" directly, use "newInstance" to create a new instance instead!
+	//assert(false);
+	//return NULL;
 	throw std::runtime_error("Don't use 'new RateTransposer', use 'newInstance' member instead!");
 }
 
-
 RateTransposer *RateTransposer::newInstance()
 {
-#ifdef INTEGER_SAMPLES
-    return ::new RateTransposerInteger;
+#ifdef SOUNDTOUCH_INTEGER_SAMPLES
+	return ::new RateTransposerInteger;
 #else
-    return ::new RateTransposerFloat;
+	return ::new RateTransposerFloat;
 #endif
 }
-
 
 // Constructor
 RateTransposer::RateTransposer() : FIFOProcessor(&outputBuffer)
 {
-    uChannels = 2;
-    bUseAAFilter = true;
+	this->numChannels = 2;
+	this->bUseAAFilter = true;
+	this->fRate = 0;
 
-    // Instantiates the anti-alias filter with default tap length
-    // of 32
-    pAAFilter = new AAFilter(32);
+	// Instantiates the anti-alias filter with default tap length
+	// of 32
+	this->pAAFilter.reset(new AAFilter(32));
 }
-
-
 
 RateTransposer::~RateTransposer()
 {
-    delete pAAFilter;
 }
-
-
 
 /// Enables/disables the anti-alias filter. Zero to disable, nonzero to enable
-void RateTransposer::enableAAFilter(const bool newMode)
+void RateTransposer::enableAAFilter(bool newMode)
 {
-    bUseAAFilter = newMode;
+	this->bUseAAFilter = newMode;
 }
-
 
 /// Returns nonzero if anti-alias filter is enabled.
 bool RateTransposer::isAAFilterEnabled() const
 {
-    return bUseAAFilter;
+	return this->bUseAAFilter;
 }
 
-
-AAFilter *RateTransposer::getAAFilter() const
+AAFilter *RateTransposer::getAAFilter()
 {
-    return pAAFilter;
+	return this->pAAFilter.get();
 }
 
-
-
-// Sets new target uRate. Normal uRate = 1.0, smaller values represent slower
-// uRate, larger faster uRates.
+// Sets new target iRate. Normal iRate = 1.0, smaller values represent slower 
+// iRate, larger faster iRates.
 void RateTransposer::setRate(float newRate)
 {
-    float fCutoff;
+	double fCutoff;
 
-    fRate = newRate;
+	this->fRate = newRate;
 
-    // design a new anti-alias filter
-    if (newRate > 1.0f)
-    {
-        fCutoff = 0.5f / newRate;
-    }
-    else
-    {
-        fCutoff = 0.5f * newRate;
-    }
-    pAAFilter->setCutoffFreq(fCutoff);
+	// design a new anti-alias filter
+	if (newRate > 1.0f)
+		fCutoff = 0.5f / newRate;
+	else
+		fCutoff = 0.5f * newRate;
+    this->pAAFilter->setCutoffFreq(fCutoff);
 }
 
-
-// Outputs as many samples of the 'outputBuffer' as possible, and if there's
-// any room left, outputs also as many of the incoming samples as possible.
-// The goal is to drive the outputBuffer empty.
-//
-// It's allowed for 'output' and 'input' parameters to point to the same
-// memory position.
-void RateTransposer::flushStoreBuffer()
-{
-	if (storeBuffer.isEmpty())
-		return;
-
-	outputBuffer.moveSamples(storeBuffer);
-}
-
-
-// Adds 'numSamples' pcs of samples from the 'samples' memory position into
+// Adds 'nSamples' pcs of samples from the 'samples' memory position into
 // the input of the object.
-void RateTransposer::putSamples(const SAMPLETYPE *samples, uint32_t numsamples)
+void RateTransposer::putSamples(const SAMPLETYPE *samples, uint32_t nSamples)
 {
-    processSamples(samples, numsamples);
+	this->processSamples(samples, nSamples);
 }
-
-
 
 // Transposes up the sample rate, causing the observed playback 'rate' of the
 // sound to decrease
-void RateTransposer::upsample(const SAMPLETYPE *src, uint32_t numsamples)
+void RateTransposer::upsample(const SAMPLETYPE *src, uint32_t nSamples)
 {
-    int count, sizeTemp, num;
+	// If the parameter 'uRate' value is smaller than 'SCALE', first transpose
+	// the samples and then apply the anti-alias filter to remove aliasing.
 
-    // If the parameter 'uRate' value is smaller than 'SCALE', first transpose
-    // the samples and then apply the anti-alias filter to remove aliasing.
+	// First check that there's enough room in 'storeBuffer'
+	// (+16 is to reserve some slack in the destination buffer)
+	uint32_t sizeTemp = static_cast<uint32_t>(nSamples / this->fRate + 16.0f);
 
-    // First check that there's enough room in 'storeBuffer'
-    // (+16 is to reserve some slack in the destination buffer)
-    sizeTemp = (int)((float)numsamples / fRate + 16.0f);
+	// Transpose the samples, store the result into the end of "storeBuffer"
+	uint32_t count = this->transpose(this->storeBuffer.ptrEnd(sizeTemp), src, nSamples);
+	this->storeBuffer.putSamples(count);
 
-    // Transpose the samples, store the result into the end of "storeBuffer"
-    count = transpose(storeBuffer.ptrEnd(sizeTemp), src, numsamples);
-    storeBuffer.putSamples(count);
+	// Apply the anti-alias filter to samples in "store output", output the
+	// result to "dest"
+	uint32_t num = this->storeBuffer.numSamples();
+	count = this->pAAFilter->evaluate(this->outputBuffer.ptrEnd(num), this->storeBuffer.ptrBegin(), num, this->numChannels);
+	this->outputBuffer.putSamples(count);
 
-    // Apply the anti-alias filter to samples in "store output", output the
-    // result to "dest"
-    num = storeBuffer.numSamples();
-    count = pAAFilter->evaluate(outputBuffer.ptrEnd(num),
-        storeBuffer.ptrBegin(), num, uChannels);
-    outputBuffer.putSamples(count);
-
-    // Remove the processed samples from "storeBuffer"
-    storeBuffer.receiveSamples(count);
+	// Remove the processed samples from "storeBuffer"
+	this->storeBuffer.receiveSamples(count);
 }
-
 
 // Transposes down the sample rate, causing the observed playback 'rate' of the
 // sound to increase
-void RateTransposer::downsample(const SAMPLETYPE *src, uint32_t numsamples)
+void RateTransposer::downsample(const SAMPLETYPE *src, uint32_t nSamples)
 {
-    int count, sizeTemp;
+	// If the parameter 'uRate' value is larger than 'SCALE', first apply the
+	// anti-alias filter to remove high frequencies (prevent them from folding
+	// over the lover frequencies), then transpose. */
+	
+	// Add the new samples to the end of the storeBuffer */
+	this->storeBuffer.putSamples(src, nSamples);
 
-    // If the parameter 'uRate' value is larger than 'SCALE', first apply the
-    // anti-alias filter to remove high frequencies (prevent them from folding
-    // over the lover frequencies), then transpose. */
+	// Anti-alias filter the samples to prevent folding and output the filtered
+	// data to tempBuffer. Note : because of the FIR filter length, the
+	// filtering routine takes in 'filter_length' more samples than it outputs.
+	assert(this->tempBuffer.isEmpty());
+	uint32_t sizeTemp = this->storeBuffer.numSamples();
 
-    // Add the new samples to the end of the storeBuffer */
-    storeBuffer.putSamples(src, numsamples);
+	uint32_t count = this->pAAFilter->evaluate(this->tempBuffer.ptrEnd(sizeTemp), this->storeBuffer.ptrBegin(), sizeTemp, this->numChannels);
 
-    // Anti-alias filter the samples to prevent folding and output the filtered
-    // data to tempBuffer. Note : because of the FIR filter length, the
-    // filtering routine takes in 'filter_length' more samples than it outputs.
-    assert(tempBuffer.isEmpty());
-    sizeTemp = storeBuffer.numSamples();
+	// Remove the filtered samples from 'storeBuffer'
+	this->storeBuffer.receiveSamples(count);
 
-    count = pAAFilter->evaluate(tempBuffer.ptrEnd(sizeTemp),
-        storeBuffer.ptrBegin(), sizeTemp, uChannels);
-
-    // Remove the filtered samples from 'storeBuffer'
-    storeBuffer.receiveSamples(count);
-
-    // Transpose the samples (+16 is to reserve some slack in the destination buffer)
-    sizeTemp = (int)((float)numsamples / fRate + 16.0f);
-    count = transpose(outputBuffer.ptrEnd(sizeTemp), tempBuffer.ptrBegin(), count);
-    outputBuffer.putSamples(count);
+	// Transpose the samples (+16 is to reserve some slack in the destination buffer)
+	sizeTemp = static_cast<uint32_t>(nSamples / this->fRate + 16.0f);
+	count = this->transpose(this->outputBuffer.ptrEnd(sizeTemp), this->tempBuffer.ptrBegin(), count);
+	this->outputBuffer.putSamples(count);
 }
-
 
 // Transposes sample rate by applying anti-alias filter to prevent folding.
 // Returns amount of samples returned in the "dest" buffer.
 // The maximum amount of samples that can be returned at a time is set by
 // the 'set_returnBuffer_size' function.
-void RateTransposer::processSamples(const SAMPLETYPE *src, uint32_t numsamples)
+void RateTransposer::processSamples(const SAMPLETYPE *src, uint32_t nSamples)
 {
-    uint32_t count;
-    uint32_t sizeReq;
+	if (!nSamples)
+		return;
+	assert(this->pAAFilter.get());
 
-    if (numsamples == 0) return;
-    assert(pAAFilter);
+	// If anti-alias filter is turned off, simply transpose without applying
+	// the filter
+	if (!bUseAAFilter)
+	{
+		uint32_t sizeReq = static_cast<uint32_t>(nSamples / this->fRate + 1.0f);
+		uint32_t count = this->transpose(this->outputBuffer.ptrEnd(sizeReq), src, nSamples);
+		this->outputBuffer.putSamples(count);
+		return;
+	}
 
-    // If anti-alias filter is turned off, simply transpose without applying
-    // the filter
-    if (bUseAAFilter == false)
-    {
-        sizeReq = (int)((float)numsamples / fRate + 1.0f);
-        count = transpose(outputBuffer.ptrEnd(sizeReq), src, numsamples);
-        outputBuffer.putSamples(count);
-        return;
-    }
-
-    // Transpose with anti-alias filter
-    if (fRate < 1.0f)
-    {
-        upsample(src, numsamples);
-    }
-    else
-    {
-        downsample(src, numsamples);
-    }
+	// Transpose with anti-alias filter
+	if (this->fRate < 1.0f)
+		this->upsample(src, nSamples);
+	else
+		this->downsample(src, nSamples);
 }
-
 
 // Transposes the sample rate of the given samples using linear interpolation.
 // Returns the number of samples returned in the "dest" buffer
-inline uint32_t RateTransposer::transpose(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numsamples)
+uint32_t RateTransposer::transpose(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t nSamples)
 {
-    if (uChannels == 2)
-    {
-        return transposeStereo(dest, src, numsamples);
-    }
-    else
-    {
-        return transposeMono(dest, src, numsamples);
-    }
+	if (this->numChannels == 2)
+		return this->transposeStereo(dest, src, nSamples);
+	else
+		return this->transposeMono(dest, src, nSamples);
 }
-
 
 // Sets the number of channels, 1 = mono, 2 = stereo
-void RateTransposer::setChannels(uint32_t numchannels)
+void RateTransposer::setChannels(int32_t nChannels)
 {
-    if (uChannels == numchannels) return;
+	assert(nChannels > 0);
+	if (this->numChannels == nChannels)
+		return;
 
-    assert(numchannels == 1 || numchannels == 2);
-    uChannels = numchannels;
+	assert(nChannels == 1 || nChannels == 2);
+	this->numChannels = nChannels;
 
-    storeBuffer.setChannels(uChannels);
-    tempBuffer.setChannels(uChannels);
-    outputBuffer.setChannels(uChannels);
+	this->storeBuffer.setChannels(this->numChannels);
+	this->tempBuffer.setChannels(this->numChannels);
+	this->outputBuffer.setChannels(this->numChannels);
 
-    // Inits the linear interpolation registers
-    resetRegisters();
+	// Inits the linear interpolation registers
+	this->resetRegisters();
 }
-
 
 // Clears all the samples in the object
 void RateTransposer::clear()
 {
-    outputBuffer.clear();
-    storeBuffer.clear();
+	this->outputBuffer.clear();
+	this->storeBuffer.clear();
 }
-
 
 // Returns nonzero if there aren't any samples available for outputting.
 bool RateTransposer::isEmpty() const
@@ -340,9 +281,8 @@ bool RateTransposer::isEmpty() const
 	bool res = FIFOProcessor::isEmpty();
 	if (!res)
 		return false;
-	return storeBuffer.isEmpty();
+	return this->storeBuffer.isEmpty();
 }
-
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -350,141 +290,130 @@ bool RateTransposer::isEmpty() const
 //
 
 /// fixed-point interpolation routine precision
-#define SCALE    65536
+static const int SCALE = 65536;
 
 // Constructor
 RateTransposerInteger::RateTransposerInteger() : RateTransposer()
 {
-    // call these here as these are virtual functions; calling these
-    // from the base class constructor wouldn't execute the overloaded
-    // versions (<master yoda>peculiar C++ can be</my>).
-    resetRegisters();
-    setRate(1.0f);
+	// Notice: use local function calling syntax for sake of clarity,
+	// to indicate the fact that C++ constructor can't call virtual functions.
+	RateTransposerInteger::resetRegisters();
+	RateTransposerInteger::setRate(1.0f);
 }
-
 
 RateTransposerInteger::~RateTransposerInteger()
 {
 }
 
-
 void RateTransposerInteger::resetRegisters()
 {
-    iSlopeCount = 0;
-    sPrevSampleL =
-    sPrevSampleR = 0;
+	this->iSlopeCount = 0;
+	this->sPrevSampleL = this->sPrevSampleR = 0;
 }
-
-
 
 // Transposes the sample rate of the given samples using linear interpolation.
 // 'Mono' version of the routine. Returns the number of samples returned in
 // the "dest" buffer
-uint32_t RateTransposerInteger::transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numsamples)
+uint32_t RateTransposerInteger::transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t nSamples)
 {
-    unsigned int i, used;
-    LONG_SAMPLETYPE temp, vol1;
+	if (!nSamples)
+		return 0; // no samples, no work
 
-    used = 0;
-    i = 0;
+	unsigned used = 0, i = 0;
 
-    // Process the last sample saved from the previous call first...
-    while (iSlopeCount <= SCALE)
-    {
-        vol1 = (LONG_SAMPLETYPE)(SCALE - iSlopeCount);
-        temp = vol1 * sPrevSampleL + iSlopeCount * src[0];
-        dest[i] = (SAMPLETYPE)(temp / SCALE);
-        i++;
-        iSlopeCount += uRate;
-    }
-    // now always (iSlopeCount > SCALE)
-    iSlopeCount -= SCALE;
+	// Process the last sample saved from the previous call first...
+	LONG_SAMPLETYPE temp, vol1;
+	while (this->iSlopeCount <= SCALE)
+	{
+		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		temp = vol1 * this->sPrevSampleL + this->iSlopeCount * src[0];
+		dest[i] = static_cast<SAMPLETYPE>(temp / SCALE);
+		++i;
+		this->iSlopeCount += this->iRate;
+	}
+	// now always (iSlopeCount > SCALE)
+	this->iSlopeCount -= SCALE;
 
-    while (1)
-    {
-        while (iSlopeCount > SCALE)
-        {
-            iSlopeCount -= SCALE;
-            used ++;
-            if (used >= numsamples - 1) goto end;
-        }
-        vol1 = (LONG_SAMPLETYPE)(SCALE - iSlopeCount);
-        temp = src[used] * vol1 + iSlopeCount * src[used + 1];
-        dest[i] = (SAMPLETYPE)(temp / SCALE);
-
-        i++;
-        iSlopeCount += uRate;
-    }
+	while (1)
+	{
+		while (this->iSlopeCount > SCALE)
+		{
+			this->iSlopeCount -= SCALE;
+			++used;
+			if (used >= nSamples - 1)
+				goto end;
+		}
+		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		temp = src[used] * vol1 + this->iSlopeCount * src[used + 1];
+		dest[i] = static_cast<SAMPLETYPE>(temp / SCALE);
+		++i;
+		this->iSlopeCount += this->iRate;
+	}
 end:
-    // Store the last sample for the next round
-    sPrevSampleL = src[numsamples - 1];
+	// Store the last sample for the next round
+	this->sPrevSampleL = src[nSamples - 1];
 
-    return i;
+	return i;
 }
-
 
 // Transposes the sample rate of the given samples using linear interpolation.
 // 'Stereo' version of the routine. Returns the number of samples returned in
 // the "dest" buffer
-uint32_t RateTransposerInteger::transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numsamples)
+uint32_t RateTransposerInteger::transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t nSamples)
 {
-    unsigned int srcPos, i, used;
-    LONG_SAMPLETYPE temp, vol1;
+	if (!nSamples)
+		return 0; // no samples, no work
 
-    if (numsamples == 0) return 0;  // no samples, no work
+	unsigned used = 0, i = 0;
 
-    used = 0;
-    i = 0;
+	// Process the last sample saved from the sPrevSampleLious call first...
+	LONG_SAMPLETYPE temp, vol1;
+	while (this->iSlopeCount <= SCALE)
+	{
+		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		temp = vol1 * this->sPrevSampleL + this->iSlopeCount * src[0];
+		dest[2 * i] = static_cast<SAMPLETYPE>(temp / SCALE);
+		temp = vol1 * this->sPrevSampleR + this->iSlopeCount * src[1];
+		dest[2 * i + 1] = static_cast<SAMPLETYPE>(temp / SCALE);
+		++i;
+		this->iSlopeCount += this->iRate;
+	}
+	// now always (iSlopeCount > SCALE)
+	this->iSlopeCount -= SCALE;
 
-    // Process the last sample saved from the sPrevSampleLious call first...
-    while (iSlopeCount <= SCALE)
-    {
-        vol1 = (LONG_SAMPLETYPE)(SCALE - iSlopeCount);
-        temp = vol1 * sPrevSampleL + iSlopeCount * src[0];
-        dest[2 * i] = (SAMPLETYPE)(temp / SCALE);
-        temp = vol1 * sPrevSampleR + iSlopeCount * src[1];
-        dest[2 * i + 1] = (SAMPLETYPE)(temp / SCALE);
-        i++;
-        iSlopeCount += uRate;
-    }
-    // now always (iSlopeCount > SCALE)
-    iSlopeCount -= SCALE;
-
-    while (1)
-    {
-        while (iSlopeCount > SCALE)
-        {
-            iSlopeCount -= SCALE;
-            used ++;
-            if (used >= numsamples - 1) goto end;
-        }
-        srcPos = 2 * used;
-        vol1 = (LONG_SAMPLETYPE)(SCALE - iSlopeCount);
-        temp = src[srcPos] * vol1 + iSlopeCount * src[srcPos + 2];
-        dest[2 * i] = (SAMPLETYPE)(temp / SCALE);
-        temp = src[srcPos + 1] * vol1 + iSlopeCount * src[srcPos + 3];
-        dest[2 * i + 1] = (SAMPLETYPE)(temp / SCALE);
-
-        i++;
-        iSlopeCount += uRate;
-    }
+	while (1)
+	{
+		while (this->iSlopeCount > SCALE)
+		{
+			this->iSlopeCount -= SCALE;
+			++used;
+			if (used >= nSamples - 1)
+				goto end;
+		}
+		unsigned srcPos = 2 * used;
+		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		temp = src[srcPos] * vol1 + this->iSlopeCount * src[srcPos + 2];
+		dest[2 * i] = static_cast<SAMPLETYPE>(temp / SCALE);
+		temp = src[srcPos + 1] * vol1 + this->iSlopeCount * src[srcPos + 3];
+		dest[2 * i + 1] = static_cast<SAMPLETYPE>(temp / SCALE);
+		++i;
+		this->iSlopeCount += this->iRate;
+	}
 end:
-    // Store the last sample for the next round
-    sPrevSampleL = src[2 * numsamples - 2];
-    sPrevSampleR = src[2 * numsamples - 1];
+	// Store the last sample for the next round
+	this->sPrevSampleL = src[2 * nSamples - 2];
+	this->sPrevSampleR = src[2 * nSamples - 1];
 
-    return i;
+	return i;
 }
 
-
-// Sets new target uRate. Normal uRate = 1.0, smaller values represent slower
-// uRate, larger faster uRates.
+// Sets new target iRate. Normal iRate = 1.0, smaller values represent slower 
+// iRate, larger faster iRates.
 void RateTransposerInteger::setRate(float newRate)
 {
-    uRate = (int)(newRate * SCALE + 0.5f);
-    RateTransposer::setRate(newRate);
+	this->iRate = static_cast<int>(newRate * SCALE + 0.5f);
+	RateTransposer::setRate(newRate);
 }
-
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -495,116 +424,105 @@ void RateTransposerInteger::setRate(float newRate)
 // Constructor
 RateTransposerFloat::RateTransposerFloat() : RateTransposer()
 {
-    // call these here as these are virtual functions; calling these
-    // from the base class constructor wouldn't execute the overloaded
-    // versions (<master yoda>peculiar C++ can be</my>).
-    resetRegisters();
-    setRate(1.0f);
+	// Notice: use local function calling syntax for sake of clarity,
+	// to indicate the fact that C++ constructor can't call virtual functions.
+	RateTransposerFloat::resetRegisters();
+	RateTransposerFloat::setRate(1.0f);
 }
-
 
 RateTransposerFloat::~RateTransposerFloat()
 {
 }
 
-
 void RateTransposerFloat::resetRegisters()
 {
-    fSlopeCount = 0;
-    sPrevSampleL =
-    sPrevSampleR = 0;
+	this->fSlopeCount = 0;
+	this->sPrevSampleL = this->sPrevSampleR = 0;
 }
-
-
 
 // Transposes the sample rate of the given samples using linear interpolation.
 // 'Mono' version of the routine. Returns the number of samples returned in
 // the "dest" buffer
-uint32_t RateTransposerFloat::transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numsamples)
+uint32_t RateTransposerFloat::transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t nSamples)
 {
-    unsigned int i, used;
+	unsigned used = 0, i = 0;
 
-    used = 0;
-    i = 0;
+	// Process the last sample saved from the previous call first...
+	while (this->fSlopeCount <= 1.0f)
+	{
+		dest[i] = static_cast<SAMPLETYPE>((1.0f - this->fSlopeCount) * this->sPrevSampleL + this->fSlopeCount * src[0]);
+		++i;
+		this->fSlopeCount += this->fRate;
+	}
+	this->fSlopeCount -= 1.0f;
 
-    // Process the last sample saved from the previous call first...
-    while (fSlopeCount <= 1.0f)
-    {
-        dest[i] = (SAMPLETYPE)((1.0f - fSlopeCount) * sPrevSampleL + fSlopeCount * src[0]);
-        i++;
-        fSlopeCount += fRate;
-    }
-    fSlopeCount -= 1.0f;
-
-    if (numsamples == 1) goto end;
-
-    while (1)
-    {
-        while (fSlopeCount > 1.0f)
-        {
-            fSlopeCount -= 1.0f;
-            used ++;
-            if (used >= numsamples - 1) goto end;
-        }
-        dest[i] = (SAMPLETYPE)((1.0f - fSlopeCount) * src[used] + fSlopeCount * src[used + 1]);
-        i++;
-        fSlopeCount += fRate;
-    }
+	if (nSamples > 1)
+	{
+		while (1)
+		{
+			while (this->fSlopeCount > 1.0f)
+			{
+				this->fSlopeCount -= 1.0f;
+				++used;
+				if (used >= nSamples - 1)
+					goto end;
+			}
+			dest[i] = static_cast<SAMPLETYPE>((1.0f - this->fSlopeCount) * src[used] + this->fSlopeCount * src[used + 1]);
+			++i;
+			this->fSlopeCount += this->fRate;
+		}
+	}
 end:
-    // Store the last sample for the next round
-    sPrevSampleL = src[numsamples - 1];
+	// Store the last sample for the next round
+	this->sPrevSampleL = src[nSamples - 1];
 
-    return i;
+	return i;
 }
-
 
 // Transposes the sample rate of the given samples using linear interpolation.
 // 'Mono' version of the routine. Returns the number of samples returned in
 // the "dest" buffer
-uint32_t RateTransposerFloat::transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numsamples)
+uint32_t RateTransposerFloat::transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t nSamples)
 {
-    unsigned int srcPos, i, used;
+	if (!nSamples)
+		return 0; // no samples, no work
 
-    if (numsamples == 0) return 0;  // no samples, no work
+	unsigned used = 0, i = 0;
 
-    used = 0;
-    i = 0;
+	// Process the last sample saved from the sPrevSampleLious call first...
+	while (this->fSlopeCount <= 1.0f)
+	{
+		dest[2 * i] = static_cast<SAMPLETYPE>((1.0f - this->fSlopeCount) * this->sPrevSampleL + this->fSlopeCount * src[0]);
+		dest[2 * i + 1] = static_cast<SAMPLETYPE>((1.0f - this->fSlopeCount) * this->sPrevSampleR + this->fSlopeCount * src[1]);
+		++i;
+		this->fSlopeCount += this->fRate;
+	}
+	// now always (iSlopeCount > 1.0f)
+	this->fSlopeCount -= 1.0f;
 
-    // Process the last sample saved from the sPrevSampleLious call first...
-    while (fSlopeCount <= 1.0f)
-    {
-        dest[2 * i] = (SAMPLETYPE)((1.0f - fSlopeCount) * sPrevSampleL + fSlopeCount * src[0]);
-        dest[2 * i + 1] = (SAMPLETYPE)((1.0f - fSlopeCount) * sPrevSampleR + fSlopeCount * src[1]);
-        i++;
-        fSlopeCount += fRate;
-    }
-    // now always (iSlopeCount > 1.0f)
-    fSlopeCount -= 1.0f;
+	if (nSamples > 1)
+	{
+		while (1)
+		{
+			while (this->fSlopeCount > 1.0f)
+			{
+				this->fSlopeCount -= 1.0f;
+				++used;
+				if (used >= nSamples - 1)
+					goto end;
+			}
+			unsigned srcPos = 2 * used;
 
-    if (numsamples == 1) goto end;
-
-    while (1)
-    {
-        while (fSlopeCount > 1.0f)
-        {
-            fSlopeCount -= 1.0f;
-            used ++;
-            if (used >= numsamples - 1) goto end;
-        }
-        srcPos = 2 * used;
-
-        dest[2 * i] = (SAMPLETYPE)((1.0f - fSlopeCount) * src[srcPos]
-            + fSlopeCount * src[srcPos + 2]);
-        dest[2 * i + 1] = (SAMPLETYPE)((1.0f - fSlopeCount) * src[srcPos + 1]
-            + fSlopeCount * src[srcPos + 3]);
-
-        i++;
-        fSlopeCount += fRate;
-    }
+			dest[2 * i] = static_cast<SAMPLETYPE>((1.0f - this->fSlopeCount) * src[srcPos] + this->fSlopeCount * src[srcPos + 2]);
+			dest[2 * i + 1] = static_cast<SAMPLETYPE>((1.0f - this->fSlopeCount) * src[srcPos + 1] + this->fSlopeCount * src[srcPos + 3]);
+			++i;
+			this->fSlopeCount += this->fRate;
+		}
+	}
 end:
-    // Store the last sample for the next round
-    sPrevSampleL = src[2 * numsamples - 2];
-    sPrevSampleR = src[2 * numsamples - 1];
+	// Store the last sample for the next round
+	this->sPrevSampleL = src[2 * nSamples - 2];
+	this->sPrevSampleR = src[2 * nSamples - 1];
 
-    return i;
+	return i;
 }

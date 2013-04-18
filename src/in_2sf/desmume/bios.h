@@ -1,6 +1,6 @@
 /*
 	Copyright (C) 2006 yopyop
-	Copyright (C) 2006-2009 DeSmuME team
+	Copyright (C) 2006-2012 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 #include "armcpu.h"
 
-extern uint32_t (*ARM9_swi_tab[32])();
-extern uint32_t (*ARM7_swi_tab[32])();
+extern uint32_t (*ARM_swi_tab[2][32])();
 
 #endif

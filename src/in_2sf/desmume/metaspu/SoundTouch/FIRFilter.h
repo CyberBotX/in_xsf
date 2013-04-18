@@ -11,10 +11,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.17 $
+// Last changed  : $Date: 2011-02-13 17:13:57 -0200 (dom, 13 fev 2011) $
+// File revision : $Revision: 4 $
 //
-// $Id: FIRFilter.h,v 1.17 2006/02/05 16:44:06 Olli Exp $
+// $Id: FIRFilter.h 104 2011-02-13 19:13:57Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -42,8 +42,7 @@
 #ifndef FIRFilter_H
 #define FIRFilter_H
 
-#include <cstddef>
-
+#include <memory>
 #include "STTypes.h"
 
 namespace soundtouch
@@ -64,7 +63,7 @@ protected:
 	SAMPLETYPE resultDivider;
 
 	// Memory for filter coefficients
-	SAMPLETYPE *filterCoeffs;
+	std::unique_ptr<SAMPLETYPE[]> filterCoeffs;
 
 	virtual uint32_t evaluateFilterStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numSamples) const;
 	virtual uint32_t evaluateFilterMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numSamples) const;
@@ -75,7 +74,7 @@ public:
 
 	/// Operator 'new' is overloaded so that it automatically creates a suitable instance
 	/// depending on if we've a MMX-capable CPU available or not.
-	void *operator new(size_t s);
+	static void *operator new(size_t s);
 
 	static FIRFilter *newInstance();
 
@@ -93,12 +92,12 @@ public:
 
 // Optional subclasses that implement CPU-specific optimizations:
 
-#ifdef ALLOW_MMX
+#ifdef SOUNDTOUCH_ALLOW_MMX
 /// Class that implements MMX optimized functions exclusive for 16bit integer samples type.
 class FIRFilterMMX : public FIRFilter
 {
 protected:
-	short *filterCoeffsUnalign;
+	std::unique_ptr<short[]> filterCoeffsUnalign;
 	short *filterCoeffsAlign;
 
 	virtual uint32_t evaluateFilterStereo(short *dest, const short *src, uint32_t numSamples) const;
@@ -108,31 +107,14 @@ public:
 
 	virtual void setCoefficients(const short *coeffs, uint32_t newLength, uint32_t uResultDivFactor);
 };
-#endif // ALLOW_MMX
+#endif // SOUNDTOUCH_ALLOW_MMX
 
-#ifdef ALLOW_3DNOW
-/// Class that implements 3DNow! optimized functions exclusive for floating point samples type.
-class FIRFilter3DNow : public FIRFilter
-{
-protected:
-	float *filterCoeffsUnalign;
-	float *filterCoeffsAlign;
-
-	virtual uint32_t evaluateFilterStereo(float *dest, const float *src, uint32_t numSamples) const;
-public:
-	FIRFilter3DNow();
-	~FIRFilter3DNow();
-
-	virtual void setCoefficients(const float *coeffs, uint32_t newLength, uint32_t uResultDivFactor);
-};
-#endif  // ALLOW_3DNOW
-
-#ifdef __SSE__
+#ifdef SOUNDTOUCH_ALLOW_SSE
 /// Class that implements SSE optimized functions exclusive for floating point samples type.
 class FIRFilterSSE : public FIRFilter
 {
 protected:
-	float *filterCoeffsUnalign;
+	std::unique_ptr<float[]> filterCoeffsUnalign;
 	float *filterCoeffsAlign;
 
 	virtual uint32_t evaluateFilterStereo(float *dest, const float *src, uint32_t numSamples) const;
@@ -142,7 +124,7 @@ public:
 
 	virtual void setCoefficients(const float *coeffs, uint32_t newLength, uint32_t uResultDivFactor);
 };
-#endif // ALLOW_SSE
+#endif // SOUNDTOUCH_ALLOW_SSE
 
 }
 

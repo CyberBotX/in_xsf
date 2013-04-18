@@ -21,8 +21,19 @@
 
 #include "armcpu.h"
 
+const uint32_t CP15_ACCESS_WRITE = 0;
+const uint32_t CP15_ACCESS_READ = 2;
+const uint32_t CP15_ACCESS_EXECUTE = 4;
+const uint32_t CP15_ACCESS_WRITEUSR = CP15_ACCESS_WRITE;
+const uint32_t CP15_ACCESS_WRITESYS = 1;
+const uint32_t CP15_ACCESS_READUSR = CP15_ACCESS_READ;
+const uint32_t CP15_ACCESS_READSYS = 3;
+const uint32_t CP15_ACCESS_EXECUSR = CP15_ACCESS_EXECUTE;
+const uint32_t CP15_ACCESS_EXECSYS = 5;
+
 struct armcp15_t
 {
+public:
 	uint32_t IDCode;
 	uint32_t cacheType;
 	uint32_t TCMSize;
@@ -66,24 +77,38 @@ struct armcp15_t
 	uint32_t regionExecuteSet_SYS[8];
 
 	armcpu_t *cpu;
+
+	void setSingleRegionAccess(uint32_t dAccess, uint32_t iAccess, unsigned char num, uint32_t mask, uint32_t set);
+	void maskPrecalc();
+
+public:
+	armcp15_t() : IDCode(0), cacheType(0), TCMSize(0), ctrl(0), DCConfig(0), ICConfig(0), writeBuffCtrl(0), und(0), DaccessPerm(0), IaccessPerm(0), protectBaseSize0(0), protectBaseSize1(0), protectBaseSize2(0),
+		protectBaseSize3(0), protectBaseSize4(0), protectBaseSize5(0), protectBaseSize6(0), protectBaseSize7(0), cacheOp(0), DcacheLock(0), IcacheLock(0), ITCMRegion(0), DTCMRegion(0), processID(0), RAM_TAG(0),
+		testState(0), cacheDbg(0), cpu(nullptr)
+	{
+		memset(&this->regionWriteMask_USR[0], 0, sizeof(this->regionWriteMask_USR));
+		memset(&this->regionWriteMask_SYS[0], 0, sizeof(this->regionWriteMask_SYS));
+		memset(&this->regionReadMask_USR[0], 0, sizeof(this->regionReadMask_USR));
+		memset(&this->regionReadMask_SYS[0], 0, sizeof(this->regionReadMask_SYS));
+		memset(&this->regionExecuteMask_USR[0], 0, sizeof(this->regionExecuteMask_USR));
+		memset(&this->regionExecuteMask_SYS[0], 0, sizeof(this->regionExecuteMask_SYS));
+		memset(&this->regionWriteSet_USR[0], 0, sizeof(this->regionWriteSet_USR));
+		memset(&this->regionWriteSet_SYS[0], 0, sizeof(this->regionWriteSet_SYS));
+		memset(&this->regionReadSet_USR[0], 0, sizeof(this->regionReadSet_USR));
+		memset(&this->regionReadSet_SYS[0], 0, sizeof(this->regionReadSet_SYS));
+		memset(&this->regionExecuteSet_USR[0], 0, sizeof(this->regionExecuteSet_USR));
+		memset(&this->regionExecuteSet_SYS[0], 0, sizeof(this->regionExecuteSet_SYS));
+	}
+	bool reset(armcpu_t *c);
+	bool dataProcess(uint8_t CRd, uint8_t CRn, uint8_t CRm, uint8_t opcode1, uint8_t opcode2);
+	bool load(uint8_t CRd, uint8_t adr);
+	bool store(uint8_t CRd, uint8_t adr);
+	bool moveCP2ARM(uint32_t *R, uint8_t CRn, uint8_t CRm, uint8_t opcode1, uint8_t opcode2);
+	bool moveARM2CP(uint32_t val, uint8_t CRn, uint8_t CRm, uint8_t opcode1, uint8_t opcode2);
+	bool isAccessAllowed(uint32_t address,uint32_t access);
 };
 
-armcp15_t *armcp15_new(armcpu_t *c);
-//bool armcp15_dataProcess(armcp15_t *armcp15, uint8_t CRd, uint8_t CRn, uint8_t CRm, uint8_t opcode1, uint8_t opcode2);
-//bool armcp15_load(armcp15_t *armcp15, uint8_t CRd, uint8_t adr);
-//bool armcp15_store(armcp15_t *armcp15, uint8_t CRd, uint8_t adr);
-bool armcp15_moveCP2ARM(armcp15_t *armcp15, uint32_t * R, uint8_t CRn, uint8_t CRm, uint8_t opcode1, uint8_t opcode2);
-bool armcp15_moveARM2CP(armcp15_t *armcp15, uint32_t val, uint8_t CRn, uint8_t CRm, uint8_t opcode1, uint8_t opcode2);
-//bool armcp15_isAccessAllowed(armcp15_t *armcp15,uint32_t address,uint32_t access);
-
-static const uint32_t CP15_ACCESS_WRITE = 0;
-static const uint32_t CP15_ACCESS_READ = 2;
-static const uint32_t CP15_ACCESS_EXECUTE = 4;
-static const uint32_t CP15_ACCESS_WRITEUSR = CP15_ACCESS_WRITE;
-static const uint32_t CP15_ACCESS_WRITESYS = 1;
-static const uint32_t CP15_ACCESS_READUSR = CP15_ACCESS_READ;
-static const uint32_t CP15_ACCESS_READSYS = 3;
-static const uint32_t CP15_ACCESS_EXECUSR = CP15_ACCESS_EXECUTE;
-static const uint32_t CP15_ACCESS_EXECSYS = 5;
+extern armcp15_t cp15;
+void maskPrecalc();
 
 #endif /* __CP15_H__*/

@@ -40,7 +40,7 @@ static void write32_GCROMCTRL(uint8_t PROCNUM, uint32_t)
 
 	switch (card.command[0])
 	{
-		case 0x00: //Data read
+		case 0x00: // Data read
 		case 0xB7:
 			card.address = (card.command[1] << 24) | (card.command[2] << 16) | (card.command[3] << 8) | card.command[4];
 			card.transfer_count = 0x80;
@@ -90,9 +90,12 @@ static uint32_t read32_GCDATAIN(uint8_t PROCNUM)
 				// Most games continuously compare the chip ID with
 				// the value in memory, probably to know if the card
 				// was removed.
-				// As DeSmuME boots directly from the game, the chip
+				// As DeSmuME normally boots directly from the game, the chip
 				// ID in main mem is zero and this value needs to be
 				// zero too.
+
+				// note that even if desmume was booting from firmware, and reading this chip ID to store in main memory,
+				// this still works, since it will have read 00 originally and then read 00 to validate.
 
 				// staff of kings verifies this (it also uses the arm7 IRQ 20)
 				if (nds.cardEjected) // TODO - handle this with ejected card slot1 device (and verify using this case)
@@ -106,20 +109,20 @@ static uint32_t read32_GCDATAIN(uint8_t PROCNUM)
 		case 0x00:
 		case 0xB7:
 			{
-				//it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
-				//but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
-				//but there is no test case yet
-				uint32_t address = card.address & (gameInfo.mask);
+				// it seems that etrian odyssey 3 doesnt work unless we mask this to cart size.
+				// but, a thought: does the internal rom address counter register wrap around? we may be making a mistake by keeping the extra precision
+				// but there is no test case yet
+				uint32_t address = card.address & gameInfo.mask;
 
 				// Make sure any reads below 0x8000 redirect to 0x8000+(adr&0x1FF) as on real cart
-				if((card.command[0] == 0xB7) && (address < 0x8000))
+				if (card.command[0] == 0xB7 && address < 0x8000)
 				{
 					// TODO - refactor this to include the PROCNUM, for debugging purposes if nothing else
 					// (can refactor gbaslot also)
 
 					//INFO("Read below 0x8000 (0x%04X) from: ARM%s %08X\n", card.address, (PROCNUM ? "7":"9"), (PROCNUM ? NDS_ARM7:NDS_ARM9).instruct_adr);
 
-					address = (0x8000 + (address&0x1FF));
+					address = 0x8000 + (address & 0x1FF);
 				}
 
 				// as a sanity measure for funny-sized roms (homebrew and perhaps truncated retail roms)
@@ -140,7 +143,7 @@ static uint32_t read32_GCDATAIN(uint8_t PROCNUM)
 
 static uint32_t read32(uint8_t PROCNUM, uint32_t adr)
 {
-	switch(adr)
+	switch (adr)
 	{
 		case REG_GCDATAIN:
 			return read32_GCDATAIN(PROCNUM);
@@ -164,115 +167,3 @@ SLOT1INTERFACE slot1Retail =
 	read32,
 	info
 };
-
-	//		///writetoGCControl:
-	//// --- Ninja SD commands -------------------------------------
-
-	//	// NJSD init/reset
-	//	case 0x20:
-	//		{
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//		}
-	//		break;
-
-	//	// NJSD_sendCLK()
-	//	case 0xE0:
-	//		{
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//			NDS_makeInt(PROCNUM, 20);
-	//		}
-	//		break;
-
-	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
-	//	case 0xF0:
-	//	case 0xF1:
-	//		switch (card.command[2])
-	//		{
-	//		// GO_IDLE_STATE
-	//		case 0x40:
-	//			card.address = 0;
-	//			card.transfer_count = 0;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		case 0x42:  // ALL_SEND_CID
-	//		case 0x43:  // SEND_RELATIVE_ADDR
-	//		case 0x47:  // SELECT_CARD
-	//		case 0x49:  // SEND_CSD
-	//		case 0x4D:
-	//		case 0x77:  // APP_CMD
-	//		case 0x69:  // SD_APP_OP_COND
-	//			card.address = 0;
-	//			card.transfer_count = 6;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		// SET_BLOCKLEN
-	//		case 0x50:
-	//			card.address = 0;
-	//			card.transfer_count = 6;
-	//			card.blocklen = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-
-	//		// READ_SINGLE_BLOCK
-	//		case 0x51:
-	//			card.address = card.command[6] | (card.command[5] << 8) | (card.command[4] << 16) | (card.command[3] << 24);
-	//			card.transfer_count = (card.blocklen + 3) >> 2;
-	//			NDS_makeInt(PROCNUM, 20);
-	//			break;
-	//		}
-	//		break;
-
-	//	// --- Ninja SD commands end ---------------------------------
-
-
-
-	//		//GCDATAIN:
-	//	// --- Ninja SD commands -------------------------------------
-
-	//	// NJSD_sendCMDN() / NJSD_sendCMDR()
-	//	case 0xF0:
-	//	case 0xF1:
-	//		switch (card.command[2])
-	//		{
-	//		// ALL_SEND_CID
-	//		case 0x42:
-	//			if (card.transfer_count == 2) val = 0x44534A4E;
-	//			else val = 0x00000000;
-
-	//		// SEND_RELATIVE_ADDR
-	//		case 0x43:
-	//		case 0x47:
-	//		case 0x49:
-	//		case 0x50:
-	//			val = 0x00000000;
-	//			break;
-
-	//		case 0x4D:
-	//			if (card.transfer_count == 2) val = 0x09000000;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// APP_CMD
-	//		case 0x77:
-	//			if (card.transfer_count == 2) val = 0x00000037;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// SD_APP_OP_COND
-	//		case 0x69:
-	//			if (card.transfer_count == 2) val = 0x00008000;
-	//			else val = 0x00000000;
-	//			break;
-
-	//		// READ_SINGLE_BLOCK
-	//		case 0x51:
-	//			val = 0x00000000;
-	//			break;
-	//		}
-	//		break;
-
-	//	// --- Ninja SD commands end ---------------------------------

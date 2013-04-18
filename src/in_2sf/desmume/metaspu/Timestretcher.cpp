@@ -17,15 +17,11 @@
 
 #include "XSFCommon.h"
 
-//#include "Global.h"
 #include "../types.h"
 #include "SoundTouch/SoundTouch.h"
 #include "SndOut.h"
-//#include "SoundTouch/WavFile.h"
 
-#include "SoundTouch/Dialogs.h"
-
-static soundtouch::SoundTouch* pSoundTouch = NULL;
+static std::unique_ptr<soundtouch::SoundTouch> pSoundTouch;
 static int ts_stats_stretchblocks = 0;
 static int ts_stats_normalblocks = 0;
 static int ts_stats_logcounter = 0;
@@ -42,7 +38,7 @@ float SndBuffer::cTempo = 1;
 float SndBuffer::eTempo = 1;
 int SndBuffer::freezeTempo = 0;
 
-void SndBuffer::PredictDataWrite( int samples )
+void SndBuffer::PredictDataWrite(int samples)
 {
 	m_predictData += samples;
 }
@@ -63,24 +59,22 @@ float SndBuffer::GetStatusPct()
 
 	//ConLog( "Data %d >>> driver: %d   predict: %d\n", data, drvempty, predictData );
 
-	float result = (float)(m_data + m_predictData - drvempty) - (m_size/2);
-	result /= (m_size/2);
+	float result = static_cast<float>(m_data + m_predictData - drvempty) - (m_size / 2);
+	result /= m_size / 2;
 	return result;
 }
 
 void SndBuffer::UpdateTempoChange()
 {
-	if( --freezeTempo > 0 )
-	{
+	if (--freezeTempo > 0)
 		return;
-	}
 
 	float statusPct = GetStatusPct();
 	float pctChange = statusPct - lastPct;
 
 	float tempoChange;
 	float emergencyAdj = 0;
-	float newcee = cTempo;		// workspace var. for cTempo
+	float newcee = cTempo; // workspace var. for cTempo
 
 	// IMPORTANT!
 	// If you plan to tweak these values, make sure you're using a release build
@@ -97,14 +91,12 @@ void SndBuffer::UpdateTempoChange()
 
 	tempoChange = pctChange * 0.75f;
 
-	if( statusPct * tempoChange < 0.0f )
-	{
+	if (statusPct * tempoChange < 0.0f)
 		// only apply tempo change if it is in synch with the buffer status.
 		// In other words, if the buffer is high (over 0%), and is decreasing,
 		// ignore it.  It'll just muck things up.
 
 		tempoChange = 0;
-	}
 
 	// Sudden spikes in framerate can cause the nominal buffer status
 	// to go critical, in which case we have to enact an emergency
@@ -125,27 +117,22 @@ void SndBuffer::UpdateTempoChange()
 
 	// Prediction based on the buffer fill status:
 
-	const float statusWeight = 2.99f;
-	const float statusRange = 0.068f;
+	float statusWeight = 2.99f;
+	float statusRange = 0.068f;
 
 	// "non-emergency" deadzone:  In this area stretching will be strongly discouraged.
 	// Note: due tot he nature of timestretch latency, it's always a wee bit harder to
 	// cope with low fps (underruns) than it is high fps (overruns).  So to help out a
 	// little, the low-end portions of this check are less forgiving than the high-sides.
 
-	if( cTempo < 0.965f || cTempo > 1.060f ||
-		pctChange < -0.38f || pctChange > 0.54f ||
-		statusPct < -0.32f || statusPct > 0.39f ||
-		eTempo < 0.89f || eTempo > 1.19f )
-	{
-		emergencyAdj = ( pow( statusPct*statusWeight, 3.0f ) * statusRange);
-	}
+	if (cTempo < 0.965f || cTempo > 1.060f || pctChange < -0.38f || pctChange > 0.54f || statusPct < -0.32f || statusPct > 0.39f || eTempo < 0.89f || eTempo > 1.19f)
+		emergencyAdj = std::pow(statusPct * statusWeight, 3.0f) * statusRange;
 
 	// Smooth things out by factoring our previous adjustment into this one.
 	// It helps make the system 'feel' a little smarter by  giving it at least
 	// one packet worth of history to help work off of:
 
-	emergencyAdj = (emergencyAdj * 0.75f) + (lastEmergencyAdj * 0.25f );
+	emergencyAdj = (emergencyAdj * 0.75f) + (lastEmergencyAdj * 0.25f);
 
 	lastEmergencyAdj = emergencyAdj;
 	lastPct = statusPct;
@@ -157,30 +144,34 @@ void SndBuffer::UpdateTempoChange()
 	// at 100ms latency, which is pretty good (larger buffers normalize even
 	// quicker).
 
-	newcee += newcee * (tempoChange+emergencyAdj) * 0.03f;
+	newcee += newcee * (tempoChange + emergencyAdj) * 0.03f;
 
 	// Apply tempoChange as a scale of cTempo.  That way the effect is proportional
 	// to the current tempo.  (otherwise tempos rate of change at the extremes would
 	// be too drastic)
 
-	float newTempo = newcee + ( emergencyAdj * cTempo );
+	float newTempo = newcee + (emergencyAdj * cTempo);
 
 	// ... and as a final optimization, only stretch if the new tempo is outside
 	// a nominal threshold.  Keep this threshold check small, because it could
 	// cause some serious side effects otherwise. (enlarging the cTempo check above
 	// is usually better/safer)
-	if( newTempo < 0.970f || newTempo > 1.045f )
+	if (newTempo < 0.970f || newTempo > 1.045f)
 	{
-		cTempo = (float)newcee;
+		cTempo = newcee;
 
-		if( newTempo < 0.10f ) newTempo = 0.10f;
-		else if( newTempo > 10.0f ) newTempo = 10.0f;
+		if (newTempo < 0.10f)
+			newTempo = 0.10f;
+		else if (newTempo > 10.0f)
+			newTempo = 10.0f;
 
-		if( cTempo < 0.15f ) cTempo = 0.15f;
-		else if( cTempo > 7.5f ) cTempo = 7.5f;
+		if (cTempo < 0.15f)
+			cTempo = 0.15f;
+		else if (cTempo > 7.5f)
+			cTempo = 7.5f;
 
-		pSoundTouch->setTempo( eTempo = (float)newTempo );
-		ts_stats_stretchblocks++;
+		pSoundTouch->setTempo(eTempo = newTempo);
+		++ts_stats_stretchblocks;
 
 		/*ConLog(" * SPU2: [Nominal %d%%] [Emergency: %d%%] (baseTempo: %d%% ) (newTempo: %d%%) (buffer: %d%%)\n",
 			//(relation < 0.0) ? "Normalize" : "",
@@ -199,14 +190,14 @@ void SndBuffer::UpdateTempoChange()
 		if (!fEqual(cTempo, 1.0f))
 		{
 			cTempo = 1.0f;
-			eTempo = ( 1.0f + eTempo ) * 0.5f;
-			pSoundTouch->setTempo( eTempo );
+			eTempo = (1.0f + eTempo) * 0.5f;
+			pSoundTouch->setTempo(eTempo);
 		}
 		else
 		{
 			if (!fEqual(eTempo, cTempo))
-				pSoundTouch->setTempo( eTempo=cTempo );
-			ts_stats_normalblocks++;
+				pSoundTouch->setTempo(eTempo = cTempo);
+			++ts_stats_normalblocks;
 		}
 	}
 }
@@ -215,10 +206,11 @@ void SndBuffer::timeStretchUnderrun()
 {
 	// timeStretcher failed it's job.  We need to slow down the audio some.
 
-	cTempo -= (cTempo * 0.12f);
-	eTempo -= (eTempo * 0.30f);
-	if( eTempo < 0.1f ) eTempo = 0.1f;
-	pSoundTouch->setTempo( eTempo );
+	cTempo -= cTempo * 0.12f;
+	eTempo -= eTempo * 0.30f;
+	if (eTempo < 0.1f)
+		eTempo = 0.1f;
+	pSoundTouch->setTempo(eTempo);
 }
 
 int32_t SndBuffer::timeStretchOverrun()
@@ -227,33 +219,34 @@ int32_t SndBuffer::timeStretchOverrun()
 	// up audio playback.
 	cTempo += cTempo * 0.12f;
 	eTempo += eTempo * 0.40f;
-	if( eTempo > 7.5f ) eTempo = 7.5f;
-	pSoundTouch->setTempo( eTempo );
+	if (eTempo > 7.5f)
+		eTempo = 7.5f;
+	pSoundTouch->setTempo(eTempo);
 
 	// Throw out just a little bit (two packets worth) to help
 	// give the TS some room to work:
 
-	return SndOutPacketSize*2;
+	return SndOutPacketSize * 2;
 }
 
-static void CvtPacketToFloat( StereoOut32* srcdest )
+static void CvtPacketToFloat(StereoOut32 *srcdest)
 {
-	StereoOutFloat* dest = (StereoOutFloat*)srcdest;
-	const StereoOut32* src = (StereoOut32*)srcdest;
-	for( int i=0; i<SndOutPacketSize; ++i, ++dest, ++src )
-		*dest = (StereoOutFloat)*src;
+	StereoOutFloat *dest = reinterpret_cast<StereoOutFloat *>(srcdest);
+	const StereoOut32 *src = srcdest;
+	for (int i = 0; i < SndOutPacketSize; ++i, ++dest, ++src)
+		*dest = static_cast<StereoOutFloat>(*src);
 }
 
 // Parameter note: Size should always be a multiple of 128, thanks!
-static void CvtPacketToInt( StereoOut32* srcdest, uint32_t size )
+static void CvtPacketToInt(StereoOut32 *srcdest, uint32_t size)
 {
 	//jASSUME( (size & 127) == 0 );
 
-	const StereoOutFloat* src = (StereoOutFloat*)srcdest;
-	StereoOut32* dest = srcdest;
+	const StereoOutFloat *src = reinterpret_cast<StereoOutFloat *>(srcdest);
+	StereoOut32 *dest = srcdest;
 
-	for( uint32_t i=0; i<size; ++i, ++dest, ++src )
-		*dest = (StereoOut32)*src;
+	for (uint32_t i = 0; i < size; ++i, ++dest, ++src)
+		*dest = static_cast<StereoOut32>(*src);
 }
 
 void SndBuffer::timeStretchWrite()
@@ -266,20 +259,19 @@ void SndBuffer::timeStretchWrite()
 	// suddenly we'll get several chunks back at once.  Thus we use
 	// data prediction to make the timestretcher more responsive.
 
-	PredictDataWrite( (int)( SndOutPacketSize / eTempo ) );
-	CvtPacketToFloat( sndTempBuffer );
+	PredictDataWrite(static_cast<int>(SndOutPacketSize / eTempo));
+	CvtPacketToFloat(sndTempBuffer.get());
 
-	pSoundTouch->putSamples( (float*)sndTempBuffer, SndOutPacketSize );
+	pSoundTouch->putSamples(reinterpret_cast<float *>(sndTempBuffer.get()), SndOutPacketSize);
 
 	int tempProgress;
-	while( tempProgress = pSoundTouch->receiveSamples( (float*)sndTempBuffer, SndOutPacketSize),
-		tempProgress != 0 )
+	while (tempProgress = pSoundTouch->receiveSamples(reinterpret_cast<float *>(sndTempBuffer.get()), SndOutPacketSize), !!tempProgress)
 	{
 		// Hint: It's assumed that pSoundTouch will return chunks of 128 bytes (it always does as
 		// long as the SSE optimizations are enabled), which means we can do our own SSE opts here.
 
-		CvtPacketToInt( sndTempBuffer, tempProgress );
-		_WriteSamples( sndTempBuffer, tempProgress );
+		CvtPacketToInt(sndTempBuffer.get(), tempProgress);
+		_WriteSamples(sndTempBuffer.get(), tempProgress);
 		progress = true;
 	}
 
@@ -288,15 +280,13 @@ void SndBuffer::timeStretchWrite()
 	//TODO
 	//if( MsgOverruns() )
 	{
-		if( progress )
+		if(progress)
 		{
-			if( ++ts_stats_logcounter > 300 )
+			if (++ts_stats_logcounter > 300)
 			{
 				ts_stats_logcounter = 0;
-				printf( " * SPU2 > Timestretch Stats > %d%% of packets stretched.\n",
-					( ts_stats_stretchblocks * 100 ) / ( ts_stats_normalblocks + ts_stats_stretchblocks ) );
-				ts_stats_normalblocks = 0;
-				ts_stats_stretchblocks = 0;
+				printf(" * SPU2 > Timestretch Stats > %d%% of packets stretched.\n", (ts_stats_stretchblocks * 100) / (ts_stats_normalblocks + ts_stats_stretchblocks));
+				ts_stats_normalblocks = ts_stats_stretchblocks = 0;
 			}
 		}
 	}
@@ -304,49 +294,22 @@ void SndBuffer::timeStretchWrite()
 
 void SndBuffer::soundtouchInit()
 {
-	pSoundTouch = new soundtouch::SoundTouch();
+	pSoundTouch.reset(new soundtouch::SoundTouch());
 	pSoundTouch->setSampleRate(SampleRate);
 	pSoundTouch->setChannels(2);
 
-	pSoundTouch->setSetting( soundtouch::SETTING_USE_QUICKSEEK, 0 );
-	pSoundTouch->setSetting( soundtouch::SETTING_USE_AA_FILTER, 0 );
-
-	SoundtouchCfg::ApplySettings( *pSoundTouch );
+	pSoundTouch->setSetting(soundtouch::SETTING_USE_QUICKSEEK, 0);
+	pSoundTouch->setSetting(soundtouch::SETTING_USE_AA_FILTER, 0);
 
 	pSoundTouch->setTempo(1);
 
 	// some timestretch management vars:
 
-	cTempo = 1.0;
-	eTempo = 1.0;
-	lastPct = 0;
-	lastEmergencyAdj = 0;
+	cTempo = eTempo = 1.0;
+	lastPct = lastEmergencyAdj = 0;
 
 	// just freeze tempo changes for a while at startup.
 	// the driver buffers are bogus anyway.
 	freezeTempo = 16;
 	m_predictData = 0;
-}
-
-// reset timestretch management vars, and delay updates a bit:
-void SndBuffer::soundtouchClearContents()
-{
-	if( pSoundTouch == NULL ) return;
-
-	pSoundTouch->clear();
-	pSoundTouch->setTempo(1);
-
-	cTempo = 1.0;
-	eTempo = 1.0;
-	lastPct = 0;
-	lastEmergencyAdj = 0;
-
-	freezeTempo = 16;
-	m_predictData = 0;
-}
-
-void SndBuffer::soundtouchCleanup()
-{
-	//safe_delete( pSoundTouch );
-	delete pSoundTouch;
 }

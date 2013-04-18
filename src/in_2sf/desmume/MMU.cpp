@@ -22,62 +22,46 @@
 #include <cmath>
 #include <cstring>
 #include <cassert>
-
-#include "common.h"
-//#include "debug.h"
 #include "NDSSystem.h"
 #include "cp15.h"
-//#include "wifi.h"
 #include "registers.h"
-//#include "render3D.h"
-//#include "gfx3d.h"
-//#include "rtc.h"
 #include "mc.h"
-//#include "addons.h"
 #include "slot1.h"
-//#include "mic.h"
-//#include "movie.h"
 #include "readwrite.h"
 #include "MMU_timing.h"
 
-//#undef min
+// http://home.utah.edu/~nahaj/factoring/isqrt.c.html
+static uint64_t isqrt(uint64_t x)
+{
+	if (x < 1)
+		return 0;
 
-/*#ifdef DO_ASSERT_UNALIGNED
-#define ASSERT_UNALIGNED(x) assert(x)
-#else
-#define ASSERT_UNALIGNED(x)
-#endif*/
+	/* Load the binary constant 01 00 00 ... 00, where the number
+	 * of zero bits to the right of the single one bit
+	 * is even, and the one bit is as far left as is consistant
+	 * with that condition.)
+	 */
+	uint64_t squaredbit = static_cast<uint64_t>((static_cast<uint64_t>(~0LL) >> 1) & ~(static_cast<uint64_t>(~0LL) >> 2));
+	/* This portable load replaces the loop that used to be
+	 * here, and was donated by  legalize@xmission.com
+	 */
 
-//http://home.utah.edu/~nahaj/factoring/isqrt.c.html
-static uint64_t isqrt (uint64_t x) {
-  uint64_t   squaredbit, remainder, root;
+	/* Form bits of the answer. */
+	uint64_t remainder = x, root = 0;
+	while (squaredbit > 0)
+	{
+		if (remainder >= (squaredbit | root))
+		{
+			remainder -= squaredbit | root;
+			root >>= 1;
+			root |= squaredbit;
+		}
+		else
+			root >>= 1;
+		squaredbit >>= 2;
+	}
 
-   if (x<1) return 0;
-
-   /* Load the binary constant 01 00 00 ... 00, where the number
-    * of zero bits to the right of the single one bit
-    * is even, and the one bit is as far left as is consistant
-    * with that condition.)
-    */
-   squaredbit  = (uint64_t) ((((uint64_t) ~0LL) >> 1) &
-                        ~(((uint64_t) ~0LL) >> 2));
-   /* This portable load replaces the loop that used to be
-    * here, and was donated by  legalize@xmission.com
-    */
-
-   /* Form bits of the answer. */
-   remainder = x;  root = 0;
-   while (squaredbit > 0) {
-     if (remainder >= (squaredbit | root)) {
-         remainder -= (squaredbit | root);
-         root >>= 1; root |= squaredbit;
-     } else {
-         root >>= 1;
-     }
-     squaredbit >>= 2;
-   }
-
-   return root;
+	return root;
 }
 
 uint32_t partie = 1;
@@ -85,83 +69,12 @@ uint32_t _MMU_MAIN_MEM_MASK = 0x3FFFFF;
 uint32_t _MMU_MAIN_MEM_MASK16 = 0x3FFFFF & ~1;
 uint32_t _MMU_MAIN_MEM_MASK32 = 0x3FFFFF & ~3;
 
-//#define	_MMU_DEBUG
-
-/*#ifdef _MMU_DEBUG
-
-#include <stdarg.h>
-void mmu_log_debug_ARM9(uint32_t adr, const char *fmt, ...)
-{
-	if (adr < 0x4000000) return;
-//	if (adr > 0x4100014) return;
-//#if 1
-	if (adr >= 0x4000000 && adr <= 0x400006E) return;		// Display Engine A
-	if (adr >= 0x40000B0 && adr <= 0x4000134) return;		// DMA, Timers and Keypad
-	if (adr >= 0x4000180 && adr <= 0x40001BC) return;		// IPC/ROM
-	if (adr >= 0x4000204 && adr <= 0x400024A) return;		// Memory & IRQ control
-	if (adr >= 0x4000280 && adr <= 0x4000306) return;		// Maths
-	if (adr >= 0x4000320 && adr <= 0x40006A3) return;		// 3D dispaly engine
-	if (adr >= 0x4001000 && adr <= 0x400106E) return;		// Display Engine B
-	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
-//#endif
-	va_list list;
-	char msg[512];
-
-	memset(msg,0,512);
-
-	va_start(list,fmt);
-		_vsnprintf(msg,511,fmt,list);
-	va_end(list);
-
-	INFO("MMU ARM9 0x%08X: %s\n", adr, msg);
-}
-
-void mmu_log_debug_ARM7(uint32_t adr, const char *fmt, ...)
-{
-	if (adr < 0x4000004) return;
-	if (adr > 0x4808FFF) return;
-#if 1
-	if (adr >= 0x4000004 && adr < 0x4000180) return;		// ARM7 I/O Map
-	if (adr >= 0x4000180 && adr <= 0x40001C4) return;		// IPC/ROM
-	if (adr >= 0x4000204 && adr <= 0x400030C) return;		// Memory and IRQ Control
-	if (adr >= 0x4000400 && adr <= 0x400051E) return;		// Sound Registers
-	if (adr >= 0x4100000 && adr <= 0x4100014) return;		// IPC/ROM
-	if (adr >= 0x4800000 && adr <= 0x4808FFF) return;		// WLAN Registers
-#endif
-	va_list list;
-	char msg[512];
-
-	memset(msg,0,512);
-
-	va_start(list,fmt);
-		_vsnprintf(msg,511,fmt,list);
-	va_end(list);
-
-	INFO("MMU ARM7 0x%08X: %s\n", adr, msg);
-
-}
-#else
-#define mmu_log_debug_ARM9(...)
-#define mmu_log_debug_ARM7(...)
-#endif*/
-
-
-//#define LOG_CARD
-//#define LOG_GPU
-//#define LOG_DMA
-//#define LOG_DMA2
-//#define LOG_DIV
-
-#define DUP2(x)  x, x
-#define DUP4(x)  x, x, x, x
-#define DUP8(x)  x, x, x, x,  x, x, x, x
-#define DUP16(x) x, x, x, x,  x, x, x, x,  x, x, x, x,  x, x, x, x
-
 MMU_struct MMU;
 MMU_struct_new MMU_new;
 MMU_struct_timing MMU_timing;
 
-uint8_t * MMU_struct::MMU_MEM[2][256] = {
+uint8_t *MMU_struct::MMU_MEM[2][256] =
+{
 	//arm9
 	{
 		/* 0X*/	DUP16(MMU.ARM9_ITCM),
@@ -173,8 +86,8 @@ uint8_t * MMU_struct::MMU_MEM[2][256] = {
 		/* 5X*/	DUP16(MMU.ARM9_VMEM),
 		/* 6X*/	DUP16(MMU.ARM9_LCD),
 		/* 7X*/	DUP16(MMU.ARM9_OAM),
-		/* 8X*/	DUP16(NULL),
-		/* 9X*/	DUP16(NULL),
+		/* 8X*/	DUP16(nullptr),
+		/* 9X*/	DUP16(nullptr),
 		/* AX*/	DUP16(MMU.UNUSED_RAM),
 		/* BX*/	DUP16(MMU.UNUSED_RAM),
 		/* CX*/	DUP16(MMU.UNUSED_RAM),
@@ -194,18 +107,19 @@ uint8_t * MMU_struct::MMU_MEM[2][256] = {
 		/* 5X*/	DUP16(MMU.UNUSED_RAM),
 		/* 6X*/	DUP16(MMU.ARM9_LCD),
 		/* 7X*/	DUP16(MMU.UNUSED_RAM),
-		/* 8X*/	DUP16(NULL),
-		/* 9X*/	DUP16(NULL),
+		/* 8X*/	DUP16(nullptr),
+		/* 9X*/	DUP16(nullptr),
 		/* AX*/	DUP16(MMU.UNUSED_RAM),
 		/* BX*/	DUP16(MMU.UNUSED_RAM),
 		/* CX*/	DUP16(MMU.UNUSED_RAM),
 		/* DX*/	DUP16(MMU.UNUSED_RAM),
 		/* EX*/	DUP16(MMU.UNUSED_RAM),
 		/* FX*/	DUP16(MMU.UNUSED_RAM)
-		}
+	}
 };
 
-uint32_t MMU_struct::MMU_MASK[2][256] = {
+uint32_t MMU_struct::MMU_MASK[2][256] =
+{
 	//arm9
 	{
 		/* 0X*/	DUP16(0x00007FFF),
@@ -246,438 +160,434 @@ uint32_t MMU_struct::MMU_MASK[2][256] = {
 		/* DX*/	DUP16(0x00000003),
 		/* EX*/	DUP16(0x00000003),
 		/* FX*/	DUP16(0x00000003)
-		}
+	}
 };
-
-// this logic was moved to MMU_timing.h
-//CACHE_ALIGN
-//TWaitState MMU_struct::MMU_WAIT16[2][16] = {
-//	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm9
-//	{ 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1 }, //arm7
-//};
-//
-//CACHE_ALIGN
-//TWaitState MMU_struct::MMU_WAIT32[2][16] = {
-//	{ 1, 1, 1, 1, 1, 2, 2, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm9
-//	{ 1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 5, 1, 1, 1, 1, 1 }, //arm7
-//};
 
 //////////////////////////////////////////////////////////////
 
-//-------------
-//VRAM MEMORY MAPPING
-//-------------
-//(Everything is mapped through to ARM9_LCD in blocks of 16KB)
+// -------------
+// VRAM MEMORY MAPPING
+// -------------
+// (Everything is mapped through to ARM9_LCD in blocks of 16KB)
 
-//for all of the below, values = 41 indicate unmapped memory
+// for all of the below, values = 41 indicate unmapped memory
 static const uint8_t VRAM_PAGE_UNMAPPED = 41;
 
 static const unsigned VRAM_LCDC_PAGES = 41;
 uint8_t vram_lcdc_map[VRAM_LCDC_PAGES];
 
-//in the range of 0x06000000 - 0x06800000 in 16KB pages (the ARM9 vram mappable area)
-//this maps to 16KB pages in the LCDC buffer which is what will actually contain the data
+// in the range of 0x06000000 - 0x06800000 in 16KB pages (the ARM9 vram mappable area)
+// this maps to 16KB pages in the LCDC buffer which is what will actually contain the data
 uint8_t vram_arm9_map[VRAM_ARM9_PAGES];
 
-//this chooses which banks are mapped in the 128K banks starting at 0x06000000 in ARM7
+// this chooses which banks are mapped in the 128K banks starting at 0x06000000 in ARM7
 uint8_t vram_arm7_map[2];
 
-//----->
-//consider these later, for better recordkeeping, instead of using the uint8_t* in MMU
-
-////for each 128KB texture slot, this maps to a 16KB starting page in the LCDC buffer
-//#define VRAM_TEX_SLOTS 4
-//uint8_t vram_tex_map[VRAM_TEX_SLOTS];
-//
-////for each 16KB tex palette slot, this maps to a 16KB starting page in the LCDC buffer
-//#define VRAM_TEX_PALETTE_SLOTS 6
-//uint8_t vram_tex_palette_map[VRAM_TEX_PALETTE_SLOTS];
-
-//<---------
-
-
-//void MMU_VRAM_unmap_all();
-
-struct TVramBankInfo {
+struct TVramBankInfo
+{
 	uint8_t page_addr, num_pages;
 };
 
-static const TVramBankInfo vram_bank_info[VRAM_BANKS] = {
-	{0,8},
-	{8,8},
-	{16,8},
-	{24,8},
-	{32,4},
-	{36,1},
-	{37,1},
-	{38,2},
-	{40,1}
+static const TVramBankInfo vram_bank_info[VRAM_BANKS] =
+{
+	{0, 8},
+	{8, 8},
+	{16, 8},
+	{24, 8},
+	{32, 4},
+	{36, 1},
+	{37, 1},
+	{38, 2},
+	{40, 1}
 };
 
-//this is to remind you that the LCDC mapping returns a strange value (not 0x06800000) as you would expect
-//in order to play nicely with the MMU address and mask tables
+// this is to remind you that the LCDC mapping returns a strange value (not 0x06800000) as you would expect
+// in order to play nicely with the MMU address and mask tables
 static const uint32_t LCDC_HACKY_LOCATION = 0x06000000;
 
-//maps an ARM9 BG/OBJ or LCDC address into an LCDC address, and informs the caller of whether it isn't mapped
-//TODO - in cases where this does some mapping work, we could bypass the logic at the end of the _read* and _write* routines
-//this is a good optimization to consider
-//template<int PROCNUM>
-static inline uint32_t MMU_LCDmap(uint32_t addr, bool& unmapped, bool& restricted)
+static const uint32_t ARM7_HACKY_IWRAM_LOCATION = 0x03800000;
+static const uint32_t ARM7_HACKY_SIWRAM_LOCATION = 0x03000000;
+
+// maps an ARM9 BG/OBJ or LCDC address into an LCDC address, and informs the caller of whether it isn't mapped
+// TODO - in cases where this does some mapping work, we could bypass the logic at the end of the _read* and _write* routines
+// this is a good optimization to consider
+// NOTE - this whole approach is probably fundamentally wrong.
+// according to dasShiny research, its possible to map multiple banks to the same addresses. something more sophisticated would be needed.
+// however, it hasnt proven necessary yet for any known test case.
+template<int PROCNUM> static inline uint32_t MMU_LCDmap(uint32_t addr, bool &unmapped, bool &restricted)
 {
 	unmapped = false;
-	restricted = false; //this will track whether 8bit writes are allowed
+	restricted = false; // this will track whether 8bit writes are allowed
 
-	//in case the address is entirely outside of the interesting ranges
-	if(addr < 0x06000000) return addr;
-	if(addr >= 0x07000000) return addr;
-
-	//shared wram mapping for arm7
-	/*if(PROCNUM==ARMCPU_ARM7)
+	// handle SIWRAM and non-shared IWRAM in here too, since it is quite similar to vram.
+	// in fact it is probably implemented with the same pieces of hardware.
+	// its sort of like arm7 non-shared IWRAM is lowest priority, and then SIWRAM goes on top.
+	// however, we implement it differently than vram in emulator for historical reasons.
+	// instead of keeping a page map like we do vram, we just have a list of all possible page maps (there are only 4 each for arm9 and arm7)
+	if (addr >= 0x03000000 && addr < 0x04000000)
 	{
-		//necessary? not sure
-		//addr &= 0x3FFFF;
-		//addr += 0x06000000;
-		uint32_t ofs = addr & 0x1FFFF;
-		uint32_t bank = (addr >> 17)&1;
-		if(vram_arm7_map[bank] == VRAM_PAGE_UNMAPPED)
+		// blocks 0,1,2,3 is arm7 non-shared IWRAM and blocks 4,5 is SIWRAM, and block 8 is un-mapped zeroes
+		int iwram_block_16k;
+		int iwram_offset = addr & 0x3FFF;
+		addr &= 0x00FFFFFF;
+		if (PROCNUM == ARMCPU_ARM7)
 		{
-			unmapped = true;
-			return 0;
+			static const int arm7_siwram_blocks[][4][4] =
+			{
+				{
+					{0, 1, 2, 3}, //WRAMCNT = 0 -> map to IWRAM
+					{4, 4, 4, 4}, //WRAMCNT = 1 -> map to SIWRAM block 0
+					{5, 5, 5, 5}, //WRAMCNT = 2 -> map to SIWRAM block 1
+					{4, 5, 4, 5}, //WRAMCNT = 3 -> map to SIWRAM blocks 0,1
+				},
+				//high region; always maps to non-shared IWRAM
+				{
+					{0, 1, 2, 3},
+					{0, 1, 2, 3},
+					{0, 1, 2, 3},
+					{0, 1, 2, 3}
+				}
+			};
+			int region = (addr >> 23) & 1;
+			int block = (addr >> 14) & 3;
+			assert(region < 2);
+			assert(block < 4);
+			iwram_block_16k = arm7_siwram_blocks[region][MMU.WRAMCNT][block];
+		} //PROCNUM == ARMCPU_ARM7
+		else
+		{
+			// PROCNUM == ARMCPU_ARM9
+			static const int arm9_siwram_blocks[][4] =
+			{
+				{4, 5, 4, 5}, //WRAMCNT = 0 -> map to SIWRAM blocks 0,1
+				{5, 5, 5, 5}, //WRAMCNT = 1 -> map to SIWRAM block 1
+				{4, 4, 4, 4}, //WRAMCNT = 2 -> map to SIWRAM block 0
+				{8, 8, 8, 8}, //WRAMCNT = 3 -> unmapped
+			};
+			int block = (addr >> 14) & 3;
+			assert(block < 4);
+			iwram_block_16k = arm9_siwram_blocks[MMU.WRAMCNT][block];
 		}
-		return LCDC_HACKY_LOCATION + (vram_arm7_map[bank]<<14) + ofs;
-	}*/
+
+		switch (iwram_block_16k >> 2)
+		{
+			case 0: // arm7 non-shared IWRAM
+				return ARM7_HACKY_IWRAM_LOCATION + (iwram_block_16k << 14) + iwram_offset;
+			case 1: //SIWRAM
+				return ARM7_HACKY_SIWRAM_LOCATION + ((iwram_block_16k & 3) << 14) + iwram_offset;
+			case 2: //zeroes
+			CASE2:
+				unmapped = true;
+				return 0;
+			default:
+				assert(false); //how did this happen?
+				goto CASE2;
+		}
+	}
+
+	// in case the address is entirely outside of the interesting VRAM ranges
+	if (addr < 0x06000000)
+		return addr;
+	if (addr >= 0x07000000)
+		return addr;
 
 	restricted = true;
 
-	//handle LCD memory mirroring
-	if(addr>=0x068A4000)
+	// handle LCD memory mirroring
+	// TODO - this is gross! this should be renovated if the vram mapping is ever done in a more sophisticated way taking into account dasShiny research
+	if (addr >= 0x068A4000)
 		addr = 0x06800000 +
-		//(addr%0xA4000); //yuck!! is this even how it mirrors? but we have to keep from overrunning the buffer somehow
-		(addr&0x80000); //just as likely to be right (I have no clue how it should work) but faster.
+		//(addr % 0xA4000); // yuck!! is this even how it mirrors? but we have to keep from overrunning the buffer somehow
+		(addr & 0x80000); // just as likely to be right (I have no clue how it should work) but faster.
 
 	uint32_t vram_page;
 	uint32_t ofs = addr & 0x3FFF;
 
-	//return addresses in LCDC range
-	if(addr>=0x06800000)
+	// return addresses in LCDC range
+	if (addr >= 0x06800000)
 	{
-		//already in LCDC range. just look it up to see whether it is unmapped
-		vram_page = (addr>>14)&63;
-		assert(vram_page<VRAM_LCDC_PAGES);
+		// already in LCDC range. just look it up to see whether it is unmapped
+		vram_page = (addr >> 14) & 63;
+		assert(vram_page < VRAM_LCDC_PAGES);
 		vram_page = vram_lcdc_map[vram_page];
 	}
 	else
 	{
-		//map addresses in BG/OBJ range to an LCDC range
-		vram_page = (addr>>14)&(VRAM_ARM9_PAGES-1);
-		assert(vram_page<VRAM_ARM9_PAGES);
+		// map addresses in BG/OBJ range to an LCDC range
+		vram_page = (addr >> 14) & (VRAM_ARM9_PAGES - 1);
+		assert(vram_page < VRAM_ARM9_PAGES);
 		vram_page = vram_arm9_map[vram_page];
 	}
 
-	if(vram_page == VRAM_PAGE_UNMAPPED)
+	if (vram_page == VRAM_PAGE_UNMAPPED)
 	{
 		unmapped = true;
 		return 0;
 	}
 	else
-		return LCDC_HACKY_LOCATION + (vram_page<<14) + ofs;
+		return LCDC_HACKY_LOCATION + (vram_page << 14) + ofs;
 }
-
-
-//#define LOG_VRAM_ERROR() LOG("No data for block %i MST %i\n", block, VRAMBankCnt & 0x07);
 
 VramConfiguration vramConfiguration;
 
-/*std::string VramConfiguration::describePurpose(Purpose p) {
-	switch(p) {
-		case OFF: return "OFF";
-		case INVALID: return "INVALID";
-		case ABG: return "ABG";
-		case BBG: return "BBG";
-		case AOBJ: return "AOBJ";
-		case BOBJ: return "BOBJ";
-		case LCDC: return "LCDC";
-		case ARM7: return "ARM7";
-		case TEX: return "TEX";
-		case TEXPAL: return "TEXPAL";
-		case ABGEXTPAL: return "ABGEXTPAL";
-		case BBGEXTPAL: return "BBGEXTPAL";
-		case AOBJEXTPAL: return "AOBJEXTPAL";
-		case BOBJEXTPAL: return "BOBJEXTPAL";
-		default: return "UNHANDLED CASE";
-	}
-}
-
-std::string VramConfiguration::describe() {
-	std::stringstream ret;
-	for(int i=0;i<VRAM_BANKS;i++) {
-		ret << (char)(i+'A') << ": " << banks[i].ofs << " " << describePurpose(banks[i].purpose) << std::endl;
-	}
-	return ret.str();
-}*/
-
-//maps the specified bank to LCDC
-static inline void MMU_vram_lcdc(const int bank)
+// maps the specified bank to LCDC
+static inline void MMU_vram_lcdc(int bank)
 {
-	for(int i=0;i<vram_bank_info[bank].num_pages;i++)
+	for (int i = 0; i < vram_bank_info[bank].num_pages; ++i)
 	{
-		int page = vram_bank_info[bank].page_addr+i;
+		int page = vram_bank_info[bank].page_addr + i;
 		vram_lcdc_map[page] = page;
 	}
 }
 
-//maps the specified bank to ARM9 at the provided page offset
-static inline void MMU_vram_arm9(const int bank, const int offset)
+// maps the specified bank to ARM9 at the provided page offset
+static inline void MMU_vram_arm9(int bank, int offset)
 {
-	for(int i=0;i<vram_bank_info[bank].num_pages;i++)
-	{
-		int page = vram_bank_info[bank].page_addr+i;
-
-		vram_arm9_map[i+offset] = page;
-	}
+	for (int i = 0; i < vram_bank_info[bank].num_pages; ++i)
+		vram_arm9_map[i + offset] = vram_bank_info[bank].page_addr + i;
 }
 
-static inline uint8_t* MMU_vram_physical(const int page)
+static inline uint8_t *MMU_vram_physical(int page)
 {
 	return MMU.ARM9_LCD + (page/**ADDRESS_STEP_16KB*/);
 }
 
-//todo - templateize
-static inline void MMU_VRAMmapRefreshBank(const int bank)
+// todo - templateize
+static inline void MMU_VRAMmapRefreshBank(int bank)
 {
 	int block = bank;
-	if(bank >= VRAM_BANK_H) block++;
+	if (bank >= VRAM_BANK_H)
+		++block;
 
 	uint8_t VRAMBankCnt = T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x240 + block);
 
-	//do nothing if the bank isnt enabled
+	// do nothing if the bank isnt enabled
 	uint8_t en = VRAMBankCnt & 0x80;
-	if(!en) return;
+	if (!en)
+		return;
 
-	int mst,ofs=0;
-	switch(bank) {
+	int mst, ofs = 0;
+	switch (bank)
+	{
 		case VRAM_BANK_A:
 		case VRAM_BANK_B:
 			mst = VRAMBankCnt & 3;
-			ofs = (VRAMBankCnt>>3) & 3;
-			switch(mst)
+			ofs = (VRAMBankCnt >> 3) & 3;
+			switch (mst)
 			{
-			case 0: //LCDC
-				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
-				MMU_vram_lcdc(bank);
-				//if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-				break;
-			case 1: //ABG
-				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
-				break;
-			case 2: //AOBJ
-				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
-				switch(ofs) {
-				case 0:
-				case 1:
-					MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+ofs*8);
+				case 0: // LCDC
+					vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
+					MMU_vram_lcdc(bank);
 					break;
-				//default:
-					//PROGINFO("Unsupported ofs setting %d for engine A OBJ vram bank %c\n", ofs, 'A'+bank);
-				}
-				break;
-			case 3: //texture
-				vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
-				MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				break;
-			default: goto unsupported_mst;
+				case 1: // ABG
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
+					MMU_vram_arm9(bank, VRAM_PAGE_ABG + ofs * 8);
+					break;
+				case 2: // AOBJ
+					vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
+					switch (ofs)
+					{
+						case 0:
+						case 1:
+							MMU_vram_arm9(bank, VRAM_PAGE_AOBJ + ofs * 8);
+					}
+					break;
+				case 3: // texture
+					vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
+					MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					break;
+				default:
+					goto unsupported_mst;
 			}
 			break;
 
 		case VRAM_BANK_C:
 		case VRAM_BANK_D:
 			mst = VRAMBankCnt & 7;
-			ofs = (VRAMBankCnt>>3) & 3;
-			switch(mst)
+			ofs = (VRAMBankCnt >> 3) & 3;
+			switch (mst)
 			{
-			case 0: //LCDC
-				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
-				MMU_vram_lcdc(bank);
-				//if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-				break;
-			case 1: //ABG
-				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_arm9(bank,VRAM_PAGE_ABG+ofs*8);
-				break;
-			case 2: //arm7
-				vramConfiguration.banks[bank].purpose = VramConfiguration::ARM7;
-				if(bank == 2) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 1);
-				if(bank == 3) T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 2);
-				switch(ofs) {
-				case 0:
-				case 1:
-					vram_arm7_map[ofs] = vram_bank_info[bank].page_addr;
+				case 0: // LCDC
+					vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
+					MMU_vram_lcdc(bank);
 					break;
-				//default:
-					//PROGINFO("Unsupported ofs setting %d for arm7 vram bank %c\n", ofs, 'A'+bank);
-				}
-
-				break;
-			case 3: //texture
-				vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
-				MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				break;
-			case 4: //BGB or BOBJ
-				if(bank == VRAM_BANK_C)  {
-					vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-					MMU_vram_arm9(bank,VRAM_PAGE_BBG); //BBG
-				} else {
-					vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
-					MMU_vram_arm9(bank,VRAM_PAGE_BOBJ); //BOBJ
-				}
-				//if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-				break;
-			default: goto unsupported_mst;
+				case 1: // ABG
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
+					MMU_vram_arm9(bank, VRAM_PAGE_ABG + ofs * 8);
+					break;
+				case 2: // arm7
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ARM7;
+					if (bank == 2)
+						T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 1);
+					if (bank == 3)
+						T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, T1ReadByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240) | 2);
+					switch (ofs)
+					{
+						case 0:
+						case 1:
+							vram_arm7_map[ofs] = vram_bank_info[bank].page_addr;
+					}
+					break;
+				case 3: // texture
+					vramConfiguration.banks[bank].purpose = VramConfiguration::TEX;
+					MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					break;
+				case 4: // BGB or BOBJ
+					if (bank == VRAM_BANK_C) 
+					{
+						vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
+						MMU_vram_arm9(bank, VRAM_PAGE_BBG); // BBG
+					}
+					else
+					{
+						vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
+						MMU_vram_arm9(bank, VRAM_PAGE_BOBJ); // BOBJ
+					}
+					break;
+				default:
+					goto unsupported_mst;
 			}
 			break;
 
 		case VRAM_BANK_E:
 			mst = VRAMBankCnt & 7;
-			//if(((VRAMBankCnt>>3)&3) != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-			switch(mst) {
-			case 0: //LCDC
-				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
-				MMU_vram_lcdc(bank);
-				break;
-			case 1: //ABG
-				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_arm9(bank,VRAM_PAGE_ABG);
-				break;
-			case 2: //AOBJ
-				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
-				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ);
-				break;
-			case 3: //texture palette
-				vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
-				MMU.texInfo.texPalSlot[0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				MMU.texInfo.texPalSlot[1] = MMU_vram_physical(vram_bank_info[bank].page_addr+1);
-				MMU.texInfo.texPalSlot[2] = MMU_vram_physical(vram_bank_info[bank].page_addr+2);
-				MMU.texInfo.texPalSlot[3] = MMU_vram_physical(vram_bank_info[bank].page_addr+3);
-				break;
-			case 4: //A BG extended palette
-				vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
-				MMU.ExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				MMU.ExtPal[0][1] = MMU.ExtPal[0][0]/* + ADDRESS_STEP_8KB*/;
-				MMU.ExtPal[0][2] = MMU.ExtPal[0][1]/* + ADDRESS_STEP_8KB*/;
-				MMU.ExtPal[0][3] = MMU.ExtPal[0][2]/* + ADDRESS_STEP_8KB*/;
-				break;
-			default: goto unsupported_mst;
+			switch (mst)
+			{
+				case 0: // LCDC
+					vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
+					MMU_vram_lcdc(bank);
+					break;
+				case 1: // ABG
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
+					MMU_vram_arm9(bank, VRAM_PAGE_ABG);
+					break;
+				case 2: // AOBJ
+					vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
+					MMU_vram_arm9(bank, VRAM_PAGE_AOBJ);
+					break;
+				case 3: // texture palette
+					vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
+					MMU.texInfo.texPalSlot[0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					MMU.texInfo.texPalSlot[1] = MMU_vram_physical(vram_bank_info[bank].page_addr + 1);
+					MMU.texInfo.texPalSlot[2] = MMU_vram_physical(vram_bank_info[bank].page_addr + 2);
+					MMU.texInfo.texPalSlot[3] = MMU_vram_physical(vram_bank_info[bank].page_addr + 3);
+					break;
+				case 4: // ABG extended palette
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
+					MMU.ExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					MMU.ExtPal[0][1] = MMU.ExtPal[0][0]/* + ADDRESS_STEP_8KB*/;
+					MMU.ExtPal[0][2] = MMU.ExtPal[0][1]/* + ADDRESS_STEP_8KB*/;
+					MMU.ExtPal[0][3] = MMU.ExtPal[0][2]/* + ADDRESS_STEP_8KB*/;
+					break;
+				default:
+					goto unsupported_mst;
 			}
 			break;
 
 		case VRAM_BANK_F:
-		case VRAM_BANK_G: {
+		case VRAM_BANK_G:
+		{
 			mst = VRAMBankCnt & 7;
-			ofs = (VRAMBankCnt>>3) & 3;
-			const int pageofslut[] = {0,1,4,5};
-			const int pageofs = pageofslut[ofs];
-			switch(mst)
+			ofs = (VRAMBankCnt >> 3) & 3;
+			const int pageofslut[] = {0, 1, 4, 5};
+			int pageofs = pageofslut[ofs];
+			switch (mst)
 			{
-			case 0: //LCDC
-				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
-				MMU_vram_lcdc(bank);
-				//if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-				break;
-			case 1: //ABG
-				vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
-				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs);
-				MMU_vram_arm9(bank,VRAM_PAGE_ABG+pageofs+2); //unexpected mirroring (required by spyro eternal night)
-				break;
-			case 2: //AOBJ
-				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
-				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs);
-				MMU_vram_arm9(bank,VRAM_PAGE_AOBJ+pageofs+2); //unexpected mirroring - I have no proof, but it is inferred from the ABG above
-				break;
-			case 3: //texture palette
-				vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
-				MMU.texInfo.texPalSlot[pageofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				break;
-			case 4: //A BG extended palette
-				switch(ofs) {
-				case 0:
-				case 1:
-					vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
-					MMU.ExtPal[0][ofs*2] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-					MMU.ExtPal[0][ofs*2+1] = MMU.ExtPal[0][ofs*2]/* + ADDRESS_STEP_8KB*/;
+				case 0: // LCDC
+					vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
+					MMU_vram_lcdc(bank);
+					break;
+				case 1: // ABG
+					vramConfiguration.banks[bank].purpose = VramConfiguration::ABG;
+					MMU_vram_arm9(bank, VRAM_PAGE_ABG + pageofs);
+					MMU_vram_arm9(bank, VRAM_PAGE_ABG + pageofs + 2); // unexpected mirroring (required by spyro eternal night)
+					break;
+				case 2: // AOBJ
+					vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJ;
+					MMU_vram_arm9(bank, VRAM_PAGE_AOBJ + pageofs);
+					MMU_vram_arm9(bank, VRAM_PAGE_AOBJ + pageofs + 2); // unexpected mirroring - I have no proof, but it is inferred from the ABG above
+					break;
+				case 3: // texture palette
+					vramConfiguration.banks[bank].purpose = VramConfiguration::TEXPAL;
+					MMU.texInfo.texPalSlot[pageofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					break;
+				case 4: // ABG extended palette
+					switch (ofs)
+					{
+						case 0:
+						case 1:
+							vramConfiguration.banks[bank].purpose = VramConfiguration::ABGEXTPAL;
+							MMU.ExtPal[0][ofs * 2] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+							MMU.ExtPal[0][ofs * 2 + 1] = MMU.ExtPal[0][ofs * 2]/* + ADDRESS_STEP_8KB*/;
+							break;
+						default:
+							vramConfiguration.banks[bank].purpose = VramConfiguration::INVALID;
+					}
+					break;
+				case 5: // AOBJ extended palette
+					vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJEXTPAL;
+					MMU.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					MMU.ObjExtPal[0][1] = MMU.ObjExtPal[0][1]/* + ADDRESS_STEP_8KB*/;
 					break;
 				default:
-					vramConfiguration.banks[bank].purpose = VramConfiguration::INVALID;
-					//PROGINFO("Unsupported ofs setting %d for engine A bgextpal vram bank %c\n", ofs, 'A'+bank);
-					break;
-				}
-				break;
-			case 5: //A OBJ extended palette
-				vramConfiguration.banks[bank].purpose = VramConfiguration::AOBJEXTPAL;
-				MMU.ObjExtPal[0][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				MMU.ObjExtPal[0][1] = MMU.ObjExtPal[0][1]/* + ADDRESS_STEP_8KB*/;
-				//if(ofs != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-				break;
-			default: goto unsupported_mst;
+					goto unsupported_mst;
 			}
 			break;
 		}
 
 		case VRAM_BANK_H:
 			mst = VRAMBankCnt & 3;
-			//if(((VRAMBankCnt>>3)&3) != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-			switch(mst)
+			switch (mst)
 			{
-			case 0: //LCDC
-				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
-				MMU_vram_lcdc(bank);
-				break;
-			case 1: //BBG
-				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				MMU_vram_arm9(bank,VRAM_PAGE_BBG);
-				MMU_vram_arm9(bank,VRAM_PAGE_BBG + 4); //unexpected mirroring
-				break;
-			case 2: //B BG extended palette
-				vramConfiguration.banks[bank].purpose = VramConfiguration::BBGEXTPAL;
-				MMU.ExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				MMU.ExtPal[1][1] = MMU.ExtPal[1][0]/* + ADDRESS_STEP_8KB*/;
-				MMU.ExtPal[1][2] = MMU.ExtPal[1][1]/* + ADDRESS_STEP_8KB*/;
-				MMU.ExtPal[1][3] = MMU.ExtPal[1][2]/* + ADDRESS_STEP_8KB*/;
-				break;
-			default: goto unsupported_mst;
+				case 0: // LCDC
+					vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
+					MMU_vram_lcdc(bank);
+					break;
+				case 1: // BBG
+					vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
+					MMU_vram_arm9(bank, VRAM_PAGE_BBG);
+					MMU_vram_arm9(bank, VRAM_PAGE_BBG + 4); // unexpected mirroring
+					break;
+				case 2: // BBG extended palette
+					vramConfiguration.banks[bank].purpose = VramConfiguration::BBGEXTPAL;
+					MMU.ExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					MMU.ExtPal[1][1] = MMU.ExtPal[1][0]/* + ADDRESS_STEP_8KB*/;
+					MMU.ExtPal[1][2] = MMU.ExtPal[1][1]/* + ADDRESS_STEP_8KB*/;
+					MMU.ExtPal[1][3] = MMU.ExtPal[1][2]/* + ADDRESS_STEP_8KB*/;
+					break;
+				default:
+					goto unsupported_mst;
 			}
 			break;
 
 		case VRAM_BANK_I:
 			mst = VRAMBankCnt & 3;
-			//if(((VRAMBankCnt>>3)&3) != 0) PROGINFO("Bank %i: MST %i OFS %i\n", mst, ofs);
-			switch(mst)
+			switch (mst)
 			{
-			case 0: //LCDC
-				vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
-				MMU_vram_lcdc(bank);
-				break;
-			case 1: //BBG
-				vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
-				MMU_vram_arm9(bank,VRAM_PAGE_BBG+2);
-				MMU_vram_arm9(bank,VRAM_PAGE_BBG+3); //unexpected mirroring
-				break;
-			case 2: //BOBJ
-				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
-				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ);
-				MMU_vram_arm9(bank,VRAM_PAGE_BOBJ+1); //FF3 end scene (lens flare sprite) needs this as it renders a sprite off the end of the 16KB and back around
-				break;
-			case 3: //B OBJ extended palette
-				vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJEXTPAL;
-				MMU.ObjExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
-				MMU.ObjExtPal[1][1] = MMU.ObjExtPal[1][1]/* + ADDRESS_STEP_8KB*/;
-				break;
-			default: goto unsupported_mst;
+				case 0: // LCDC
+					vramConfiguration.banks[bank].purpose = VramConfiguration::LCDC;
+					MMU_vram_lcdc(bank);
+					break;
+				case 1: // BBG
+					vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
+					MMU_vram_arm9(bank, VRAM_PAGE_BBG + 2);
+					MMU_vram_arm9(bank, VRAM_PAGE_BBG + 3); // unexpected mirroring
+					break;
+				case 2: // BOBJ
+					vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJ;
+					MMU_vram_arm9(bank, VRAM_PAGE_BOBJ);
+					MMU_vram_arm9(bank, VRAM_PAGE_BOBJ + 1); // FF3 end scene (lens flare sprite) needs this as it renders a sprite off the end of the 16KB and back around
+					break;
+				case 3: // BOBJ extended palette
+					vramConfiguration.banks[bank].purpose = VramConfiguration::BOBJEXTPAL;
+					MMU.ObjExtPal[1][0] = MMU_vram_physical(vram_bank_info[bank].page_addr);
+					MMU.ObjExtPal[1][1] = MMU.ObjExtPal[1][1]/* + ADDRESS_STEP_8KB*/;
+					break;
+				default:
+					goto unsupported_mst;
 			}
 			break;
-
-
-	} //switch(bank)
+	} // switch(bank)
 
 	vramConfiguration.banks[bank].ofs = ofs;
 
@@ -685,7 +595,6 @@ static inline void MMU_VRAMmapRefreshBank(const int bank)
 
 unsupported_mst:
 	vramConfiguration.banks[bank].purpose = VramConfiguration::INVALID;
-	//PROGINFO("Unsupported mst setting %d for vram bank %c\n", mst, 'A'+bank);
 }
 
 void MMU_VRAM_unmap_all()
@@ -695,12 +604,12 @@ void MMU_VRAM_unmap_all()
 	vram_arm7_map[0] = VRAM_PAGE_UNMAPPED;
 	vram_arm7_map[1] = VRAM_PAGE_UNMAPPED;
 
-	for(int i=0;i<VRAM_LCDC_PAGES;i++)
+	for (int i = 0; i < VRAM_LCDC_PAGES; ++i)
 		vram_lcdc_map[i] = VRAM_PAGE_UNMAPPED;
-	for(int i=0;i<VRAM_ARM9_PAGES;i++)
+	for (int i = 0; i < VRAM_ARM9_PAGES; ++i)
 		vram_arm9_map[i] = VRAM_PAGE_UNMAPPED;
 
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 4; ++i)
 	{
 		MMU.ExtPal[0][i] = MMU.blank_memory;
 		MMU.ExtPal[1][i] = MMU.blank_memory;
@@ -711,213 +620,161 @@ void MMU_VRAM_unmap_all()
 	MMU.ObjExtPal[1][0] = MMU.blank_memory;
 	MMU.ObjExtPal[1][1] = MMU.blank_memory;
 
-	for(int i=0;i<6;i++)
+	for (int i = 0; i < 6; ++i)
 		MMU.texInfo.texPalSlot[i] = MMU.blank_memory;
 
-	for(int i=0;i<4;i++)
+	for (int i = 0; i < 4; ++i)
 		MMU.texInfo.textureSlotAddr[i] = MMU.blank_memory;
 }
 
 static inline void MMU_VRAMmapControl(uint8_t block, uint8_t VRAMBankCnt)
 {
-	//dont handle wram mappings in here
-	if(block == 7) {
-		//wram
+	// handle WRAM, first of all
+	if (block == 7)
+	{
+		MMU.WRAMCNT = VRAMBankCnt & 3;
 		return;
 	}
 
-	//first, save the texture info so we can check it for changes and trigger purges of the texcache
+	//f irst, save the texture info so we can check it for changes and trigger purges of the texcache
 	MMU_struct::TextureInfo oldTexInfo = MMU.texInfo;
 
-	//unmap everything
+	// unmap everything
 	MMU_VRAM_unmap_all();
 
-	//unmap VRAM_BANK_C and VRAM_BANK_D from arm7. theyll get mapped again in a moment if necessary
+	// unmap VRAM_BANK_C and VRAM_BANK_D from arm7. theyll get mapped again in a moment if necessary
 	T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x240, 0);
 
-	//write the new value to the reg
+	// write the new value to the reg
 	T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x240 + block, VRAMBankCnt);
 
-	//refresh all bank settings
-	//these are enumerated so that we can tune the order they get applied
-	//in order to emulate prioritization rules for memory regions
-	//with multiple banks mapped.
-	//We're probably still not mapping things 100% correctly, but this helped us get closer:
-	//goblet of fire "care of magical creatures" maps I and D to BOBJ (the I is an accident)
-	//and requires A to override it.
-	//This may create other bugs....
+	// refresh all bank settings
+	// zero XX-XX-200X (long before jun 2012)
+	// these are enumerated so that we can tune the order they get applied
+	// in order to emulate prioritization rules for memory regions
+	// with multiple banks mapped.
+	// We're probably still not mapping things 100% correctly, but this helped us get closer:
+	// goblet of fire "care of magical creatures" maps I and D to BOBJ (the I is an accident)
+	// and requires A to override it.
+	// This may create other bugs....
 	MMU_VRAMmapRefreshBank(VRAM_BANK_I);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_H);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_G);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_F);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_E);
-	MMU_VRAMmapRefreshBank(VRAM_BANK_D);
-	MMU_VRAMmapRefreshBank(VRAM_BANK_C);
-	MMU_VRAMmapRefreshBank(VRAM_BANK_B);
+	// zero 21-jun-2012
+	// tomwi's streaming music demo sets A and D to ABG (the A is an accident).
+	// in this case, D should get priority. 
+	// this is somewhat risky. will it break other things?
 	MMU_VRAMmapRefreshBank(VRAM_BANK_A);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_B);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_C);
+	MMU_VRAMmapRefreshBank(VRAM_BANK_D);
 
 	//printf(vramConfiguration.describe().c_str());
 	//printf("vram remapped at vcount=%d\n",nds.VCount);
 
-	//if texInfo changed, trigger notifications
-	if(memcmp(&oldTexInfo,&MMU.texInfo,sizeof(MMU_struct::TextureInfo)))
-	{
-		//if(!nds.isIn3dVblank())
-	//		PROGINFO("Changing texture or texture palette mappings outside of 3d vblank\n");
-		//gpu3D->NDS_3D_VramReconfigureSignal();
-	}
-
-	//-------------------------------
-	//set up arm9 mirrorings
-	//these are probably not entirely accurate. more study will be necessary.
-	//in general, we find that it is not uncommon at all for games to accidentally do this.
+	// -------------------------------
+	// set up arm9 mirrorings
+	// these are probably not entirely accurate. more study will be necessary.
+	// in general, we find that it is not uncommon at all for games to accidentally do this.
 	//
-	//being able to easily do these experiments was one of the primary motivations for this remake of the vram mapping system
+	// being able to easily do these experiments was one of the primary motivations for this remake of the vram mapping system
 
-	//see the "unexpected mirroring" comments above for some more mirroring
-	//so far "unexpected mirrorings" are tested by combining these games:
-	//despereaux - storybook subtitles
-	//NSMB - world map sub screen
-	//drill spirits EU - mission select (just for control purposes, as it doesnt use H or I)
-	//...
-	//note that the "unexpected mirroring" items above may at some point rely on being executed in a certain order.
-	//(sequentially A..I)
+	// see the "unexpected mirroring" comments above for some more mirroring
+	// so far "unexpected mirrorings" are tested by combining these games:
+	// despereaux - storybook subtitles
+	// NSMB - world map sub screen
+	// drill spirits EU - mission select (just for control purposes, as it doesnt use H or I)
+	// ...
+	// note that the "unexpected mirroring" items above may at some point rely on being executed in a certain order.
+	// (sequentially A..I)
 
-	const int types[] = {VRAM_PAGE_ABG,VRAM_PAGE_BBG,VRAM_PAGE_AOBJ,VRAM_PAGE_BOBJ};
-	const int sizes[] = {32,8,16,8};
-	for(int t=0;t<4;t++)
+	const int types[] = { VRAM_PAGE_ABG, VRAM_PAGE_BBG, VRAM_PAGE_AOBJ, VRAM_PAGE_BOBJ };
+	const int sizes[] = {32, 8, 16, 8};
+	for (int t = 0; t < 4; ++t)
 	{
-		//the idea here is to pad out the mirrored space with copies of the mappable area,
-		//without respect to what is mapped within that mappable area.
-		//we hope that this is correct in all cases
-		//required for driller spirits in mission select (mapping is simple A,B,C,D to each purpose)
-		const int size = sizes[t];
-		const int mask = size-1;
-		const int type = types[t];
-		for(int i=size;i<128;i++)
+		// the idea here is to pad out the mirrored space with copies of the mappable area,
+		// without respect to what is mapped within that mappable area.
+		// we hope that this is correct in all cases
+		// required for driller spirits in mission select (mapping is simple A,B,C,D to each purpose)
+		int size = sizes[t];
+		int mask = size - 1;
+		int type = types[t];
+		for (int i = size; i < 128; ++i)
 		{
-			const int page = type + i;
-			vram_arm9_map[page] = vram_arm9_map[type+(i&mask)];
+			int page = type + i;
+			vram_arm9_map[page] = vram_arm9_map[type + (i & mask)];
 		}
-
-		//attempt #1: screen corruption in drill spirits EU
-		//it seems like these shouldnt pad out 128K banks (space beyond those should have remained unmapped)
-		//int mirrorMask = -1;
-		//int type = types[t];
-		////if(type==VRAM_PAGE_BOBJ) continue;
-		//if(type==VRAM_PAGE_AOBJ) continue;
-		//for(int i=0;i<128;i++)
-		//{
-		//	int page = type + i;
-		//	if(vram_arm9_map[page] == VRAM_PAGE_UNMAPPED)
-		//	{
-		//		if(i==0) break; //can't mirror anything if theres nothing mapped!
-		//		if(mirrorMask == -1)
-		//			mirrorMask = i-1;
-		//		vram_arm9_map[page] = vram_arm9_map[type+(i&mirrorMask)];
-		//	}
-		//}
 	}
-
-	//-------------------------------
 }
 
 //////////////////////////////////////////////////////////////
 //end vram
 //////////////////////////////////////////////////////////////
 
-
-
-void MMU_Init() {
-	//LOG("MMU init\n");
-
+void MMU_Init()
+{
 	memset(&MMU, 0, sizeof(MMU_struct));
 
 	MMU.CART_ROM = MMU.UNUSED_RAM;
 
-	//MMU.DTCMRegion = 0x027C0000;
-	//even though apps may change dtcm immediately upon startup, this is the correct hardware starting value:
+	// even though apps may change dtcm immediately upon startup, this is the correct hardware starting value:
 	MMU.DTCMRegion = 0x08000000;
 	MMU.ITCMRegion = 0x00000000;
 
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
-	//GFX_PIPEclear();
-	//GFX_FIFOclear();
-	//DISP_FIFOinit();
 	new(&MMU_new) MMU_struct_new;
 
-	mc_init(&MMU.fw, MC_TYPE_FLASH);  /* init fw device */
+	mc_init(&MMU.fw, MC_TYPE_FLASH); /* init fw device */
 	mc_alloc(&MMU.fw, NDS_FW_SIZE_V1);
-	MMU.fw.fp = NULL;
+	MMU.fw.fp = nullptr;
 	MMU.fw.isFirmware = true;
-
-	// Init Backup Memory device, this should really be done when the rom is loaded
-	//mc_init(&MMU.bupmem, MC_TYPE_AUTODETECT);
-	//mc_alloc(&MMU.bupmem, 1);
-	//MMU.bupmem.fp = NULL;
-	//rtcInit();
-	//addonsInit();
-	//slot1Init();
-	/*if(Mic_Init() == false)
-		INFO("Microphone init failed.\n");
-	else
-		INFO("Microphone successfully inited.\n");*/
 }
 
-void MMU_DeInit() {
-	//LOG("MMU deinit\n");
-	/*if (MMU.fw.fp)
-		fclose(MMU.fw.fp);*/
+void MMU_DeInit()
+{
 	mc_free(&MMU.fw);
-	//if (MMU.bupmem.fp)
-	//	fclose(MMU.bupmem.fp);
-	//mc_free(&MMU.bupmem);
-	//addonsClose();
-	//slot1Close();
-	//Mic_DeInit();
 }
 
 void MMU_Reset()
 {
 	memset(MMU.ARM9_DTCM, 0, sizeof(MMU.ARM9_DTCM));
 	memset(MMU.ARM9_ITCM, 0, sizeof(MMU.ARM9_ITCM));
-	memset(MMU.ARM9_LCD,  0, sizeof(MMU.ARM9_LCD));
-	memset(MMU.ARM9_OAM,  0, sizeof(MMU.ARM9_OAM));
-	memset(MMU.ARM9_REG,  0, sizeof(MMU.ARM9_REG));
+	memset(MMU.ARM9_LCD, 0, sizeof(MMU.ARM9_LCD));
+	memset(MMU.ARM9_OAM, 0, sizeof(MMU.ARM9_OAM));
+	memset(MMU.ARM9_REG, 0, sizeof(MMU.ARM9_REG));
 	memset(MMU.ARM9_VMEM, 0, sizeof(MMU.ARM9_VMEM));
-	memset(MMU.MAIN_MEM,  0, sizeof(MMU.MAIN_MEM));
+	memset(MMU.MAIN_MEM, 0, sizeof(MMU.MAIN_MEM));
 
-	memset(MMU.blank_memory,  0, sizeof(MMU.blank_memory));
-	memset(MMU.UNUSED_RAM,    0, sizeof(MMU.UNUSED_RAM));
-	memset(MMU.MORE_UNUSED_RAM,    0, sizeof(MMU.UNUSED_RAM));
+	memset(MMU.blank_memory, 0, sizeof(MMU.blank_memory));
+	memset(MMU.UNUSED_RAM, 0, sizeof(MMU.UNUSED_RAM));
+	memset(MMU.MORE_UNUSED_RAM, 0, sizeof(MMU.UNUSED_RAM));
 
-	memset(MMU.ARM7_ERAM,     0, sizeof(MMU.ARM7_ERAM));
-	memset(MMU.ARM7_REG,      0, sizeof(MMU.ARM7_REG));
-	memset(MMU.ARM7_WIRAM,	  0, sizeof(MMU.ARM7_WIRAM));
-	memset(MMU.SWIRAM,	  0, sizeof(MMU.SWIRAM));
+	memset(MMU.ARM7_ERAM, 0, sizeof(MMU.ARM7_ERAM));
+	memset(MMU.ARM7_REG, 0, sizeof(MMU.ARM7_REG));
+	memset(MMU.ARM7_WIRAM, 0, sizeof(MMU.ARM7_WIRAM));
+	memset(MMU.SWIRAM, 0, sizeof(MMU.SWIRAM));
 
 	IPC_FIFOinit(ARMCPU_ARM9);
 	IPC_FIFOinit(ARMCPU_ARM7);
-	//GFX_PIPEclear();
-	//GFX_FIFOclear();
-	//DISP_FIFOinit();
 
 	MMU.DTCMRegion = 0x027C0000;
 	MMU.ITCMRegion = 0x00000000;
 
-	memset(MMU.timer,         0, sizeof(uint16_t) * 2 * 4);
-	memset(MMU.timerMODE,     0, sizeof(int32_t) * 2 * 4);
-	memset(MMU.timerON,       0, sizeof(uint32_t) * 2 * 4);
-	memset(MMU.timerRUN,      0, sizeof(uint32_t) * 2 * 4);
-	memset(MMU.timerReload,   0, sizeof(uint16_t) * 2 * 4);
+	memset(MMU.timer, 0, sizeof(uint16_t) * 8);
+	memset(MMU.timerMODE, 0, sizeof(int32_t) * 8);
+	memset(MMU.timerON, 0, sizeof(uint32_t) * 8);
+	memset(MMU.timerRUN, 0, sizeof(uint32_t) * 8);
+	memset(MMU.timerReload, 0, sizeof(uint16_t) * 8);
 
-	memset(MMU.reg_IME,       0, sizeof(uint32_t) * 2);
-	memset(MMU.reg_IE,        0, sizeof(uint32_t) * 2);
-	memset(MMU.reg_IF_bits,   0, sizeof(uint32_t) * 2);
-	memset(MMU.reg_IF_pending,   0, sizeof(uint32_t) * 2);
+	memset(MMU.reg_IME, 0, sizeof(uint32_t) * 2);
+	memset(MMU.reg_IE, 0, sizeof(uint32_t) * 2);
+	memset(MMU.reg_IF_bits, 0, sizeof(uint32_t) * 2);
+	memset(MMU.reg_IF_pending, 0, sizeof(uint32_t) * 2);
 
-	memset(MMU.dscard,        0, sizeof(nds_dscard) * 2);
+	memset(MMU.dscard, 0, sizeof(nds_dscard) * 2);
 
 	MMU.divRunning = 0;
 	MMU.divResult = 0;
@@ -931,11 +788,10 @@ void MMU_Reset()
 	MMU.SPI_CNT = 0;
 	MMU.AUX_SPI_CNT = 0;
 
+	MMU.WRAMCNT = 0;
+
 	// Enable the sound speakers
 	T1WriteWord(MMU.ARM7_REG, 0x304, 0x0001);
-
-	//MainScreen.offset = 0;
-	//SubScreen.offset  = 192;
 
 	MMU_VRAM_unmap_all();
 
@@ -946,12 +802,7 @@ void MMU_Reset()
 	MMU.powerMan_Reg[2] = 0x01;
 	MMU.powerMan_Reg[3] = 0x00;
 
-	//rtcInit();
 	partie = 1;
-	//addonsReset();
-	//slot1Reset();
-	//Mic_Reset();
-	//MMU.gfx3dCycles = 0;
 
 	memset(MMU.dscard[ARMCPU_ARM9].command, 0, 8);
 	MMU.dscard[ARMCPU_ARM9].address = 0;
@@ -963,18 +814,12 @@ void MMU_Reset()
 	MMU.dscard[ARMCPU_ARM7].transfer_count = 0;
 	MMU.dscard[ARMCPU_ARM7].mode = CardMode_Normal;
 
-	//HACK!!!
-	//until we improve all our session tracking stuff, we need to save the backup memory filename
+	// HACK!!!
+	// until we improve all our session tracking stuff, we need to save the backup memory filename
 	std::string bleh = MMU_new.backupDevice.getFilename();
 	BackupDevice tempBackupDevice;
-	//bool bleh2 = MMU_new.backupDevice.isMovieMode;
-	//if(bleh2) tempBackupDevice = MMU_new.backupDevice;
 	reconstruct(&MMU_new);
-	/*if(bleh2) {
-		MMU_new.backupDevice = tempBackupDevice;
-		MMU_new.backupDevice.reset_hardware();
-	}
-	else*/ MMU_new.backupDevice.load_rom(bleh.c_str());
+	MMU_new.backupDevice.load_rom(bleh);
 
 	MMU_timing.arm7codeFetch.Reset();
 	MMU_timing.arm7dataFetch.Reset();
@@ -984,39 +829,47 @@ void MMU_Reset()
 	MMU_timing.arm9dataCache.Reset();
 }
 
-void SetupMMU(bool debugConsole, bool dsi) {
-	if(debugConsole) _MMU_MAIN_MEM_MASK = 0x7FFFFF;
-	else _MMU_MAIN_MEM_MASK = 0x3FFFFF;
-	if(dsi) _MMU_MAIN_MEM_MASK = 0xFFFFFF;
+void SetupMMU(bool debugConsole, bool dsi)
+{
+	if (debugConsole)
+		_MMU_MAIN_MEM_MASK = 0x7FFFFF;
+	else
+		_MMU_MAIN_MEM_MASK = 0x3FFFFF;
+	if (dsi)
+		_MMU_MAIN_MEM_MASK = 0xFFFFFF;
 	_MMU_MAIN_MEM_MASK16 = _MMU_MAIN_MEM_MASK & ~1;
 	_MMU_MAIN_MEM_MASK32 = _MMU_MAIN_MEM_MASK & ~3;
 }
 
-void MMU_setRom(uint8_t * rom, uint32_t)
+void MMU_setRom(uint8_t *rom, uint32_t)
 {
 	MMU.CART_ROM = rom;
 }
 
 void MMU_unsetRom()
 {
-	MMU.CART_ROM=MMU.UNUSED_RAM;
+	MMU.CART_ROM = MMU.UNUSED_RAM;
 }
 
-static void execsqrt() {
+static void execsqrt()
+{
 	uint32_t ret;
 	uint8_t mode = MMU_new.sqrt.mode;
 	MMU_new.sqrt.busy = 1;
 
-	if (mode) {
+	if (mode)
+	{
 		uint64_t v = T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
-		ret = (uint32_t)isqrt(v);
-	} else {
+		ret = static_cast<uint32_t>(isqrt(v));
+	}
+	else
+	{
 		uint32_t v = T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8);
-		ret = (uint32_t)isqrt(v);
+		ret = static_cast<uint32_t>(isqrt(v));
 	}
 
-	//clear the result while the sqrt unit is busy
-	//todo - is this right? is it reasonable?
+	// clear the result while the sqrt unit is busy
+	// todo - is this right? is it reasonable?
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B4, 0);
 
 	MMU.sqrtCycles = nds_timer + 26;
@@ -1025,42 +878,41 @@ static void execsqrt() {
 	NDS_Reschedule();
 }
 
-static void execdiv() {
-
-	int64_t num,den;
-	int64_t res,mod;
+static void execdiv()
+{
+	int64_t num, den;
+	int64_t res, mod;
 	uint8_t mode = MMU_new.div.mode;
 	MMU_new.div.busy = 1;
 	MMU_new.div.div0 = 0;
 
-	switch(mode)
+	switch (mode)
 	{
-	case 0:	// 32/32
-		num = (int64_t) (int32_t) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
-		den = (int64_t) (int32_t) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
-		MMU.divCycles = nds_timer + 36;
-		break;
-	case 1:	// 64/32
-	case 3: //gbatek says this is same as mode 1
-		num = (int64_t) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
-		den = (int64_t) (int32_t) T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
-		MMU.divCycles = nds_timer + 68;
-		break;
-	case 2:	// 64/64
-	default:
-		num = (int64_t) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290);
-		den = (int64_t) T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298);
-		MMU.divCycles = nds_timer + 68;
-		break;
+		case 0: // 32/32
+			num = static_cast<int64_t>(static_cast<int32_t>(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290)));
+			den = static_cast<int64_t>(static_cast<int32_t>(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298)));
+			MMU.divCycles = nds_timer + 36;
+			break;
+		case 1: // 64/32
+		case 3: //gbatek says this is same as mode 1
+			num = static_cast<int64_t>(T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290));
+			den = static_cast<int64_t>(static_cast<int32_t>(T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298)));
+			MMU.divCycles = nds_timer + 68;
+			break;
+		case 2: // 64/64
+		default:
+			num = static_cast<int64_t>(T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290));
+			den = static_cast<int64_t>(T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298));
+			MMU.divCycles = nds_timer + 68;
 	}
 
-	if(den==0)
+	if (!den)
 	{
-		res = ((num < 0) ? 1 : -1);
+		res = num < 0 ? 1 : -1;
 		mod = num;
 
 		// the DIV0 flag in DIVCNT is set only if the full 64bit DIV_DENOM value is zero, even in 32bit mode
-		if ((uint64_t)T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298) == 0)
+		if (!static_cast<uint64_t>(T1ReadQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298)))
 			MMU_new.div.div0 = 1;
 	}
 	else
@@ -1068,10 +920,6 @@ static void execdiv() {
 		res = num / den;
 		mod = num % den;
 	}
-
-	/*DIVLOG("DIV %08X%08X / %08X%08X = %08X%08X\r\n", (uint32_t)(num>>32), (uint32_t)num,
-							(uint32_t)(den>>32), (uint32_t)den,
-							(uint32_t)(res>>32), (uint32_t)res);*/
 
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, 0);
 	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, 0);
@@ -1086,39 +934,35 @@ static void execdiv() {
 
 DSI_TSC::DSI_TSC()
 {
-	for(unsigned i=0;i<ARRAY_SIZE(registers);i++)
-		registers[i] = 0x00;
-	reset_command();
+	for (unsigned i = 0; i < ARRAY_SIZE(this->registers); ++i)
+		this->registers[i] = 0x00;
+	this->reset_command();
 }
 
 void DSI_TSC::reset_command()
 {
-	state = 0;
-	readcount = 0;
-	read_flag = 1;
+	this->state = 0;
+	this->readcount = 0;
+	this->read_flag = 1;
 }
 
 uint16_t DSI_TSC::write16(uint16_t val)
 {
 	uint16_t ret;
-	switch(state)
+	switch (state)
 	{
-	case 0:
-		reg_selection = (val>>1)&0x7F;
-		read_flag = val&1;
-		state = 1;
-		return read16();
-	case 1:
-		if(read_flag)
-		{ }
-		else
-		{
-			registers[reg_selection] = (uint8_t)val;
-		}
-		ret = read16();
-		reg_selection++;
-		reg_selection &= 0x7F;
-		return ret;
+		case 0:
+			this->reg_selection = (val >> 1) & 0x7F;
+			this->read_flag = val & 1;
+			this->state = 1;
+			return this->read16();
+		case 1:
+			if (!this->read_flag)
+				this->registers[this->reg_selection] = static_cast<uint8_t>(val);
+			ret = this->read16();
+			++this->reg_selection;
+			this->reg_selection &= 0x7F;
+			return ret;
 	}
 	return 0;
 }
@@ -1126,98 +970,37 @@ uint16_t DSI_TSC::write16(uint16_t val)
 uint16_t DSI_TSC::read16()
 {
 	uint8_t page = registers[0];
-	switch(page)
+	switch (page)
 	{
-	case 3: //page 3
-		switch(reg_selection)
-		{
-		case 9:
-			/*if(nds.isTouch)
-				return 0;
-			else */return 0x40;
-			break;
-		case 14:
-			/*if(nds.isTouch)
-				return 0;
-			else */return 0x02;
-			break;
-		}
-		break;
+		case 3: // page 3
+			switch (this->reg_selection)
+			{
+				case 9:
+					return 0x40;
+				case 14:
+					return 0x02;
+			}
+	} // switch(page)
 
-	case 252: //page 252
-		switch(reg_selection)
-		{
-		//high byte of X:
-		/*case 1: case 3: case 5: case 7: case 9:
-			return (nds.scr_touchX>>8)&0xFF;
-
-		//low byte of X:
-		case 2: case 4: case 6: case 8: case 10:
-			return nds.scr_touchX&0xFF;
-
-		//high byte of Y:
-		case 11: case 13: case 15: case 17: case 19:
-			return (nds.scr_touchY>>8)&0xFF;
-
-		//low byte of Y:
-		case 12: case 14: case 16: case 18: case 20:
-			return nds.scr_touchY&0xFF;*/
-
-		default:
-			return 0xFF;
-		}
-		break;
-	} //switch(page)
-
-	//unknown page or register
+	// unknown page or register
 	return 0xFF;
 }
 
-/*bool DSI_TSC::save_state(EMUFILE* os)
-{
-	uint32_t version = 0;
-	write32le(version,os);
-
-	write8le(reg_selection,os);
-	write8le(read_flag,os);
-	write32le(state,os);
-	write32le(readcount,os);
-	for(int i=0;i<ARRAY_SIZE(registers);i++)
-		write8le(registers[i],os);
-
-	return true;
-}*/
-
-/*bool DSI_TSC::load_state(EMUFILE* is)
-{
-	uint32_t version;
-	read32le(&version,is);
-
-	read8le(&reg_selection,is);
-	read8le(&read_flag,is);
-	read32le(&state,is);
-	read32le(&readcount,is);
-	for(int i=0;i<ARRAY_SIZE(registers);i++)
-		read8le(&registers[i],is);
-
-	return true;
-}*/
-
 // TODO:
 // NAND flash support (used in Made in Ore/WarioWare D.I.Y.)
-template<int PROCNUM>
-void FASTCALL MMU_writeToGCControl(uint32_t val)
+template<int PROCNUM> void FASTCALL MMU_writeToGCControl(uint32_t val)
 {
-	const int TEST_PROCNUM = PROCNUM;
-	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
+	int TEST_PROCNUM = PROCNUM;
+	nds_dscard &card = MMU.dscard[TEST_PROCNUM];
 
 	memcpy(&card.command[0], &MMU.MMU_MEM[TEST_PROCNUM][0x40][0x1A8], 8);
 
 	card.blocklen = 0;
-	slot1_device.write32(PROCNUM,0xFFFFFFFF,val); //Special case for some flashcarts
-	if(card.blocklen==0x01020304) return;
+	slot1_device.write32(PROCNUM, 0xFFFFFFFF, val); // Special case for some flashcarts
+	if (card.blocklen == 0x01020304)
+		return;
 
-	if(!(val & 0x80000000))
+	if (!(val & 0x80000000))
 	{
 		card.address = 0;
 		card.transfer_count = 0;
@@ -1227,21 +1010,20 @@ void FASTCALL MMU_writeToGCControl(uint32_t val)
 		return;
 	}
 
-	uint32_t shift = (val>>24&7);
-	if(shift == 7)
+	uint32_t shift = (val >> 24) & 7;
+	if (shift == 7)
 		card.transfer_count = 1;
-	else if(shift == 0)
+	else if (!shift)
 		card.transfer_count = 0;
 	else
-		card.transfer_count = (0x100<<shift)/4;
+		card.transfer_count = (0x100 << shift) / 4;
 
 	switch (card.mode)
 	{
-	case CardMode_Normal:
-		break;
+		case CardMode_Normal:
+			break;
 
-	case CardMode_KEY1:
-		{
+		case CardMode_KEY1:
 			// TODO
 			//INFO("Cartridge: KEY1 mode unsupported.\n");
 
@@ -1251,826 +1033,501 @@ void FASTCALL MMU_writeToGCControl(uint32_t val)
 			val &= 0x7F7FFFFF;
 			T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 			return;
-		}
-		break;
-	case CardMode_KEY2:
+		case CardMode_KEY2:
 			//INFO("Cartridge: KEY2 mode unsupported.\n");
-		break;
+			break;
 	}
 
-	switch(card.command[0])
+	switch (card.command[0])
 	{
-	case 0x9F: //Dummy
-		card.address = 0;
-		card.transfer_count = 0x800;
-		break;
+		case 0x9F: // Dummy
+			card.address = 0;
+			card.transfer_count = 0x800;
+			break;
 
-	//case 0x90: //Get ROM chip ID
-	//	break;
+		case 0x3C: // Switch to KEY1 mode
+			card.mode = CardMode_KEY1;
+			break;
 
-	case 0x3C: //Switch to KEY1 mode
-		card.mode = CardMode_KEY1;
-		break;
-
-	default:
-		//fall through to the special slot1 handler
-		slot1_device.write32(TEST_PROCNUM, REG_GCROMCTRL,val);
-		break;
+		default:
+			// fall through to the special slot1 handler
+			slot1_device.write32(TEST_PROCNUM, REG_GCROMCTRL, val);
 	}
 
-	if(card.transfer_count == 0)
+	if (!card.transfer_count)
 	{
 		val &= 0x7F7FFFFF;
 		T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 		return;
 	}
 
-    val |= 0x00800000;
-    T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
+	val |= 0x00800000;
+	T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 
 	// Launch DMA if start flag was set to "DS Cart"
 	//printf("triggering card dma\n");
 	triggerDma(EDMAMode_Card);
 }
 
-
-
-template<int PROCNUM>
-uint32_t MMU_readFromGC()
+template<int PROCNUM> uint32_t MMU_readFromGC()
 {
-	const int TEST_PROCNUM = PROCNUM;
+	int TEST_PROCNUM = PROCNUM;
 
 	nds_dscard& card = MMU.dscard[TEST_PROCNUM];
 	uint32_t val = 0;
 
-	if(card.transfer_count == 0)
+	if (!card.transfer_count)
 		return 0;
 
-	switch(card.command[0])
+	switch (card.command[0])
 	{
-		case 0x9F: //Dummy
+		case 0x9F: // Dummy
 			val = 0xFFFFFFFF;
 			break;
 
-		case 0x3C: //Switch to KEY1 mode
+		case 0x3C: // Switch to KEY1 mode
 			val = 0xFFFFFFFF;
 			break;
 
 		default:
 			val = slot1_device.read32(TEST_PROCNUM, REG_GCDATAIN);
-			break;
 	}
 
-	card.address += 4;	// increment address
+	card.address += 4; // increment address
 
-	card.transfer_count--;	// update transfer counter
-	if(card.transfer_count) // if transfer is not ended
-		return val;	// return data
+	--card.transfer_count; // update transfer counter
+	if (card.transfer_count) // if transfer is not ended
+		return val; // return data
 
 	// transfer is done
-	T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4,
-		T1ReadLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4) & 0x7F7FFFFF);
+	T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, T1ReadLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4) & 0x7F7FFFFF);
 
 	// if needed, throw irq for the end of transfer
-	if(MMU.AUX_SPI_CNT & 0x4000)
+	if (MMU.AUX_SPI_CNT & 0x4000)
 		NDS_makeIrq(TEST_PROCNUM, IRQ_BIT_GC_TRANSFER_COMPLETE);
 
 	return val;
 }
 
-
-
-//does some validation on the game's choice of IF value, correcting it if necessary
-/*static void validateIF_arm9()
-{
-}*/
-
 template<int PROCNUM> static void REG_IF_WriteByte(uint32_t addr, uint8_t val)
 {
-	//the following bits are generated from logic and should not be affected here
-	//Bit 21    NDS9 only: Geometry Command FIFO
-	//arm9: IF &= ~0x00200000;
-	//arm7: IF &= ~0x00000000;
-	//UPDATE IN setIF() ALSO!!!!!!!!!!!!!!!!
-	//UPDATE IN mmu_loadstate ALSO!!!!!!!!!!!!
-	if(addr==2)
+	// the following bits are generated from logic and should not be affected here
+	// Bit 21    NDS9 only: Geometry Command FIFO
+	// arm9: IF &= ~0x00200000;
+	// arm7: IF &= ~0x00000000;
+	// UPDATE IN setIF() ALSO!!!!!!!!!!!!!!!!
+	// UPDATE IN mmu_loadstate ALSO!!!!!!!!!!!!
+	if (addr == 2)
 	{
-		if(PROCNUM==ARMCPU_ARM9)
+		if (PROCNUM == ARMCPU_ARM9)
 			val &= ~0x20;
 		else
 			val &= ~0x00;
 	}
 
-	//ZERO 01-dec-2010 : I am no longer sure this approach is correct.. it proved to be wrong for IPC fifo.......
-	//it seems as if IF bits should always be cached (only the user can clear them)
+	// ZERO 01-dec-2010 : I am no longer sure this approach is correct.. it proved to be wrong for IPC fifo.......
+	// it seems as if IF bits should always be cached (only the user can clear them)
 
-	MMU.reg_IF_bits[PROCNUM] &= (~(((uint32_t)val)<<(addr<<3)));
+	MMU.reg_IF_bits[PROCNUM] &= ~(static_cast<uint32_t>(val) << (addr << 3));
 	NDS_Reschedule();
 }
 
-template<int PROCNUM> static void REG_IF_WriteWord(uint32_t addr,uint16_t val)
+template<int PROCNUM> static void REG_IF_WriteWord(uint32_t addr, uint16_t val)
 {
-	REG_IF_WriteByte<PROCNUM>(addr,val&0xFF);
-	REG_IF_WriteByte<PROCNUM>(addr+1,(val>>8)&0xFF);
+	REG_IF_WriteByte<PROCNUM>(addr, val & 0xFF);
+	REG_IF_WriteByte<PROCNUM>(addr + 1, (val >> 8) & 0xFF);
 }
 
 template<int PROCNUM> static void REG_IF_WriteLong(uint32_t val)
 {
-	REG_IF_WriteByte<PROCNUM>(0,val&0xFF);
-	REG_IF_WriteByte<PROCNUM>(1,(val>>8)&0xFF);
-	REG_IF_WriteByte<PROCNUM>(2,(val>>16)&0xFF);
-	REG_IF_WriteByte<PROCNUM>(3,(val>>24)&0xFF);
+	REG_IF_WriteByte<PROCNUM>(0, val & 0xFF);
+	REG_IF_WriteByte<PROCNUM>(1, (val >> 8) & 0xFF);
+	REG_IF_WriteByte<PROCNUM>(2, (val >> 16) & 0xFF);
+	REG_IF_WriteByte<PROCNUM>(3, (val >> 24) & 0xFF);
 }
 
-template<int PROCNUM>
-uint32_t MMU_struct::gen_IF()
+template<int PROCNUM> uint32_t MMU_struct::gen_IF()
 {
-	uint32_t IF = reg_IF_bits[PROCNUM];
-
-	/*if(PROCNUM==ARMCPU_ARM9)
-	{
-		//according to gbatek, these flags are forced on until the condition is removed.
-		//no proof of this though...
-		switch(MMU_new.gxstat.gxfifo_irq)
-		{
-		case 0: //never
-			break;
-		case 1: //less than half full
-			if(MMU_new.gxstat.fifo_low)
-				IF |= IRQ_MASK_ARM9_GXFIFO;
-			break;
-		case 2: //empty
-			if(MMU_new.gxstat.fifo_empty)
-				IF |= IRQ_MASK_ARM9_GXFIFO;
-			break;
-		case 3: //reserved/unknown
-			break;
-		}
-	}*/
-
-	return IF;
+	return this->reg_IF_bits[PROCNUM];
 }
-
-/*static void writereg_DISP3DCNT(const int size, const uint32_t adr, const uint32_t val)
-{
-	//UGH. rewrite this shite to use individual values and reconstruct the return value instead of packing things in this !@#)ing register
-
-	//nanostray2 cutscene will test this vs old desmumes by using some kind of 32bit access for setting up this reg for cutscenes
-	switch(size)
-	{
-	case 8:
-		switch(adr)
-		{
-		case REG_DISPA_DISP3DCNT:
-			MMU.reg_DISP3DCNT_bits &= 0xFFFFFF00;
-			MMU.reg_DISP3DCNT_bits |= val;
-			//gfx3d_Control(MMU.reg_DISP3DCNT_bits);
-			break;
-		case REG_DISPA_DISP3DCNT+1:
-			{
-				uint32_t myval = (val & ~0x30) | (~val & ((MMU.reg_DISP3DCNT_bits>>8) & 0x30)); // bits 12,13 are ack bits
-				myval &= 0x7F; //top bit isnt connected
-				MMU.reg_DISP3DCNT_bits = MMU.reg_DISP3DCNT_bits&0xFFFF00FF;
-				MMU.reg_DISP3DCNT_bits |= (myval<<8);
-				//gfx3d_Control(MMU.reg_DISP3DCNT_bits);
-			}
-			break;
-		}
-		break;
-	case 16:
-	case 32:
-		writereg_DISP3DCNT(8,adr,val&0xFF);
-		writereg_DISP3DCNT(8,adr+1,(val>>8)&0xFF);
-		break;
-	}
-}*/
-
-/*static uint32_t readreg_DISP3DCNT(const int size, const uint32_t adr)
-{
-	//UGH. rewrite this shite to use individual values and reconstruct the return value instead of packing things in this !@#)ing register
-	switch(size)
-	{
-	case 8:
-		switch(adr)
-		{
-		case REG_DISPA_DISP3DCNT:
-			return MMU.reg_DISP3DCNT_bits & 0xFF;
-		case REG_DISPA_DISP3DCNT+1:
-			return ((MMU.reg_DISP3DCNT_bits)>>8)& 0xFF;
-		}
-		break;
-	case 16:
-	case 32:
-		return readreg_DISP3DCNT(8,adr)|(readreg_DISP3DCNT(8,adr+1)<<8);
-	}
-	assert(false);
-	return 0;
-}*/
-
-
-/*static uint32_t readreg_POWCNT1(const int size, const uint32_t adr) {
-	switch(size)
-	{
-	case 8:
-		switch(adr)
-		{
-		case REG_POWCNT1: {
-			uint8_t ret = 0;
-			ret |= nds.power1.lcd?BIT(0):0;
-			ret |= nds.power1.gpuMain?BIT(1):0;
-			ret |= nds.power1.gfx3d_render?BIT(2):0;
-			ret |= nds.power1.gfx3d_geometry?BIT(3):0;
-			return ret;
-			}
-		case REG_POWCNT1+1: {
-			uint8_t ret = 0;
-			ret |= nds.power1.gpuSub?BIT(1):0;
-			ret |= nds.power1.dispswap?BIT(7):0;
-			return ret;
-			}
-		}
-	case 16:
-	case 32:
-		return readreg_POWCNT1(8,adr)|(readreg_POWCNT1(8,adr+1)<<8);
-	}
-	assert(false);
-	return 0;
-}*/
-/*static void writereg_POWCNT1(const int size, const uint32_t adr, const uint32_t val) {
-	switch(size)
-	{
-	case 8:
-		switch(adr)
-		{
-		case REG_POWCNT1:
-			nds.power1.lcd = BIT0(val);
-			nds.power1.gpuMain = BIT1(val);
-			nds.power1.gfx3d_render = BIT2(val);
-			nds.power1.gfx3d_geometry = BIT3(val);
-			break;
-		case REG_POWCNT1+1:
-			nds.power1.gpuSub = BIT1(val);
-			nds.power1.dispswap = BIT7(val);
-			if(nds.power1.dispswap)
-			{
-				//printf("Main core on top (vcount=%d)\n",nds.VCount);
-				//MainScreen.offset = 0;
-				//SubScreen.offset = 192;
-			}
-			else
-			{
-				//printf("Main core on bottom (vcount=%d)\n",nds.VCount);
-				//MainScreen.offset = 192;
-				//SubScreen.offset = 0;
-			}
-			break;
-		}
-		break;
-	case 16:
-	case 32:
-		writereg_POWCNT1(8,adr,val&0xFF);
-		writereg_POWCNT1(8,adr+1,(val>>8)&0xFF);
-		break;
-	}
-}*/
 
 static inline void MMU_IPCSync(uint8_t proc, uint32_t val)
 {
-	//INFO("IPC%s sync 0x%04X (0x%02X|%02X)\n", proc?"7":"9", val, val >> 8, val & 0xFF);
 	uint32_t sync_l = T1ReadLong(MMU.MMU_MEM[proc][0x40], 0x180) & 0xFFFF;
-	uint32_t sync_r = T1ReadLong(MMU.MMU_MEM[proc^1][0x40], 0x180) & 0xFFFF;
+	uint32_t sync_r = T1ReadLong(MMU.MMU_MEM[proc ^ 1][0x40], 0x180) & 0xFFFF;
 
-	sync_l = ( sync_l & 0x000F ) | ( val & 0x0F00 );
-	sync_r = ( sync_r & 0x6F00 ) | ( (val >> 8) & 0x000F );
+	sync_l = (sync_l & 0x000F) | (val & 0x0F00);
+	sync_r = (sync_r & 0x6F00) | ((val >> 8) & 0x000F);
 
 	sync_l |= val & 0x6000;
 
-	/*if(nds.ensataEmulation && proc==1 && nds.ensataIpcSyncCounter<9) {
-		uint32_t iteration = (val&0x0F00)>>8;*/
-
-		/*if(iteration==8-nds.ensataIpcSyncCounter)
-			nds.ensataIpcSyncCounter++;
-		else printf("ERROR: ENSATA IPC SYNC HACK FAILED; BAD THINGS MAY HAPPEN\n");*/
-
-		//for some reason, the arm9 doesn't handshake when ensata is detected.
-		//so we complete the protocol here, which is to mirror the values 8..0 back to
-		//the arm7 as they are written by the arm7
-		/*sync_r &= 0xF0FF;
-		sync_r |= (iteration<<8);
-		sync_l &= 0xFFF0;
-		sync_l |= iteration;
-	}*/
-
 	T1WriteLong(MMU.MMU_MEM[proc][0x40], 0x180, sync_l);
-	T1WriteLong(MMU.MMU_MEM[proc^1][0x40], 0x180, sync_r);
+	T1WriteLong(MMU.MMU_MEM[proc ^ 1][0x40], 0x180, sync_r);
 
 	if ((sync_l & IPCSYNC_IRQ_SEND) && (sync_r & IPCSYNC_IRQ_RECV))
-		NDS_makeIrq(proc^1, IRQ_BIT_IPCSYNC);
+		NDS_makeIrq(proc ^ 1, IRQ_BIT_IPCSYNC);
 
 	NDS_Reschedule();
 }
 
 static inline uint16_t read_timer(int proc, int timerIndex)
 {
-	//chained timers are always up to date
-	if(MMU.timerMODE[proc][timerIndex] == 0xFFFF)
+	// chained timers are always up to date
+	if (MMU.timerMODE[proc][timerIndex] == 0xFFFF)
 		return MMU.timer[proc][timerIndex];
 
-	//sometimes a timer will be read when it is not enabled.
-	//we should have the value cached
-	if(!MMU.timerON[proc][timerIndex])
+	// sometimes a timer will be read when it is not enabled.
+	// we should have the value cached
+	if (!MMU.timerON[proc][timerIndex])
 		return MMU.timer[proc][timerIndex];
 
-	//for unchained timers, we do not keep the timer up to date. its value will need to be calculated here
-	int32_t diff = (int32_t)(nds.timerCycle[proc][timerIndex] - nds_timer);
-	assert(diff>=0);
-	if(diff<0)
-		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ DIFF < 0 (%d) (%d) (%d)\n",diff,timerIndex,MMU.timerMODE[proc][timerIndex]);
+	// for unchained timers, we do not keep the timer up to date. its value will need to be calculated here
+	int32_t diff = static_cast<int32_t>(nds.timerCycle[proc][timerIndex] - nds_timer);
+	assert(diff >= 0);
+	if (diff < 0)
+		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ DIFF < 0 (%d) (%d) (%d)\n", diff, timerIndex, MMU.timerMODE[proc][timerIndex]);
 
-	int32_t units = diff / (1<<MMU.timerMODE[proc][timerIndex]);
+	int32_t units = diff / (1 << MMU.timerMODE[proc][timerIndex]);
 	int32_t ret;
 
-	if(units==65536)
-		ret = 0; //I'm not sure why this is happening...
-		//whichever instruction setup this counter should advance nds_timer (I think?) and the division should truncate down to 65535 immediately
-	else if(units>65536) {
-		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: UNITS %d:%d = %d\n",proc,timerIndex,units);
+	if (units == 65536)
+		ret = 0; // I'm not sure why this is happening...
+	// whichever instruction setup this counter should advance nds_timer (I think?) and the division should truncate down to 65535 immediately
+	else if (units > 65536)
+	{
+		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: UNITS %d:%d = %d\n", proc, timerIndex, units);
 		ret = 0;
 	}
-	else ret = 65535 - units;
+	else
+		ret = 65535 - units;
 
 	return static_cast<uint16_t>(ret);
 }
 
 static inline void write_timer(int proc, int timerIndex, uint16_t val)
 {
-#if 0
-	int mask		= ((val&0x80)>>7) << timerIndex;
-	MMU.CheckTimers = (MMU.CheckTimers & (~mask)) | mask;
-#endif
-
-	if(val&0x80)
+	if (val & 0x80)
 		MMU.timer[proc][timerIndex] = MMU.timerReload[proc][timerIndex];
-	else
-	{
-		if(MMU.timerON[proc][timerIndex])
-			//read the timer value one last time
-			MMU.timer[proc][timerIndex] = read_timer(proc,timerIndex);
-	}
+	else if (MMU.timerON[proc][timerIndex])
+		// read the timer value one last time
+		MMU.timer[proc][timerIndex] = read_timer(proc, timerIndex);
 
 	MMU.timerON[proc][timerIndex] = val & 0x80;
 
-	switch(val&7)
+	switch (val & 7)
 	{
-		case 0 :
-			MMU.timerMODE[proc][timerIndex] = 0+1;
+		case 0:
+			MMU.timerMODE[proc][timerIndex] = 1;
 			break;
-		case 1 :
-			MMU.timerMODE[proc][timerIndex] = 6+1;
+		case 1:
+			MMU.timerMODE[proc][timerIndex] = 7;
 			break;
-		case 2 :
-			MMU.timerMODE[proc][timerIndex] = 8+1;
+		case 2:
+			MMU.timerMODE[proc][timerIndex] = 9;
 			break;
-		case 3 :
-			MMU.timerMODE[proc][timerIndex] = 10+1;
+		case 3:
+			MMU.timerMODE[proc][timerIndex] = 11;
 			break;
-		default :
+		default:
 			MMU.timerMODE[proc][timerIndex] = 0xFFFF;
-			break;
 	}
 
 	int remain = 65536 - MMU.timerReload[proc][timerIndex];
-	nds.timerCycle[proc][timerIndex] = nds_timer + (remain<<MMU.timerMODE[proc][timerIndex]);
+	nds.timerCycle[proc][timerIndex] = nds_timer + (remain << MMU.timerMODE[proc][timerIndex]);
 
-	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x102+timerIndex*4, val);
+	T1WriteWord(MMU.MMU_MEM[proc][0x40], 0x102 + timerIndex * 4, val);
 	NDS_RescheduleTimers();
 }
 
-//extern CACHE_ALIGN MatrixStack	mtxStack[4];
 uint32_t TGXSTAT::read32()
 {
 	uint32_t ret = 0;
 
-	ret |= tb|(tr<<1);
+	ret |= this->tb | (this->tr << 1);
 
-	//int _hack_getMatrixStackLevel(int which);
+	ret |= this->sb << 14; // stack busy
+	ret |= this->se << 15;
+	ret |= 255 << 16;
 
-	// stack position always equal zero. possible timings is wrong
-	// using in "The Wild West"
-	//ret |= ((_hack_getMatrixStackLevel(0) << 13) | (_hack_getMatrixStackLevel(1) << 8)); //matrix stack levels //no proof that these are needed yet
-
-	ret |= sb<<14;	//stack busy
-	ret |= se<<15;
-	ret |= 255<<16;//(std::min(gxFIFO.size,(uint32_t)255))<<16;
-	//if(gxFIFO.size>=255) ret |= BIT(24); //fifo full
-	//if(gxFIFO.size<128) ret |= BIT(25); //fifo half
-	//if(gxFIFO.size==0) ret |= BIT(26); //fifo empty
-	//determine busy flag.
-	//if we're waiting for a flush, we're busy
-	//if(isSwapBuffers) ret |= BIT(27);
-	//if fifo is nonempty, we're busy
-	//if(gxFIFO.size!=0) ret |= BIT(27);
-
-	ret |= ((gxfifo_irq & 0x3) << 30); //user's irq flags
+	ret |= (this->gxfifo_irq & 0x3) << 30; // user's irq flags
 
 	//printf("vc=%03d Returning gxstat read: %08X\n",nds.VCount,ret);
 
-	//ret = (2 << 8);
-	//INFO("gxSTAT 0x%08X (proj %i, pos %i)\n", ret, _hack_getMatrixStackLevel(1), _hack_getMatrixStackLevel(2));
 	return ret;
 }
 
-void TGXSTAT::write32(const uint32_t val)
+void TGXSTAT::write32(uint32_t val)
 {
-	gxfifo_irq = (val>>30)&3;
-	if(BIT15(val))
+	this->gxfifo_irq = (val >> 30) & 3;
+	if (BIT15(val))
 	{
 		// Writing "1" to Bit15 does reset the Error Flag (Bit15),
 		// and additionally resets the Projection Stack Pointer (Bit13)
 		//mtxStack[0].position = 0;
-		se = 0; //clear stack error flag
+		this->se = 0; // clear stack error flag
 	}
 	//printf("gxstat write: %08X while gxfifo.size=%d\n",val,gxFIFO.size);
-
-		//if (val & (1<<29))		// clear? (only in homebrew?)
-	//{
-	//	GFX_PIPEclear();
-	//	GFX_FIFOclear();
-	//	return;
-	//}
 }
 
-/*void TGXSTAT::savestate(EMUFILE *f)
-{
-	write32le(1,f); //version
-	write8le(tb,f); write8le(tr,f); write8le(se,f); write8le(gxfifo_irq,f); write8le(sb,f);
-}*/
-bool TGXSTAT::loadstate(EMUFILE *f)
-{
-	uint32_t version;
-	if(read32le(&version,f) != 1) return false;
-	if(version > 1) return false;
-
-	read8le(&tb,f); read8le(&tr,f); read8le(&se,f); read8le(&gxfifo_irq,f);
-	if (version >= 1)
-		read8le(&sb,f);
-
-	return true;
-}
-
-//this could be inlined...
-void MMU_struct_new::write_dma(const int proc, const int size, const uint32_t _adr, const uint32_t val)
+// this could be inlined...
+void MMU_struct_new::write_dma(int proc, int size, uint32_t _adr, uint32_t val)
 {
 	//printf("%08lld -- write_dma: %d %d %08X %08X\n",nds_timer,proc,size,_adr,val);
-	const uint32_t adr = _adr - _REG_DMA_CONTROL_MIN;
-	const uint32_t chan = adr/12;
-	const uint32_t regnum = (adr - chan*12)>>2;
+	uint32_t adr = _adr - _REG_DMA_CONTROL_MIN;
+	uint32_t chan = adr / 12;
+	uint32_t regnum = (adr - chan * 12) >> 2;
 
-	if(proc==0&&chan==0)
-	{
-		//int zzz=9;
-	}
-
-	if(proc==1) {
-		//int zzz=9;
-	}
-
-	MMU_new.dma[proc][chan].regs[regnum]->write(size,adr,val);
+	MMU_new.dma[proc][chan].regs[regnum]->write(size, adr, val);
 }
 
-
-//this could be inlined...
-uint32_t MMU_struct_new::read_dma(const int proc, const int size, const uint32_t _adr)
+// this could be inlined...
+uint32_t MMU_struct_new::read_dma(int proc, int size, uint32_t _adr)
 {
-	const uint32_t adr = _adr - _REG_DMA_CONTROL_MIN;
-	const uint32_t chan = adr/12;
-	const uint32_t regnum = (adr - chan*12)>>2;
+	uint32_t adr = _adr - _REG_DMA_CONTROL_MIN;
+	uint32_t chan = adr / 12;
+	uint32_t regnum = (adr - chan * 12) >> 2;
 
-	const uint32_t temp = MMU_new.dma[proc][chan].regs[regnum]->read(size,adr);
+	uint32_t temp = MMU_new.dma[proc][chan].regs[regnum]->read(size, adr);
 	//printf("%08lld --  read_dma: %d %d %08X = %08X\n",nds_timer,proc,size,_adr,temp);
-
-
-
-	if(temp == 0xAF00 && size == 16)
-	{
-		//int zzz=9;
-	}
 
 	return temp;
 }
 
 MMU_struct_new::MMU_struct_new()
 {
-	for(int i=0;i<2;i++)
-		for(int j=0;j<4;j++) {
+	for (int i = 0; i < 2; ++i)
+		for (int j = 0; j < 4; ++j)
+		{
 			dma[i][j].procnum = i;
 			dma[i][j].chan = j;
 		}
 }
 
-bool DmaController::loadstate(EMUFILE* f)
+void DmaController::write32(uint32_t val)
 {
-	uint32_t version;
-	if(read32le(&version,f) != 1) return false;
-	if(version >1) return false;
-
-	read8le(&enable,f); read8le(&irq,f); read8le(&repeatMode,f); read8le(&_startmode,f);
-	read8le(&userEnable,f);
-	read32le(&wordcount,f);
-	uint8_t temp;
-	read8le(&temp,f); startmode = (EDMAMode)temp;
-	read8le(&temp,f); bitWidth = (EDMABitWidth)temp;
-	read8le(&temp,f); sar = (EDMASourceUpdate)temp;
-	read8le(&temp,f); dar = (EDMADestinationUpdate)temp;
-	read32le(&saddr,f); read32le(&daddr,f);
-	read32le(reinterpret_cast<uint32_t *>(&dmaCheck),f); read32le(reinterpret_cast<uint32_t *>(&running),f); read32le(reinterpret_cast<uint32_t *>(&paused),f); read32le(reinterpret_cast<uint32_t *>(&triggered),f);
-	read64le(&nextEvent,f);
-
-	if(version==1)
-	{
-		read32le(&saddr_user,f);
-		read32le(&daddr_user,f);
-	}
-
-	return true;
-}
-
-/*void DmaController::savestate(EMUFILE *f)
-{
-	write32le(1,f); //version
-	write8le(enable,f); write8le(irq,f); write8le(repeatMode,f); write8le(_startmode,f);
-	write8le(userEnable,f);
-	write32le(wordcount,f);
-	write8le(startmode,f);
-	write8le(bitWidth,f);
-	write8le(sar,f);
-	write8le(dar,f);
-	write32le(saddr,f); write32le(daddr,f);
-	write32le(check,f); write32le(running,f); write32le(paused,f); write32le(triggered,f);
-	write64le(nextEvent,f);
-	write32le(saddr_user,f);
-	write32le(daddr_user,f);
-}*/
-
-void DmaController::write32(const uint32_t val)
-{
-	if(this->chan==0 && this->procnum==0)
-	{
-		//int zzz=9;
-	}
-	if(running)
-	{
-		//desp triggers this a lot. figure out whats going on
-		//printf("thats weird..user edited dma control while it was running\n");
-	}
 	//printf("dma %d,%d WRITE %08X\n",procnum,chan,val);
-	wordcount = val&0x1FFFFF;
-	if(wordcount==0x9FbFC || wordcount == 0x1FFFFC || wordcount == 0x1EFFFC || wordcount == 0x1FFFFF) {
-		//int zzz=9;
-	}
-	//uint8_t wasRepeatMode = repeatMode;
-	uint8_t wasEnable = enable;
-	uint32_t valhi = val>>16;
-	dar = (EDMADestinationUpdate)((valhi>>5)&3);
-	sar = (EDMASourceUpdate)((valhi>>7)&3);
-	repeatMode = static_cast<uint8_t>(BIT9(valhi));
-	bitWidth = (EDMABitWidth)BIT10(valhi);
-	_startmode = (valhi>>11)&7;
-	if(procnum==ARMCPU_ARM7) _startmode &= 6;
-	irq = static_cast<uint8_t>(BIT14(valhi));
-	enable = static_cast<uint8_t>(BIT15(valhi));
+	this->wordcount = val & 0x1FFFFF;
+	uint8_t wasEnable = this->enable;
+	uint32_t valhi = val >> 16;
+	this->dar = static_cast<EDMADestinationUpdate>((valhi >> 5) & 3);
+	this->sar = static_cast<EDMASourceUpdate>((valhi >> 7) & 3);
+	this->repeatMode = static_cast<uint8_t>(BIT9(valhi));
+	this->bitWidth = static_cast<EDMABitWidth>(BIT10(valhi));
+	this->_startmode = (valhi >> 11) & 7;
+	if (this->procnum == ARMCPU_ARM7)
+		this->_startmode &= 6;
+	this->irq = static_cast<uint8_t>(BIT14(valhi));
+	this->enable = static_cast<uint8_t>(BIT15(valhi));
 
-	if(val==0x84400076 && saddr ==0x023BCEC4)
+	// make sure we don't get any old triggers
+	if (!wasEnable && this->enable)
+		this->triggered = false;
+
+	if (this->enable)
 	{
-		//int zzz=9;
-	}
-
-	//if(irq) printf("!!!!!!!!!!!!IRQ!!!!!!!!!!!!!\n");
-
-	//make sure we don't get any old triggers
-	if(!wasEnable && enable)
-		triggered = false;
-
-	if(enable)
-	{
-		//address registers are reloaded from user's settings whenever dma is enabled
-		//this is tested well by contra4 classic games, which use this to hdma scroll registers
-		//specifically in the fit-screen mode.
-		saddr = saddr_user;
-		daddr = daddr_user;
+		// address registers are reloaded from user's settings whenever dma is enabled
+		// this is tested well by contra4 classic games, which use this to hdma scroll registers
+		// specifically in the fit-screen mode.
+		this->saddr = this->saddr_user;
+		this->daddr = this->daddr_user;
 	}
 
 	//printf("dma %d,%d set to startmode %d with wordcount set to: %08X\n",procnum,chan,_startmode,wordcount);
-if(_startmode==0 && wordcount==1) {
-	//int zzz=9;
-}
-	if(enable)
-	{
-		//int zzz=9;
-	}
-
-	//analyze enabling and startmode.
-	//note that we only do this if the dma was freshly enabled.
-	//we should probably also only be latching these other regs in that case too..
-	//but for now just this one will do (otherwise the dma repeat stop procedure (in this case the ff4 title menu load with gamecard dma) will fail)
+	// analyze enabling and startmode.
+	// note that we only do this if the dma was freshly enabled.
+	// we should probably also only be latching these other regs in that case too..
+	// but for now just this one will do (otherwise the dma repeat stop procedure (in this case the ff4 title menu load with gamecard dma) will fail)
 	//if(!running) enable = userEnable;
 
-	//if we were previously in a triggered mode, and were already enabled,
-	//then don't re-trigger now. this is rather confusing..
-	//we really only want to auto-trigger gxfifo and immediate modes.
-	//but we don't know what mode we're in yet.
-	//so this is our workaround
-	//(otherwise the dma repeat stop procedure (in this case the ff4 title menu load with gamecard dma) will fail)
+	// if we were previously in a triggered mode, and were already enabled,
+	// then don't re-trigger now. this is rather confusing..
+	// we really only want to auto-trigger gxfifo and immediate modes.
+	// but we don't know what mode we're in yet.
+	// so this is our workaround
+	// (otherwise the dma repeat stop procedure (in this case the ff4 title menu load with gamecard dma) will fail)
 	bool doNotStart = false;
-	if(startmode != EDMAMode_Immediate/* && startmode != EDMAMode_GXFifo*/ && wasEnable) doNotStart = true;
+	if (this->startmode != EDMAMode_Immediate && wasEnable)
+		doNotStart = true;
 
-	//this dma may need to trigger now, so give it a chance
+	// this dma may need to trigger now, so give it a chance
 	//if(!(wasRepeatMode && !repeatMode)) //this was an older test
-	if(!doNotStart)
-		doSchedule();
-
-	//driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
+	if (!doNotStart)
+		this->doSchedule();
 }
 
 void DmaController::exec()
 {
-	//this function runs when the DMA ends. the dma start actually queues this event after some kind of guess as to how long the DMA should take
+	// this function runs when the DMA ends. the dma start actually queues this event after some kind of guess as to how long the DMA should take
 
-	//we'll need to unfreeze the arm9 bus now
-	if(procnum==ARMCPU_ARM9) nds.freezeBus &= ~(1<<(chan+1));
+	// we'll need to unfreeze the arm9 bus now
+	if (this->procnum == ARMCPU_ARM9)
+		nds.freezeBus &= ~(1 << (this->chan + 1));
 
-	dmaCheck = false;
+	this->dmaCheck = false;
 
-	if(running)
+	if (this->running)
 	{
-		switch(startmode) {
-			/*case EDMAMode_GXFifo:
-				//this dma mode won't finish always its job when it gets signalled
-				//sometimes it will have words left to transfer.
-				//if(!paused) printf("gxfifo dma ended with %d remaining\n",wordcount); //only print this once
-				if(wordcount>0) {
-					doPause();
-					break;
-				}*/
-			default:
-				doStop();
-				//driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
-				return;
-		}
+		this->doStop();
+		return;
 	}
 
-	if(enable)
+	if (this->enable)
 	{
-		//analyze startmode (this only gets latched when a dma begins)
-		if(procnum==ARMCPU_ARM9) startmode = (EDMAMode)_startmode;
-		else {
-			//arm7 startmode analysis:
-			static const EDMAMode lookup[] = {EDMAMode_Immediate,EDMAMode_VBlank,EDMAMode_Card,EDMAMode7_Wifi};
-			//arm7 has a slightly different startmode encoding
-			startmode = lookup[_startmode>>1];
-			if(startmode == EDMAMode7_Wifi && (chan==1 || chan==3))
-				startmode = EDMAMode7_GBASlot;
-		}
-
-		//make it run, if it is triggered
-		//but first, scan for triggering conditions
-		switch(startmode) {
-			case EDMAMode_Immediate:
-				triggered = true;
-				break;
-			/*case EDMAMode_GXFifo:
-				if(gxFIFO.size<=127)
-					triggered = true;
-				break;*/
-			default:
-				break;
-		}
-
-		if(triggered)
+		// analyze startmode (this only gets latched when a dma begins)
+		if (this->procnum == ARMCPU_ARM9)
+			this->startmode = static_cast<EDMAMode>(this->_startmode);
+		else
 		{
-			//if(procnum==0) printf("vc=%03d %08lld trig type %d dma#%d w/words %d at src:%08X dst:%08X gxf:%d",nds.VCount,nds_timer,startmode,chan,wordcount,saddr,daddr,gxFIFO.size);
-			if(saddr ==0x023BCCEC && wordcount==118) {
-				//int zzz=9;
-			}
-			if(startmode==0 && daddr == 0x4000400) {
-				//int zzz=9;
-			}
-			running = true;
-			paused = false;
-			if(procnum == ARMCPU_ARM9) doCopy<ARMCPU_ARM9>();
-			else doCopy<ARMCPU_ARM7>();
-			//printf(";%d\n",gxFIFO.size);
+			// arm7 startmode analysis:
+			static const EDMAMode lookup[] = { EDMAMode_Immediate, EDMAMode_VBlank, EDMAMode_Card, EDMAMode7_Wifi };
+			// arm7 has a slightly different startmode encoding
+			this->startmode = lookup[this->_startmode >> 1];
+			if (this->startmode == EDMAMode7_Wifi && (this->chan == 1 || this->chan == 3))
+				this->startmode = EDMAMode7_GBASlot;
+		}
+
+		// make it run, if it is triggered
+		// but first, scan for triggering conditions
+		switch (this->startmode)
+		{
+			case EDMAMode_Immediate:
+				this->triggered = true;
+		}
+
+		if (this->triggered)
+		{
+			this->running = true;
+			this->paused = false;
+			if (this->procnum == ARMCPU_ARM9)
+				this->doCopy<ARMCPU_ARM9>();
+			else
+				this->doCopy<ARMCPU_ARM7>();
 		}
 	}
-
-	//driver->DEBUG_UpdateIORegView(BaseDriver::EDEBUG_IOREG_DMA);
 }
 
-template<int PROCNUM>
-void DmaController::doCopy()
+template<int PROCNUM> void DmaController::doCopy()
 {
-	//generate a copy count depending on various copy mode's behavior
-	uint32_t todo = wordcount;
-	if(todo == 0) todo = 0x200000; //according to gbatek.. //TODO - this should not work this way for arm7 according to gbatek
-	if(startmode == EDMAMode_MemDisplay)
+	// generate a copy count depending on various copy mode's behavior
+	uint32_t todo = this->wordcount;
+	if (PROCNUM == ARMCPU_ARM9)
+		if (!todo)
+			todo = 0x200000; // according to gbatek.. we've verified this behaviour on the arm7
+	if (this->startmode == EDMAMode_MemDisplay)
 	{
-		todo = 128; //this is a hack. maybe an alright one though. it should be 4 words at a time. this is a whole scanline
+		todo = 128; // this is a hack. maybe an alright one though. it should be 4 words at a time. this is a whole scanline
 
-		//apparently this dma turns off after it finishes a frame
-		if(nds.VCount==191) enable = 0;
+		// apparently this dma turns off after it finishes a frame
+		if (nds.VCount == 191)
+			this->enable = 0;
 	}
-	if(startmode == EDMAMode_Card) todo *= 0x80;
-	//if(startmode == EDMAMode_GXFifo) todo = std::min(todo,(uint32_t)112);
+	if (this->startmode == EDMAMode_Card)
+		todo *= 0x80;
 
-	//determine how we're going to copy
+	// determine how we're going to copy
 	bool bogarted = false;
-	uint32_t sz = (bitWidth==EDMABitWidth_16)?2:4;
-	uint32_t dstinc = 0,srcinc = 0;
-	switch(dar) {
-		case EDMADestinationUpdate_Increment       :  dstinc =  sz; break;
-		case EDMADestinationUpdate_Decrement       :  dstinc = (uint32_t)-(int32_t)sz; break;
-		case EDMADestinationUpdate_Fixed           :  dstinc =   0; break;
-		case EDMADestinationUpdate_IncrementReload :  dstinc =  sz; break;
-		default: bogarted = true; break;
+	uint32_t sz = this->bitWidth == EDMABitWidth_16 ? 2 : 4;
+	uint32_t dstinc = 0, srcinc = 0;
+	switch (this->dar)
+	{
+		case EDMADestinationUpdate_Increment:
+			dstinc = sz;
+			break;
+		case EDMADestinationUpdate_Decrement:
+			dstinc = static_cast<uint32_t>(-static_cast<int32_t>(sz));
+			break;
+		case EDMADestinationUpdate_Fixed:
+			dstinc = 0;
+			break;
+		case EDMADestinationUpdate_IncrementReload:
+			dstinc = sz;
+			break;
+		default:
+			bogarted = true;
 	}
-	switch(sar) {
-		case EDMASourceUpdate_Increment : srcinc = sz; break;
-		case EDMASourceUpdate_Decrement : srcinc = (uint32_t)-(int32_t)sz; break;
-		case EDMASourceUpdate_Fixed		: srcinc = 0; break;
-		case EDMASourceUpdate_Invalid   : bogarted = true; break;
-		default: bogarted = true; break;
+	switch (this->sar)
+	{
+		case EDMASourceUpdate_Increment:
+			srcinc = sz;
+			break;
+		case EDMASourceUpdate_Decrement:
+			srcinc = static_cast<uint32_t>(-static_cast<int32_t>(sz));
+			break;
+		case EDMASourceUpdate_Fixed:
+			srcinc = 0;
+			break;
+		case EDMASourceUpdate_Invalid:
+		default:
+			bogarted = true;
 	}
 
-	//need to figure out what to do about this
-	if(bogarted)
+	// need to figure out what to do about this
+	if (bogarted)
 	{
 		printf("YOUR GAME IS BOGARTED!!! PLEASE REPORT!!!\n");
 		assert(false);
 		return;
 	}
 
-	uint32_t src = saddr;
-	uint32_t dst = daddr;
+	uint32_t src = this->saddr;
+	uint32_t dst = this->daddr;
 
-
-	//if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
-	//then danny phantom title screen will be filled with a garbage char which is made by
-	//dmaing from 0x00000000 to 0x06000000
-	//TODO - these might be losing out a lot by not going through the templated version anymore.
-	//we might make another function to do just the raw copy op which can use them with checks
-	//outside the loop
+	// if these do not use MMU_AT_DMA and the corresponding code in the read/write routines,
+	// then danny phantom title screen will be filled with a garbage char which is made by
+	// dmaing from 0x00000000 to 0x06000000
+	// TODO - these might be losing out a lot by not going through the templated version anymore.
+	// we might make another function to do just the raw copy op which can use them with checks
+	// outside the loop
 	int time_elapsed = 0;
-	if(sz==4) {
-		for(int32_t i=(int32_t)todo; i>0; i--)
+	for (int32_t i = static_cast<int32_t>(todo); i > 0; --i)
+	{
+		if (sz == 4)
 		{
-			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,32,MMU_AD_READ,true>(src,true);
-			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,32,MMU_AD_WRITE,true>(dst,true);
-			uint32_t temp = _MMU_read32(procnum,MMU_AT_DMA,src);
-			_MMU_write32(procnum,MMU_AT_DMA,dst, temp);
-			dst += dstinc;
-			src += srcinc;
+			time_elapsed += _MMU_accesstime<PROCNUM, MMU_AT_DMA, 32, MMU_AD_READ, true>(src, true);
+			time_elapsed += _MMU_accesstime<PROCNUM, MMU_AT_DMA, 32, MMU_AD_WRITE, true>(dst, true);
+			uint32_t temp = _MMU_read32(procnum, MMU_AT_DMA, src);
+			_MMU_write32(procnum, MMU_AT_DMA, dst, temp);
 		}
-	} else {
-		for(int32_t i=(int32_t)todo; i>0; i--)
+		else
 		{
-			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,16,MMU_AD_READ,true>(src,true);
-			time_elapsed += _MMU_accesstime<PROCNUM,MMU_AT_DMA,16,MMU_AD_WRITE,true>(dst,true);
-			uint16_t temp = _MMU_read16(procnum,MMU_AT_DMA,src);
-			_MMU_write16(procnum,MMU_AT_DMA,dst, temp);
-			dst += dstinc;
-			src += srcinc;
+			time_elapsed += _MMU_accesstime<PROCNUM, MMU_AT_DMA, 16, MMU_AD_READ, true>(src, true);
+			time_elapsed += _MMU_accesstime<PROCNUM, MMU_AT_DMA, 16, MMU_AD_WRITE, true>(dst, true);
+			uint16_t temp = _MMU_read16(procnum, MMU_AT_DMA, src);
+			_MMU_write16(procnum, MMU_AT_DMA, dst, temp);
 		}
+		dst += dstinc;
+		src += srcinc;
 	}
 
-	//reschedule an event for the end of this dma, and figure out how much it cost us
-	doSchedule();
+	// reschedule an event for the end of this dma, and figure out how much it cost us
+	this->doSchedule();
 
 	// zeromus, check it
-	if (wordcount > todo)
-		nextEvent += todo/4; //TODO - surely this is a gross simplification
-	//apparently moon has very, very tight timing (i didnt spy it using waitbyloop swi...)
-	//so lets bump this down a bit for now,
-	//(i think this code is in nintendo libraries)
+	if (this->wordcount > todo)
+		this->nextEvent += todo / 4; // TODO - surely this is a gross simplification
+	// apparently moon has very, very tight timing (i didnt spy it using waitbyloop swi...)
+	// so lets bump this down a bit for now,
+	// (i think this code is in nintendo libraries)
 
-	//write back the addresses
-	saddr = src;
-	if(dar != EDMADestinationUpdate_IncrementReload) //but dont write back dst if we were supposed to reload
-		daddr = dst;
+	// write back the addresses
+	this->saddr = src;
+	if (this->dar != EDMADestinationUpdate_IncrementReload) // but dont write back dst if we were supposed to reload
+		this->daddr = dst;
 
-	//do wordcount accounting
-	if(startmode == EDMAMode_Card)
-		todo /= 0x80; //divide this funky one back down before subtracting it
+	// do wordcount accounting
+	if (this->startmode == EDMAMode_Card)
+		todo /= 0x80; // divide this funky one back down before subtracting it
 
-	if(!repeatMode)
-		wordcount -= todo;
+	if (!this->repeatMode)
+		this->wordcount -= todo;
 }
 
 void triggerDma(EDMAMode mode)
 {
 	MACRODO2(0, {
-		const int i=X;
+		int i = X;
 		MACRODO4(0, {
-			const int j=X;
+			int j = X;
 			MMU_new.dma[i][j].tryTrigger(mode);
 		});
 	});
@@ -2078,307 +1535,132 @@ void triggerDma(EDMAMode mode)
 
 void DmaController::tryTrigger(EDMAMode mode)
 {
-	if(startmode != mode) return;
-	if(!enable) return;
+	if (this->startmode != mode)
+		return;
+	if (!this->enable)
+		return;
 
-	//hmm dont trigger it if its already running!
-	//but paused things need triggers to continue
-	if(running && !paused) return;
-	triggered = true;
-	doSchedule();
+	// hmm dont trigger it if its already running!
+	// but paused things need triggers to continue
+	if (this->running && !this->paused)
+		return;
+	this->triggered = true;
+	this->doSchedule();
 }
 
 void DmaController::doSchedule()
 {
-	dmaCheck = true;
-	nextEvent = nds_timer;
+	this->dmaCheck = true;
+	this->nextEvent = nds_timer;
 	NDS_RescheduleDMA();
 }
 
-
 void DmaController::doPause()
 {
-	triggered = false;
-	paused = true;
+	this->triggered = false;
+	this->paused = true;
 }
 
 void DmaController::doStop()
 {
-	//if(procnum==0) printf("%08lld stop type %d dma#%d\n",nds_timer,startmode,chan);
-	running = false;
-	if(!repeatMode) enable = false;
-	if(irq) {
-		NDS_makeIrq(procnum,IRQ_BIT_DMA_0+chan);
-	}
+	this->running = false;
+	if (!this->repeatMode)
+		this->enable = false;
+	if (this->irq)
+		NDS_makeIrq(this->procnum, IRQ_BIT_DMA_0 + this->chan);
 }
-
-
 
 uint32_t DmaController::read32()
 {
 	uint32_t ret = 0;
-	ret |= enable<<31;
-	ret |= irq<<30;
-	ret |= _startmode<<27;
-	ret |= bitWidth<<26;
-	ret |= repeatMode<<25;
-	ret |= sar<<23;
-	ret |= dar<<21;
-	ret |= wordcount;
+	ret |= this->enable << 31;
+	ret |= this->irq << 30;
+	ret |= this->_startmode << 27;
+	ret |= this->bitWidth << 26;
+	ret |= this->repeatMode << 25;
+	ret |= this->sar << 23;
+	ret |= this->dar << 21;
+	ret |= this->wordcount;
 	//printf("dma %d,%d READ  %08X\n",procnum,chan,ret);
-	if(ret == 0xAF000001) {
-		//int zzz=9;
-	}
 	return ret;
 }
 
-/*static inline void write_auxspicnt(const int, const int size, const int adr, const int val)
-{
-	//why val==0 to reset? is it a particular bit? its not bit 6...
-	switch(size) {
-		case 16:
-			MMU.AUX_SPI_CNT = val;
-			if (val == 0) MMU_new.backupDevice.reset_command();
-			break;
-		case 8:
-			switch(adr) {
-				case 0:
-					T1WriteByte((uint8_t*)&MMU.AUX_SPI_CNT,0,val);
-					if (val == 0) MMU_new.backupDevice.reset_command();
-					break;
-				case 1:
-					T1WriteByte((uint8_t*)&MMU.AUX_SPI_CNT,1,val);
-					break;
-			}
-	}
-}*/
-
-
-//================================================================================================== ARM9 *
-//=========================================================================================================
-//=========================================================================================================
-//================================================= MMU write 08
+// ================================================================================================== ARM9 *
+// =========================================================================================================
+// =========================================================================================================
+// ================================================= MMU write 08
 void FASTCALL _MMU_ARM9_write08(uint32_t adr, uint8_t val)
 {
 	adr &= 0x0FFFFFFF;
 
-	//mmu_log_debug_ARM9(adr, "(write08) 0x%02X", val);
-
-	if(adr < 0x02000000)
+	if (adr < 0x02000000)
 	{
-		T1WriteByte(MMU.ARM9_ITCM, adr&0x7FFF, val);
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 0) = 0;
+#endif
+		T1WriteByte(MMU.ARM9_ITCM, adr & 0x7FFF, val);
 		return;
 	}
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		//addon.write08(adr, val);
+	if (adr >= 0x08000000 && adr < 0x0A010000)
 		return;
-	}
 
-	//block 8bit writes to OAM and palette memory
-	if((adr&0x0F000000)==0x07000000) return;
-	if((adr&0x0F000000)==0x05000000) return;
+	// block 8bit writes to OAM and palette memory
+	if ((adr & 0x0F000000) == 0x07000000)
+		return;
+	if ((adr & 0x0F000000) == 0x05000000)
+		return;
 
-	if (adr >> 24 == 4)
+	if ((adr >> 24) == 4)
 	{
-
-		// TODO: add pal reg
-		/*if (nds.power1.gpuMain == 0)
-			if ((adr >= 0x04000008) && (adr<=0x0400005F)) return;*/
-		/*if (nds.power1.gpuSub == 0)
-			if ((adr >= 0x04001008) && (adr<=0x0400105F)) return;*/
-		/*if (nds.power1.gfx3d_geometry == 0)
-			if ((adr >= 0x04000400) && (adr<=0x040006FF)) return;
-		if (nds.power1.gfx3d_render == 0)
-			if ((adr >= 0x04000320) && (adr<=0x040003FF)) return;*/
-
-		if(MMU_new.is_dma(adr)) {
-			MMU_new.write_dma(ARMCPU_ARM9,8,adr,val);
+		if (MMU_new.is_dma(adr))
+		{
+			MMU_new.write_dma(ARMCPU_ARM9, 8, adr, val);
 			return;
 		}
 
-		switch(adr)
+		switch (adr)
 		{
-			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT WRITE\n"); return;
-			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT1 WRITE\n"); return;
-			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT2 WRITE\n"); return;
-			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT3 WRITE\n"); return;
+			case REG_SQRTCNT:
+				printf("ERROR 8bit SQRTCNT WRITE\n");
+				return;
+			case REG_SQRTCNT + 1:
+				printf("ERROR 8bit SQRTCNT1 WRITE\n");
+				return;
+			case REG_SQRTCNT + 2:
+				printf("ERROR 8bit SQRTCNT2 WRITE\n");
+				return;
+			case REG_SQRTCNT + 3:
+				printf("ERROR 8bit SQRTCNT3 WRITE\n");
+				return;
 
 #if 1
-			case REG_DIVCNT: printf("ERROR 8bit DIVCNT WRITE\n"); return;
-			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 WRITE\n"); return;
-			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT2 WRITE\n"); return;
-			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT3 WRITE\n"); return;
+			case REG_DIVCNT:
+				printf("ERROR 8bit DIVCNT WRITE\n");
+				return;
+			case REG_DIVCNT + 1:
+				printf("ERROR 8bit DIVCNT+1 WRITE\n");
+				return;
+			case REG_DIVCNT + 2:
+				printf("ERROR 8bit DIVCNT+2 WRITE\n");
+				return;
+			case REG_DIVCNT + 3:
+				printf("ERROR 8bit DIVCNT+3 WRITE\n");
+				return;
 #endif
 
-			//fog table: only write bottom 7 bits
-			/*case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x01: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x03:
-			case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x05: case eng_3D_FOG_TABLE+0x06: case eng_3D_FOG_TABLE+0x07:
-			case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x09: case eng_3D_FOG_TABLE+0x0A: case eng_3D_FOG_TABLE+0x0B:
-			case eng_3D_FOG_TABLE+0x0C: case eng_3D_FOG_TABLE+0x0D: case eng_3D_FOG_TABLE+0x0E: case eng_3D_FOG_TABLE+0x0F:
-			case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x11: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x13:
-			case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x15: case eng_3D_FOG_TABLE+0x16: case eng_3D_FOG_TABLE+0x17:
-			case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x19: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1B:
-			case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1D: case eng_3D_FOG_TABLE+0x1E: case eng_3D_FOG_TABLE+0x1F:
-				val &= 0x7F;
-				break;*/
-
-			//ensata putchar port
-			/*case 0x04FFF000:
-				if(nds.ensataEmulation)
-					printf("%c",val);
+			case REG_IF:
+				REG_IF_WriteByte<ARMCPU_ARM9>(0, val);
 				break;
-
-			case eng_3D_GXSTAT:
-				MMU_new.gxstat.write(8,adr,val);
-				break;*/
-
-			/*case REG_DISPA_WIN0H:
-				GPU_setWIN0_H1(MainScreen.gpu, val);
-				break ;
-			case REG_DISPA_WIN0H+1:
-				GPU_setWIN0_H0 (MainScreen.gpu, val);
-				break ;
-			case REG_DISPA_WIN1H:
-				GPU_setWIN1_H1 (MainScreen.gpu,val);
-				break ;
-			case REG_DISPA_WIN1H+1:
-				GPU_setWIN1_H0 (MainScreen.gpu,val);
-				break ; 	 */
-
-			/*case REG_DISPB_WIN0H:
-				GPU_setWIN0_H1(SubScreen.gpu,val);
-				break ;
-			case REG_DISPB_WIN0H+1:
-				GPU_setWIN0_H0(SubScreen.gpu,val);
-				break ;
-			case REG_DISPB_WIN1H:
-				GPU_setWIN1_H1(SubScreen.gpu,val);
-				break ;
-			case REG_DISPB_WIN1H+1:
-				GPU_setWIN1_H0(SubScreen.gpu,val);
-				break ;*/
-
-			/*case REG_DISPA_WIN0V:
-				GPU_setWIN0_V1(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WIN0V+1:
-				GPU_setWIN0_V0(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WIN1V:
-				GPU_setWIN1_V1(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WIN1V+1:
-				GPU_setWIN1_V0(MainScreen.gpu,val) ;
-				break ; 	 */
-
-			/*case REG_DISPB_WIN0V:
-				GPU_setWIN0_V1(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WIN0V+1:
-				GPU_setWIN0_V0(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WIN1V:
-				GPU_setWIN1_V1(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WIN1V+1:
-				GPU_setWIN1_V0(SubScreen.gpu,val) ;
-				break ;*/
-
-			/*case REG_DISPA_WININ:
-				GPU_setWININ0(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WININ+1:
-				GPU_setWININ1(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WINOUT:
-				GPU_setWINOUT(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WINOUT+1:
-				GPU_setWINOBJ(MainScreen.gpu,val);
-				break ; 	 */
-
-			/*case REG_DISPB_WININ:
-				GPU_setWININ0(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WININ+1:
-				GPU_setWININ1(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WINOUT:
-				GPU_setWINOUT(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WINOUT+1:
-				GPU_setWINOBJ(SubScreen.gpu,val) ;
-				break ;*/
-
-			/*case REG_DISPA_BLDCNT:
-				GPU_setBLDCNT_HIGH(MainScreen.gpu,val);
+			case REG_IF + 1:
+				REG_IF_WriteByte<ARMCPU_ARM9>(1, val);
 				break;
-			case REG_DISPA_BLDCNT+1:
-				GPU_setBLDCNT_LOW (MainScreen.gpu,val);
-				break;*/
-
-			/*case REG_DISPB_BLDCNT:
-				GPU_setBLDCNT_HIGH (SubScreen.gpu,val);
+			case REG_IF + 2:
+				REG_IF_WriteByte<ARMCPU_ARM9>(2, val);
 				break;
-			case REG_DISPB_BLDCNT+1:
-				GPU_setBLDCNT_LOW (SubScreen.gpu,val);
-				break;*/
-
-			/*case REG_DISPA_BLDALPHA:
-				MainScreen.gpu->setBLDALPHA_EVB(val);
+			case REG_IF + 3:
+				REG_IF_WriteByte<ARMCPU_ARM9>(3, val);
 				break;
-			case REG_DISPA_BLDALPHA+1:
-				MainScreen.gpu->setBLDALPHA_EVA(val);
-				break;*/
-
-			/*case REG_DISPB_BLDALPHA:
-				SubScreen.gpu->setBLDALPHA_EVB(val);
-				break;
-			case REG_DISPB_BLDALPHA+1:
-				SubScreen.gpu->setBLDALPHA_EVA(val);
-				break;*/
-
-			/*case REG_DISPA_BLDY:
-				GPU_setBLDY_EVY(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_BLDY:
-				GPU_setBLDY_EVY(SubScreen.gpu,val) ;
-				break;*/
-
-			/*case REG_AUXSPICNT:
-				write_auxspicnt(9,8,0,val);
-				return;
-			case REG_AUXSPICNT+1:
-				write_auxspicnt(9,8,1,val);
-				return;
-
-			case REG_AUXSPIDATA:
-				if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((uint8_t)val,ARMCPU_ARM9));
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-				return;*/
-
-			case REG_WRAMCNT:
-				/* Update WRAMSTAT at the ARM7 side */
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val);
-				break;
-
-            //case REG_POWCNT1: writereg_POWCNT1(8,adr,val); break;
-
-			//case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(8,adr,val); return;
-			//case REG_DISPA_DISP3DCNT+1: writereg_DISP3DCNT(8,adr,val); return;
-
-			case REG_IF: REG_IF_WriteByte<ARMCPU_ARM9>(0,val); break;
-			case REG_IF+1: REG_IF_WriteByte<ARMCPU_ARM9>(1,val); break;
-			case REG_IF+2: REG_IF_WriteByte<ARMCPU_ARM9>(2,val); break;
-			case REG_IF+3: REG_IF_WriteByte<ARMCPU_ARM9>(3,val); break;
-
-			/*case eng_3D_CLEAR_COLOR+0: case eng_3D_CLEAR_COLOR+1:
-			case eng_3D_CLEAR_COLOR+2: case eng_3D_CLEAR_COLOR+3:
-				//T1WriteByte((uint8_t*)&gfx3d.state.clearColor,adr-eng_3D_CLEAR_COLOR,val);
-				break;*/
 
 			case REG_VRAMCNTA:
 			case REG_VRAMCNTB:
@@ -2387,178 +1669,77 @@ void FASTCALL _MMU_ARM9_write08(uint32_t adr, uint8_t val)
 			case REG_VRAMCNTE:
 			case REG_VRAMCNTF:
 			case REG_VRAMCNTG:
+			case REG_WRAMCNT:
 			case REG_VRAMCNTH:
 			case REG_VRAMCNTI:
-					MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA), val);
-				break;
-			/*case REG_DISPA_DISPMMEMFIFO:
-			{
-				DISP_FIFOsend(val);
-				return;
-			}*/
-		#ifdef LOG_CARD
-			case 0x040001A0 : /* TODO (clear): ??? */
-			case 0x040001A1 :
-			case 0x040001A2 :
-			case 0x040001A8 :
-			case 0x040001A9 :
-			case 0x040001AA :
-			case 0x040001AB :
-			case 0x040001AC :
-			case 0x040001AD :
-			case 0x040001AE :
-			case 0x040001AF :
-						LOG("%08X : %02X\r\n", adr, val);
-		#endif
-
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA), val);
 		}
 
-		MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
+		MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20][adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]] = val;
 		return;
 	}
 
-	//bool unmapped = false, restricted = false;
-	//adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
-	//if(unmapped) return;
-	//if(restricted) return; //block 8bit vram writes
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 0) = 0;
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
-	MMU.MMU_MEM[ARMCPU_ARM9][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]]=val;
+	MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20][adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]] = val;
 }
 
-//================================================= MMU ARM9 write 16
+// ================================================= MMU ARM9 write 16
 void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 {
 	adr &= 0x0FFFFFFE;
 
-	//mmu_log_debug_ARM9(adr, "(write16) 0x%04X", val);
-
 	if (adr < 0x02000000)
 	{
-		T1WriteWord(MMU.ARM9_ITCM, adr&0x7FFF, val);
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 0) = 0;
+#endif
+		T1WriteWord(MMU.ARM9_ITCM, adr & 0x7FFF, val);
 		return;
 	}
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		//addon.write16(adr, val);
+	if (adr >= 0x08000000 && adr < 0x0A010000)
 		return;
-	}
 
-	if((adr >> 24) == 4)
+	if ((adr >> 24) == 4)
 	{
-		// TODO: add pal reg
-		/*if (nds.power1.gpuMain == 0)
-			if ((adr >= 0x04000008) && (adr<=0x0400005F)) return;*/
-		/*if (nds.power1.gpuSub == 0)
-			if ((adr >= 0x04001008) && (adr<=0x0400105F)) return;*/
-		/*if (nds.power1.gfx3d_geometry == 0)
-			if ((adr >= 0x04000400) && (adr<=0x040006FF)) return;
-		if (nds.power1.gfx3d_render == 0)
-			if ((adr >= 0x04000320) && (adr<=0x040003FF)) return;*/
-
-		if(MMU_new.is_dma(adr)) {
-			if(val==0x02e9) {
-				//int zzz=9;
-			}
-			MMU_new.write_dma(ARMCPU_ARM9,16,adr,val);
+		if (MMU_new.is_dma(adr))
+		{
+			MMU_new.write_dma(ARMCPU_ARM9, 16, adr, val);
 			return;
 		}
 
 		switch (adr >> 4)
 		{
-						//toon table
+			// toon table
 			case 0x0400038:
 			case 0x0400039:
 			case 0x040003A:
 			case 0x040003B:
-				((uint16_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF)>>1] = val;
-				//gfx3d_UpdateToonTable((adr & 0x3F) >> 1, val);
-			return;
+				reinterpret_cast<uint16_t *>(MMU.MMU_MEM[ARMCPU_ARM9][0x40])[(adr & 0xFFF) >> 1] = val;
+				return;
 		}
 		// Address is an IO register
-		switch(adr)
+		switch (adr)
 		{
-		/*case eng_3D_GXSTAT:
-			MMU_new.gxstat.write(16,adr,val);
-			break;*/
-
-		//fog table: only write bottom 7 bits
-		/*case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x06:
-		case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0A: case eng_3D_FOG_TABLE+0x0C: case eng_3D_FOG_TABLE+0x0E:
-		case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x16:
-		case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1E:
-			val &= 0x7F7F;
-			break;*/
-
-		/*case REG_DISPA_BG2XL: MainScreen.gpu->setAffineStartWord(2,0,val,0); break;
-		case REG_DISPA_BG2XH: MainScreen.gpu->setAffineStartWord(2,0,val,1); break;
-		case REG_DISPA_BG2YL: MainScreen.gpu->setAffineStartWord(2,1,val,0); break;
-		case REG_DISPA_BG2YH: MainScreen.gpu->setAffineStartWord(2,1,val,1); break;
-		case REG_DISPA_BG3XL: MainScreen.gpu->setAffineStartWord(3,0,val,0); break;
-		case REG_DISPA_BG3XH: MainScreen.gpu->setAffineStartWord(3,0,val,1); break;
-		case REG_DISPA_BG3YL: MainScreen.gpu->setAffineStartWord(3,1,val,0); break;
-		case REG_DISPA_BG3YH: MainScreen.gpu->setAffineStartWord(3,1,val,1); break;
-		case REG_DISPB_BG2XL: SubScreen.gpu->setAffineStartWord(2,0,val,0); break;
-		case REG_DISPB_BG2XH: SubScreen.gpu->setAffineStartWord(2,0,val,1); break;
-		case REG_DISPB_BG2YL: SubScreen.gpu->setAffineStartWord(2,1,val,0); break;
-		case REG_DISPB_BG2YH: SubScreen.gpu->setAffineStartWord(2,1,val,1); break;
-		case REG_DISPB_BG3XL: SubScreen.gpu->setAffineStartWord(3,0,val,0); break;
-		case REG_DISPB_BG3XH: SubScreen.gpu->setAffineStartWord(3,0,val,1); break;
-		case REG_DISPB_BG3YL: SubScreen.gpu->setAffineStartWord(3,1,val,0); break;
-		case REG_DISPB_BG3YH: SubScreen.gpu->setAffineStartWord(3,1,val,1); break;*/
-
-		//case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(16,adr,val); return;
-
-			// Alpha test reference value - Parameters:1
-			/*case eng_3D_ALPHA_TEST_REF:
-			{
-				((uint16_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x340>>1] = val;
-				//gfx3d_glAlphaFunc(val);
-				return;
-			}
-
-			case eng_3D_CLEAR_COLOR:
-			case eng_3D_CLEAR_COLOR+2:
-			{
-				//T1WriteWord((uint8_t*)&gfx3d.state.clearColor,adr-eng_3D_CLEAR_COLOR,val);
-				break;
-			}
-
-			// Clear background depth setup - Parameters:2
-			case eng_3D_CLEAR_DEPTH:
-			{
-				((uint16_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x354>>1] = val;
-				//gfx3d_glClearDepth(val);
-				return;
-			}
-			// Fog Color - Parameters:4b
-			case eng_3D_FOG_COLOR:
-			{
-				((uint16_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x358>>1] = val;
-				//gfx3d_glFogColor(val);
-				return;
-			}
-			case eng_3D_FOG_OFFSET:
-			{
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x35C>>1] = val;
-				//gfx3d_glFogOffset(val);
-				return;
-			}*/
-
 			case REG_DIVCNT:
 				MMU_new.div.write16(val);
 				execdiv();
 				return;
+
 #if 1
 			case REG_DIVNUMER:
-			case REG_DIVNUMER+2:
-			case REG_DIVNUMER+4:
+			case REG_DIVNUMER + 2:
+			case REG_DIVNUMER + 4:
 				printf("DIV: 16 write NUMER %08X. PLEASE REPORT! \n", val);
 				break;
 			case REG_DIVDENOM:
-			case REG_DIVDENOM+2:
-			case REG_DIVDENOM+4:
+			case REG_DIVDENOM + 2:
+			case REG_DIVDENOM + 4:
 				printf("DIV: 16 write DENOM %08X. PLEASE REPORT! \n", val);
 				break;
 #endif
@@ -2566,131 +1747,6 @@ void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 				MMU_new.sqrt.write16(val);
 				execsqrt();
 				return;
-
-			/*case REG_DISPA_BLDCNT:
-				GPU_setBLDCNT(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_BLDCNT:
-				GPU_setBLDCNT(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_BLDALPHA:
-				MainScreen.gpu->setBLDALPHA(val);
-				break ;
-			case REG_DISPB_BLDALPHA:
-				SubScreen.gpu->setBLDALPHA(val);
-				break ;
-			case REG_DISPA_BLDY:
-				GPU_setBLDY_EVY(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_BLDY:
-				GPU_setBLDY_EVY(SubScreen.gpu,val) ;
-				break;
-			case REG_DISPA_MASTERBRIGHT:
-				GPU_setMasterBrightness (MainScreen.gpu, val);
-				break;*/
-				/*
-			case REG_DISPA_MOSAIC:
-				GPU_setMOSAIC(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_MOSAIC:
-				GPU_setMOSAIC(SubScreen.gpu,val) ;
-				break ;
-				*/
-			//case REG_DISPA_BG0HOFS:
-			//	GPU_setBGxHOFS(0, MainScreen.gpu, val);
-			//	break;
-			//case REG_DISPA_BG0VOFS:
-			//	GPU_setBGxVOFS(0, MainScreen.gpu, val);
-			//	break;
-			//case REG_DISPA_BG1HOFS:
-			//	GPU_setBGxHOFS(1, MainScreen.gpu, val);
-			//	break;
-			//case REG_DISPA_BG1VOFS:
-			//	GPU_setBGxVOFS(1, MainScreen.gpu, val);
-			//	break;
-			//case REG_DISPA_BG2HOFS:
-			//	GPU_setBGxHOFS(2, MainScreen.gpu, val);
-			//	break;
-			//case REG_DISPA_BG2VOFS:
-			//	GPU_setBGxVOFS(2, MainScreen.gpu, val);
-			//	break;
-			//case REG_DISPA_BG3HOFS:
-			//	GPU_setBGxHOFS(3, MainScreen.gpu, val);
-			//	break;
-			//case REG_DISPA_BG3VOFS:
-			//	GPU_setBGxVOFS(3, MainScreen.gpu, val);
-			//	break;
-
-			/*case REG_DISPA_WIN0H:
-				GPU_setWIN0_H (MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WIN1H:
-				GPU_setWIN1_H(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WIN0H:
-				GPU_setWIN0_H(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WIN1H:
-				GPU_setWIN1_H(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WIN0V:
-				GPU_setWIN0_V(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WIN1V:
-				GPU_setWIN1_V(MainScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WIN0V:
-				GPU_setWIN0_V(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPB_WIN1V:
-				GPU_setWIN1_V(SubScreen.gpu,val) ;
-				break ;
-			case REG_DISPA_WININ:
-				GPU_setWININ(MainScreen.gpu, val) ;
-				break ;
-			case REG_DISPA_WINOUT:
-				GPU_setWINOUT16(MainScreen.gpu, val) ;
-				break ; 	 */
-
-		/*	case REG_DISPB_BG0HOFS:
-				GPU_setBGxHOFS(0, SubScreen.gpu, val);
-				break;
-			case REG_DISPB_BG0VOFS:
-				GPU_setBGxVOFS(0, SubScreen.gpu, val);
-				break;
-			case REG_DISPB_BG1HOFS:
-				GPU_setBGxHOFS(1, SubScreen.gpu, val);
-				break;
-			case REG_DISPB_BG1VOFS:
-				GPU_setBGxVOFS(1, SubScreen.gpu, val);
-				break;
-			case REG_DISPB_BG2HOFS:
-				GPU_setBGxHOFS(2, SubScreen.gpu, val);
-				break;
-			case REG_DISPB_BG2VOFS:
-				GPU_setBGxVOFS(2, SubScreen.gpu, val);
-				break;
-			case REG_DISPB_BG3HOFS:
-				GPU_setBGxHOFS(3, SubScreen.gpu, val);
-				break;
-			case REG_DISPB_BG3VOFS:
-				GPU_setBGxVOFS(3, SubScreen.gpu, val);
-				break;*/
-
-			/*case REG_DISPB_WININ:
-				GPU_setWININ(SubScreen.gpu, val) ;
-				break ;
-			case REG_DISPB_WINOUT:
-				GPU_setWINOUT16(SubScreen.gpu, val) ;
-				break ;*/
-
-			/*case REG_DISPB_MASTERBRIGHT:
-				GPU_setMasterBrightness (SubScreen.gpu, val);
-				break;*/
-
-            /*case REG_POWCNT1:
-				writereg_POWCNT1(16,adr,val);
-				return;*/
 
 			case REG_EXMEMCNT:
 			{
@@ -2700,74 +1756,13 @@ void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 				return;
 			}
 
-			/*case REG_AUXSPICNT:
-				write_auxspicnt(9,16,0,val);
-				return;
-
-			case REG_AUXSPIDATA:
-				if(val!=0)
-				   MMU.AUX_SPI_CMD = val & 0xFF;
-
-				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((uint8_t)val,ARMCPU_ARM9));
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-				return;*/
-
-			/*case REG_DISPA_BG0CNT :
-				//GPULOG("MAIN BG0 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(MainScreen.gpu, 0, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x8, val);
-				return;
-			case REG_DISPA_BG1CNT :
-				//GPULOG("MAIN BG1 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(MainScreen.gpu, 1, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xA, val);
-				return;
-			case REG_DISPA_BG2CNT :
-				//GPULOG("MAIN BG2 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(MainScreen.gpu, 2, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xC, val);
-				return;
-			case REG_DISPA_BG3CNT :
-				//GPULOG("MAIN BG3 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(MainScreen.gpu, 3, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0xE, val);
-				return;
-			case REG_DISPB_BG0CNT :
-				//GPULOG("SUB BG0 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(SubScreen.gpu, 0, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1008, val);
-				return;
-			case REG_DISPB_BG1CNT :
-				//GPULOG("SUB BG1 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(SubScreen.gpu, 1, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x100A, val);
-				return;
-			case REG_DISPB_BG2CNT :
-				//GPULOG("SUB BG2 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(SubScreen.gpu, 2, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x100C, val);
-				return;
-			case REG_DISPB_BG3CNT :
-				//GPULOG("SUB BG3 SETPROP 16B %08X\r\n", val);
-				//GPU_setBGProp(SubScreen.gpu, 3, val);
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x100E, val);
-				return;*/
-
 			case REG_VRAMCNTA:
 			case REG_VRAMCNTC:
 			case REG_VRAMCNTE:
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA), val & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+1), val >> 8);
-				break;
 			case REG_VRAMCNTG:
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA), val & 0xFF);
-				/* Update WRAMSTAT at the ARM7 side */
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, val >> 8);
-				break;
 			case REG_VRAMCNTH:
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA), val & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+1), val >> 8);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA), val & 0xFF);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA + 1), val >> 8);
 				break;
 
 			case REG_IME:
@@ -2775,444 +1770,140 @@ void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 				MMU.reg_IME[ARMCPU_ARM9] = val & 0x01;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
 				return;
-			case REG_IE :
+			case REG_IE:
 				NDS_Reschedule();
-				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF0000) | val;
+				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9] & 0xFFFF0000) | val;
 				return;
-			case REG_IE + 2 :
+			case REG_IE + 2:
 				NDS_Reschedule();
-				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9]&0xFFFF) | (((uint32_t)val)<<16);
+				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9] & 0xFFFF) | (static_cast<uint32_t>(val) << 16);
 				return;
-			case REG_IF: REG_IF_WriteWord<ARMCPU_ARM9>(0,val); return;
-			case REG_IF+2: REG_IF_WriteWord<ARMCPU_ARM9>(2,val); return;
+			case REG_IF:
+				REG_IF_WriteWord<ARMCPU_ARM9>(0, val);
+				return;
+			case REG_IF+2:
+				REG_IF_WriteWord<ARMCPU_ARM9>(2, val); return;
 
-            case REG_IPCSYNC :
-					MMU_IPCSync(ARMCPU_ARM9, val);
+			case REG_IPCSYNC:
+				MMU_IPCSync(ARMCPU_ARM9, val);
 				return;
 
-			case REG_IPCFIFOCNT :
-					IPC_FIFOcnt(ARMCPU_ARM9, val);
+			case REG_IPCFIFOCNT:
+				IPC_FIFOcnt(ARMCPU_ARM9, val);
 				return;
-            case REG_TM0CNTL :
-            case REG_TM1CNTL :
-            case REG_TM2CNTL :
-            case REG_TM3CNTL :
-				MMU.timerReload[ARMCPU_ARM9][(adr>>2)&3] = val;
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
+				MMU.timerReload[ARMCPU_ARM9][(adr >> 2) & 3] = val;
 				return;
-			case REG_TM0CNTH :
-			case REG_TM1CNTH :
-			case REG_TM2CNTH :
-			case REG_TM3CNTH :
+			case REG_TM0CNTH:
+			case REG_TM1CNTH:
+			case REG_TM2CNTH:
+			case REG_TM3CNTH:
 			{
-				int timerIndex	= ((adr-2)>>2)&0x3;
+				int timerIndex	= ((adr - 2) >> 2) & 0x3;
 				write_timer(ARMCPU_ARM9, timerIndex, val);
 				return;
 			}
 
-			/*case REG_DISPA_DISPCNT :
-				{
-					uint32_t v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0) & 0xFFFF0000) | val;
-					//GPU_setVideoProp(MainScreen.gpu, v);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0, v);
-					return;
-				}
-			case REG_DISPA_DISPCNT+2 :
-				{
-					uint32_t v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0) & 0xFFFF) | ((uint32_t) val << 16);
-					//GPU_setVideoProp(MainScreen.gpu, v);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0, v);
-				}
+			case REG_GCROMCTRL:
+				MMU_writeToGCControl<ARMCPU_ARM9>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF0000) | val);
 				return;
-			case REG_DISPA_DISPCAPCNT :
-				{
-					uint32_t v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64) & 0xFFFF0000) | val;
-					//GPU_set_DISPCAPCNT(v);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64, v);
-					return;
-				}
-			case REG_DISPA_DISPCAPCNT + 2:
-				{
-					uint32_t v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64) & 0xFFFF) | ((uint32_t)val << 16);
-					//GPU_set_DISPCAPCNT(v);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x64, v);
-					return;
-				}
-
-			case REG_DISPB_DISPCNT :
-				{
-					uint32_t v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000) & 0xFFFF0000) | val;
-					//GPU_setVideoProp(SubScreen.gpu, v);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000, v);
-					return;
-				}
-			case REG_DISPB_DISPCNT+2 :
-				{
-					//emu_halt();
-					uint32_t v = (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000) & 0xFFFF) | ((uint32_t) val << 16);
-					//GPU_setVideoProp(SubScreen.gpu, v);
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000, v);
-					return;
-				}*/
-
-			/*case REG_DISPA_DISPMMEMFIFO:
-			{
-				DISP_FIFOsend(val);
-				return;
-			}*/
-
-			case REG_GCROMCTRL :
-				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF0000) | val);
-				return;
-			case REG_GCROMCTRL+2 :
-				MMU_writeToGCControl<ARMCPU_ARM9>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF) | ((uint32_t) val << 16));
+			case REG_GCROMCTRL + 2:
+				MMU_writeToGCControl<ARMCPU_ARM9>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF) | (static_cast<uint32_t>(val) << 16));
 				return;
 		}
 
-		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
+		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20], val);
 		return;
 	}
 
-
 	bool unmapped, restricted;
-	adr = MMU_LCDmap/*<ARMCPU_ARM9>*/(adr, unmapped, restricted);
-	if(unmapped) return;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
+	if (unmapped)
+		return;
+
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 0) = 0;
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
-	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20], val);
 }
 
-//================================================= MMU ARM9 write 32
+// ================================================= MMU ARM9 write 32
 void FASTCALL _MMU_ARM9_write32(uint32_t adr, uint32_t val)
 {
 	adr &= 0x0FFFFFFC;
 
-	//mmu_log_debug_ARM9(adr, "(write32) 0x%08X", val);
-
-	if(adr<0x02000000)
+	if (adr < 0x02000000)
 	{
-		T1WriteLong(MMU.ARM9_ITCM, adr&0x7FFF, val);
-		return ;
-	}
-
-
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		//addon.write32(adr, val);
+#ifdef HAVE_JIT
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 0) = 0;
+		JIT_COMPILED_FUNC_KNOWNBANK(adr, ARM9_ITCM, 0x7FFF, 1) = 0;
+#endif
+		T1WriteLong(MMU.ARM9_ITCM, adr & 0x7FFF, val);
 		return;
 	}
 
-	if((adr&0x0F000000)==0x05000000)
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return;
+
+	if ((adr >> 24) == 4)
 	{
-		//int zzz=9;
-	}
-
-#if 0
-	if ((adr & 0xFF800000) == 0x04800000) {
-		// access to non regular hw registers
-		// return to not overwrite valid data
-		return ;
-	}
-#endif
-
-	if((adr>>24)==4)
-	{
-		// TODO: add pal reg
-		/*if (nds.power1.gpuMain == 0)
-			if ((adr >= 0x04000008) && (adr<=0x0400005F)) return;*/
-		/*if (nds.power1.gpuSub == 0)
-			if ((adr >= 0x04001008) && (adr<=0x0400105F)) return;*/
-		/*if (nds.power1.gfx3d_geometry == 0)
-			if ((adr >= 0x04000400) && (adr<=0x040006FF)) return;
-		if (nds.power1.gfx3d_render == 0)
-			if ((adr >= 0x04000320) && (adr<=0x040003FF)) return;*/
-
-		// MightyMax: no need to do several ifs, when only one can happen
-		// switch/case instead
-		// both comparison >=,< per if can be replaced by one bit comparison since
-		// they are 2^4 aligned and 2^4n wide
-		// this looks ugly but should reduce load on register writes, they are done as
-		// lookups by the compiler
-		/*switch (adr >> 4)
+		if (MMU_new.is_dma(adr))
 		{
-			case 0x400033:		//edge color table
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-				return;
-
-			case 0x400038:
-			case 0x400039:
-			case 0x40003A:
-			case 0x40003B:		//toon table
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-				//gfx3d_UpdateToonTable((adr & 0x3F) >> 1, val);
-				return;
-
-			case 0x400040:
-			case 0x400041:
-			case 0x400042:
-			case 0x400043:		// FIFO Commands
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-				//gfx3d_sendCommandToFIFO(val);
-				return;
-
-			case 0x400044:
-			case 0x400045:
-			case 0x400046:
-			case 0x400047:
-			case 0x400048:
-			case 0x400049:
-			case 0x40004A:
-			case 0x40004B:
-			case 0x40004C:
-			case 0x40004D:
-			case 0x40004E:
-			case 0x40004F:
-			case 0x400050:
-			case 0x400051:
-			case 0x400052:
-			case 0x400053:
-			case 0x400054:
-			case 0x400055:
-			case 0x400056:
-			case 0x400057:
-			case 0x400058:
-			case 0x400059:
-			case 0x40005A:
-			case 0x40005B:
-			case 0x40005C:		// Individual Commands
-				if (gxFIFO.size > 254)
-					nds.freezeBus = true;
-
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[(adr & 0xFFF) >> 2] = val;
-				//gfx3d_sendCommand(adr, val);
-				return;
-
-			default:
-				break;
-		}*/
-
-		if(MMU_new.is_dma(adr)) {
-			MMU_new.write_dma(ARMCPU_ARM9,32,adr,val);
+			MMU_new.write_dma(ARMCPU_ARM9, 32, adr, val);
 			return;
 		}
 
-		switch(adr)
+		switch (adr)
 		{
-			case REG_SQRTCNT: MMU_new.sqrt.write16((uint16_t)val); return;
-			case REG_DIVCNT: MMU_new.div.write16((uint16_t)val); return;
-
-			//case REG_POWCNT1: writereg_POWCNT1(32,adr,val); break;
-
-			//fog table: only write bottom 7 bits
-			/*case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0C:
-			case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1C:
-				val &= 0x7F7F7F7F;
-				break;*/
-
-
-			//ensata handshaking port?
-			/*case 0x04FFF010:
-				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_ack && val == 0x13579bdf)
-					nds.ensataHandshake = ENSATA_HANDSHAKE_confirm;
-				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_confirm && val == 0xfdb97531)
-				{
-					printf("ENSATA HANDSHAKE COMPLETE\n");
-					nds.ensataHandshake = ENSATA_HANDSHAKE_complete;
-				}
-				break;*/
-
-			//todo - these are usually write only regs (these and 1000 more)
-			//shouldnt we block them from getting written? ugh
-			/*case eng_3D_CLIPMTX_RESULT:
-				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_none && val==0x2468ace0)
-				{
-					printf("ENSATA HANDSHAKE BEGIN\n");
-					nds.ensataHandshake = ENSATA_HANDSHAKE_query;
-				}
-				break;
-
-			case eng_3D_GXSTAT:
-				MMU_new.gxstat.write32(val);
-				break;*/
-			/*case REG_DISPA_BG2XL:
-				MainScreen.gpu->setAffineStart(2,0,val);
+			case REG_SQRTCNT:
+				MMU_new.sqrt.write16(static_cast<uint16_t>(val));
 				return;
-			case REG_DISPA_BG2YL:
-				MainScreen.gpu->setAffineStart(2,1,val);
+			case REG_DIVCNT:
+				MMU_new.div.write16(static_cast<uint16_t>(val));
 				return;
-			case REG_DISPB_BG2XL:
-				SubScreen.gpu->setAffineStart(2,0,val);
-				return;
-			case REG_DISPB_BG2YL:
-				SubScreen.gpu->setAffineStart(2,1,val);
-				return;
-			case REG_DISPA_BG3XL:
-				MainScreen.gpu->setAffineStart(3,0,val);
-				return;
-			case REG_DISPA_BG3YL:
-				MainScreen.gpu->setAffineStart(3,1,val);
-				return;
-			case REG_DISPB_BG3XL:
-				SubScreen.gpu->setAffineStart(3,0,val);
-				return;
-			case REG_DISPB_BG3YL:
-				SubScreen.gpu->setAffineStart(3,1,val);
-				return;*/
-
-			// Alpha test reference value - Parameters:1
-			/*case eng_3D_ALPHA_TEST_REF:
-			{
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x340>>2] = val;
-				//gfx3d_glAlphaFunc(val);
-				return;
-			}
-
-			case eng_3D_CLEAR_COLOR:
-				//T1WriteLong((uint8_t*)&gfx3d.state.clearColor,0,val);
-				break;
-
-			// Clear background depth setup - Parameters:2
-			case eng_3D_CLEAR_DEPTH:
-			{
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x354>>2] = val;
-				//gfx3d_glClearDepth(val);
-				return;
-			}
-			// Fog Color - Parameters:4b
-			case 0x04000358:
-			{
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x358>>2] = val;
-				//gfx3d_glFogColor(val);
-				return;
-			}
-			case 0x0400035C:
-			{
-				((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][0x40]))[0x35C>>2] = val;
-				//gfx3d_glFogOffset(val);
-				return;
-			}*/
-
-			//case REG_DISPA_BG0HOFS:
-			//	GPU_setBGxHOFS(0, MainScreen.gpu, val&0xFFFF);
-			//	GPU_setBGxVOFS(0, MainScreen.gpu, (val>>16));
-			//	break;
-
-			/*case REG_DISPA_WININ:
-			{
-				GPU_setWININ(MainScreen.gpu, val & 0xFFFF) ;
-				GPU_setWINOUT16(MainScreen.gpu, (val >> 16) & 0xFFFF) ;
-	            break;
-			}
-			case REG_DISPB_WININ:
-			{
-				GPU_setWININ(SubScreen.gpu, val & 0xFFFF) ;
-				GPU_setWINOUT16(SubScreen.gpu, (val >> 16) & 0xFFFF) ;
-	            break;
-			}*/
-
-			/*case REG_DISPA_WIN0H:
-			{
-				GPU_setWIN0_H(MainScreen.gpu, val&0xFFFF);
-				GPU_setWIN1_H(MainScreen.gpu, val>>16);
-				break;
-			}
-			case REG_DISPA_WIN0V:
-			{
-				GPU_setWIN0_V(MainScreen.gpu, val&0xFFFF);
-				GPU_setWIN1_V(MainScreen.gpu, val>>16);
-				break;
-			}
-			case REG_DISPB_WIN0H:
-			{
-				GPU_setWIN0_H(SubScreen.gpu, val&0xFFFF);
-				GPU_setWIN1_H(SubScreen.gpu, val>>16);
-				break;
-			}
-			case REG_DISPB_WIN0V:
-			{
-				GPU_setWIN0_V(SubScreen.gpu, val&0xFFFF);
-				GPU_setWIN1_V(SubScreen.gpu, val>>16);
-				break;
-			}*/
-
-			/*case REG_DISPA_MASTERBRIGHT:
-				GPU_setMasterBrightness(MainScreen.gpu, val & 0xFFFF);
-				break;
-			case REG_DISPB_MASTERBRIGHT:
-				GPU_setMasterBrightness(SubScreen.gpu, val & 0xFFFF);
-				break;*/
-
-			/*case REG_DISPA_BLDCNT:
-			{
-				GPU_setBLDCNT   (MainScreen.gpu,val&0xffff);
-				MainScreen.gpu->setBLDALPHA(val>>16);
-				break;
-			}
-			case REG_DISPB_BLDCNT:
-			{
-				GPU_setBLDCNT   (SubScreen.gpu,val&0xffff);
-				SubScreen.gpu->setBLDALPHA(val>>16);
-				break;
-			}*/
-
-			/*case REG_DISPA_BLDY:
-				GPU_setBLDY_EVY(MainScreen.gpu,val&0xFFFF) ;
-				break ;
-			case REG_DISPB_BLDY:
-				GPU_setBLDY_EVY(SubScreen.gpu,val&0xFFFF);
-				break;*/
-
-			/*case REG_DISPA_DISPCNT :
-				//GPU_setVideoProp(MainScreen.gpu, val);
-				//GPULOG("MAIN INIT 32B %08X\r\n", val);
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0, val);
-				return;
-
-			case REG_DISPB_DISPCNT :
-				//GPU_setVideoProp(SubScreen.gpu, val);
-				//GPULOG("SUB INIT 32B %08X\r\n", val);
-				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1000, val);
-				return;*/
 
 			case REG_VRAMCNTA:
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA), val & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+1), (val >> 8) & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+2), (val >> 16) & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+3), (val >> 24) & 0xFF);
-				break;
 			case REG_VRAMCNTE:
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA), val & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+1), (val >> 8) & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+2), (val >> 16) & 0xFF);
-				/* Update WRAMSTAT at the ARM7 side */
-				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, (val >> 24) & 0xFF);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA), val & 0xFF);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA + 1), (val >> 8) & 0xFF);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA + 2), (val >> 16) & 0xFF);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA + 3), (val >> 24) & 0xFF);
 				break;
 			case REG_VRAMCNTH:
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA), val & 0xFF);
-				MMU_VRAMmapControl(static_cast<uint8_t>(adr-REG_VRAMCNTA+1), (val >> 8) & 0xFF);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA), val & 0xFF);
+				MMU_VRAMmapControl(static_cast<uint8_t>(adr - REG_VRAMCNTA + 1), (val >> 8) & 0xFF);
 				break;
 
-			case REG_IME :
+			case REG_IME:
 				NDS_Reschedule();
 				MMU.reg_IME[ARMCPU_ARM9] = val & 0x01;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x208, val);
 				return;
 
-			case REG_IE :
+			case REG_IE:
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM9] = val;
 				return;
 
-			case REG_IF: REG_IF_WriteLong<ARMCPU_ARM9>(val); return;
+			case REG_IF:
+				REG_IF_WriteLong<ARMCPU_ARM9>(val);
+				return;
 
-            case REG_TM0CNTL:
-            case REG_TM1CNTL:
-            case REG_TM2CNTL:
-            case REG_TM3CNTL:
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
 			{
-				int timerIndex = (adr>>2)&0x3;
-				MMU.timerReload[ARMCPU_ARM9][timerIndex] = (uint16_t)val;
+				int timerIndex = (adr >> 2) & 0x3;
+				MMU.timerReload[ARMCPU_ARM9][timerIndex] = static_cast<uint16_t>(val);
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], adr & 0xFFF, static_cast<uint16_t>(val));
-				write_timer(ARMCPU_ARM9, timerIndex, val>>16);
+				write_timer(ARMCPU_ARM9, timerIndex, val >> 16);
 				return;
 			}
 
@@ -3220,31 +1911,31 @@ void FASTCALL _MMU_ARM9_write32(uint32_t adr, uint32_t val)
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x290, val);
 				execdiv();
 				return;
-			case REG_DIVNUMER+4:
+			case REG_DIVNUMER + 4:
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x294, val);
 				execdiv();
 				return;
 
-            case REG_DIVDENOM :
-				{
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298, val);
-					execdiv();
-					return;
-				}
-			case REG_DIVDENOM+4 :
-				{
-					T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x29C, val);
-					execdiv();
-					return;
-				}
+			case REG_DIVDENOM:
+			{
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x298, val);
+				execdiv();
+				return;
+			}
+			case REG_DIVDENOM + 4:
+			{
+				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x29C, val);
+				execdiv();
+				return;
+			}
 
-			case REG_SQRTPARAM :
+			case REG_SQRTPARAM:
 			{
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2B8, val);
 				execsqrt();
 				return;
 			}
-			case REG_SQRTPARAM+4 :
+			case REG_SQRTPARAM + 4:
 			{
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2BC, val);
 				execsqrt();
@@ -3261,416 +1952,302 @@ void FASTCALL _MMU_ARM9_write32(uint32_t adr, uint32_t val)
 				IPC_FIFOsend(ARMCPU_ARM9, val);
 				return;
 
-
-			case REG_GCROMCTRL :
+			case REG_GCROMCTRL:
 				MMU_writeToGCControl<ARMCPU_ARM9>(val);
 				return;
-			case REG_DISPA_DISPCAPCNT :
-				//INFO("MMU write32: REG_DISPA_DISPCAPCNT 0x%X\n", val);
-				//GPU_set_DISPCAPCNT(val);
+			case REG_DISPA_DISPCAPCNT:
 				T1WriteLong(MMU.ARM9_REG, 0x64, val);
 				return;
 
-			/*case REG_DISPA_BG0CNT :
-				//GPU_setBGProp(MainScreen.gpu, 0, (val&0xFFFF));
-				//GPU_setBGProp(MainScreen.gpu, 1, (val>>16));
-				//if((val>>16)==0x400) emu_halt();
-				T1WriteLong(MMU.ARM9_REG, 8, val);
-				return;
-			case REG_DISPA_BG2CNT :
-					//GPU_setBGProp(MainScreen.gpu, 2, (val&0xFFFF));
-					//GPU_setBGProp(MainScreen.gpu, 3, (val>>16));
-					T1WriteLong(MMU.ARM9_REG, 0xC, val);
-				return;
-			case REG_DISPB_BG0CNT :
-					//GPU_setBGProp(SubScreen.gpu, 0, (val&0xFFFF));
-					//GPU_setBGProp(SubScreen.gpu, 1, (val>>16));
-					T1WriteLong(MMU.ARM9_REG, 0x1008, val);
-				return;
-			case REG_DISPB_BG2CNT :
-					//GPU_setBGProp(SubScreen.gpu, 2, (val&0xFFFF));
-					//GPU_setBGProp(SubScreen.gpu, 3, (val>>16));
-					T1WriteLong(MMU.ARM9_REG, 0x100C, val);
-				return;*/
-			/*case REG_DISPA_DISPMMEMFIFO:
-			{
-				DISP_FIFOsend(val);
-				return;
-			}*/
-
-			//case REG_DISPA_DISP3DCNT: writereg_DISP3DCNT(32,adr,val); return;
-
 			case REG_GCDATAIN:
-				slot1_device.write32(ARMCPU_ARM9, REG_GCDATAIN,val);
+				slot1_device.write32(ARMCPU_ARM9, REG_GCDATAIN, val);
 				return;
 		}
 
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20], val);
 		return;
 	}
 
 	bool unmapped, restricted;
-	adr = MMU_LCDmap/*<ARMCPU_ARM9>*/(adr, unmapped, restricted);
-	if(unmapped) return;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
+	if (unmapped)
+		return;
+
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM9))
+	{
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 0) = 0;
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM9, 1) = 0;
+	}
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM9][adr>>20], val);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20], val);
 }
 
-//================================================= MMU ARM9 read 08
+// ================================================= MMU ARM9 read 08
 uint8_t FASTCALL _MMU_ARM9_read08(uint32_t adr)
 {
 	adr &= 0x0FFFFFFF;
 
-	//mmu_log_debug_ARM9(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]]);
+	if (adr<0x02000000)
+		return T1ReadByte(MMU.ARM9_ITCM, adr & 0x7FFF);
 
-	if(adr<0x02000000)
-		return T1ReadByte(MMU.ARM9_ITCM, adr&0x7FFF);
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return 0;
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return 0/*addon.read08(adr)*/;
+	if ((adr >> 24) == 4)
+	{
+		//Address is an IO register
 
-	if (adr >> 24 == 4)
-	{	//Address is an IO register
+		if (MMU_new.is_dma(adr))
+			return static_cast<uint8_t>(MMU_new.read_dma(ARMCPU_ARM9, 8, adr));
 
-		if(MMU_new.is_dma(adr)) return static_cast<uint8_t>(MMU_new.read_dma(ARMCPU_ARM9,8,adr));
-
-		switch(adr)
+		switch (adr)
 		{
-			case REG_IF: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>());
-			case REG_IF+1: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>()>>8);
-			case REG_IF+2: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>()>>16);
-			case REG_IF+3: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>()>>24);
+			case REG_IF:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>());
+			case REG_IF + 1:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>() >> 8);
+			case REG_IF + 2:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>() >> 16);
+			case REG_IF + 3:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM9>() >> 24);
 
-			/*case REG_DISPA_DISPSTAT:
-				break;
-			case REG_DISPA_DISPSTAT+1:
-				break;
-			case REG_DISPx_VCOUNT: return nds.VCount & 0xFF;
-			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8) & 0xFF;*/
-#if 0
-			case REG_SQRTCNT: printf("ERROR 8bit SQRTCNT READ\n"); return 0;
-			case REG_SQRTCNT+1: printf("ERROR 8bit SQRTCNT1 READ\n"); return 0;//(MMU_new.sqrt.read16() & 0xFF00)>>8;
-#else
-			case REG_SQRTCNT: return MMU_new.sqrt.read16() & 0xFF;
-			case REG_SQRTCNT+1: return (MMU_new.sqrt.read16()>>8) & 0xFF;
-#endif
-			case REG_SQRTCNT+2: printf("ERROR 8bit SQRTCNT2 READ\n"); return 0;
-			case REG_SQRTCNT+3: printf("ERROR 8bit SQRTCNT3 READ\n"); return 0;
-#if 1
-			case REG_DIVCNT: printf("ERROR 8bit DIVCNT READ\n"); return 0;
-			case REG_DIVCNT+1: printf("ERROR 8bit DIVCNT1 READ\n"); return 0;
-#else
-			case REG_DIVCNT: return MMU_new.div.read16() & 0xFF;
-			case REG_DIVCNT+1: return (MMU_new.div.read16()>>8) & 0xFF;
-#endif
-			case REG_DIVCNT+2: printf("ERROR 8bit DIVCNT2 READ\n"); return 0;
-			case REG_DIVCNT+3: printf("ERROR 8bit DIVCNT3 READ\n"); return 0;
+			case REG_WRAMCNT:
+				return MMU.WRAMCNT;
 
-			//fog table: write only
-			/*case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x01: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x03:
-			case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x05: case eng_3D_FOG_TABLE+0x06: case eng_3D_FOG_TABLE+0x07:
-			case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x09: case eng_3D_FOG_TABLE+0x0A: case eng_3D_FOG_TABLE+0x0B:
-			case eng_3D_FOG_TABLE+0x0C: case eng_3D_FOG_TABLE+0x0D: case eng_3D_FOG_TABLE+0x0E: case eng_3D_FOG_TABLE+0x0F:
-			case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x11: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x13:
-			case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x15: case eng_3D_FOG_TABLE+0x16: case eng_3D_FOG_TABLE+0x17:
-			case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x19: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1B:
-			case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1D: case eng_3D_FOG_TABLE+0x1E: case eng_3D_FOG_TABLE+0x1F:
-				return 0;*/
+			case REG_SQRTCNT:
+				return MMU_new.sqrt.read16() & 0xFF;
+			case REG_SQRTCNT + 1:
+				return (MMU_new.sqrt.read16() >> 8) & 0xFF;
 
-			/*case REG_POWCNT1:
-			case REG_POWCNT1+1:
-			case REG_POWCNT1+2:
-			case REG_POWCNT1+3:
-				return readreg_POWCNT1(8,adr);*/
+			// sqrtcnt isnt big enough for these to exist. but they'd probably return 0 so its ok
+			case REG_SQRTCNT + 2:
+				printf("ERROR 8bit SQRTCNT+2 READ\n");
+				return 0;
+			case REG_SQRTCNT + 3:
+				printf("ERROR 8bit SQRTCNT+3 READ\n");
+				return 0;
 
-			/*case eng_3D_GXSTAT:
-				return MMU_new.gxstat.read(8,adr);*/
+			// Nostalgia's options menu requires that these work
+			case REG_DIVCNT:
+				return MMU_new.div.read16() & 0xFF;
+			case REG_DIVCNT + 1:
+				return (MMU_new.div.read16() >> 8) & 0xFF;
 
-			//case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(8,adr);
-			//case REG_DISPA_DISP3DCNT+1: return readreg_DISP3DCNT(8,adr);
-			//case REG_DISPA_DISP3DCNT+2: return readreg_DISP3DCNT(8,adr);
-			//case REG_DISPA_DISP3DCNT+3: return readreg_DISP3DCNT(8,adr);
+			// divcnt isnt big enough for these to exist. but they'd probably return 0 so its ok
+			case REG_DIVCNT + 2:
+				printf("ERROR 8bit DIVCNT+2 READ\n");
+				return 0;
+			case REG_DIVCNT + 3:
+				printf("ERROR 8bit DIVCNT+3 READ\n");
+				return 0;
 		}
 	}
 
 	bool unmapped, restricted;
-	adr = MMU_LCDmap/*<ARMCPU_ARM9>*/(adr, unmapped, restricted);
-	if(unmapped) return 0;
+	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
+	if (unmapped)
+		return 0;
 
-	return MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF]];
+	return MMU.MMU_MEM[ARMCPU_ARM9][(adr >> 20) & 0xFF][adr & MMU.MMU_MASK[ARMCPU_ARM9][(adr >> 20) & 0xFF]];
 }
 
-//================================================= MMU ARM9 read 16
+// ================================================= MMU ARM9 read 16
 uint16_t FASTCALL _MMU_ARM9_read16(uint32_t adr)
 {
 	adr &= 0x0FFFFFFE;
 
-	//mmu_log_debug_ARM9(adr, "(read16) 0x%04X", T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]));
-
-	if(adr<0x02000000)
+	if (adr < 0x02000000)
 		return T1ReadWord_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFE);
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return 0/*addon.read16(adr)*/;
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return 0;
 
-	if (adr >> 24 == 4)
+	if ((adr >> 24) == 4)
 	{
-		if(MMU_new.is_dma(adr)) return static_cast<uint16_t>(MMU_new.read_dma(ARMCPU_ARM9,16,adr));
+		if (MMU_new.is_dma(adr))
+			return static_cast<uint16_t>(MMU_new.read_dma(ARMCPU_ARM9, 16, adr));
 
 		// Address is an IO register
-		switch(adr)
+		switch (adr)
 		{
-			/*case REG_DISPA_DISPSTAT:
-				break;*/
-
-			case REG_SQRTCNT: return MMU_new.sqrt.read16();
-			case REG_DIVCNT: return MMU_new.div.read16();
-			//case eng_3D_GXSTAT: return MMU_new.gxstat.read(16,adr);
-
-			/*case REG_DISPA_VCOUNT:
-				if(nds.ensataEmulation && nds.ensataHandshake == ENSATA_HANDSHAKE_query)
-				{
-					nds.ensataHandshake = ENSATA_HANDSHAKE_ack;
-					return 270;
-				} else return nds.VCount;
-
-			// ============================================= 3D
-			case eng_3D_RAM_COUNT:
+			case REG_SQRTCNT:
+				return MMU_new.sqrt.read16();
+			// sqrtcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
+			case REG_SQRTCNT + 2:
+				printf("ERROR 16bit SQRTCNT+2 READ\n");
 				return 0;
-				//almost worthless for now
-				//return gfx3d_GetNumPolys();
-			case eng_3D_RAM_COUNT+2:
+
+			case REG_DIVCNT:
+				return MMU_new.div.read16();
+			// divcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
+			case REG_DIVCNT + 2:
+				printf("ERROR 16bit DIVCNT+2 READ\n");
 				return 0;
-				//almost worthless for now
-				//return gfx3d_GetNumVertex();*/
-			// ============================================= 3D end
-			case REG_IME :
-				return (uint16_t)MMU.reg_IME[ARMCPU_ARM9];
 
-			case REG_IE :
-				return (uint16_t)MMU.reg_IE[ARMCPU_ARM9];
-			case REG_IE + 2 :
-				return (uint16_t)(MMU.reg_IE[ARMCPU_ARM9]>>16);
+			case REG_IME:
+				return static_cast<uint16_t>(MMU.reg_IME[ARMCPU_ARM9]);
 
-			case REG_IF: return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM9>());
-			case REG_IF+2: return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM9>()>>16);
+			// WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
+			case REG_VRAMCNTG:
+				return MMU.WRAMCNT << 8;
 
-			case REG_TM0CNTL :
-			case REG_TM1CNTL :
-			case REG_TM2CNTL :
-			case REG_TM3CNTL :
-				return read_timer(ARMCPU_ARM9,(adr&0xF)>>2);
+			case REG_IE:
+				return static_cast<uint16_t>(MMU.reg_IE[ARMCPU_ARM9]);
+			case REG_IE + 2:
+				return static_cast<uint16_t>(MMU.reg_IE[ARMCPU_ARM9] >> 16);
+
+			case REG_IF:
+				return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM9>());
+			case REG_IF + 2:
+				return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM9>() >> 16);
+
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
+				return read_timer(ARMCPU_ARM9, (adr & 0xF) >> 2);
 
 			case REG_AUXSPICNT:
 				return MMU.AUX_SPI_CNT;
-
-            /*case REG_POWCNT1:
-			case REG_POWCNT1+2:
-				return readreg_POWCNT1(16,adr);*/
-
-			//case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(16,adr);
-			//case REG_DISPA_DISP3DCNT+2: return readreg_DISP3DCNT(16,adr);
-
-			/*case 0x04000130:
-			case 0x04000136:
-				//not sure whether these should trigger from byte reads
-				LagFrameFlag=0;
-				break;*/
-
-			//fog table: write only
-			/*case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x02: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x06:
-			case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0A: case eng_3D_FOG_TABLE+0x0C: case eng_3D_FOG_TABLE+0x0E:
-			case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x12: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x16:
-			case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1A: case eng_3D_FOG_TABLE+0x1C: case eng_3D_FOG_TABLE+0x1E:
-				return 0;*/
 		}
 
-		return  T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
+		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
 	}
-
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped, restricted);
-	//if(unmapped) return 0;
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF
 	return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
 }
 
-//================================================= MMU ARM9 read 32
+// ================================================= MMU ARM9 read 32
 uint32_t FASTCALL _MMU_ARM9_read32(uint32_t adr)
 {
 	adr &= 0x0FFFFFFC;
 
-	//mmu_log_debug_ARM9(adr, "(read32) 0x%08X", T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]));
+	if (adr < 0x02000000)
+		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr & 0x7FFC);
 
-	if(adr<0x02000000)
-		return T1ReadLong_guaranteedAligned(MMU.ARM9_ITCM, adr&0x7FFC);
-
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return 0/*addon.read32(adr)*/;
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return 0;
 
 	// Address is an IO register
-	if((adr >> 24) == 4)
+	if ((adr >> 24) == 4)
 	{
-		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM9,32,adr);
+		if (MMU_new.is_dma(adr))
+			return MMU_new.read_dma(ARMCPU_ARM9, 32, adr);
 
-		switch(adr)
+		switch (adr)
 		{
 			case REG_DSIMODE:
-				if(!nds.Is_DSI()) break;
+				if (!nds.Is_DSI())
+					break;
 				return 1;
 			case 0x04004008:
-				if(!nds.Is_DSI()) break;
+				if (!nds.Is_DSI())
+					break;
 				return 0x8000;
 
-			/*case REG_DISPA_DISPSTAT:
-				break;
+			// WRAMCNT is readable but VRAMCNT is not, so just return WRAM's value
+			case REG_VRAMCNTE:
+				return MMU.WRAMCNT << 24;
 
-			case REG_DISPx_VCOUNT: return nds.VCount;*/
+			// despite these being 16bit regs,
+			// Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
+			// well, it's pretty reasonable to read them as 32bits though, isnt it?
+			case REG_DIVCNT:
+				return MMU_new.div.read16();
+			case REG_SQRTCNT:
+				return MMU_new.sqrt.read16(); // I guess we'll do this also
 
-			//Dolphin Island Underwater Adventures uses this amidst seemingly reasonable divs so we're going to emulate it.
-			case REG_DIVCNT: return MMU_new.div.read16();
-			//I guess we'll do this also
-			case REG_SQRTCNT: return MMU_new.sqrt.read16();
-
-			//fog table: write only
-			/*case eng_3D_FOG_TABLE+0x00: case eng_3D_FOG_TABLE+0x04: case eng_3D_FOG_TABLE+0x08: case eng_3D_FOG_TABLE+0x0C:
-			case eng_3D_FOG_TABLE+0x10: case eng_3D_FOG_TABLE+0x14: case eng_3D_FOG_TABLE+0x18: case eng_3D_FOG_TABLE+0x1C:
-				return 0;*/
-
-			/*case eng_3D_CLIPMTX_RESULT:
-			case eng_3D_CLIPMTX_RESULT+4:
-			case eng_3D_CLIPMTX_RESULT+8:
-			case eng_3D_CLIPMTX_RESULT+12:
-			case eng_3D_CLIPMTX_RESULT+16:
-			case eng_3D_CLIPMTX_RESULT+20:
-			case eng_3D_CLIPMTX_RESULT+24:
-			case eng_3D_CLIPMTX_RESULT+28:
-			case eng_3D_CLIPMTX_RESULT+32:
-			case eng_3D_CLIPMTX_RESULT+36:
-			case eng_3D_CLIPMTX_RESULT+40:
-			case eng_3D_CLIPMTX_RESULT+44:
-			case eng_3D_CLIPMTX_RESULT+48:
-			case eng_3D_CLIPMTX_RESULT+52:
-			case eng_3D_CLIPMTX_RESULT+56:
-			case eng_3D_CLIPMTX_RESULT+60:
-			{
-				//LOG("4000640h..67Fh - CLIPMTX_RESULT - Read Current Clip Coordinates Matrix (R)");
-				return gfx3d_GetClipMatrix ((adr-0x04000640)/4);
-			}*/
-			/*case eng_3D_VECMTX_RESULT:
-			case eng_3D_VECMTX_RESULT+4:
-			case eng_3D_VECMTX_RESULT+8:
-			case eng_3D_VECMTX_RESULT+12:
-			case eng_3D_VECMTX_RESULT+16:
-			case eng_3D_VECMTX_RESULT+20:
-			case eng_3D_VECMTX_RESULT+24:
-			case eng_3D_VECMTX_RESULT+28:
-			case eng_3D_VECMTX_RESULT+32:
-			{
-				//LOG("4000680h..6A3h - VECMTX_RESULT - Read Current Directional Vector Matrix (R)");
-				return gfx3d_GetDirectionalMatrix ((adr-0x04000680)/4);
-			}*/
-
-			/*case eng_3D_RAM_COUNT:
-			{
-				return gfx3d_GetNumPolys() | ((gfx3d_GetNumVertex()) << 16);
-				//LOG ("read32 - RAM_COUNT -> 0x%X", ((uint32_t *)(MMU.MMU_MEM[ARMCPU_ARM9][(adr>>20)&0xFF]))[(adr&MMU.MMU_MASK[ARMCPU_ARM9][(adr>>20)&0xFF])>>2]);
-			}*/
-
-			/*case eng_3D_POS_RESULT:
-			case eng_3D_POS_RESULT+4:
-			case eng_3D_POS_RESULT+8:
-			case eng_3D_POS_RESULT+12:
-			{
-				return gfx3d_glGetPosRes((adr & 0xF) >> 2);
-			}*/
-			/*case eng_3D_GXSTAT:
-				return MMU_new.gxstat.read(32,adr);*/
-			//	======================================== 3D end
-
-
-			case REG_IME :
+			case REG_IME:
 				return MMU.reg_IME[ARMCPU_ARM9];
-			case REG_IE :
+			case REG_IE:
 				return MMU.reg_IE[ARMCPU_ARM9];
 
-			case REG_IF: return MMU.gen_IF<ARMCPU_ARM9>();
+			case REG_IF:
+				return MMU.gen_IF<ARMCPU_ARM9>();
 
-			case REG_IPCFIFORECV :
+			case REG_IPCFIFORECV:
 				return IPC_FIFOrecv(ARMCPU_ARM9);
-			case REG_TM0CNTL :
-			case REG_TM1CNTL :
-			case REG_TM2CNTL :
-			case REG_TM3CNTL :
-				{
-					uint32_t val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], (adr + 2) & 0xFFF);
-					return MMU.timer[ARMCPU_ARM9][(adr&0xF)>>2] | (val<<16);
-				}
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
+			{
+				uint32_t val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], (adr + 2) & 0xFFF);
+				return MMU.timer[ARMCPU_ARM9][(adr & 0xF) >> 2] | (val << 16);
+			}
 
-			case REG_GCDATAIN: return MMU_readFromGC<ARMCPU_ARM9>();
-            //case REG_POWCNT1: return readreg_POWCNT1(32,adr);
-			//case REG_DISPA_DISP3DCNT: return readreg_DISP3DCNT(32,adr);
+			case REG_GCDATAIN:
+				return MMU_readFromGC<ARMCPU_ARM9>();
 		}
-		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
+		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
 	}
 
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM9>(adr,unmapped, restricted);
-	//if(unmapped) return 0;
-
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash]
-	return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr>>20]);
+	return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
 }
-//================================================================================================== ARM7 *
-//=========================================================================================================
-//=========================================================================================================
-//================================================= MMU ARM7 write 08
+
+// ================================================================================================== ARM7 *
+// =========================================================================================================
+// =========================================================================================================
+// ================================================= MMU ARM7 write 08
 void FASTCALL _MMU_ARM7_write08(uint32_t adr, uint8_t val)
 {
 	adr &= 0x0FFFFFFF;
 
-	//mmu_log_debug_ARM7(adr, "(write08) 0x%02X", val);
+	if (adr < 0x02000000)
+		return; // can't write to bios or entire area below main memory
 
-	if (adr < 0x4000) return;	// PU BIOS
-
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		//addon.write08(adr, val);
+	if (adr >= 0x08000000 && adr < 0x0A010000)
 		return;
-	}
 
-	if ((adr>=0x04000400)&&(adr<0x04000520))
+	if (adr >= 0x04000400 && adr < 0x04000520)
 	{
 		SPU_WriteByte(adr, val);
 		return;
-    }
+	}
 
 	if ((adr & 0xFFFF0000) == 0x04800000)
-	{
 		/* is wifi hardware, dont intermix with regular hardware registers */
 		// 8-bit writes to wifi I/O and RAM are ignored
 		// Reference: http://nocash.emubase.de/gbatek.htm#dswifiiomap
 		return;
-	}
 
-	if (adr >> 24 == 4)
+	if ((adr >> 24) == 4)
 	{
-		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,8,adr,val); return; }
-
-		switch(adr)
+		if (MMU_new.is_dma(adr))
 		{
-			case REG_IF: REG_IF_WriteByte<ARMCPU_ARM7>(0,val); break;
-			case REG_IF+1: REG_IF_WriteByte<ARMCPU_ARM7>(1,val); break;
-			case REG_IF+2: REG_IF_WriteByte<ARMCPU_ARM7>(2,val); break;
-			case REG_IF+3: REG_IF_WriteByte<ARMCPU_ARM7>(3,val); break;
+			MMU_new.write_dma(ARMCPU_ARM7, 8, adr, val);
+			return;
+		}
+
+		switch (adr)
+		{
+			case REG_IF:
+				REG_IF_WriteByte<ARMCPU_ARM7>(0, val);
+				break;
+			case REG_IF + 1:
+				REG_IF_WriteByte<ARMCPU_ARM7>(1, val);
+				break;
+			case REG_IF + 2:
+				REG_IF_WriteByte<ARMCPU_ARM7>(2, val);
+				break;
+			case REG_IF + 3:
+				REG_IF_WriteByte<ARMCPU_ARM7>(3, val);
+				break;
 
 			case REG_POSTFLG:
+				// The NDS7 register can be written to only from code executed in BIOS.
+				if (NDS_ARM7.instruct_adr > 0x3FFF)
+					return;
+				
 				// hack for patched firmwares
 				if (val == 1)
 				{
-					if (_MMU_ARM7_read08(REG_POSTFLG) != 0)
+					if (_MMU_ARM7_read08(REG_POSTFLG))
 						break;
 					_MMU_write32<ARMCPU_ARM9>(0x27FFE24, gameInfo.header.ARM9exe);
 					_MMU_write32<ARMCPU_ARM7>(0x27FFE34, gameInfo.header.ARM7exe);
@@ -3679,77 +2256,56 @@ void FASTCALL _MMU_ARM7_write08(uint32_t adr, uint8_t val)
 
 			case REG_HALTCNT:
 				//printf("halt 0x%02X\n", val);
-				switch(val)
+				switch (val)
 				{
-					case 0xC0: NDS_Sleep(); break;
-					case 0x80: armcpu_Wait4IRQ(&NDS_ARM7); break;
-					default: break;
+					case 0xC0:
+						NDS_Sleep();
+						break;
+					case 0x80:
+						armcpu_Wait4IRQ(&NDS_ARM7);
 				}
 				break;
-
-			/*case REG_RTC:
-				rtcWrite(val);
-				return;*/
-
-			/*case REG_AUXSPICNT:
-				write_auxspicnt(9,8,0,val);
-				return;
-			case REG_AUXSPICNT+1:
-				write_auxspicnt(9,8,1,val);
-				return;
-			case REG_AUXSPIDATA:
-				if(val!=0) MMU.AUX_SPI_CMD = val & 0xFF;
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((uint8_t)val,ARMCPU_ARM7));
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-				return;*/
 		}
-		MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
+		MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20][adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]] = val;
 		return;
 	}
 
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
-	//if(unmapped) return;
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 0) = 0;
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
-	MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]]=val;
+	MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20][adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]] = val;
 }
 
-//================================================= MMU ARM7 write 16
+// ================================================= MMU ARM7 write 16
 void FASTCALL _MMU_ARM7_write16(uint32_t adr, uint16_t val)
 {
 	adr &= 0x0FFFFFFE;
 
-	//mmu_log_debug_ARM7(adr, "(write16) 0x%04X", val);
+	if (adr < 0x02000000)
+		return; // can't write to bios or entire area below main memory
 
-	if (adr < 0x4000) return;	// PU BIOS
-
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-	{
-		//addon.write16(adr, val);
+	if (adr >= 0x08000000 && adr < 0x0A010000)
 		return;
-	}
 
-	//wifi mac access
-	/*if ((adr & 0xFFFF0000) == 0x04800000)
-	{
-		WIFI_write16(adr,val);
-		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
-		return;
-	}*/
-
-	if ((adr>=0x04000400)&&(adr<0x04000520))
+	if (adr >= 0x04000400 && adr < 0x04000520)
 	{
 		SPU_WriteWord(adr, val);
 		return;
 	}
 
-	if((adr >> 24) == 4)
+	if ((adr >> 24) == 4)
 	{
-		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,16,adr,val); return; }
+		if (MMU_new.is_dma(adr))
+		{
+			MMU_new.write_dma(ARMCPU_ARM7, 16, adr, val);
+			return;
+		}
 
-		//Address is an IO register
-		switch(adr)
+		// Address is an IO register
+		switch (adr)
 		{
 			case REG_DISPA_VCOUNT:
 				if (nds.VCount >= 202 && nds.VCount <= 212)
@@ -3761,416 +2317,320 @@ void FASTCALL _MMU_ARM7_write16(uint32_t adr, uint16_t val)
 					printf("Attempt to set VCOUNT while not within 202-212 (%i), ignored\n", nds.VCount);
 				return;
 
-			/*case REG_RTC:
-				rtcWrite(val);
-				break;*/
-
 			case REG_EXMEMCNT:
 			{
 				uint16_t remote_proc = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x204);
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x204, (val & 0x7F) | (remote_proc & 0xFF80));
-			}
-			return;
-
-			/*case REG_EXTKEYIN: //readonly
-				return;*/
-
-
-			/*case REG_POWCNT2:
-				{
-					nds.power2.speakers = BIT0(val);
-					nds.power2.wifi = BIT0(val);
-				}
-				return;*/
-
-
-			/*case REG_AUXSPICNT:
-				write_auxspicnt(7,16,0,val);
-			return;
-
-			case REG_AUXSPIDATA:
-				if(val!=0)
-				   MMU.AUX_SPI_CMD = val & 0xFF;
-
-				//T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, bm_transfer(&MMU.bupmem, val));
-				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_AUXSPIDATA >> 20) & 0xff], REG_AUXSPIDATA & 0xfff, MMU_new.backupDevice.data_command((uint8_t)val,ARMCPU_ARM7));
-				MMU.AUX_SPI_CNT &= ~0x80; //remove busy flag
-			return;*/
-
-			case REG_SPICNT :
-				{
-					int reset_firmware = 1;
-
-					if ( ((MMU.SPI_CNT >> 8) & 0x3) == 1)
-					{
-						if ( ((val >> 8) & 0x3) == 1)
-						{
-							if ( BIT11(MMU.SPI_CNT))
-							{
-								// select held
-								reset_firmware = 0;
-							}
-						}
-					}
-
-						//MMU.fw.com == 0; // reset fw device communication
-					if ( reset_firmware)
-					{
-					  // reset fw device communication
-					  fw_reset_com(&MMU.fw);
-					}
-					MMU.SPI_CNT = val;
-
-					T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val);
-				}
 				return;
+			}
 
-			case REG_SPIDATA :
+			case REG_SPICNT:
+			{
+				bool reset_firmware = true;
+
+				if (((MMU.SPI_CNT >> 8) & 0x3) == 1 && ((val >> 8) & 0x3) == 1 && BIT11(MMU.SPI_CNT))
+					// select held
+					reset_firmware = false;
+
+				//MMU.fw.com == 0; // reset fw device communication
+				if (reset_firmware)
+					// reset fw device communication
+					fw_reset_com(&MMU.fw);
+				MMU.SPI_CNT = val;
+
+				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff, val);
+				return;
+			}
+
+			case REG_SPIDATA:
+			{
+				if (val)
+					MMU.SPI_CMD = val;
+
+				uint16_t spicnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
+
+				switch ((spicnt >> 8) & 0x3)
 				{
-					uint16_t spicnt;
-
-					if(val!=0)
-						MMU.SPI_CMD = val;
-
-					spicnt = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPICNT >> 20) & 0xff], REG_SPICNT & 0xfff);
-
-					switch((spicnt >> 8) & 0x3)
+					case 0:
 					{
-						case 0 :
+						if (!MMU.powerMan_CntRegWritten)
+						{
+							MMU.powerMan_CntReg = val & 0xFF;
+							MMU.powerMan_CntRegWritten = true;
+						}
+						else
+						{
+							uint16_t reg = MMU.powerMan_CntReg & 0x7F;
+							reg &= 0x7;
+							if (reg == 5 || reg == 6 || reg == 7)
+								reg = 4;
+
+							// (let's start with emulating a DS lite, since it is the more complex case)
+							if (MMU.powerMan_CntReg & 0x80)
+								// read
+								val = MMU.powerMan_Reg[reg];
+							else
 							{
-								if(!MMU.powerMan_CntRegWritten)
+								// write
+								MMU.powerMan_Reg[reg] = static_cast<uint8_t>(val);
+
+								static const uint32_t PM_SYSTEM_PWR = BIT(6); /*!< \brief  Turn the power *off* if set */
+
+								// our totally pathetic register handling, only the one thing we've wanted so far
+								if (MMU.powerMan_Reg[0] & PM_SYSTEM_PWR)
 								{
-									MMU.powerMan_CntReg = (val & 0xFF);
-									MMU.powerMan_CntRegWritten = true;
-								}
-								else
-								{
-									uint16_t reg = MMU.powerMan_CntReg&0x7F;
-									reg &= 0x7;
-									if(reg==5 || reg==6 || reg==7) reg = 4;
-
-									//(let's start with emulating a DS lite, since it is the more complex case)
-									if(MMU.powerMan_CntReg & 0x80)
-									{
-										//read
-										val = MMU.powerMan_Reg[reg];
-									}
-									else
-									{
-										//write
-										MMU.powerMan_Reg[reg] = (uint8_t)val;
-
-										//enum PM_Bits //from libnds
-										//{
-											//PM_SOUND_AMP		= BIT(0) ,   /*!< \brief Power the sound hardware (needed to hear stuff in GBA mode too) */
-											//PM_SOUND_MUTE		= BIT(1),    /*!< \brief   Mute the main speakers, headphone output will still work. */
-											//PM_BACKLIGHT_BOTTOM	= BIT(2),    /*!< \brief   Enable the top backlight if set */
-											//PM_BACKLIGHT_TOP	= BIT(3)  ,  /*!< \brief   Enable the bottom backlight if set */
-											static const uint32_t PM_SYSTEM_PWR = BIT(6);   /*!< \brief  Turn the power *off* if set */
-										//};
-
-										//our totally pathetic register handling, only the one thing we've wanted so far
-										if(MMU.powerMan_Reg[0]&PM_SYSTEM_PWR) {
-											printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
-											//emu_halt();
-											execute = false;
-										}
-									}
-
-									MMU.powerMan_CntRegWritten = false;
+									printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
+									execute = false;
 								}
 							}
+
+							MMU.powerMan_CntRegWritten = false;
+						}
 						break;
+					}
 
-						case 1 : /* firmware memory device */
-							if((spicnt & 0x3) != 0)      /* check SPI baudrate (must be 4mhz) */
-							{
-								T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
-								break;
-							}
-							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, (uint8_t)val));
+					case 1: /* firmware memory device */
+						if (spicnt & 0x3) /* check SPI baudrate (must be 4mhz) */
+						{
+							T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, 0);
+							break;
+						}
+						T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, fw_transfer(&MMU.fw, static_cast<uint8_t>(val)));
 						return;
 
-						case 2:
+					case 2:
+					{
+						if (nds.Is_DSI())
 						{
-							if(nds.Is_DSI())
-							{
-								//pass data to TSC
-								val = MMU_new.dsi_tsc.write16(val);
+							// pass data to TSC
+							val = MMU_new.dsi_tsc.write16(val);
 
-								//apply reset command if appropriate
-								if(!BIT11(MMU.SPI_CNT))
-									MMU_new.dsi_tsc.reset_command();
+							// apply reset command if appropriate
+							if (!BIT11(MMU.SPI_CNT))
+								MMU_new.dsi_tsc.reset_command();
 
-								break;
-							}
-
-							int channel = (MMU.SPI_CMD&0x70)>>4;
-							//printf("%08X\n",channel);
-							switch(channel)
-							{
-								case TSC_MEASURE_TEMP1:
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((716<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (716>>5);
-										partie = 1;
-										break;
-									}
-									val = ((716<<3)&0x7FF);
-									partie = 1;
-									break;
-								case TSC_MEASURE_TEMP2:
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((865<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (865>>5);
-										partie = 1;
-										break;
-									}
-									val = ((865<<3)&0x7FF);
-									partie = 1;
-									break;
-
-								case TSC_MEASURE_Y:
-									{
-										//counter the number of adc touch coord reads and jitter it after a while to simulate a shaky human hand or multiple reads
-										/*nds.adc_jitterctr++;
-										if(nds.adc_jitterctr == 25)
-										{
-											nds.adc_jitterctr = 0;
-											nds.adc_touchY ^= 16;
-											nds.adc_touchX ^= 16;
-										}*/
-										if(MMU.SPI_CNT&(1<<11))
-										{
-											if(partie)
-											{
-												//val = (nds.adc_touchY<<3) & 0xFF;
-												partie = 0;
-												break;
-											}
-
-											//val = (nds.adc_touchY>>5) & 0xFF;
-											partie = 1;
-											break;
-										}
-										//val = (nds.adc_touchY<<3)&0xFF;
-										partie = 1;
-										break;
-									}
-								case TSC_MEASURE_Z1: //Z1
-									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
-									//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
-									/*{
-										u16 scratch;
-										CalculateTouchPressure(CommonSettings.StylusPressure,val,scratch);
-									}*/
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((val<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (val>>5);
-										partie = 1;
-										break;
-									}
-									val = ((val<<3)&0x7FF);
-									partie = 1;
-									break;
-								case TSC_MEASURE_Z2: //Z2
-									//used for pressure calculation - must be nonzero or else some softwares will think the stylus is up.
-									//something is wrong in here and some of these LSB dont make it back to libnds... whatever.
-									/*{
-										u16 scratch;
-										CalculateTouchPressure(CommonSettings.StylusPressure,scratch,val);
-									}*/
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											val = ((val<<3)&0x7FF);
-											partie = 0;
-											break;
-										}
-										val = (val>>5);
-										partie = 1;
-										break;
-									}
-									val = ((val<<3)&0x7FF);
-									partie = 1;
-									break;
-								case TSC_MEASURE_X:
-									if(spicnt & 0x800)
-									{
-										if(partie)
-										{
-											//val = (nds.adc_touchX << 3) & 0xFF;
-											partie = 0;
-											break;
-										}
-										//val = (nds.adc_touchX>>5) & 0xFF;
-										partie = 1;
-										break;
-									}
-									//val = (nds.adc_touchX<<3) & 0xFF;
-									partie = 1;
-									break;
-								case TSC_MEASURE_AUX:
-									/*if(!(val & 0x80))
-										val = (Mic_ReadSample() & 0xFF);
-									else*/
-										val = 0;
-									break;
-							}
 							break;
 						}
 
-						case 3 :
-						/* NOTICE: Device 3 of SPI is reserved (unused and unusable) */
-						break;
+						int channel = (MMU.SPI_CMD & 0x70) >> 4;
+						//printf("%08X\n",channel);
+						switch (channel)
+						{
+							case TSC_MEASURE_TEMP1:
+								if (spicnt & 0x800)
+								{
+									if (partie)
+									{
+										val = 1632;
+										partie = 0;
+										break;
+									}
+									val = 716 >> 5;
+									partie = 1;
+									break;
+								}
+								val = 1632;
+								partie = 1;
+								break;
+							case TSC_MEASURE_TEMP2:
+								if(spicnt & 0x800)
+								{
+									if(partie)
+									{
+										val = 776;
+										partie = 0;
+										break;
+									}
+									val = 865 >> 5;
+									partie = 1;
+									break;
+								}
+								val = 776;
+								partie = 1;
+								break;
+							case TSC_MEASURE_Y:
+								if (MMU.SPI_CNT & (1 << 11))
+								{
+									if (partie)
+									{
+										partie = 0;
+										break;
+									}
+									partie = 1;
+									break;
+								}
+								partie = 1;
+								break;
+							case TSC_MEASURE_Z1: // Z1
+								if (spicnt & 0x800)
+								{
+									if (partie)
+									{
+										val = (val << 3) & 0x7FF;
+										partie = 0;
+										break;
+									}
+									val >>= 5;
+									partie = 1;
+									break;
+								}
+								val = (val << 3) & 0x7FF;
+								partie = 1;
+								break;
+							case TSC_MEASURE_Z2: // Z2
+								if (spicnt & 0x800)
+								{
+									if (partie)
+									{
+										val = (val << 3) & 0x7FF;
+										partie = 0;
+										break;
+									}
+									val >>= 5;
+									partie = 1;
+									break;
+								}
+								val = (val << 3) & 0x7FF;
+								partie = 1;
+								break;
+							case TSC_MEASURE_X:
+								if (spicnt & 0x800)
+								{
+									if (partie)
+									{
+										partie = 0;
+										break;
+									}
+									partie = 1;
+									break;
+								}
+								partie = 1;
+						}
 					}
 				}
 
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][(REG_SPIDATA >> 20) & 0xff], REG_SPIDATA & 0xfff, val);
 				return;
+			}
 
-				/* NOTICE: Perhaps we have to use gbatek-like reg names instead of libnds-like ones ...*/
+			/* NOTICE: Perhaps we have to use gbatek-like reg names instead of libnds-like ones ...*/
 
-			case REG_IME :
+			case REG_IME:
 				NDS_Reschedule();
 				MMU.reg_IME[ARMCPU_ARM7] = val & 0x01;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
 				return;
-			case REG_IE :
+			case REG_IE:
 				NDS_Reschedule();
-				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF0000) | val;
+				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7] & 0xFFFF0000) | val;
 				return;
-			case REG_IE + 2 :
+			case REG_IE + 2:
 				NDS_Reschedule();
-				//emu_halt();
-				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7]&0xFFFF) | (((uint32_t)val)<<16);
+				MMU.reg_IE[ARMCPU_ARM7] = (MMU.reg_IE[ARMCPU_ARM7] & 0xFFFF) | (static_cast<uint32_t>(val) << 16);
 				return;
 
-			case REG_IF: REG_IF_WriteWord<ARMCPU_ARM7>(0,val); return;
-			case REG_IF+2: REG_IF_WriteWord<ARMCPU_ARM7>(2,val); return;
+			case REG_IF:
+				REG_IF_WriteWord<ARMCPU_ARM7>(0, val);
+				return;
+			case REG_IF + 2:
+				REG_IF_WriteWord<ARMCPU_ARM7>(2, val);
+				return;
 
-            case REG_IPCSYNC :
+			case REG_IPCSYNC:
 				MMU_IPCSync(ARMCPU_ARM7, val);
 				return;
 
-			case REG_IPCFIFOCNT :
+			case REG_IPCFIFOCNT:
 				IPC_FIFOcnt(ARMCPU_ARM7, val);
 				return;
-            case REG_TM0CNTL :
-            case REG_TM1CNTL :
-            case REG_TM2CNTL :
-            case REG_TM3CNTL :
-				MMU.timerReload[ARMCPU_ARM7][(adr>>2)&3] = val;
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
+				MMU.timerReload[ARMCPU_ARM7][(adr >> 2) & 3] = val;
 				return;
-			case REG_TM0CNTH :
-			case REG_TM1CNTH :
-			case REG_TM2CNTH :
-			case REG_TM3CNTH :
+			case REG_TM0CNTH:
+			case REG_TM1CNTH:
+			case REG_TM2CNTH:
+			case REG_TM3CNTH:
 			{
-				int timerIndex	= ((adr-2)>>2)&0x3;
+				int timerIndex	= ((adr - 2) >> 2) & 0x3;
 				write_timer(ARMCPU_ARM7, timerIndex, val);
 				return;
 			}
 
-			case REG_GCROMCTRL :
-				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF0000) | val);
+			case REG_GCROMCTRL:
+				MMU_writeToGCControl<ARMCPU_ARM7>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF0000) | val);
 				return;
-			case REG_GCROMCTRL+2 :
-				MMU_writeToGCControl<ARMCPU_ARM7>( (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF) | ((uint32_t) val << 16));
+			case REG_GCROMCTRL + 2:
+				MMU_writeToGCControl<ARMCPU_ARM7>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF) | (static_cast<uint32_t>(val) << 16));
 				return;
 		}
 
-		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
+		T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20], val);
 		return;
 	}
 
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
-	//if(unmapped) return;
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 0) = 0;
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
-	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
+	T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20], val);
 }
-//================================================= MMU ARM7 write 32
+
+// ================================================= MMU ARM7 write 32
 void FASTCALL _MMU_ARM7_write32(uint32_t adr, uint32_t val)
 {
 	adr &= 0x0FFFFFFC;
 
-	//mmu_log_debug_ARM7(adr, "(write32) 0x%08X", val);
+	if (adr < 0x02000000)
+		return; // can't write to bios or entire area below main memory
 
-	if (adr < 0x4000) return;	// PU BIOS
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return;
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
+	if (adr >= 0x04000400 && adr < 0x04000520)
 	{
-		//addon.write32(adr, val);
+		SPU_WriteLong(adr, val);
 		return;
 	}
 
-	/*if ((adr & 0xFFFF0000) == 0x04800000)
+	if ((adr >> 24) == 4)
 	{
-		WIFI_write16(adr, val & 0xFFFF);
-		WIFI_write16(adr+2, val >> 16);
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x48], adr&MMU.MMU_MASK[ARMCPU_ARM7][0x48], val);
-		return;
-	}*/
-
-    if ((adr>=0x04000400)&&(adr<0x04000520))
-    {
-        SPU_WriteLong(adr, val);
-        return;
-    }
-
-	if((adr>>24)==4)
-	{
-		if(MMU_new.is_dma(adr)) { MMU_new.write_dma(ARMCPU_ARM7,32,adr,val); return; }
-
-		switch(adr)
+		if (MMU_new.is_dma(adr))
 		{
-			/*case REG_RTC:
-				rtcWrite((uint16_t)val);
-				break;*/
+			MMU_new.write_dma(ARMCPU_ARM7, 32, adr, val);
+			return;
+		}
 
-			case REG_IME :
+		switch (adr)
+		{
+			case REG_IME:
 				NDS_Reschedule();
 				MMU.reg_IME[ARMCPU_ARM7] = val & 0x01;
 				T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x208, val);
 				return;
 
-			case REG_IE :
+			case REG_IE:
 				NDS_Reschedule();
 				MMU.reg_IE[ARMCPU_ARM7] = val;
 				return;
 
-			case REG_IF: REG_IF_WriteLong<ARMCPU_ARM7>(val); return;
+			case REG_IF:
+				REG_IF_WriteLong<ARMCPU_ARM7>(val);
+				return;
 
-            case REG_TM0CNTL:
-            case REG_TM1CNTL:
-            case REG_TM2CNTL:
-            case REG_TM3CNTL:
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
 			{
-				int timerIndex = (adr>>2)&0x3;
-				MMU.timerReload[ARMCPU_ARM7][timerIndex] = (uint16_t)val;
+				int timerIndex = (adr >> 2) & 0x3;
+				MMU.timerReload[ARMCPU_ARM7][timerIndex] = static_cast<uint16_t>(val);
 				T1WriteWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], adr & 0xFFF, static_cast<uint16_t>(val));
-				write_timer(ARMCPU_ARM7, timerIndex, val>>16);
+				write_timer(ARMCPU_ARM7, timerIndex, val >> 16);
 				return;
 			}
 
@@ -4184,7 +2644,7 @@ void FASTCALL _MMU_ARM7_write32(uint32_t adr, uint32_t val)
 				IPC_FIFOsend(ARMCPU_ARM7, val);
 				return;
 
-			case REG_GCROMCTRL :
+			case REG_GCROMCTRL:
 				MMU_writeToGCControl<ARMCPU_ARM7>(val);
 				return;
 
@@ -4192,572 +2652,190 @@ void FASTCALL _MMU_ARM7_write32(uint32_t adr, uint32_t val)
 				slot1_device.write32(ARMCPU_ARM7, REG_GCDATAIN,val);
 				return;
 		}
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20], val);
 		return;
 	}
 
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
-	//if(unmapped) return;
+#ifdef HAVE_JIT
+	if (JIT_MAPPED(adr, ARMCPU_ARM7))
+	{
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 0) = 0;
+		JIT_COMPILED_FUNC_PREMASKED(adr, ARMCPU_ARM7, 1) = 0;
+	}
+#endif
 
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [shash]
-	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20], val);
+	T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20], val);
 }
 
-//================================================= MMU ARM7 read 08
+// ================================================= MMU ARM7 read 08
 uint8_t FASTCALL _MMU_ARM7_read08(uint32_t adr)
 {
 	adr &= 0x0FFFFFFF;
 
-	//mmu_log_debug_ARM7(adr, "(read08) 0x%02X", MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF][adr&MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]]);
-
 	if (adr < 0x4000)
 	{
-		//uint32_t prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
-		//if (prot) INFO("MMU7 read 08 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
-
-		//How accurate is this? our R[15] may not be exactly what the hardware uses (may use something less by up to 0x08)
-		//This may be inaccurate at the very edge cases.
-		if (NDS_ARM7.R[15] > 0x3FFF)
+		// How accurate is this? our R[15] may not be exactly what the hardware uses (may use something less by up to 0x08)
+		// This may be inaccurate at the very edge cases.
+		if (NDS_ARM7.instruct_adr > 0x3FFF)
 			return 0xFF;
 	}
 
-	// wifi mac access
-	/*if ((adr & 0xFFFF0000) == 0x04800000)
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return 0;
+
+	if (adr >= 0x04000400 && adr < 0x04000520)
+		return SPU_ReadByte(adr);
+
+	if ((adr >> 24) == 4)
 	{
-		if (adr & 1)
-			return (WIFI_read16(adr-1) >> 8) & 0xFF;
-		else
-			return WIFI_read16(adr) & 0xFF;
-	}*/
-
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return 0/*addon.read08(adr)*/;
-
-    if ((adr>=0x04000400)&&(adr<0x04000520))
-    {
-        return SPU_ReadByte(adr);
-    }
-
-	//if (adr == REG_RTC) return (uint8_t)rtcRead();
-
-	if (adr >> 24 == 4)
-	{
-		if(MMU_new.is_dma(adr)) return static_cast<uint8_t>(MMU_new.read_dma(ARMCPU_ARM7,8,adr));
+		if (MMU_new.is_dma(adr))
+			return static_cast<uint8_t>(MMU_new.read_dma(ARMCPU_ARM7, 8, adr));
 
 		// Address is an IO register
 
-		switch(adr)
+		switch (adr)
 		{
-			case REG_IF: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>());
-			case REG_IF+1: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>()>>8);
-			case REG_IF+2: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>()>>16);
-			case REG_IF+3: return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>()>>24);
+			case REG_IF:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>());
+			case REG_IF + 1:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>() >> 8);
+			case REG_IF + 2:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>() >> 16);
+			case REG_IF + 3:
+				return static_cast<uint8_t>(MMU.gen_IF<ARMCPU_ARM7>() >> 24);
 
-			/*case REG_DISPx_VCOUNT: return nds.VCount&0xFF;
-			case REG_DISPx_VCOUNT+1: return (nds.VCount>>8)&0xFF;*/
+			case REG_WRAMSTAT:
+				return MMU.WRAMCNT;
 		}
 
-		return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
+		return MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20][adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]];
 	}
 
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
-	//if(unmapped) return 0;
-
-    return MMU.MMU_MEM[ARMCPU_ARM7][adr>>20][adr&MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]];
+	return MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20][adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]];
 }
-//================================================= MMU ARM7 read 16
+
+// ================================================= MMU ARM7 read 16
 uint16_t FASTCALL _MMU_ARM7_read16(uint32_t adr)
 {
 	adr &= 0x0FFFFFFE;
 
-	//mmu_log_debug_ARM7(adr, "(read16) 0x%04X", T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]));
-
 	if (adr < 0x4000)
 	{
-		//uint32_t prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
-		//if (prot) INFO("MMU7 read 16 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
-		if (NDS_ARM7.R[15] > 0x3FFF)
+		if (NDS_ARM7.instruct_adr > 0x3FFF)
 			return 0xFFFF;
 	}
 
-	//wifi mac access
-	/*if ((adr & 0xFFFF0000) == 0x04800000)
-		return WIFI_read16(adr) ;*/
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return 0;
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return 0/*addon.read16(adr)*/;
+	if (adr >= 0x04000400 && adr < 0x04000520)
+		return SPU_ReadWord(adr);
 
-    if ((adr>=0x04000400)&&(adr<0x04000520))
-    {
-        return SPU_ReadWord(adr);
-    }
+	if ((adr >> 24) == 4)
+	{
+		// Address is an IO register
 
-	if(adr>>24==4)
-	{	//Address is an IO register
+		if (MMU_new.is_dma(adr))
+			return static_cast<uint16_t>(MMU_new.read_dma(ARMCPU_ARM7, 16, adr));
 
-		if(MMU_new.is_dma(adr)) return static_cast<uint16_t>(MMU_new.read_dma(ARMCPU_ARM7,16,adr));
-
-		switch(adr)
+		switch (adr)
 		{
-			/*case REG_POWCNT2:
-			{
-				uint16_t ret = 0;
-				ret |= nds.power2.speakers?BIT(0):0;
-				ret |= nds.power2.wifi?BIT(1):0;
-				return ret;
-			}*/
-
-			//case REG_DISPx_VCOUNT: return nds.VCount;
-			//case REG_RTC: return rtcRead();
-			case REG_IME: return (uint16_t)MMU.reg_IME[ARMCPU_ARM7];
+			case REG_IME:
+				return static_cast<uint16_t>(MMU.reg_IME[ARMCPU_ARM7]);
 
 			case REG_IE:
-				return (uint16_t)MMU.reg_IE[ARMCPU_ARM7];
+				return static_cast<uint16_t>(MMU.reg_IE[ARMCPU_ARM7]);
 			case REG_IE + 2:
-				return (uint16_t)(MMU.reg_IE[ARMCPU_ARM7]>>16);
+				return static_cast<uint16_t>(MMU.reg_IE[ARMCPU_ARM7] >> 16);
 
-			case REG_IF: return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM7>());
-			case REG_IF+2: return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM7>()>>16);
+			case REG_IF:
+				return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM7>());
+			case REG_IF + 2:
+				return static_cast<uint16_t>(MMU.gen_IF<ARMCPU_ARM7>() >> 16);
 
-			case REG_TM0CNTL :
-			case REG_TM1CNTL :
-			case REG_TM2CNTL :
-			case REG_TM3CNTL :
-				return read_timer(ARMCPU_ARM7,(adr&0xF)>>2);
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
+				return read_timer(ARMCPU_ARM7, (adr & 0xF) >> 2);
 
-			/*case REG_AUXSPICNT:
-				return MMU.AUX_SPI_CNT;*/
-
-			/*case REG_KEYINPUT:
-				//here is an example of what not to do:
-				//since the arm7 polls this (and EXTKEYIN) every frame, we shouldnt count this as an input check
-				//LagFrameFlag=0;
-				break;*/
-
-			/*case REG_EXTKEYIN:
-				{
-					//this is gross. we should generate this whole reg instead of poking it in ndssystem
-					uint16_t ret = MMU.ARM7_REG[0x136];
-					if(nds.isTouch) ret &= ~64;
-					else ret |= 64;
-					return ret;
-				}*/
+			case REG_VRAMSTAT:
+				// make sure WRAMSTAT is stashed and then fallthrough to return the value from memory. i know, gross.
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
+				break;
 		}
-		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]);
+		return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]);
 	}
-
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
-	//if(unmapped) return 0;
 
 	/* Returns data from memory */
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF
 	return T1ReadWord_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]);
 }
-//================================================= MMU ARM7 read 32
+
+// ================================================= MMU ARM7 read 32
 uint32_t FASTCALL _MMU_ARM7_read32(uint32_t adr)
 {
 	adr &= 0x0FFFFFFC;
 
-	//mmu_log_debug_ARM7(adr, "(read32) 0x%08X", T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][(adr>>20)&0xFF], adr & MMU.MMU_MASK[ARMCPU_ARM7][(adr>>20)&0xFF]));
-
 	if (adr < 0x4000)
 	{
-		//uint32_t prot = T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x04000308 & MMU.MMU_MASK[ARMCPU_ARM7][0x40]);
-		//if (prot) INFO("MMU7 read 32 at 0x%08X (PC 0x%08X) BIOSPROT address 0x%08X\n", adr, NDS_ARM7.R[15], prot);
-		if (NDS_ARM7.R[15] > 0x3FFF)
+		if (NDS_ARM7.instruct_adr > 0x3FFF)
 			return 0xFFFFFFFF;
 	}
 
-	//wifi mac access
-	/*if ((adr & 0xFFFF0000) == 0x04800000)
-		return WIFI_read16(adr) | (WIFI_read16(adr+2) << 16);*/
+	if (adr >= 0x08000000 && adr < 0x0A010000)
+		return 0;
 
-	if ( (adr >= 0x08000000) && (adr < 0x0A010000) )
-		return 0/*addon.read32(adr)*/;
+	if (adr >= 0x04000400 && adr < 0x04000520)
+		return SPU_ReadLong(adr);
 
-    if ((adr>=0x04000400)&&(adr<0x04000520))
-    {
-        return SPU_ReadLong(adr);
-    }
+	if ((adr >> 24) == 4)
+	{
+		// Address is an IO register
 
-	if((adr >> 24) == 4)
-	{	//Address is an IO register
+		if (MMU_new.is_dma(adr))
+			return MMU_new.read_dma(ARMCPU_ARM7, 32, adr);
 
-		if(MMU_new.is_dma(adr)) return MMU_new.read_dma(ARMCPU_ARM7,32,adr);
-
-		switch(adr)
+		switch (adr)
 		{
-			//case REG_RTC: return (uint32_t)rtcRead();
-			//case REG_DISPx_VCOUNT: return nds.VCount;
-
-			case REG_IME :
+			case REG_IME:
 				return MMU.reg_IME[ARMCPU_ARM7];
-			case REG_IE :
+			case REG_IE:
 				return MMU.reg_IE[ARMCPU_ARM7];
-			case REG_IF: return MMU.gen_IF<ARMCPU_ARM7>();
-			case REG_IPCFIFORECV :
+			case REG_IF:
+				return MMU.gen_IF<ARMCPU_ARM7>();
+			case REG_IPCFIFORECV:
 				return IPC_FIFOrecv(ARMCPU_ARM7);
-            case REG_TM0CNTL :
-            case REG_TM1CNTL :
-            case REG_TM2CNTL :
-            case REG_TM3CNTL :
+			case REG_TM0CNTL:
+			case REG_TM1CNTL:
+			case REG_TM2CNTL:
+			case REG_TM3CNTL:
 			{
 				uint32_t val = T1ReadWord(MMU.MMU_MEM[ARMCPU_ARM7][0x40], (adr + 2) & 0xFFF);
-				return MMU.timer[ARMCPU_ARM7][(adr&0xF)>>2] | (val<<16);
+				return MMU.timer[ARMCPU_ARM7][(adr & 0xF) >> 2] | (val << 16);
 			}
 			case REG_GCROMCTRL:
-			{
-				//INFO("arm7 romctrl read\n");
 				break;
-			}
-            case REG_GCDATAIN:
+			case REG_GCDATAIN:
 				return MMU_readFromGC<ARMCPU_ARM7>();
 
+			case REG_VRAMSTAT:
+				// make sure WRAMSTAT is stashed and then fallthrough return the value from memory. i know, gross.
+				T1WriteByte(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x241, MMU.WRAMCNT);
+				break;
 		}
-		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr>>20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr>>20]);
+
+		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]);
 	}
 
-	//bool unmapped = false/*, restricted*/;
-	//adr = MMU_LCDmap<ARMCPU_ARM7>(adr,unmapped, restricted);
-	//if(unmapped) return 0;
-
-	//Returns data from memory
+	// Returns data from memory
 	// Removed the &0xFF as they are implicit with the adr&0x0FFFFFFF [zeromus, inspired by shash]
 	return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM7][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM7][adr >> 20]);
 }
 
-//=========================================================================================================
+// =========================================================================================================
 
-/*uint32_t FASTCALL MMU_read32(uint32_t proc, uint32_t adr)
-{
-	ASSERT_UNALIGNED((adr&3)==0);
-
-	if(proc==0)
-		return _MMU_ARM9_read32(adr);
-	else
-		return _MMU_ARM7_read32(adr);
-}*/
-
-/*uint16_t FASTCALL MMU_read16(uint32_t proc, uint32_t adr)
-{
-	ASSERT_UNALIGNED((adr&1)==0);
-
-	if(proc==0)
-		return _MMU_ARM9_read16(adr);
-	else
-		return _MMU_ARM7_read16(adr);
-}*/
-
-/*uint8_t FASTCALL MMU_read8(uint32_t proc, uint32_t adr)
-{
-	if(proc==0)
-		return _MMU_ARM9_read08(adr);
-	else
-		return _MMU_ARM7_read08(adr);
-}*/
-
-/*void FASTCALL MMU_write32(uint32_t proc, uint32_t adr, uint32_t val)
-{
-	ASSERT_UNALIGNED((adr&3)==0);
-
-	if(proc==0)
-		_MMU_ARM9_write32(adr, val);
-	else
-		_MMU_ARM7_write32(adr,val);
-}*/
-
-/*void FASTCALL MMU_write16(uint32_t proc, uint32_t adr, uint16_t val)
-{
-	ASSERT_UNALIGNED((adr&1)==0);
-
-	if(proc==0)
-		_MMU_ARM9_write16(adr, val);
-	else
-		_MMU_ARM7_write16(adr,val);
-}*/
-
-/*void FASTCALL MMU_write8(uint32_t proc, uint32_t adr, uint8_t val)
-{
-	if(proc==0)
-		_MMU_ARM9_write08(adr, val);
-	else
-		_MMU_ARM7_write08(adr,val);
-}*/
-
-/*void FASTCALL MMU_DumpMemBlock(uint8_t proc, uint32_t address, uint32_t size, uint8_t *buffer)
-{
-	uint32_t i;
-	uint32_t curaddr;
-
-	for(i = 0, curaddr = address; i < size; i++, curaddr++)
-	{
-		buffer[i] = _MMU_read08(proc,MMU_AT_DEBUG,curaddr);
-	}
-}*/
-
-
-//these templates needed to be instantiated manually
+// these templates needed to be instantiated manually
 template uint32_t MMU_struct::gen_IF<ARMCPU_ARM9>();
 template uint32_t MMU_struct::gen_IF<ARMCPU_ARM7>();
-
-////////////////////////////////////////////////////////////
-//function pointer handlers for gdb stub stuff
-
-/*static uint16_t FASTCALL arm9_prefetch16( void *, uint32_t adr) {
-	return _MMU_read16<ARMCPU_ARM9,MMU_AT_CODE>(adr);
-}
-
-static uint32_t FASTCALL arm9_prefetch32( void *, uint32_t adr) {
-	return _MMU_read32<ARMCPU_ARM9,MMU_AT_CODE>(adr);
-}
-
-static uint8_t FASTCALL arm9_read8( void *, uint32_t adr) {
-	return _MMU_read08<ARMCPU_ARM9>(adr);
-}
-
-static uint16_t FASTCALL arm9_read16( void *, uint32_t adr) {
-	return _MMU_read16<ARMCPU_ARM9>(adr);
-}
-
-static uint32_t FASTCALL arm9_read32( void *, uint32_t adr) {
-	return _MMU_read32<ARMCPU_ARM9>(adr);
-}
-
-static void FASTCALL arm9_write8(void *, uint32_t adr, uint8_t val) {
-	_MMU_write08<ARMCPU_ARM9>(adr, val);
-}
-
-static void FASTCALL arm9_write16(void *, uint32_t adr, uint16_t val) {
-	_MMU_write16<ARMCPU_ARM9>(adr, val);
-}
-
-static void FASTCALL arm9_write32(void *, uint32_t adr, uint32_t val) {
-	_MMU_write32<ARMCPU_ARM9>(adr, val);
-}
-
-static uint16_t FASTCALL arm7_prefetch16( void *, uint32_t adr) {
-  return _MMU_read16<ARMCPU_ARM7,MMU_AT_CODE>(adr);
-}
-
-static uint32_t FASTCALL arm7_prefetch32( void *, uint32_t adr) {
-  return _MMU_read32<ARMCPU_ARM7,MMU_AT_CODE>(adr);
-}
-
-static uint8_t FASTCALL arm7_read8( void *, uint32_t adr) {
-  return _MMU_read08<ARMCPU_ARM7>(adr);
-}
-
-static uint16_t FASTCALL arm7_read16( void *, uint32_t adr) {
-  return _MMU_read16<ARMCPU_ARM7>(adr);
-}
-
-static uint32_t FASTCALL arm7_read32( void *, uint32_t adr) {
-  return _MMU_read32<ARMCPU_ARM7>(adr);
-}
-
-static void FASTCALL arm7_write8(void *, uint32_t adr, uint8_t val) {
-  _MMU_write08<ARMCPU_ARM7>(adr, val);
-}
-
-static void FASTCALL arm7_write16(void *, uint32_t adr, uint16_t val) {
-  _MMU_write16<ARMCPU_ARM7>(adr, val);
-}
-
-static void FASTCALL arm7_write32(void *, uint32_t adr, uint32_t val) {
-  _MMU_write32<ARMCPU_ARM7>(adr, val);
-}*/
-
-
-
-/*
- * the base memory interfaces
- */
-/*struct armcpu_memory_iface arm9_base_memory_iface = {
-  arm9_prefetch32,
-  arm9_prefetch16,
-
-  arm9_read8,
-  arm9_read16,
-  arm9_read32,
-
-  arm9_write8,
-  arm9_write16,
-  arm9_write32
-};
-
-struct armcpu_memory_iface arm7_base_memory_iface = {
-  arm7_prefetch32,
-  arm7_prefetch16,
-
-  arm7_read8,
-  arm7_read16,
-  arm7_read32,
-
-  arm7_write8,
-  arm7_write16,
-  arm7_write32
-};*/
-
-/*
- * The direct memory interface for the ARM9.
- * This avoids the ARM9 protection unit when accessing
- * memory.
- */
-/*struct armcpu_memory_iface arm9_direct_memory_iface = {
-  NULL,
-  NULL,
-
-  arm9_read8,
-  arm9_read16,
-  arm9_read32,
-
-  arm9_write8,
-  arm9_write16,
-  arm9_write32
-};*/
-
-
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-
-//#ifdef PROFILE_MEMORY_ACCESS
-//
-//#define PROFILE_PREFETCH 0
-//#define PROFILE_READ 1
-//#define PROFILE_WRITE 2
-//
-//struct mem_access_profile {
-//  uint64_t num_accesses;
-//  uint32_t address_mask;
-//  uint32_t masked_value;
-//};
-//
-//#define PROFILE_NUM_MEM_ACCESS_PROFILES 4
-//
-//static uint64_t profile_num_accesses[2][3];
-//static uint64_t profile_unknown_addresses[2][3];
-//static struct mem_access_profile
-//profile_memory_accesses[2][3][PROFILE_NUM_MEM_ACCESS_PROFILES];
-//
-//static void
-//setup_profiling() {
-//  int i;
-//
-//  for ( i = 0; i < 2; i++) {
-//    int access_type;
-//
-//    for ( access_type = 0; access_type < 3; access_type++) {
-//      profile_num_accesses[i][access_type] = 0;
-//      profile_unknown_addresses[i][access_type] = 0;
-//
-//      /*
-//       * Setup the access testing structures
-//       */
-//      profile_memory_accesses[i][access_type][0].address_mask = 0x0e000000;
-//      profile_memory_accesses[i][access_type][0].masked_value = 0x00000000;
-//      profile_memory_accesses[i][access_type][0].num_accesses = 0;
-//
-//      /* main memory */
-//      profile_memory_accesses[i][access_type][1].address_mask = 0x0f000000;
-//      profile_memory_accesses[i][access_type][1].masked_value = 0x02000000;
-//      profile_memory_accesses[i][access_type][1].num_accesses = 0;
-//
-//      /* shared memory */
-//      profile_memory_accesses[i][access_type][2].address_mask = 0x0f800000;
-//      profile_memory_accesses[i][access_type][2].masked_value = 0x03000000;
-//      profile_memory_accesses[i][access_type][2].num_accesses = 0;
-//
-//      /* arm7 memory */
-//      profile_memory_accesses[i][access_type][3].address_mask = 0x0f800000;
-//      profile_memory_accesses[i][access_type][3].masked_value = 0x03800000;
-//      profile_memory_accesses[i][access_type][3].num_accesses = 0;
-//    }
-//  }
-//}
-//
-//static void
-//profile_memory_access( int arm9, uint32_t adr, int access_type) {
-//  static int first = 1;
-//  int mem_profile;
-//  int address_found = 0;
-//
-//  if ( first) {
-//    setup_profiling();
-//    first = 0;
-//  }
-//
-//  profile_num_accesses[arm9][access_type] += 1;
-//
-//  for ( mem_profile = 0;
-//        mem_profile < PROFILE_NUM_MEM_ACCESS_PROFILES &&
-//          !address_found;
-//        mem_profile++) {
-//    if ( (adr & profile_memory_accesses[arm9][access_type][mem_profile].address_mask) ==
-//         profile_memory_accesses[arm9][access_type][mem_profile].masked_value) {
-//      /*printf( "adr %08x mask %08x res %08x expected %08x\n",
-//              adr,
-//              profile_memory_accesses[arm9][access_type][mem_profile].address_mask,
-//              adr & profile_memory_accesses[arm9][access_type][mem_profile].address_mask,
-//              profile_memory_accesses[arm9][access_type][mem_profile].masked_value);*/
-//      address_found = 1;
-//      profile_memory_accesses[arm9][access_type][mem_profile].num_accesses += 1;
-//    }
-//  }
-//
-//  if ( !address_found) {
-//    profile_unknown_addresses[arm9][access_type] += 1;
-//  }
-//}
-//
-//
-//static const char *access_type_strings[] = {
-//  "prefetch",
-//  "read    ",
-//  "write   "
-//};
-//
-//void
-//print_memory_profiling() {
-//  int arm;
-//
-//  printf("------ Memory access profile ------\n");
-//
-//  for ( arm = 0; arm < 2; arm++) {
-//    int access_type;
-//
-//    for ( access_type = 0; access_type < 3; access_type++) {
-//      int mem_profile;
-//      printf("ARM%c: num of %s %lld\n",
-//             arm ? '9' : '7',
-//             access_type_strings[access_type],
-//             profile_num_accesses[arm][access_type]);
-//
-//      for ( mem_profile = 0;
-//            mem_profile < PROFILE_NUM_MEM_ACCESS_PROFILES;
-//            mem_profile++) {
-//        printf( "address %08x: %lld\n",
-//                profile_memory_accesses[arm][access_type][mem_profile].masked_value,
-//                profile_memory_accesses[arm][access_type][mem_profile].num_accesses);
-//      }
-//
-//      printf( "unknown addresses %lld\n",
-//              profile_unknown_addresses[arm][access_type]);
-//
-//      printf( "\n");
-//    }
-//  }
-//
-//  printf("------ End of Memory access profile ------\n\n");
-//}
-//#else
-//void
-//print_memory_profiling() {
-//}
-//#endif /* End of PROFILE_MEMORY_ACCESS area */

@@ -11,10 +11,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.16 $
+// Last changed  : $Date: 2011-09-02 15:56:11 -0300 (sex, 02 set 2011) $
+// File revision : $Revision: 4 $
 //
-// $Id: FIRFilter.cpp,v 1.16 2006/02/05 16:44:06 Olli Exp $
+// $Id: FIRFilter.cpp 131 2011-09-02 18:56:11Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -43,7 +43,6 @@
 #include <cstring>
 #include <cassert>
 #include <cmath>
-
 #include "FIRFilter.h"
 #include "cpu_detect.h"
 
@@ -57,52 +56,48 @@ using namespace soundtouch;
 
 FIRFilter::FIRFilter()
 {
-	resultDivFactor = 0;
-	length = 0;
-	lengthDiv8 = 0;
-	filterCoeffs = NULL;
+	this->resultDivFactor = 0;
+	this->resultDivider = 0;
+	this->length = 0;
+	this->lengthDiv8 = 0;
+	this->filterCoeffs.reset();
 }
 
 FIRFilter::~FIRFilter()
 {
-	if (filterCoeffs)
-		delete[] filterCoeffs;
 }
 
 // Usual C-version of the filter routine for stereo sound
 uint32_t FIRFilter::evaluateFilterStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numSamples) const
 {
-#ifdef FLOAT_SAMPLES
+#ifdef SOUNDTOUCH_FLOAT_SAMPLES
 	// when using floating point samples, use a scaler instead of a divider
 	// because division is much slower operation than multiplying.
-	double dScaler = 1.0 / resultDivider;
+	double dScaler = 1.0 / this->resultDivider;
 #endif
 
-	assert(length);
+	assert(this->length);
+	assert(!!src);
+	assert(!!dest);
+	assert(!!filterCoeffs);
 
-	uint32_t end = 2 * (numSamples - length);
+	uint32_t end = 2 * (numSamples - this->length);
 
 	for (uint32_t j = 0; j < end; j += 2)
 	{
 		LONG_SAMPLETYPE suml = 0, sumr = 0;
-		const SAMPLETYPE *ptr = src + j;
+		const SAMPLETYPE *ptr = &src[j];
 
 		for (uint32_t i = 0; i < length; i += 4)
 		{
 			// loop is unrolled by factor of 4 here for efficiency
-			suml += ptr[2 * i] * filterCoeffs[i] +
-                    ptr[2 * i + 2] * filterCoeffs[i + 1] +
-                    ptr[2 * i + 4] * filterCoeffs[i + 2] +
-                    ptr[2 * i + 6] * filterCoeffs[i + 3];
-			sumr += ptr[2 * i + 1] * filterCoeffs[i] +
-                    ptr[2 * i + 3] * filterCoeffs[i + 1] +
-                    ptr[2 * i + 5] * filterCoeffs[i + 2] +
-                    ptr[2 * i + 7] * filterCoeffs[i + 3];
+			suml += ptr[2 * i] * filterCoeffs[i] + ptr[2 * i + 2] * filterCoeffs[i + 1] + ptr[2 * i + 4] * filterCoeffs[i + 2] + ptr[2 * i + 6] * filterCoeffs[i + 3];
+			sumr += ptr[2 * i + 1] * filterCoeffs[i] + ptr[2 * i + 3] * filterCoeffs[i + 1] + ptr[2 * i + 5] * filterCoeffs[i + 2] + ptr[2 * i + 7] * filterCoeffs[i + 3];
 		}
 
-#ifdef INTEGER_SAMPLES
-		suml >>= resultDivFactor;
-		sumr >>= resultDivFactor;
+#ifdef  SOUNDTOUCH_INTEGER_SAMPLES
+		suml >>= this->resultDivFactor;
+		sumr >>= this->resultDivFactor;
 		// saturate to 16 bit integer limits
 		suml = suml < -32768 ? -32768 : (suml > 32767 ? 32767 : suml);
 		// saturate to 16 bit integer limits
@@ -110,23 +105,23 @@ uint32_t FIRFilter::evaluateFilterStereo(SAMPLETYPE *dest, const SAMPLETYPE *src
 #else
 		suml *= dScaler;
 		sumr *= dScaler;
-#endif // INTEGER_SAMPLES
+#endif //  SOUNDTOUCH_INTEGER_SAMPLES
 		dest[j] = static_cast<SAMPLETYPE>(suml);
 		dest[j + 1] = static_cast<SAMPLETYPE>(sumr);
 	}
-	return numSamples - length;
+	return numSamples - this->length;
 }
 
 // Usual C-version of the filter routine for mono sound
 uint32_t FIRFilter::evaluateFilterMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numSamples) const
 {
-#ifdef FLOAT_SAMPLES
+#ifdef SOUNDTOUCH_FLOAT_SAMPLES
 	// when using floating point samples, use a scaler instead of a divider
 	// because division is much slower operation than multiplying.
-	double dScaler = 1.0 / resultDivider;
+	double dScaler = 1.0 / this->resultDivider;
 #endif
 
-	assert(length);
+	assert(this->length);
 
 	uint32_t end = numSamples - length;
 	for (uint32_t j = 0; j < end; ++j)
@@ -135,18 +130,15 @@ uint32_t FIRFilter::evaluateFilterMono(SAMPLETYPE *dest, const SAMPLETYPE *src, 
 		for (uint32_t i = 0; i < length; i += 4)
 		{
 			// loop is unrolled by factor of 4 here for efficiency
-			sum += src[i] * filterCoeffs[i] +
-                   src[i + 1] * filterCoeffs[i + 1] +
-                   src[i + 2] * filterCoeffs[i + 2] +
-                   src[i + 3] * filterCoeffs[i + 3];
+			sum += src[i] * filterCoeffs[i] + src[i + 1] * filterCoeffs[i + 1] + src[i + 2] * filterCoeffs[i + 2] + src[i + 3] * filterCoeffs[i + 3];
 		}
-#ifdef INTEGER_SAMPLES
-		sum >>= resultDivFactor;
+#ifdef SOUNDTOUCH_INTEGER_SAMPLES
+		sum >>= this->resultDivFactor;
 		// saturate to 16 bit integer limits
 		sum = sum < -32768 ? -32768 : (sum > 32767 ? 32767 : sum);
 #else
 		sum *= dScaler;
-#endif // INTEGER_SAMPLES
+#endif // SOUNDTOUCH_INTEGER_SAMPLES
 		dest[j] = static_cast<SAMPLETYPE>(sum);
 		++src;
 	}
@@ -162,25 +154,20 @@ void FIRFilter::setCoefficients(const SAMPLETYPE *coeffs, uint32_t newLength, ui
 	if (newLength % 8)
 		throw std::runtime_error("FIR filter length not divisible by 8");
 
-	lengthDiv8 = newLength / 8;
-	length = lengthDiv8 * 8;
-	assert(length == newLength);
+	this->lengthDiv8 = newLength / 8;
+	this->length = this->lengthDiv8 * 8;
+	assert(this->length == newLength);
 
-	resultDivFactor = uResultDivFactor;
-#ifdef INTEGER_SAMPLES
-	resultDivider = static_cast<SAMPLETYPE>(1 << resultDivFactor);
-#else
-	resultDivider = static_cast<SAMPLETYPE>(pow(2, static_cast<SAMPLETYPE>(resultDivFactor)));
-#endif
+	this->resultDivFactor = uResultDivFactor;
+	this->resultDivider = static_cast<SAMPLETYPE>(std::pow(2.0, static_cast<double>(resultDivFactor)));
 
-	delete[] filterCoeffs;
-	filterCoeffs = new SAMPLETYPE[length];
-	memcpy(filterCoeffs, coeffs, length * sizeof(SAMPLETYPE));
+	this->filterCoeffs.reset(new SAMPLETYPE[this->length]);
+	memcpy(this->filterCoeffs.get(), coeffs, this->length * sizeof(SAMPLETYPE));
 }
 
 uint32_t FIRFilter::getLength() const
 {
-	return length;
+	return this->length;
 }
 
 // Applies the filter to the given sequence of samples.
@@ -191,15 +178,14 @@ uint32_t FIRFilter::evaluate(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t n
 {
 	assert(numChannels == 1 || numChannels == 2);
 
-	assert(length > 0);
-	assert(lengthDiv8 * 8 == length);
-	if (numSamples < length)
+	assert(this->length > 0);
+	assert(this->lengthDiv8 * 8 == this->length);
+	if (numSamples < this->length)
 		return 0;
-	//assert(resultDivFactor >= 0);
 	if (numChannels == 2)
-		return evaluateFilterStereo(dest, src, numSamples);
+		return this->evaluateFilterStereo(dest, src, numSamples);
 	else
-		return evaluateFilterMono(dest, src, numSamples);
+		return this->evaluateFilterMono(dest, src, numSamples);
 }
 
 // Operator 'new' is overloaded so that it automatically creates a suitable instance
@@ -212,31 +198,22 @@ void *FIRFilter::operator new(size_t)
 
 FIRFilter *FIRFilter::newInstance()
 {
-	uint32_t uExtensions = 0;
+	uint32_t uExtensions = detectCPUextensions();
 
-#if !defined(_MSC_VER) || !defined(__x86_64__)
-	uExtensions = detectCPUextensions();
-#endif
-	// Check if MMX/SSE/3DNow! instruction set extensions supported by CPU
+	// Check if MMX/SSE instruction set extensions supported by CPU
 
-#ifdef ALLOW_MMX
+#ifdef SOUNDTOUCH_ALLOW_MMX
 	// MMX routines available only with integer sample types
 	if (uExtensions & SUPPORT_MMX)
 		return ::new FIRFilterMMX;
 	else
-#endif // ALLOW_MMX
-#ifdef __SSE__
+#endif // SOUNDTOUCH_ALLOW_MMX
+#ifdef SOUNDTOUCH_ALLOW_SSE
 	if (uExtensions & SUPPORT_SSE)
 		// SSE support
 		return ::new FIRFilterSSE;
 	else
-#endif // ALLOW_SSE
-#ifdef ALLOW_3DNOW
-	if (uExtensions & SUPPORT_3DNOW)
-		// 3DNow! support
-		return ::new FIRFilter3DNow;
-	else
-#endif // ALLOW_3DNOW
+#endif // SOUNDTOUCH_ALLOW_SSE
 		// ISA optimizations not supported, use plain C version
 		return ::new FIRFilter;
 }

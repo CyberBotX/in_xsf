@@ -14,27 +14,16 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//-------------------------
-//this file contains the METASPU system
-//which is designed to handle the task of audio synchronization
-//and is designed to be as portable between multiple emulators
-//-------------------------
+// -------------------------
+// this file contains the METASPU system
+// which is designed to handle the task of audio synchronization
+// and is designed to be as portable between multiple emulators
+// -------------------------
 
 #ifndef _METASPU_H_
 #define _METASPU_H_
 
-#include <algorithm>
-#include <cmath>
-
-/*template<typename T> static inline void Clampify(T &src, T min, T max)
-{
-	src = std::min(std::max(src, min), max);
-}*/
-
-/*template<typename T> static inline T GetClamped(T src, T min, T max)
-{
-	return std::min(std::max( src, min ), max);
-}*/
+#include "../types.h"
 
 class ISynchronizingAudioBuffer
 {
@@ -53,9 +42,9 @@ enum ESynchMode
 
 enum ESynchMethod
 {
-	ESynchMethod_N, //nitsuja's
-	ESynchMethod_Z, //zero's
-	ESynchMethod_P //PCSX2 spu2-x
+	ESynchMethod_N, // nitsuja's
+	ESynchMethod_Z, // zero's
+	ESynchMethod_P // PCSX2 spu2-x
 };
 
 ISynchronizingAudioBuffer *metaspu_construct(ESynchMethod method);

@@ -14,10 +14,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.10 $
+// Last changed  : $Date: 2009-02-21 13:00:14 -0300 (s�b, 21 fev 2009) $
+// File revision : $Revision: 4 $
 //
-// $Id: RateTransposer.h,v 1.10 2006/02/05 16:44:06 Olli Exp $
+// $Id: RateTransposer.h 63 2009-02-21 16:00:14Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -49,8 +49,6 @@
 #include "FIFOSamplePipe.h"
 #include "FIFOSampleBuffer.h"
 
-#include "STTypes.h"
-
 namespace soundtouch
 {
 
@@ -64,11 +62,11 @@ class RateTransposer : public FIFOProcessor
 {
 protected:
 	/// Anti-alias filter object
-	AAFilter *pAAFilter;
+	std::unique_ptr<AAFilter> pAAFilter;
 
 	float fRate;
 
-	uint32_t uChannels;
+	int32_t numChannels;
 
 	/// Buffer for collecting samples to feed the anti-alias filter between
 	/// two batches
@@ -82,15 +80,11 @@ protected:
 
 	bool bUseAAFilter;
 
-	void init();
-
 	virtual void resetRegisters() = 0;
 
 	virtual uint32_t transposeStereo(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numSamples) = 0;
 	virtual uint32_t transposeMono(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numSamples) = 0;
 	uint32_t transpose(SAMPLETYPE *dest, const SAMPLETYPE *src, uint32_t numSamples);
-
-	void flushStoreBuffer();
 
 	void downsample(const SAMPLETYPE *src, uint32_t numSamples);
 	void upsample(const SAMPLETYPE *src, uint32_t numSamples);
@@ -107,7 +101,7 @@ public:
 
 	/// Operator 'new' is overloaded so that it automatically creates a suitable instance
 	/// depending on if we're to use integer or floating point arithmetics.
-	void *operator new(size_t s);
+	static void *operator new(size_t s);
 
 	/// Use this function instead of "new" operator to create a new instance of this class.
 	/// This function automatically chooses a correct implementation, depending on if
@@ -115,13 +109,13 @@ public:
 	static RateTransposer *newInstance();
 
 	/// Returns the output buffer object
-	FIFOSamplePipe *getOutput() { return &outputBuffer; };
+	FIFOSamplePipe *getOutput() { return &this->outputBuffer; }
 
 	/// Returns the store buffer object
-	FIFOSamplePipe *getStore() { return &storeBuffer; };
+	FIFOSamplePipe *getStore() { return &this->storeBuffer; }
 
 	/// Return anti-alias filter object
-	AAFilter *getAAFilter() const;
+	AAFilter *getAAFilter();
 
 	/// Enables/disables the anti-alias filter. Zero to disable, nonzero to enable
 	void enableAAFilter(bool newMode);
@@ -134,7 +128,7 @@ public:
 	virtual void setRate(float newRate);
 
 	/// Sets the number of channels, 1 = mono, 2 = stereo
-	void setChannels(uint32_t channels);
+	void setChannels(int32_t channels);
 
 	/// Adds 'numSamples' pcs of samples from the 'samples' memory position into
 	/// the input of the object.

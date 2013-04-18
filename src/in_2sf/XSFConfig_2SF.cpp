@@ -1,7 +1,7 @@
 /*
  * xSF - 2SF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-17
  *
  * Partially based on the vio*sf framework
  */
@@ -12,6 +12,7 @@
 #include "convert.h"
 #include "BigSString.h"
 #include "desmume/NDSSystem.h"
+#include "desmume/version.h"
 
 enum
 {
@@ -91,7 +92,7 @@ INT_PTR CALLBACK XSFConfig_2SF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Cosine Interpolation"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_SETCURSEL, this->interpolation, 0);
 			// Mutes
-			for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+			for (size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
 			{
 				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>((L"SPU " + wstringify(x + 1)).c_str()));
 				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, this->mutes[x], x);
@@ -108,14 +109,14 @@ void XSFConfig_2SF::ResetSpecificConfigDefaults(HWND hwndDlg)
 {
 	SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_SETCURSEL, XSFConfig_2SF::initInterpolation, 0);
 	auto tmpMutes = std::bitset<16>(XSFConfig_2SF::initMutes);
-	for (int x = 0, numMutes = tmpMutes.size(); x < numMutes; ++x)
+	for (size_t x = 0, numMutes = tmpMutes.size(); x < numMutes; ++x)
 		SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, tmpMutes[x], x);
 }
 
 void XSFConfig_2SF::SaveSpecificConfigDialog(HWND hwndDlg)
 {
 	this->interpolation = static_cast<unsigned>(SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_GETCURSEL, 0, 0));
-	for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+	for (size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
 		this->mutes[x] = !!SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_GETSEL, x, 0);
 }
 
@@ -124,7 +125,7 @@ void XSFConfig_2SF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 	if (!preLoad)
 	{
 		CommonSettings.spuInterpolationMode = static_cast<SPUInterpolationMode>(this->interpolation);
-		for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+		for (size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
 			CommonSettings.spu_muteChannels[x] = this->mutes[x];
 	}
 }
@@ -132,5 +133,5 @@ void XSFConfig_2SF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 void XSFConfig_2SF::About(HWND parent)
 {
 	MessageBox(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
-		L"Utilizes modified DeSmuME v0.9.8 for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
+		L"Utilizes modified " + String(EMU_DESMUME_NAME_AND_VERSION()).GetWStr() + L" for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }

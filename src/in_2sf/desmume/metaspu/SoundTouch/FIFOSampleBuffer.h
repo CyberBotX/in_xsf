@@ -15,10 +15,10 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Last changed  : $Date: 2006/02/05 16:44:06 $
-// File revision : $Revision: 1.9 $
+// Last changed  : $Date: 2012-06-13 16:29:53 -0300 (qua, 13 jun 2012) $
+// File revision : $Revision: 4 $
 //
-// $Id: FIFOSampleBuffer.h,v 1.9 2006/02/05 16:44:06 Olli Exp $
+// $Id: FIFOSampleBuffer.h 143 2012-06-13 19:29:53Z oparviai $
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -46,6 +46,7 @@
 #ifndef FIFOSampleBuffer_H
 #define FIFOSampleBuffer_H
 
+#include <memory>
 #include "FIFOSamplePipe.h"
 
 namespace soundtouch
@@ -64,7 +65,7 @@ private:
 
 	// Raw unaligned buffer memory. 'buffer' is made aligned by pointing it to first
 	// 16-byte aligned location of this buffer
-	SAMPLETYPE *bufferUnaligned;
+	std::unique_ptr<SAMPLETYPE[]> bufferUnaligned;
 
 	/// Sample buffer size in bytes
 	uint32_t sizeInBytes;
@@ -85,19 +86,19 @@ private:
 	void rewind();
 
 	/// Ensures that the buffer has capacity for at least this many samples.
-	void ensureCapacity(const uint32_t capacityRequirement);
+	void ensureCapacity(uint32_t capacityRequirement);
 
 	/// Returns current capacity.
 	uint32_t getCapacity() const;
 
 public:
 	/// Constructor
-	FIFOSampleBuffer(uint32_t numChannels = 2     ///< Number of channels, 1=mono, 2=stereo.
+	FIFOSampleBuffer(int32_t numChannels = 2     ///< Number of channels, 1=mono, 2=stereo.
                                               ///< Default is stereo.
                      );
 
 	/// destructor
-	~FIFOSampleBuffer();
+	virtual ~FIFOSampleBuffer();
 
 	/// Returns a pointer to the beginning of the output samples.
 	/// This function is provided for accessing the output samples directly.
@@ -106,7 +107,7 @@ public:
 	/// When using this function to output samples, also remember to 'remove' the
 	/// output samples from the buffer by calling the
 	/// 'receiveSamples(numSamples)' function
-	virtual SAMPLETYPE *ptrBegin() const;
+	virtual SAMPLETYPE *ptrBegin();
 
 	/// Returns a pointer to the end of the used part of the sample buffer (i.e.
 	/// where the new samples are to be inserted). This function may be used for
@@ -159,15 +160,19 @@ public:
 	virtual uint32_t numSamples() const;
 
 	/// Sets number of channels, 1 = mono, 2 = stereo.
-	void setChannels(uint32_t numChannels);
+	void setChannels(int32_t numChannels);
 
 	/// Returns nonzero if there aren't any samples available for outputting.
 	virtual bool isEmpty() const;
 
 	/// Clears all the samples.
 	virtual void clear();
-};
 
+	/// allow trimming (downwards) amount of samples in pipeline.
+	/// Returns adjusted amount of samples
+	uint32_t adjustAmountOfSamples(uint32_t numSamples);
+};
+	
 }
 
 #endif

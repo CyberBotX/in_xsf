@@ -4,9 +4,9 @@
 #endif
 
 #ifndef __PACKED
-	#ifdef __GNUC__
-	#define __PACKED __attribute__((__packed__))
-	#else
-	#define __PACKED
-	#endif
+# ifdef __GNUC__
+#  define __PACKED __attribute__((__packed__))
+# else
+#  define __PACKED
+# endif
 #endif

@@ -44,7 +44,7 @@
 #ifndef AAFilter_H
 #define AAFilter_H
 
-#include "STTypes.h"
+#include "FIRFilter.h"
 
 namespace soundtouch
 {
@@ -52,7 +52,7 @@ namespace soundtouch
 class AAFilter
 {
 protected:
-	class FIRFilter *pFIR;
+	std::unique_ptr<FIRFilter> pFIR;
 
 	/// Low-pass filter cut-off frequency, negative = invalid
 	double cutoffFreq;
@@ -65,8 +65,6 @@ protected:
 
 public:
 	AAFilter(uint32_t length);
-
-	~AAFilter();
 
 	/// Sets new anti-alias filter cut-off edge frequency, scaled to sampling
 	/// frequency (nyquist frequency = 0.5). The filter will cut off the
