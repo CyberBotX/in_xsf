@@ -384,7 +384,7 @@ bool armcp15_t::moveARM2CP(uint32_t val, uint8_t CRn, uint8_t CRm, uint8_t opcod
 			{
 				// On the NDS bit0,2,7,12..19 are R/W, Bit3..6 are always set, all other bits are always zero.
 				this->ctrl = (val & 0x000FF085) | 0x00000078;
-				MMU.ARM9_RW_MODE = static_cast<uint8_t>(BIT7(val));
+				MMU.ARM9_RW_MODE = BIT7(val);
 				// zero 31-jan-2010: change from 0x0FFF0000 to 0xFFFF0000 per gbatek
 				this->cpu->intVector = 0xFFFF0000 * BIT13(val);
 				this->cpu->LDTBit = !BIT15(val); // TBit

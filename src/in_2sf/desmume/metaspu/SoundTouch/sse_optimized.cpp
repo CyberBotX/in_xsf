@@ -140,7 +140,7 @@ double TDStretchSSE::calcCrossCorr(const float *pV1, const float *pV2) const
 		norm = 1.0; // to avoid div by zero
 
 	float *pvSum = reinterpret_cast<float *>(&vSum);
-	return static_cast<double>(pvSum[0] + pvSum[1] + pvSum[2] + pvSum[3]) / norm;
+	return (pvSum[0] + pvSum[1] + pvSum[2] + pvSum[3]) / norm;
 
 	/* This is approximately corresponding routine in C-language:
 	double corr, norm;
@@ -277,7 +277,7 @@ uint32_t FIRFilterSSE::evaluateFilterStereo(float *dest, const float *source, ui
 	// 2. If it could be guaranteed that 'dest' were always aligned to 16-byte
 	//    boundary, a faster '_mm_store_ps' instruction could be used.
 
-	return static_cast<uint32_t>(count);
+	return count;
 
 	/* original routine in C-language. please notice the C-version has differently
 	   organized coefficients though.

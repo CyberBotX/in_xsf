@@ -284,7 +284,7 @@ void BackupDevice::reset()
 		this->state = RUNNING;
 		int savetype = save_types[CommonSettings.manualBackupType].media_type;
 		int savesize = save_types[CommonSettings.manualBackupType].size;
-		this->ensure(static_cast<uint32_t>(savesize)); // expand properly if necessary
+		this->ensure(savesize); // expand properly if necessary
 		this->resize(savesize); // truncate if necessary
 		this->addr_size = this->addr_size_for_old_save_type(savetype);
 	}
@@ -356,12 +356,12 @@ void BackupDevice::load_old_state(uint32_t addrSize, uint8_t *Data, uint32_t dat
 // =======================================================================
 // =======================================================================
 
-static int no_gba_unpackSAV(void *in_buf, uint32_t fsize, void *out_buf, uint32_t &size)
+static int no_gba_unpackSAV(const uint8_t *in_buf, uint32_t fsize, uint8_t *out_buf, uint32_t &size)
 {
 	const char no_GBA_HEADER_ID[] = "NocashGbaBackupMediaSavDataFile";
 	const char no_GBA_HEADER_SRAM_ID[] = "SRAM";
-	uint8_t *src = static_cast<uint8_t *>(in_buf);
-	uint8_t *dst = static_cast<uint8_t *>(out_buf);
+	const uint8_t *src = in_buf;
+	uint8_t *dst = out_buf;
 	uint32_t src_pos = 0;
 	uint32_t dst_pos = 0;
 	uint32_t size_unpacked = 0;
@@ -379,11 +379,11 @@ static int no_gba_unpackSAV(void *in_buf, uint32_t fsize, void *out_buf, uint32_
 		if (src[i + 0x40] != no_GBA_HEADER_SRAM_ID[i])
 			return 2;
 
-	compressMethod = *(reinterpret_cast<uint32_t *>(src + 0x44));
+	compressMethod = *(reinterpret_cast<const uint32_t *>(src + 0x44));
 
 	if (!compressMethod) // unpacked
 	{
-		size_unpacked = *(reinterpret_cast<uint32_t *>(src + 0x48));
+		size_unpacked = *(reinterpret_cast<const uint32_t *>(src + 0x48));
 		src_pos = 0x4C;
 		for (uint32_t i = 0; i < size_unpacked; ++i)
 			dst[dst_pos++] = src[src_pos++];
@@ -393,7 +393,7 @@ static int no_gba_unpackSAV(void *in_buf, uint32_t fsize, void *out_buf, uint32_
 
 	if (compressMethod == 1) // packed (method 1)
 	{
-		size_unpacked = *(reinterpret_cast<uint32_t *>(src + 0x4C));
+		size_unpacked = *(reinterpret_cast<const uint32_t *>(src + 0x4C));
 
 		src_pos = 0x50;
 		while (true)
@@ -408,7 +408,7 @@ static int no_gba_unpackSAV(void *in_buf, uint32_t fsize, void *out_buf, uint32_
 
 			if (cc == 0x80)
 			{
-				uint16_t tsize = *(reinterpret_cast<uint16_t *>(src + src_pos + 1));
+				uint16_t tsize = *(reinterpret_cast<const uint16_t *>(src + src_pos + 1));
 				for (int t = 0; t < tsize; ++t)
 					dst[dst_pos++] = src[src_pos];
 				src_pos += 3;
@@ -433,11 +433,11 @@ static int no_gba_unpackSAV(void *in_buf, uint32_t fsize, void *out_buf, uint32_
 	return 200;
 }
 
-static uint32_t no_gba_savTrim(void *buf, uint32_t size)
+static uint32_t no_gba_savTrim(uint8_t *buf, uint32_t size)
 {
 	uint32_t rows = size / 16;
 	uint32_t pos = (size - 16);
-	uint8_t *src = static_cast<uint8_t *>(buf);
+	uint8_t *src = buf;
 
 	for (unsigned i = 0; i < rows; ++i, pos -= 16)
 	{
@@ -539,7 +539,7 @@ void BackupDevice::loadfile()
 	else
 	{
 		// scan for desmume save footer
-		int32_t cookieLen = static_cast<int32_t>(strlen(kDesmumeSaveCookie));
+		int32_t cookieLen = strlen(kDesmumeSaveCookie);
 		auto sigbuf = std::unique_ptr<char[]>(new char[cookieLen]);
 		inf->fseek(-cookieLen, SEEK_END);
 		inf->fread(&sigbuf[0], cookieLen);
@@ -610,7 +610,7 @@ bool BackupDevice::load_raw(const char *fn, uint32_t force_size)
 		return false;
 
 	fseek(inf, 0, SEEK_END);
-	uint32_t size = static_cast<uint32_t>(ftell(inf));
+	uint32_t size = ftell(inf);
 	uint32_t left = 0;
 
 	if (force_size > 0)

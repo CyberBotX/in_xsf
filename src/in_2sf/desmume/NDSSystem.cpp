@@ -127,7 +127,7 @@ std::unique_ptr<NDS_header> NDS_getROMHeader()
 	memcpy(header->logo, MMU.CART_ROM + 192, 156);
 	header->logoCRC16 = T1ReadWord(MMU.CART_ROM, 348);
 	header->headerCRC16 = T1ReadWord(MMU.CART_ROM, 350);
-	memcpy(header->reserved, MMU.CART_ROM + 352, std::min(160, static_cast<int>(gameInfo.romsize) - 352));
+	memcpy(header->reserved, MMU.CART_ROM + 352, std::min<size_t>(160, gameInfo.romsize - 352));
 
 	return header;
 }
@@ -298,10 +298,10 @@ struct TSequenceItem_divider : public TSequenceItem
 		T1WriteQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, MMU.divResult);
 		T1WriteQuad(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, MMU.divMod);
 #else
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, static_cast<uint32_t>(MMU.divResult));
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, static_cast<uint32_t>(MMU.divResult >> 32));
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, static_cast<uint32_t>(MMU.divMod));
-		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2AC, static_cast<uint32_t>(MMU.divMod >> 32));
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A0, MMU.divResult & 0xFFFFFFFF);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A4, (MMU.divResult >> 32) & 0xFFFFFFFF);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2A8, MMU.divMod & 0xFFFFFFFF);
+		T1WriteLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x2AC, (MMU.divMod >> 32) & 0xFFFFFFFF);
 #endif
 		MMU.divRunning = false;
 	}
@@ -556,10 +556,10 @@ static void execHardware_hstart()
 	}
 
 	// write the new vcount
-	T1WriteWord(MMU.ARM9_REG, 6, static_cast<uint16_t>(nds.VCount));
-	T1WriteWord(MMU.ARM9_REG, 0x1006, static_cast<uint16_t>(nds.VCount));
-	T1WriteWord(MMU.ARM7_REG, 6, static_cast<uint16_t>(nds.VCount));
-	T1WriteWord(MMU.ARM7_REG, 0x1006, static_cast<uint16_t>(nds.VCount));
+	T1WriteWord(MMU.ARM9_REG, 6, nds.VCount & 0xFFFF);
+	T1WriteWord(MMU.ARM9_REG, 0x1006, nds.VCount & 0xFFFF);
+	T1WriteWord(MMU.ARM7_REG, 6, nds.VCount & 0xFFFF);
+	T1WriteWord(MMU.ARM7_REG, 0x1006, nds.VCount & 0xFFFF);
 
 	// turn off hblank status bit
 	T1WriteWord(MMU.ARM9_REG, 4, T1ReadWord(MMU.ARM9_REG, 4) & 0xFFFD);
@@ -802,9 +802,9 @@ template<bool FORCE> void NDS_exec(int32_t)
 
 			// cast these down to 32bits so that things run faster on 32bit procs
 			uint64_t nds_timer_base = nds_timer;
-			int32_t arm9 = static_cast<int32_t>(nds_arm9_timer - nds_timer);
-			int32_t arm7 = static_cast<int32_t>(nds_arm7_timer - nds_timer);
-			int32_t s32next = static_cast<int32_t>(next - nds_timer);
+			int32_t arm9 = (nds_arm9_timer - nds_timer) & 0xFFFFFFFF;
+			int32_t arm7 = (nds_arm7_timer - nds_timer) & 0xFFFFFFFF;
+			int32_t s32next = (next - nds_timer) & 0xFFFFFFFF;
 
 #ifdef HAVE_JIT
 			auto arm9arm7 = CommonSettings.use_jit ? armInnerLoop<true, true, true>(nds_timer_base, s32next, arm9, arm7) : armInnerLoop<true, true, false>(nds_timer_base, s32next, arm9, arm7);

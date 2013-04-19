@@ -325,7 +325,7 @@ uint32_t RateTransposerInteger::transposeMono(SAMPLETYPE *dest, const SAMPLETYPE
 	LONG_SAMPLETYPE temp, vol1;
 	while (this->iSlopeCount <= SCALE)
 	{
-		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		vol1 = SCALE - this->iSlopeCount;
 		temp = vol1 * this->sPrevSampleL + this->iSlopeCount * src[0];
 		dest[i] = static_cast<SAMPLETYPE>(temp / SCALE);
 		++i;
@@ -343,7 +343,7 @@ uint32_t RateTransposerInteger::transposeMono(SAMPLETYPE *dest, const SAMPLETYPE
 			if (used >= nSamples - 1)
 				goto end;
 		}
-		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		vol1 = SCALE - this->iSlopeCount;
 		temp = src[used] * vol1 + this->iSlopeCount * src[used + 1];
 		dest[i] = static_cast<SAMPLETYPE>(temp / SCALE);
 		++i;
@@ -370,7 +370,7 @@ uint32_t RateTransposerInteger::transposeStereo(SAMPLETYPE *dest, const SAMPLETY
 	LONG_SAMPLETYPE temp, vol1;
 	while (this->iSlopeCount <= SCALE)
 	{
-		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		vol1 = SCALE - this->iSlopeCount;
 		temp = vol1 * this->sPrevSampleL + this->iSlopeCount * src[0];
 		dest[2 * i] = static_cast<SAMPLETYPE>(temp / SCALE);
 		temp = vol1 * this->sPrevSampleR + this->iSlopeCount * src[1];
@@ -391,7 +391,7 @@ uint32_t RateTransposerInteger::transposeStereo(SAMPLETYPE *dest, const SAMPLETY
 				goto end;
 		}
 		unsigned srcPos = 2 * used;
-		vol1 = static_cast<LONG_SAMPLETYPE>(SCALE - this->iSlopeCount);
+		vol1 = SCALE - this->iSlopeCount;
 		temp = src[srcPos] * vol1 + this->iSlopeCount * src[srcPos + 2];
 		dest[2 * i] = static_cast<SAMPLETYPE>(temp / SCALE);
 		temp = src[srcPos + 1] * vol1 + this->iSlopeCount * src[srcPos + 3];

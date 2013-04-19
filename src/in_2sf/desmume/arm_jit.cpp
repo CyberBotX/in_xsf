@@ -484,7 +484,7 @@ static GpVar bb_profiler_entry;
 	if (!imm) \
 		imm = 31; \
 	c.sar(rhs, imm); \
-	uint32_t rhs_first = static_cast<int32_t>(cpu->R[REG_POS(i, 0)]) >> imm;
+	uint32_t rhs_first = cpu->R[REG_POS(i, 0)] >> imm;
 
 #define S_ASR_IMM \
 	JIT_COMMENT("S_ASR_IMM"); \
@@ -512,7 +512,7 @@ static GpVar bb_profiler_entry;
 	} \
 	else \
 		c.ror(rhs, imm); \
-	uint32_t rhs_first = imm ? ROR(cpu->R[REG_POS(i, 0)], imm) : (static_cast<uint32_t>(cpu->CPSR.bits.C) << 31) | (cpu->R[REG_POS(i, 0)] >> 1);
+	uint32_t rhs_first = imm ? ROR(cpu->R[REG_POS(i, 0)], imm) : (cpu->CPSR.bits.C << 31) | (cpu->R[REG_POS(i, 0)] >> 1);
 
 #define S_ROR_IMM \
 	JIT_COMMENT("S_ROR_IMM"); \
@@ -2136,7 +2136,7 @@ template<int PROCNUM, bool store, int dir, bool null_compiled> static FORCEINLIN
 #ifdef ENABLE_ADVANCED_TIMING
 	cycles = 0;
 #endif
-	uintptr_t *func = reinterpret_cast<uintptr_t *>(&JIT_COMPILED_FUNC(adr, PROCNUM));
+	uintptr_t *func = &JIT_COMPILED_FUNC(adr, PROCNUM);
 
 #define OP(j) \
 { \
@@ -2247,7 +2247,7 @@ static void call_ldm_stm(GpVar adr, uint32_t bitmask, bool store, int dir)
 		// same prototype, but we have to handle splitting of a u64 arg manually
 		GpVar regs_lo = c.newGpVar(kX86VarTypeGpd);
 		GpVar regs_hi = c.newGpVar(kX86VarTypeGpd);
-		c.mov(regs_lo, static_cast<uint32_t>(get_reg_list(bitmask, dir)));
+		c.mov(regs_lo, get_reg_list(bitmask, dir) & 0xFFFFFFFF);
 		c.mov(regs_hi, get_reg_list(bitmask, dir) >> 32);
 		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(op_ldm_stm_tab[PROCNUM][store][dir > 0]));
 		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder4<uint32_t, uint32_t, uint32_t, uint32_t, int>());
@@ -3685,7 +3685,7 @@ static int OP_B_COND(uint32_t i)
 {
 	Label skip = c.newLabel();
 
-	uint32_t dst = bb_r15 + (static_cast<uint32_t>(static_cast<int8_t>(i & 0xFF)) << 1);
+	uint32_t dst = bb_r15 + ((i & 0xFF) << 1);
 
 	c.mov(cpu_ptr(instruct_adr), bb_next_instruction);
 
@@ -4149,7 +4149,7 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 #endif
 	c.endFunc();
 
-	ArmOpCompiled f = reinterpret_cast<ArmOpCompiled>(c.make());
+	ArmOpCompiled f = static_cast<ArmOpCompiled>(c.make());
 	if(c.getError())
 	{
 		fprintf(stderr, "JIT error: %s\n", getErrorString(c.getError()));
@@ -4247,13 +4247,13 @@ void arm_jit_reset(bool enable)
 #if PROFILER_JIT_LEVEL > 0
 static int pcmp(PROFILER_COUNTER_INFO *info1, PROFILER_COUNTER_INFO *info2)
 {
-	return static_cast<int>(info2->count - info1->count);
+	return info2->count - info1->count;
 }
 
 #if PROFILER_JIT_LEVEL > 1
 static int pcmp_entry(PROFILER_ENTRY *info1, PROFILER_ENTRY *info2)
 {
-	return static_cast<int>(info1->cycles - info2->cycles);
+	return info1->cycles - info2->cycles;
 }
 #endif
 #endif

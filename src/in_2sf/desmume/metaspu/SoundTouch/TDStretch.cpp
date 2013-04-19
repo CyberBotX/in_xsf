@@ -167,7 +167,7 @@ void TDStretch::getParameters(int32_t *pSampleRate, int32_t *pSequenceMs, int32_
 // Overlaps samples in 'midBuffer' with the samples in 'pInput'
 void TDStretch::overlapMono(SAMPLETYPE *pOutput, const SAMPLETYPE *pInput) const
 {
-	SAMPLETYPE m1 = static_cast<SAMPLETYPE>(0);
+	SAMPLETYPE m1 = 0;
 	SAMPLETYPE m2 = static_cast<SAMPLETYPE>(this->overlapLength);
 
 	for (int32_t i = 0; i < this->overlapLength; ++i)
@@ -249,7 +249,7 @@ int32_t TDStretch::seekBestOverlapPositionFull(const SAMPLETYPE *refPos)
 		// to 'i'
 		double corr = this->calcCrossCorr(refPos + this->channels * i, this->pMidBuffer);
 		// heuristic rule to slightly favour values close to mid of the range
-		double tmp = static_cast<double>(2 * i - this->seekLength) / this->seekLength;
+		double tmp = (2.0 * i - this->seekLength) / this->seekLength;
 		corr = (corr + 0.1) * (1.0 - 0.25 * tmp * tmp);
 
 		// Checks for the highest correlation value
@@ -293,9 +293,9 @@ int32_t TDStretch::seekBestOverlapPositionQuick(const SAMPLETYPE *refPos)
 
 			// Calculates correlation value for the mixing position corresponding
 			// to 'tempOffset'
-			double corr = static_cast<double>(this->calcCrossCorr(refPos + this->channels * tempOffset, this->pMidBuffer));
+			double corr = this->calcCrossCorr(refPos + this->channels * tempOffset, this->pMidBuffer);
 			// heuristic rule to slightly favour values close to mid of the range
-			double tmp = static_cast<double>(2 * tempOffset - this->seekLength) / seekLength;
+			double tmp = (2.0 * tempOffset - this->seekLength) / seekLength;
 			corr = (corr + 0.1) * (1.0 - 0.25 * tmp * tmp);
 
 			// Checks for the highest correlation value
@@ -419,8 +419,8 @@ void TDStretch::processSamples()
 		// samples in 'midBuffer' using sliding overlapping
 		// ... first partially overlap with the end of the previous sequence
 		// (that's in 'midBuffer')
-		this->overlap(this->outputBuffer.ptrEnd(static_cast<uint32_t>(this->overlapLength)), this->inputBuffer.ptrBegin(), static_cast<uint32_t>(offset));
-		this->outputBuffer.putSamples(static_cast<uint32_t>(this->overlapLength));
+		this->overlap(this->outputBuffer.ptrEnd(this->overlapLength), this->inputBuffer.ptrBegin(), offset);
+		this->outputBuffer.putSamples(this->overlapLength);
 
 		// ... then copy sequence samples from 'inputBuffer' to output:
 
@@ -431,12 +431,12 @@ void TDStretch::processSamples()
 		if (static_cast<int32_t>(inputBuffer.numSamples()) < offset + temp + this->overlapLength * 2)
 			continue; // just in case, shouldn't really happen
 
-		this->outputBuffer.putSamples(this->inputBuffer.ptrBegin() + this->channels * (offset + this->overlapLength), static_cast<uint32_t>(temp));
+		this->outputBuffer.putSamples(this->inputBuffer.ptrBegin() + this->channels * (offset + this->overlapLength), temp);
 
 		// Copies the end of the current sequence from 'inputBuffer' to
 		// 'midBuffer' for being mixed with the beginning of the next
 		// processing sequence and so on
-		assert(offset + temp + this->overlapLength * 2 <= static_cast<int>(this->inputBuffer.numSamples()));
+		assert(offset + temp + this->overlapLength * 2 <= static_cast<int32_t>(this->inputBuffer.numSamples()));
 		memcpy(this->pMidBuffer, this->inputBuffer.ptrBegin() + this->channels * (offset + this->seekWindowLength - this->overlapLength), this->channels * sizeof(SAMPLETYPE) * this->overlapLength);
 
 		// Remove the processed samples from the input buffer. Update
@@ -445,7 +445,7 @@ void TDStretch::processSamples()
 		this->skipFract += this->nominalSkip; // real skip size
 		int ovlSkip = static_cast<int>(skipFract); // rounded to integer skip
 		this->skipFract -= ovlSkip; // maintain the fraction part, i.e. real vs. integer skip
-		this->inputBuffer.receiveSamples(static_cast<uint32_t>(ovlSkip));
+		this->inputBuffer.receiveSamples(ovlSkip);
 	}
 }
 
@@ -522,7 +522,7 @@ void TDStretch::overlapStereo(short *poutput, const short *pinput) const
 {
 	for (int32_t i = 0; i < this->overlapLength; ++i)
 	{
-		short temp = static_cast<short>(this->overlapLength - i);
+		short temp = this->overlapLength - i;
 		int32_t cnt2 = 2 * i;
 		poutput[cnt2] = (pinput[cnt2] * i + this->pMidBuffer[cnt2] * temp) / this->overlapLength;
 		poutput[cnt2 + 1] = (pinput[cnt2 + 1] * i + this->pMidBuffer[cnt2 + 1] * temp) / this->overlapLength;
@@ -550,7 +550,7 @@ void TDStretch::calculateOverlapLength(int32_t aoverlapMs)
 		this->overlapDividerBits = 9;
 	if (this->overlapDividerBits < 3)
 		this->overlapDividerBits = 3;
-	int32_t newOvl = static_cast<int>std::pow(2, static_cast<int>(this->overlapDividerBits) + 1); // +1 => account for -1 above
+	int32_t newOvl = static_cast<int32_t>(std::pow(2, this->overlapDividerBits + 1)); // +1 => account for -1 above
 
 	this->acceptNewOverlapLength(newOvl);
 

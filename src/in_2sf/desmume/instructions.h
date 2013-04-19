@@ -18,7 +18,7 @@
 #ifndef _INSTRUCIONS_H_
 #define _INSTRUCIONS_H_
 
-typedef uint32_t (FASTCALL *OpFunc)(const uint32_t i);
+typedef uint32_t (FASTCALL *OpFunc)(uint32_t i);
 extern const OpFunc arm_instructions_set[2][4096];
 extern const char* arm_instruction_names[4096];
 extern const OpFunc thumb_instructions_set[2][1024];

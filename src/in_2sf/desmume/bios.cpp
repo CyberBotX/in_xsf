@@ -281,16 +281,16 @@ TEMPLATE static uint32_t sleep()
 
 TEMPLATE static uint32_t divide()
 {
-	int32_t num = static_cast<int32_t>(cpu->R[0]);
-	int32_t dnum = static_cast<int32_t>(cpu->R[1]);
+	int32_t num = cpu->R[0];
+	int32_t dnum = cpu->R[1];
 
 	if (!dnum)
 		return 0;
 
 	int32_t res = num / dnum;
-	cpu->R[0] = static_cast<uint32_t>(res);
-	cpu->R[1] = static_cast<uint32_t>(num % dnum);
-	cpu->R[3] = static_cast<uint32_t>(std::abs(res));
+	cpu->R[0] = res;
+	cpu->R[1] = num % dnum;
+	cpu->R[3] = std::abs(res);
 
 	return 6;
 }
@@ -324,7 +324,7 @@ TEMPLATE static uint32_t copy()
 					cnt &= 0x1FFFFF;
 					while (cnt)
 					{
-						_MMU_write16<PROCNUM>(dst, static_cast<uint16_t>(val));
+						_MMU_write16<PROCNUM>(dst, val);
 						--cnt;
 						dst += 2;
 					}
@@ -439,7 +439,7 @@ TEMPLATE static uint32_t LZ77UnCompVram()
 
 						if (byteCount == 2)
 						{
-							_MMU_write16<PROCNUM>(dest, static_cast<uint16_t>(writeValue));
+							_MMU_write16<PROCNUM>(dest, writeValue & 0xFFFF);
 							dest += 2;
 							byteCount = 0;
 							byteShift = 0;
@@ -457,7 +457,7 @@ TEMPLATE static uint32_t LZ77UnCompVram()
 					++byteCount;
 					if (byteCount == 2)
 					{
-						_MMU_write16<PROCNUM>(dest, static_cast<uint16_t>(writeValue));
+						_MMU_write16<PROCNUM>(dest, writeValue & 0xFFFF);
 						dest += 2;
 						byteCount = 0;
 						byteShift = 0;
@@ -479,7 +479,7 @@ TEMPLATE static uint32_t LZ77UnCompVram()
 				++byteCount;
 				if (byteCount == 2)
 				{
-					_MMU_write16<PROCNUM>(dest, static_cast<uint16_t>(writeValue));
+					_MMU_write16<PROCNUM>(dest, writeValue & 0xFFFF);
 					dest += 2;
 					byteShift = 0;
 					byteCount = 0;
@@ -587,7 +587,7 @@ TEMPLATE static uint32_t RLUnCompVram()
 
 				if (byteCount == 2)
 				{
-					_MMU_write16<PROCNUM>(dest, static_cast<uint16_t>(writeValue));
+					_MMU_write16<PROCNUM>(dest, writeValue & 0xFFFF);
 					dest += 2;
 					byteCount = 0;
 					byteShift = 0;
@@ -609,7 +609,7 @@ TEMPLATE static uint32_t RLUnCompVram()
 
 				if (byteCount == 2)
 				{
-					_MMU_write16<PROCNUM>(dest, static_cast<uint16_t>(writeValue));
+					_MMU_write16<PROCNUM>(dest, writeValue & 0xFFFF);
 					dest += 2;
 					byteCount = 0;
 					byteShift = 0;
@@ -738,7 +738,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 				{
 					byteCount = 0;
 					byteShift = 0;
-					_MMU_write08<PROCNUM>(dest, static_cast<uint8_t>(writeValue));
+					_MMU_write08<PROCNUM>(dest, writeValue & 0xFF);
 					writeValue = 0;
 					dest += 4;
 					len -= 4;
@@ -801,7 +801,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 					{
 						byteCount = 0;
 						byteShift = 0;
-						_MMU_write08<PROCNUM>(dest, static_cast<uint8_t>(writeValue));
+						_MMU_write08<PROCNUM>(dest, writeValue & 0xFF);
 						dest += 4;
 						writeValue = 0;
 						len -= 4;
@@ -959,7 +959,7 @@ TEMPLATE static uint32_t bios_sqrt()
 
 TEMPLATE static uint32_t setHaltCR()
 {
-	_MMU_write08<PROCNUM>(0x4000300+cpu->proc_ID, static_cast<uint8_t>(cpu->R[0]));
+	_MMU_write08<PROCNUM>(0x4000300+cpu->proc_ID, cpu->R[0] & 0xFF);
 	return 1;
 }
 
@@ -1010,7 +1010,7 @@ TEMPLATE static uint32_t getCRC16()
 	// if this implementation is wrong, then it won't match what the real bios returns,
 	// and savefiles created with a bios will be invalid when loaded with non-bios (and vice-versa)
 
-	uint16_t crc = static_cast<uint16_t>(cpu->R[0]);
+	uint16_t crc = cpu->R[0] & 0xFFFF;
 	uint32_t datap = cpu->R[1];
 	uint32_t size = cpu->R[2] >> 1;
 	uint16_t currVal = 0;

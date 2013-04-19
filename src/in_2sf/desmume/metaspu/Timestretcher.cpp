@@ -259,7 +259,7 @@ void SndBuffer::timeStretchWrite()
 	// suddenly we'll get several chunks back at once.  Thus we use
 	// data prediction to make the timestretcher more responsive.
 
-	PredictDataWrite(static_cast<int>(SndOutPacketSize / eTempo));
+	PredictDataWrite(SndOutPacketSize / eTempo);
 	CvtPacketToFloat(sndTempBuffer.get());
 
 	pSoundTouch->putSamples(reinterpret_cast<float *>(sndTempBuffer.get()), SndOutPacketSize);

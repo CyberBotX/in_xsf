@@ -36,7 +36,7 @@ StereoOut32::StereoOut32(const StereoOutFloat &src) : Left(static_cast<int32_t>(
 
 StereoOut16 StereoOut32::DownSample() const
 {
-	return StereoOut16(static_cast<int16_t>(Left >> SndOutVolumeShift), static_cast<int16_t>(Right >> SndOutVolumeShift));
+	return StereoOut16((Left >> SndOutVolumeShift) & 0xFFFF, (Right >> SndOutVolumeShift) & 0xFFFF);
 }
 
 std::unique_ptr<StereoOut32[]> SndBuffer::m_buffer;

@@ -130,8 +130,8 @@ private:
 	enum { ASSOCIATIVITY = 1 << ASSOCIATIVESHIFT };
 	enum { BLOCKSIZE = 1 << BLOCKSIZESHIFT };
 	enum { TAGSHIFT = SIZESHIFT - ASSOCIATIVESHIFT };
-	enum { TAGMASK = static_cast<uint32_t>(~0 << TAGSHIFT) };
-	enum { BLOCKMASK = (static_cast<uint32_t>(~0) >> (32 - TAGSHIFT)) & static_cast<uint32_t>(~0 << BLOCKSIZESHIFT) };
+	enum { TAGMASK = ~0 << TAGSHIFT };
+	enum { BLOCKMASK = (~0 >> (32 - TAGSHIFT)) & (~0 << BLOCKSIZESHIFT) };
 	enum { WORDSIZE = sizeof(uint32_t) };
 	enum { WORDSPERBLOCK = (1 << BLOCKSIZESHIFT) / WORDSIZE };
 	enum { DATAPERWORD = WORDSIZE * ASSOCIATIVITY };

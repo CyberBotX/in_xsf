@@ -130,15 +130,15 @@ const char dldiFileExtension[] = ".dldi";
 
 addr_t readAddr(data_t *mem, addr_t offset)
 {
-	return static_cast<addr_t>(mem[offset + 0] | (mem[offset + 1] << 8) | (mem[offset + 2] << 16) | (mem[offset + 3] << 24));
+	return mem[offset + 0] | (mem[offset + 1] << 8) | (mem[offset + 2] << 16) | (mem[offset + 3] << 24);
 }
 
 void writeAddr(data_t *mem, addr_t offset, addr_t value)
 {
-	mem[offset + 0] = static_cast<data_t>(value);
-	mem[offset + 1] = static_cast<data_t>(value >> 8);
-	mem[offset + 2] = static_cast<data_t>(value >> 16);
-	mem[offset + 3] = static_cast<data_t>(value >> 24);
+	mem[offset + 0] = value & 0xFF;
+	mem[offset + 1] = (value >> 8) & 0xFF;
+	mem[offset + 2] = (value >> 16) & 0xFF;
+	mem[offset + 3] = (value >> 24) & 0xFF;
 }
 
 int stringCaseInsensitiveCompare(const char *str1, const char *str2)

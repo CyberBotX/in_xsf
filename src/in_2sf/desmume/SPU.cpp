@@ -36,9 +36,9 @@ static const double M_PI = 3.14159265358979323846;
 #include "NDSSystem.h"
 #include "matrix.h"
 
-static inline int16_t read16(uint32_t addr) { return static_cast<int16_t>(_MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr)); }
+static inline int16_t read16(uint32_t addr) { return _MMU_read16<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
 static inline uint8_t read08(uint32_t addr) { return _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
-static inline int8_t read_s8(uint32_t addr) { return static_cast<int8_t>(_MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr)); }
+static inline int8_t read_s8(uint32_t addr) { return _MMU_read08<ARMCPU_ARM7,MMU_AT_DEBUG>(addr); }
 
 static const int K_ADPCM_LOOPING_RECOVERY_INDEX = 99999;
 static const int COSINE_INTERPOLATION_RESOLUTION = 8192;
@@ -172,7 +172,7 @@ int SPU_Init(int coreid, int Buffersize)
 	for (i = 0; i < COSINE_INTERPOLATION_RESOLUTION; ++i)
 		cos_lut[i] = (1.0 - std::cos((static_cast<double>(i) / COSINE_INTERPOLATION_RESOLUTION) * M_PI)) * 0.5;
 
-	SPU_core.reset(new SPU_struct(static_cast<int>(std::ceil(samples_per_hline))));
+	SPU_core.reset(new SPU_struct(std::ceil(samples_per_hline)));
 	SPU_Reset();
 
 	int j;
@@ -350,7 +350,7 @@ void SPU_struct::KeyOn(int channel)
 			thischan.x = 0x7FFF;
 	}
 
-	thischan.double_totlength_shifted = static_cast<double>(thischan.totlength << format_shift[thischan.format]);
+	thischan.double_totlength_shifted = thischan.totlength << format_shift[thischan.format];
 
 	if (thischan.format != 3 && fEqual(thischan.double_totlength_shifted, 0.0))
 	{

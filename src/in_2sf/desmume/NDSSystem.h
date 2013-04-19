@@ -212,7 +212,7 @@ struct GameInfo
 	{
 		this->resize(size);
 		memcpy(&this->romdata[0], buf, size);
-		this->romsize = static_cast<uint32_t>(size);
+		this->romsize = size;
 		this->fillGap();
 	}
 

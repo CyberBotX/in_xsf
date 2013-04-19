@@ -90,7 +90,7 @@ protected:
 			this->vec->resize(amt);
 	}
 public:
-	EMUFILE_MEMORY(std::vector<uint8_t> *underlying) : vec(underlying), ownvec(false), pos(0), len(static_cast<int32_t>(underlying->size())) { }
+	EMUFILE_MEMORY(std::vector<uint8_t> *underlying) : vec(underlying), ownvec(false), pos(0), len(underlying->size()) { }
 	EMUFILE_MEMORY(uint32_t preallocate) : vec(new std::vector<uint8_t>()), ownvec(true), pos(0), len(0)
 	{
 		this->vec->resize(preallocate);
@@ -196,7 +196,7 @@ public:
 
 	virtual size_t ftell()
 	{
-		return static_cast<size_t>(::ftell(this->fp));
+		return ::ftell(this->fp);
 	}
 
 	virtual size_t size()

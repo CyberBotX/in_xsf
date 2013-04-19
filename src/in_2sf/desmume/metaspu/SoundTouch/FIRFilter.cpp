@@ -159,7 +159,7 @@ void FIRFilter::setCoefficients(const SAMPLETYPE *coeffs, uint32_t newLength, ui
 	assert(this->length == newLength);
 
 	this->resultDivFactor = uResultDivFactor;
-	this->resultDivider = static_cast<SAMPLETYPE>(std::pow(2.0, static_cast<double>(resultDivFactor)));
+	this->resultDivider = static_cast<SAMPLETYPE>(std::pow(2.0, static_cast<double>(this->resultDivFactor)));
 
 	this->filterCoeffs.reset(new SAMPLETYPE[this->length]);
 	memcpy(this->filterCoeffs.get(), coeffs, this->length * sizeof(SAMPLETYPE));

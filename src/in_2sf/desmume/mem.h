@@ -43,7 +43,7 @@ inline uint16_t T1ReadWord_guaranteedAligned(const uint8_t *const mem, uint32_t 
 {
 	assert(!(addr & 1));
 #ifdef WORDS_BIGENDIAN
-	return (static_cast<uint8_t *>(mem)[addr + 1] << 8) | static_cast<uint8_t *>(mem)[addr];
+	return (mem[addr + 1] << 8) | mem[addr];
 #else
 	return *reinterpret_cast<const uint16_t *>(mem + addr);
 #endif
@@ -52,7 +52,7 @@ inline uint16_t T1ReadWord_guaranteedAligned(const uint8_t *const mem, uint32_t 
 inline uint16_t T1ReadWord(const uint8_t *const mem, uint32_t addr)
 {
 #ifdef WORDS_BIGENDIAN
-	return (static_cast<uint8_t *>(mem)[addr + 1] << 8) | static_cast<uint8_t *>(mem)[addr];
+	return (mem[addr + 1] << 8) | mem[addr];
 #else
 	return *reinterpret_cast<const uint16_t *>(mem + addr);
 #endif
@@ -62,7 +62,7 @@ inline uint32_t T1ReadLong_guaranteedAligned(const uint8_t *const mem, uint32_t 
 {
 	assert(!(addr & 3));
 #ifdef WORDS_BIGENDIAN
-	return  mem[addr + 3] << 24 | mem[addr + 2] << 16 | mem[addr + 1] << 8 | mem[addr];
+	return (mem[addr + 3] << 24) | (mem[addr + 2] << 16) | (mem[addr + 1] << 8) | mem[addr];
 #else
 	return *reinterpret_cast<const uint32_t *>(mem + addr);
 #endif
@@ -72,7 +72,7 @@ inline uint32_t T1ReadLong(const uint8_t *const mem, uint32_t addr)
 {
 	addr &= ~3;
 #ifdef WORDS_BIGENDIAN
-	return  mem[addr + 3] << 24 | mem[addr + 2] << 16 | mem[addr + 1] << 8 | mem[addr];
+	return (mem[addr + 3] << 24) | (mem[addr + 2] << 16) | (mem[addr + 1] << 8) | mem[addr];
 #else
 	return *reinterpret_cast<const uint32_t *>(mem + addr);
 #endif
@@ -81,8 +81,7 @@ inline uint32_t T1ReadLong(const uint8_t *const mem, uint32_t addr)
 inline uint64_t T1ReadQuad(const uint8_t *const mem, uint32_t addr)
 {
 #ifdef WORDS_BIGENDIAN
-	return  uint64_t(mem[addr + 7]) << 56 | uint64_t(mem[addr + 6]) << 48 | uint64_t(mem[addr + 5]) << 40 | uint64_t(mem[addr + 4]) << 32 |
-		uint64_t(mem[addr + 3]) << 24 | uint64_t(mem[addr + 2]) << 16 | uint64_t(mem[addr + 1]) << 8  | uint64_t(mem[addr]);
+	return (mem[addr + 7] << 56) | (mem[addr + 6] << 48) | (mem[addr + 5] << 40) | (mem[addr + 4] << 32) | (mem[addr + 3] << 24) | (mem[addr + 2] << 16) | (mem[addr + 1] << 8)  | mem[addr];
 #else
 	return *reinterpret_cast<const uint64_t *>(mem + addr);
 #endif
@@ -118,7 +117,7 @@ inline void T1WriteLong(uint8_t *const mem, uint32_t addr, uint32_t val)
 inline void T1WriteQuad(uint8_t *const mem, uint32_t addr, uint64_t val)
 {
 #ifdef WORDS_BIGENDIAN
-	mem[addr + 7] = (val >> 56);
+	mem[addr + 7] = val >> 56;
 	mem[addr + 6] = (val >> 48) & 0xFF;
 	mem[addr + 5] = (val >> 40) & 0xFF;
 	mem[addr + 4] = (val >> 32) & 0xFF;

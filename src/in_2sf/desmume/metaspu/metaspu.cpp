@@ -124,7 +124,7 @@ private:
 				this->rollingTotalSize -= this->statsHistory.front();
 				this->statsHistory.pop();
 
-				float averageSize = static_cast<float>(rollingTotalSize / kAverageSize);
+				float averageSize = rollingTotalSize / kAverageSize;
 				//static int ctr=0;  ctr++; if((ctr&127)==0) printf("avg size: %f curr size: %d rate: %f\n",averageSize,size,rate);
 				{
 					float targetRate;
@@ -208,8 +208,8 @@ private:
 		int outNum = end - cur;
 		int denom = end - start;
 
-		int lrv = (static_cast<int>(lhs.l) * outNum + static_cast<int>(rhs.l) * inNum) / denom;
-		int rrv = (static_cast<int>(lhs.r) * outNum + static_cast<int>(rhs.r) * inNum) / denom;
+		int lrv = (lhs.l * outNum + rhs.l * inNum) / denom;
+		int rrv = (lhs.r * outNum + rhs.r * inNum) / denom;
 
 		return ssamp(lrv, rrv);
 	}

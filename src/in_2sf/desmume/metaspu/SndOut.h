@@ -83,7 +83,7 @@ struct StereoOut16
 	{
 	}
 
-	StereoOut16(const StereoOut32 &src) : Left(static_cast<int16_t>(src.Left)), Right(static_cast<int16_t>(src.Right))
+	StereoOut16(const StereoOut32 &src) : Left(src.Left & 0xFFFF), Right(src.Right & 0xFFFF)
 	{
 	}
 

@@ -112,8 +112,8 @@ void SoundTouch::setChannels(uint32_t numChannels)
 	if (numChannels != 1 && numChannels != 2)
 		throw std::runtime_error("Illegal number of channels");
 	this->channels = numChannels;
-	this->pRateTransposer->setChannels(static_cast<int32_t>(numChannels));
-	this->pTDStretch->setChannels(static_cast<int32_t>(numChannels));
+	this->pRateTransposer->setChannels(numChannels);
+	this->pTDStretch->setChannels(numChannels);
 }
 
 // Sets new rate control value. Normal rate = 1.0, smaller values
@@ -230,7 +230,7 @@ void SoundTouch::setSampleRate(uint32_t srate)
 {
 	this->bSrateSet = true;
 	// set sample rate, leave other tempo changer parameters as they are.
-	this->pTDStretch->setParameters(static_cast<int32_t>(srate));
+	this->pTDStretch->setParameters(srate);
 }
 
 // Adds 'numSamples' pcs of samples from the 'samples' memory position into
@@ -300,7 +300,7 @@ void SoundTouch::flush()
 	for (int i = 0; i < 128; ++i)
 	{
 		this->putSamples(buff, 64);
-		if (static_cast<int32_t>(numSamples()) >= nOut)
+		if (static_cast<int32_t>(this->numSamples()) >= nOut)
 		{
 			// Enough new samples have appeared into the output!
 			// As samples come from processing with bigger chunks, now truncate it

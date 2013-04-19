@@ -1,6 +1,6 @@
 #ifndef __GNUC__
-#pragma pack(push, 1)
-#pragma warning(disable : 4103)
+# pragma pack(push, 1)
+# pragma warning(disable : 4103)
 #endif
 
 #ifndef __PACKED

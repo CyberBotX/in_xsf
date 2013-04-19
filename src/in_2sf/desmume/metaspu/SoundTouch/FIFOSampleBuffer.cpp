@@ -58,7 +58,7 @@ FIFOSampleBuffer::FIFOSampleBuffer(int32_t numChannels)
 	this->bufferUnaligned.reset();
 	this->samplesInBuffer = 0;
 	this->bufferPos = 0;
-	this->channels = static_cast<uint32_t>(numChannels);
+	this->channels = numChannels;
 	this->ensureCapacity(32); // allocate initial capacity 
 }
 
@@ -72,7 +72,7 @@ void FIFOSampleBuffer::setChannels(int32_t numChannels)
 {
 	assert(numChannels > 0);
 	uint32_t usedBytes = this->channels * this->samplesInBuffer;
-	this->channels = static_cast<uint32_t>(numChannels);
+	this->channels = numChannels;
 	this->samplesInBuffer = usedBytes / this->channels;
 }
 
