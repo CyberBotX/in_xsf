@@ -58,7 +58,7 @@
 # define DESMUME_CPUEXT_STRING ""
 #endif
 
-#define DESMUME_SUBVERSION_STRING " svn 4605"
+#define DESMUME_SUBVERSION_STRING " svn 4608"
 
 #ifdef __INTEL_COMPILER
 # define DESMUME_COMPILER " (Intel)"
