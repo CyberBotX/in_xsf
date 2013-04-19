@@ -1169,8 +1169,7 @@ struct Mem : public Operand
 // [AsmJit::Var]
 // ============================================================================
 
-ASMJIT_API Mem _BaseVarMem(const Var &var, uint32_t size);
-ASMJIT_API Mem _BaseVarMem(const Var &var, uint32_t size, sysint_t disp);
+ASMJIT_API Mem _BaseVarMem(const Var &var, uint32_t size, sysint_t disp = 0);
 ASMJIT_API Mem _BaseVarMem(const Var &var, uint32_t size, const GpVar &index, uint32_t shift, sysint_t disp);
 
 //! @brief Base class for all variables.

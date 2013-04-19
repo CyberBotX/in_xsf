@@ -40,8 +40,10 @@
 # define DESMUME_PLATFORM_STRING " ARM"
 #elif defined(__thumb__)
 # define DESMUME_PLATFORM_STRING " ARM-Thumb"
+#elif defined(__ppc64__)
+# define DESMUME_PLATFORM_STRING " PPC64"
 #elif defined(__ppc__) || defined(_M_PPC)
-# define DESMUME_PLATFORM_STRING " PowerPC"
+# define DESMUME_PLATFORM_STRING " PPC"
 #else
 # define DESMUME_PLATFORM_STRING ""
 #endif
@@ -56,7 +58,7 @@
 # define DESMUME_CPUEXT_STRING ""
 #endif
 
-#define DESMUME_SUBVERSION_STRING " svn 4598"
+#define DESMUME_SUBVERSION_STRING " svn 4605"
 
 #ifdef __INTEL_COMPILER
 # define DESMUME_COMPILER " (Intel)"

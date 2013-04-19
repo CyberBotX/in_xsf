@@ -12,7 +12,8 @@
 // [Api-Begin]
 #include "../core/apibegin.h"
 
-namespace AsmJit {
+namespace AsmJit
+{
 
 // ============================================================================
 // [AsmJit::x86InstName]
@@ -23,586 +24,585 @@ namespace AsmJit {
 //
 // ${X86_INST_DATA:BEGIN}
 const char x86InstName[] =
-  "\0"
-  "adc\0"
-  "add\0"
-  "addpd\0"
-  "addps\0"
-  "addsd\0"
-  "addss\0"
-  "addsubpd\0"
-  "addsubps\0"
-  "amd_prefetch\0"
-  "amd_prefetchw\0"
-  "and\0"
-  "andnpd\0"
-  "andnps\0"
-  "andpd\0"
-  "andps\0"
-  "blendpd\0"
-  "blendps\0"
-  "blendvpd\0"
-  "blendvps\0"
-  "bsf\0"
-  "bsr\0"
-  "bswap\0"
-  "bt\0"
-  "btc\0"
-  "btr\0"
-  "bts\0"
-  "call\0"
-  "cbw\0"
-  "cdq\0"
-  "cdqe\0"
-  "clc\0"
-  "cld\0"
-  "clflush\0"
-  "cmc\0"
-  "cmova\0"
-  "cmovae\0"
-  "cmovb\0"
-  "cmovbe\0"
-  "cmovc\0"
-  "cmove\0"
-  "cmovg\0"
-  "cmovge\0"
-  "cmovl\0"
-  "cmovle\0"
-  "cmovna\0"
-  "cmovnae\0"
-  "cmovnb\0"
-  "cmovnbe\0"
-  "cmovnc\0"
-  "cmovne\0"
-  "cmovng\0"
-  "cmovnge\0"
-  "cmovnl\0"
-  "cmovnle\0"
-  "cmovno\0"
-  "cmovnp\0"
-  "cmovns\0"
-  "cmovnz\0"
-  "cmovo\0"
-  "cmovp\0"
-  "cmovpe\0"
-  "cmovpo\0"
-  "cmovs\0"
-  "cmovz\0"
-  "cmp\0"
-  "cmppd\0"
-  "cmpps\0"
-  "cmpsd\0"
-  "cmpss\0"
-  "cmpxchg\0"
-  "cmpxchg16b\0"
-  "cmpxchg8b\0"
-  "comisd\0"
-  "comiss\0"
-  "cpuid\0"
-  "cqo\0"
-  "crc32\0"
-  "cvtdq2pd\0"
-  "cvtdq2ps\0"
-  "cvtpd2dq\0"
-  "cvtpd2pi\0"
-  "cvtpd2ps\0"
-  "cvtpi2pd\0"
-  "cvtpi2ps\0"
-  "cvtps2dq\0"
-  "cvtps2pd\0"
-  "cvtps2pi\0"
-  "cvtsd2si\0"
-  "cvtsd2ss\0"
-  "cvtsi2sd\0"
-  "cvtsi2ss\0"
-  "cvtss2sd\0"
-  "cvtss2si\0"
-  "cvttpd2dq\0"
-  "cvttpd2pi\0"
-  "cvttps2dq\0"
-  "cvttps2pi\0"
-  "cvttsd2si\0"
-  "cvttss2si\0"
-  "cwd\0"
-  "cwde\0"
-  "daa\0"
-  "das\0"
-  "dec\0"
-  "div\0"
-  "divpd\0"
-  "divps\0"
-  "divsd\0"
-  "divss\0"
-  "dppd\0"
-  "dpps\0"
-  "emms\0"
-  "enter\0"
-  "extractps\0"
-  "f2xm1\0"
-  "fabs\0"
-  "fadd\0"
-  "faddp\0"
-  "fbld\0"
-  "fbstp\0"
-  "fchs\0"
-  "fclex\0"
-  "fcmovb\0"
-  "fcmovbe\0"
-  "fcmove\0"
-  "fcmovnb\0"
-  "fcmovnbe\0"
-  "fcmovne\0"
-  "fcmovnu\0"
-  "fcmovu\0"
-  "fcom\0"
-  "fcomi\0"
-  "fcomip\0"
-  "fcomp\0"
-  "fcompp\0"
-  "fcos\0"
-  "fdecstp\0"
-  "fdiv\0"
-  "fdivp\0"
-  "fdivr\0"
-  "fdivrp\0"
-  "femms\0"
-  "ffree\0"
-  "fiadd\0"
-  "ficom\0"
-  "ficomp\0"
-  "fidiv\0"
-  "fidivr\0"
-  "fild\0"
-  "fimul\0"
-  "fincstp\0"
-  "finit\0"
-  "fist\0"
-  "fistp\0"
-  "fisttp\0"
-  "fisub\0"
-  "fisubr\0"
-  "fld\0"
-  "fld1\0"
-  "fldcw\0"
-  "fldenv\0"
-  "fldl2e\0"
-  "fldl2t\0"
-  "fldlg2\0"
-  "fldln2\0"
-  "fldpi\0"
-  "fldz\0"
-  "fmul\0"
-  "fmulp\0"
-  "fnclex\0"
-  "fninit\0"
-  "fnop\0"
-  "fnsave\0"
-  "fnstcw\0"
-  "fnstenv\0"
-  "fnstsw\0"
-  "fpatan\0"
-  "fprem\0"
-  "fprem1\0"
-  "fptan\0"
-  "frndint\0"
-  "frstor\0"
-  "fsave\0"
-  "fscale\0"
-  "fsin\0"
-  "fsincos\0"
-  "fsqrt\0"
-  "fst\0"
-  "fstcw\0"
-  "fstenv\0"
-  "fstp\0"
-  "fstsw\0"
-  "fsub\0"
-  "fsubp\0"
-  "fsubr\0"
-  "fsubrp\0"
-  "ftst\0"
-  "fucom\0"
-  "fucomi\0"
-  "fucomip\0"
-  "fucomp\0"
-  "fucompp\0"
-  "fwait\0"
-  "fxam\0"
-  "fxch\0"
-  "fxrstor\0"
-  "fxsave\0"
-  "fxtract\0"
-  "fyl2x\0"
-  "fyl2xp1\0"
-  "haddpd\0"
-  "haddps\0"
-  "hsubpd\0"
-  "hsubps\0"
-  "idiv\0"
-  "imul\0"
-  "inc\0"
-  "int3\0"
-  "ja\0"
-  "jae\0"
-  "jb\0"
-  "jbe\0"
-  "jc\0"
-  "je\0"
-  "jg\0"
-  "jge\0"
-  "jl\0"
-  "jle\0"
-  "jna\0"
-  "jnae\0"
-  "jnb\0"
-  "jnbe\0"
-  "jnc\0"
-  "jne\0"
-  "jng\0"
-  "jnge\0"
-  "jnl\0"
-  "jnle\0"
-  "jno\0"
-  "jnp\0"
-  "jns\0"
-  "jnz\0"
-  "jo\0"
-  "jp\0"
-  "jpe\0"
-  "jpo\0"
-  "js\0"
-  "jz\0"
-  "jmp\0"
-  "lddqu\0"
-  "ldmxcsr\0"
-  "lahf\0"
-  "lea\0"
-  "leave\0"
-  "lfence\0"
-  "maskmovdqu\0"
-  "maskmovq\0"
-  "maxpd\0"
-  "maxps\0"
-  "maxsd\0"
-  "maxss\0"
-  "mfence\0"
-  "minpd\0"
-  "minps\0"
-  "minsd\0"
-  "minss\0"
-  "monitor\0"
-  "mov\0"
-  "movapd\0"
-  "movaps\0"
-  "movbe\0"
-  "movd\0"
-  "movddup\0"
-  "movdq2q\0"
-  "movdqa\0"
-  "movdqu\0"
-  "movhlps\0"
-  "movhpd\0"
-  "movhps\0"
-  "movlhps\0"
-  "movlpd\0"
-  "movlps\0"
-  "movmskpd\0"
-  "movmskps\0"
-  "movntdq\0"
-  "movntdqa\0"
-  "movnti\0"
-  "movntpd\0"
-  "movntps\0"
-  "movntq\0"
-  "movq\0"
-  "movq2dq\0"
-  "movsd\0"
-  "movshdup\0"
-  "movsldup\0"
-  "movss\0"
-  "movsx\0"
-  "movsxd\0"
-  "movupd\0"
-  "movups\0"
-  "movzx\0"
-  "mov_ptr\0"
-  "mpsadbw\0"
-  "mul\0"
-  "mulpd\0"
-  "mulps\0"
-  "mulsd\0"
-  "mulss\0"
-  "mwait\0"
-  "neg\0"
-  "nop\0"
-  "not\0"
-  "or\0"
-  "orpd\0"
-  "orps\0"
-  "pabsb\0"
-  "pabsd\0"
-  "pabsw\0"
-  "packssdw\0"
-  "packsswb\0"
-  "packusdw\0"
-  "packuswb\0"
-  "paddb\0"
-  "paddd\0"
-  "paddq\0"
-  "paddsb\0"
-  "paddsw\0"
-  "paddusb\0"
-  "paddusw\0"
-  "paddw\0"
-  "palignr\0"
-  "pand\0"
-  "pandn\0"
-  "pause\0"
-  "pavgb\0"
-  "pavgw\0"
-  "pblendvb\0"
-  "pblendw\0"
-  "pcmpeqb\0"
-  "pcmpeqd\0"
-  "pcmpeqq\0"
-  "pcmpeqw\0"
-  "pcmpestri\0"
-  "pcmpestrm\0"
-  "pcmpgtb\0"
-  "pcmpgtd\0"
-  "pcmpgtq\0"
-  "pcmpgtw\0"
-  "pcmpistri\0"
-  "pcmpistrm\0"
-  "pextrb\0"
-  "pextrd\0"
-  "pextrq\0"
-  "pextrw\0"
-  "pf2id\0"
-  "pf2iw\0"
-  "pfacc\0"
-  "pfadd\0"
-  "pfcmpeq\0"
-  "pfcmpge\0"
-  "pfcmpgt\0"
-  "pfmax\0"
-  "pfmin\0"
-  "pfmul\0"
-  "pfnacc\0"
-  "pfpnacc\0"
-  "pfrcp\0"
-  "pfrcpit1\0"
-  "pfrcpit2\0"
-  "pfrsqit1\0"
-  "pfrsqrt\0"
-  "pfsub\0"
-  "pfsubr\0"
-  "phaddd\0"
-  "phaddsw\0"
-  "phaddw\0"
-  "phminposuw\0"
-  "phsubd\0"
-  "phsubsw\0"
-  "phsubw\0"
-  "pi2fd\0"
-  "pi2fw\0"
-  "pinsrb\0"
-  "pinsrd\0"
-  "pinsrq\0"
-  "pinsrw\0"
-  "pmaddubsw\0"
-  "pmaddwd\0"
-  "pmaxsb\0"
-  "pmaxsd\0"
-  "pmaxsw\0"
-  "pmaxub\0"
-  "pmaxud\0"
-  "pmaxuw\0"
-  "pminsb\0"
-  "pminsd\0"
-  "pminsw\0"
-  "pminub\0"
-  "pminud\0"
-  "pminuw\0"
-  "pmovmskb\0"
-  "pmovsxbd\0"
-  "pmovsxbq\0"
-  "pmovsxbw\0"
-  "pmovsxdq\0"
-  "pmovsxwd\0"
-  "pmovsxwq\0"
-  "pmovzxbd\0"
-  "pmovzxbq\0"
-  "pmovzxbw\0"
-  "pmovzxdq\0"
-  "pmovzxwd\0"
-  "pmovzxwq\0"
-  "pmuldq\0"
-  "pmulhrsw\0"
-  "pmulhuw\0"
-  "pmulhw\0"
-  "pmulld\0"
-  "pmullw\0"
-  "pmuludq\0"
-  "pop\0"
-  "popad\0"
-  "popcnt\0"
-  "popfd\0"
-  "popfq\0"
-  "por\0"
-  "prefetch\0"
-  "psadbw\0"
-  "pshufb\0"
-  "pshufd\0"
-  "pshufw\0"
-  "pshufhw\0"
-  "pshuflw\0"
-  "psignb\0"
-  "psignd\0"
-  "psignw\0"
-  "pslld\0"
-  "pslldq\0"
-  "psllq\0"
-  "psllw\0"
-  "psrad\0"
-  "psraw\0"
-  "psrld\0"
-  "psrldq\0"
-  "psrlq\0"
-  "psrlw\0"
-  "psubb\0"
-  "psubd\0"
-  "psubq\0"
-  "psubsb\0"
-  "psubsw\0"
-  "psubusb\0"
-  "psubusw\0"
-  "psubw\0"
-  "pswapd\0"
-  "ptest\0"
-  "punpckhbw\0"
-  "punpckhdq\0"
-  "punpckhqdq\0"
-  "punpckhwd\0"
-  "punpcklbw\0"
-  "punpckldq\0"
-  "punpcklqdq\0"
-  "punpcklwd\0"
-  "push\0"
-  "pushad\0"
-  "pushfd\0"
-  "pushfq\0"
-  "pxor\0"
-  "rcl\0"
-  "rcpps\0"
-  "rcpss\0"
-  "rcr\0"
-  "rdtsc\0"
-  "rdtscp\0"
-  "rep lodsb\0"
-  "rep lodsd\0"
-  "rep lodsq\0"
-  "rep lodsw\0"
-  "rep movsb\0"
-  "rep movsd\0"
-  "rep movsq\0"
-  "rep movsw\0"
-  "rep stosb\0"
-  "rep stosd\0"
-  "rep stosq\0"
-  "rep stosw\0"
-  "repe cmpsb\0"
-  "repe cmpsd\0"
-  "repe cmpsq\0"
-  "repe cmpsw\0"
-  "repe scasb\0"
-  "repe scasd\0"
-  "repe scasq\0"
-  "repe scasw\0"
-  "repne cmpsb\0"
-  "repne cmpsd\0"
-  "repne cmpsq\0"
-  "repne cmpsw\0"
-  "repne scasb\0"
-  "repne scasd\0"
-  "repne scasq\0"
-  "repne scasw\0"
-  "ret\0"
-  "rol\0"
-  "ror\0"
-  "roundpd\0"
-  "roundps\0"
-  "roundsd\0"
-  "roundss\0"
-  "rsqrtps\0"
-  "rsqrtss\0"
-  "sahf\0"
-  "sal\0"
-  "sar\0"
-  "sbb\0"
-  "seta\0"
-  "setae\0"
-  "setb\0"
-  "setbe\0"
-  "setc\0"
-  "sete\0"
-  "setg\0"
-  "setge\0"
-  "setl\0"
-  "setle\0"
-  "setna\0"
-  "setnae\0"
-  "setnb\0"
-  "setnbe\0"
-  "setnc\0"
-  "setne\0"
-  "setng\0"
-  "setnge\0"
-  "setnl\0"
-  "setnle\0"
-  "setno\0"
-  "setnp\0"
-  "setns\0"
-  "setnz\0"
-  "seto\0"
-  "setp\0"
-  "setpe\0"
-  "setpo\0"
-  "sets\0"
-  "setz\0"
-  "sfence\0"
-  "shl\0"
-  "shld\0"
-  "shr\0"
-  "shrd\0"
-  "shufpd\0"
-  "shufps\0"
-  "sqrtpd\0"
-  "sqrtps\0"
-  "sqrtsd\0"
-  "sqrtss\0"
-  "stc\0"
-  "std\0"
-  "stmxcsr\0"
-  "sub\0"
-  "subpd\0"
-  "subps\0"
-  "subsd\0"
-  "subss\0"
-  "test\0"
-  "ucomisd\0"
-  "ucomiss\0"
-  "ud2\0"
-  "unpckhpd\0"
-  "unpckhps\0"
-  "unpcklpd\0"
-  "unpcklps\0"
-  "xadd\0"
-  "xchg\0"
-  "xor\0"
-  "xorpd\0"
-  "xorps\0"
-  ;
+	"\0"
+	"adc\0"
+	"add\0"
+	"addpd\0"
+	"addps\0"
+	"addsd\0"
+	"addss\0"
+	"addsubpd\0"
+	"addsubps\0"
+	"amd_prefetch\0"
+	"amd_prefetchw\0"
+	"and\0"
+	"andnpd\0"
+	"andnps\0"
+	"andpd\0"
+	"andps\0"
+	"blendpd\0"
+	"blendps\0"
+	"blendvpd\0"
+	"blendvps\0"
+	"bsf\0"
+	"bsr\0"
+	"bswap\0"
+	"bt\0"
+	"btc\0"
+	"btr\0"
+	"bts\0"
+	"call\0"
+	"cbw\0"
+	"cdq\0"
+	"cdqe\0"
+	"clc\0"
+	"cld\0"
+	"clflush\0"
+	"cmc\0"
+	"cmova\0"
+	"cmovae\0"
+	"cmovb\0"
+	"cmovbe\0"
+	"cmovc\0"
+	"cmove\0"
+	"cmovg\0"
+	"cmovge\0"
+	"cmovl\0"
+	"cmovle\0"
+	"cmovna\0"
+	"cmovnae\0"
+	"cmovnb\0"
+	"cmovnbe\0"
+	"cmovnc\0"
+	"cmovne\0"
+	"cmovng\0"
+	"cmovnge\0"
+	"cmovnl\0"
+	"cmovnle\0"
+	"cmovno\0"
+	"cmovnp\0"
+	"cmovns\0"
+	"cmovnz\0"
+	"cmovo\0"
+	"cmovp\0"
+	"cmovpe\0"
+	"cmovpo\0"
+	"cmovs\0"
+	"cmovz\0"
+	"cmp\0"
+	"cmppd\0"
+	"cmpps\0"
+	"cmpsd\0"
+	"cmpss\0"
+	"cmpxchg\0"
+	"cmpxchg16b\0"
+	"cmpxchg8b\0"
+	"comisd\0"
+	"comiss\0"
+	"cpuid\0"
+	"cqo\0"
+	"crc32\0"
+	"cvtdq2pd\0"
+	"cvtdq2ps\0"
+	"cvtpd2dq\0"
+	"cvtpd2pi\0"
+	"cvtpd2ps\0"
+	"cvtpi2pd\0"
+	"cvtpi2ps\0"
+	"cvtps2dq\0"
+	"cvtps2pd\0"
+	"cvtps2pi\0"
+	"cvtsd2si\0"
+	"cvtsd2ss\0"
+	"cvtsi2sd\0"
+	"cvtsi2ss\0"
+	"cvtss2sd\0"
+	"cvtss2si\0"
+	"cvttpd2dq\0"
+	"cvttpd2pi\0"
+	"cvttps2dq\0"
+	"cvttps2pi\0"
+	"cvttsd2si\0"
+	"cvttss2si\0"
+	"cwd\0"
+	"cwde\0"
+	"daa\0"
+	"das\0"
+	"dec\0"
+	"div\0"
+	"divpd\0"
+	"divps\0"
+	"divsd\0"
+	"divss\0"
+	"dppd\0"
+	"dpps\0"
+	"emms\0"
+	"enter\0"
+	"extractps\0"
+	"f2xm1\0"
+	"fabs\0"
+	"fadd\0"
+	"faddp\0"
+	"fbld\0"
+	"fbstp\0"
+	"fchs\0"
+	"fclex\0"
+	"fcmovb\0"
+	"fcmovbe\0"
+	"fcmove\0"
+	"fcmovnb\0"
+	"fcmovnbe\0"
+	"fcmovne\0"
+	"fcmovnu\0"
+	"fcmovu\0"
+	"fcom\0"
+	"fcomi\0"
+	"fcomip\0"
+	"fcomp\0"
+	"fcompp\0"
+	"fcos\0"
+	"fdecstp\0"
+	"fdiv\0"
+	"fdivp\0"
+	"fdivr\0"
+	"fdivrp\0"
+	"femms\0"
+	"ffree\0"
+	"fiadd\0"
+	"ficom\0"
+	"ficomp\0"
+	"fidiv\0"
+	"fidivr\0"
+	"fild\0"
+	"fimul\0"
+	"fincstp\0"
+	"finit\0"
+	"fist\0"
+	"fistp\0"
+	"fisttp\0"
+	"fisub\0"
+	"fisubr\0"
+	"fld\0"
+	"fld1\0"
+	"fldcw\0"
+	"fldenv\0"
+	"fldl2e\0"
+	"fldl2t\0"
+	"fldlg2\0"
+	"fldln2\0"
+	"fldpi\0"
+	"fldz\0"
+	"fmul\0"
+	"fmulp\0"
+	"fnclex\0"
+	"fninit\0"
+	"fnop\0"
+	"fnsave\0"
+	"fnstcw\0"
+	"fnstenv\0"
+	"fnstsw\0"
+	"fpatan\0"
+	"fprem\0"
+	"fprem1\0"
+	"fptan\0"
+	"frndint\0"
+	"frstor\0"
+	"fsave\0"
+	"fscale\0"
+	"fsin\0"
+	"fsincos\0"
+	"fsqrt\0"
+	"fst\0"
+	"fstcw\0"
+	"fstenv\0"
+	"fstp\0"
+	"fstsw\0"
+	"fsub\0"
+	"fsubp\0"
+	"fsubr\0"
+	"fsubrp\0"
+	"ftst\0"
+	"fucom\0"
+	"fucomi\0"
+	"fucomip\0"
+	"fucomp\0"
+	"fucompp\0"
+	"fwait\0"
+	"fxam\0"
+	"fxch\0"
+	"fxrstor\0"
+	"fxsave\0"
+	"fxtract\0"
+	"fyl2x\0"
+	"fyl2xp1\0"
+	"haddpd\0"
+	"haddps\0"
+	"hsubpd\0"
+	"hsubps\0"
+	"idiv\0"
+	"imul\0"
+	"inc\0"
+	"int3\0"
+	"ja\0"
+	"jae\0"
+	"jb\0"
+	"jbe\0"
+	"jc\0"
+	"je\0"
+	"jg\0"
+	"jge\0"
+	"jl\0"
+	"jle\0"
+	"jna\0"
+	"jnae\0"
+	"jnb\0"
+	"jnbe\0"
+	"jnc\0"
+	"jne\0"
+	"jng\0"
+	"jnge\0"
+	"jnl\0"
+	"jnle\0"
+	"jno\0"
+	"jnp\0"
+	"jns\0"
+	"jnz\0"
+	"jo\0"
+	"jp\0"
+	"jpe\0"
+	"jpo\0"
+	"js\0"
+	"jz\0"
+	"jmp\0"
+	"lddqu\0"
+	"ldmxcsr\0"
+	"lahf\0"
+	"lea\0"
+	"leave\0"
+	"lfence\0"
+	"maskmovdqu\0"
+	"maskmovq\0"
+	"maxpd\0"
+	"maxps\0"
+	"maxsd\0"
+	"maxss\0"
+	"mfence\0"
+	"minpd\0"
+	"minps\0"
+	"minsd\0"
+	"minss\0"
+	"monitor\0"
+	"mov\0"
+	"movapd\0"
+	"movaps\0"
+	"movbe\0"
+	"movd\0"
+	"movddup\0"
+	"movdq2q\0"
+	"movdqa\0"
+	"movdqu\0"
+	"movhlps\0"
+	"movhpd\0"
+	"movhps\0"
+	"movlhps\0"
+	"movlpd\0"
+	"movlps\0"
+	"movmskpd\0"
+	"movmskps\0"
+	"movntdq\0"
+	"movntdqa\0"
+	"movnti\0"
+	"movntpd\0"
+	"movntps\0"
+	"movntq\0"
+	"movq\0"
+	"movq2dq\0"
+	"movsd\0"
+	"movshdup\0"
+	"movsldup\0"
+	"movss\0"
+	"movsx\0"
+	"movsxd\0"
+	"movupd\0"
+	"movups\0"
+	"movzx\0"
+	"mov_ptr\0"
+	"mpsadbw\0"
+	"mul\0"
+	"mulpd\0"
+	"mulps\0"
+	"mulsd\0"
+	"mulss\0"
+	"mwait\0"
+	"neg\0"
+	"nop\0"
+	"not\0"
+	"or\0"
+	"orpd\0"
+	"orps\0"
+	"pabsb\0"
+	"pabsd\0"
+	"pabsw\0"
+	"packssdw\0"
+	"packsswb\0"
+	"packusdw\0"
+	"packuswb\0"
+	"paddb\0"
+	"paddd\0"
+	"paddq\0"
+	"paddsb\0"
+	"paddsw\0"
+	"paddusb\0"
+	"paddusw\0"
+	"paddw\0"
+	"palignr\0"
+	"pand\0"
+	"pandn\0"
+	"pause\0"
+	"pavgb\0"
+	"pavgw\0"
+	"pblendvb\0"
+	"pblendw\0"
+	"pcmpeqb\0"
+	"pcmpeqd\0"
+	"pcmpeqq\0"
+	"pcmpeqw\0"
+	"pcmpestri\0"
+	"pcmpestrm\0"
+	"pcmpgtb\0"
+	"pcmpgtd\0"
+	"pcmpgtq\0"
+	"pcmpgtw\0"
+	"pcmpistri\0"
+	"pcmpistrm\0"
+	"pextrb\0"
+	"pextrd\0"
+	"pextrq\0"
+	"pextrw\0"
+	"pf2id\0"
+	"pf2iw\0"
+	"pfacc\0"
+	"pfadd\0"
+	"pfcmpeq\0"
+	"pfcmpge\0"
+	"pfcmpgt\0"
+	"pfmax\0"
+	"pfmin\0"
+	"pfmul\0"
+	"pfnacc\0"
+	"pfpnacc\0"
+	"pfrcp\0"
+	"pfrcpit1\0"
+	"pfrcpit2\0"
+	"pfrsqit1\0"
+	"pfrsqrt\0"
+	"pfsub\0"
+	"pfsubr\0"
+	"phaddd\0"
+	"phaddsw\0"
+	"phaddw\0"
+	"phminposuw\0"
+	"phsubd\0"
+	"phsubsw\0"
+	"phsubw\0"
+	"pi2fd\0"
+	"pi2fw\0"
+	"pinsrb\0"
+	"pinsrd\0"
+	"pinsrq\0"
+	"pinsrw\0"
+	"pmaddubsw\0"
+	"pmaddwd\0"
+	"pmaxsb\0"
+	"pmaxsd\0"
+	"pmaxsw\0"
+	"pmaxub\0"
+	"pmaxud\0"
+	"pmaxuw\0"
+	"pminsb\0"
+	"pminsd\0"
+	"pminsw\0"
+	"pminub\0"
+	"pminud\0"
+	"pminuw\0"
+	"pmovmskb\0"
+	"pmovsxbd\0"
+	"pmovsxbq\0"
+	"pmovsxbw\0"
+	"pmovsxdq\0"
+	"pmovsxwd\0"
+	"pmovsxwq\0"
+	"pmovzxbd\0"
+	"pmovzxbq\0"
+	"pmovzxbw\0"
+	"pmovzxdq\0"
+	"pmovzxwd\0"
+	"pmovzxwq\0"
+	"pmuldq\0"
+	"pmulhrsw\0"
+	"pmulhuw\0"
+	"pmulhw\0"
+	"pmulld\0"
+	"pmullw\0"
+	"pmuludq\0"
+	"pop\0"
+	"popad\0"
+	"popcnt\0"
+	"popfd\0"
+	"popfq\0"
+	"por\0"
+	"prefetch\0"
+	"psadbw\0"
+	"pshufb\0"
+	"pshufd\0"
+	"pshufw\0"
+	"pshufhw\0"
+	"pshuflw\0"
+	"psignb\0"
+	"psignd\0"
+	"psignw\0"
+	"pslld\0"
+	"pslldq\0"
+	"psllq\0"
+	"psllw\0"
+	"psrad\0"
+	"psraw\0"
+	"psrld\0"
+	"psrldq\0"
+	"psrlq\0"
+	"psrlw\0"
+	"psubb\0"
+	"psubd\0"
+	"psubq\0"
+	"psubsb\0"
+	"psubsw\0"
+	"psubusb\0"
+	"psubusw\0"
+	"psubw\0"
+	"pswapd\0"
+	"ptest\0"
+	"punpckhbw\0"
+	"punpckhdq\0"
+	"punpckhqdq\0"
+	"punpckhwd\0"
+	"punpcklbw\0"
+	"punpckldq\0"
+	"punpcklqdq\0"
+	"punpcklwd\0"
+	"push\0"
+	"pushad\0"
+	"pushfd\0"
+	"pushfq\0"
+	"pxor\0"
+	"rcl\0"
+	"rcpps\0"
+	"rcpss\0"
+	"rcr\0"
+	"rdtsc\0"
+	"rdtscp\0"
+	"rep lodsb\0"
+	"rep lodsd\0"
+	"rep lodsq\0"
+	"rep lodsw\0"
+	"rep movsb\0"
+	"rep movsd\0"
+	"rep movsq\0"
+	"rep movsw\0"
+	"rep stosb\0"
+	"rep stosd\0"
+	"rep stosq\0"
+	"rep stosw\0"
+	"repe cmpsb\0"
+	"repe cmpsd\0"
+	"repe cmpsq\0"
+	"repe cmpsw\0"
+	"repe scasb\0"
+	"repe scasd\0"
+	"repe scasq\0"
+	"repe scasw\0"
+	"repne cmpsb\0"
+	"repne cmpsd\0"
+	"repne cmpsq\0"
+	"repne cmpsw\0"
+	"repne scasb\0"
+	"repne scasd\0"
+	"repne scasq\0"
+	"repne scasw\0"
+	"ret\0"
+	"rol\0"
+	"ror\0"
+	"roundpd\0"
+	"roundps\0"
+	"roundsd\0"
+	"roundss\0"
+	"rsqrtps\0"
+	"rsqrtss\0"
+	"sahf\0"
+	"sal\0"
+	"sar\0"
+	"sbb\0"
+	"seta\0"
+	"setae\0"
+	"setb\0"
+	"setbe\0"
+	"setc\0"
+	"sete\0"
+	"setg\0"
+	"setge\0"
+	"setl\0"
+	"setle\0"
+	"setna\0"
+	"setnae\0"
+	"setnb\0"
+	"setnbe\0"
+	"setnc\0"
+	"setne\0"
+	"setng\0"
+	"setnge\0"
+	"setnl\0"
+	"setnle\0"
+	"setno\0"
+	"setnp\0"
+	"setns\0"
+	"setnz\0"
+	"seto\0"
+	"setp\0"
+	"setpe\0"
+	"setpo\0"
+	"sets\0"
+	"setz\0"
+	"sfence\0"
+	"shl\0"
+	"shld\0"
+	"shr\0"
+	"shrd\0"
+	"shufpd\0"
+	"shufps\0"
+	"sqrtpd\0"
+	"sqrtps\0"
+	"sqrtsd\0"
+	"sqrtss\0"
+	"stc\0"
+	"std\0"
+	"stmxcsr\0"
+	"sub\0"
+	"subpd\0"
+	"subps\0"
+	"subsd\0"
+	"subss\0"
+	"test\0"
+	"ucomisd\0"
+	"ucomiss\0"
+	"ud2\0"
+	"unpckhpd\0"
+	"unpckhps\0"
+	"unpcklpd\0"
+	"unpcklps\0"
+	"xadd\0"
+	"xchg\0"
+	"xor\0"
+	"xorpd\0"
+	"xorps\0";
 
 #define INDEX_kInstNone 0
 #define INDEX_kX86InstAdc 1
@@ -1190,7 +1190,7 @@ const char x86InstName[] =
 // ============================================================================
 
 #define INST(_Code_, _Name_, _Group_, _Flags_, _OpFlags0_, _OpFlags1_, _OpReg_, _OpCode0_, _OpCode1_) \
-  { _Code_, INDEX_##_Code_, _Group_, _Flags_, { _OpFlags0_, _OpFlags1_ }, _OpReg_, { _OpCode0_, _OpCode1_ } }
+	{ _Code_, INDEX_##_Code_, _Group_, _Flags_, { _OpFlags0_, _OpFlags1_ }, _OpReg_, { _OpCode0_, _OpCode1_ } }
 
 #define G(_Group_) kX86InstGroup##_Group_
 #define F(_Flags_) kX86InstFlag##_Flags_
@@ -1198,586 +1198,586 @@ const char x86InstName[] =
 
 const X86InstInfo x86InstInfo[] =
 {
-  // Instruction code           | Instruction name   | Instruction group| Instruction flags| Operand flags[0]    | Operand flags[1]    | r| opCode[0] | opcode[1]
-  INST(kInstNone                , ""                 , G(None)          , F(None)          , 0                   , 0                   , 0, 0         , 0),
-  INST(kX86InstAdc              , "adc"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 2, 0x00000010, 0x00000080),
-  INST(kX86InstAdd              , "add"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 0, 0x00000000, 0x00000080),
-  INST(kX86InstAddPD            , "addpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F58, 0),
-  INST(kX86InstAddPS            , "addps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F58, 0),
-  INST(kX86InstAddSD            , "addsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F58, 0),
-  INST(kX86InstAddSS            , "addss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F58, 0),
-  INST(kX86InstAddSubPD         , "addsubpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000FD0, 0),
-  INST(kX86InstAddSubPS         , "addsubps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000FD0, 0),
-  INST(kX86InstAmdPrefetch      , "amd_prefetch"     , G(Mem)           , F(None)          , O(Mem)              , 0                   , 0, 0x00000F0D, 0),
-  INST(kX86InstAmdPrefetchW     , "amd_prefetchw"    , G(Mem)           , F(None)          , O(Mem)              , 0                   , 1, 0x00000F0D, 0),
-  INST(kX86InstAnd              , "and"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 4, 0x00000020, 0x00000080),
-  INST(kX86InstAndnPD           , "andnpd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F55, 0),
-  INST(kX86InstAndnPS           , "andnps"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F55, 0),
-  INST(kX86InstAndPD            , "andpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F54, 0),
-  INST(kX86InstAndPS            , "andps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F54, 0),
-  INST(kX86InstBlendPD          , "blendpd"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0D, 0),
-  INST(kX86InstBlendPS          , "blendps"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0C, 0),
-  INST(kX86InstBlendVPD         , "blendvpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3815, 0),
-  INST(kX86InstBlendVPS         , "blendvps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3814, 0),
-  INST(kX86InstBsf              , "bsf"              , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000FBC, 0),
-  INST(kX86InstBsr              , "bsr"              , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000FBD, 0),
-  INST(kX86InstBSwap            , "bswap"            , G(BSwap)         , F(None)          , O(Gqd)              , 0                   , 0, 0         , 0),
-  INST(kX86InstBt               , "bt"               , G(BTest)         , F(None)          , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 4, 0x00000FA3, 0x00000FBA),
-  INST(kX86InstBtc              , "btc"              , G(BTest)         , F(Lockable)      , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 7, 0x00000FBB, 0x00000FBA),
-  INST(kX86InstBtr              , "btr"              , G(BTest)         , F(Lockable)      , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 6, 0x00000FB3, 0x00000FBA),
-  INST(kX86InstBts              , "bts"              , G(BTest)         , F(Lockable)      , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 5, 0x00000FAB, 0x00000FBA),
-  INST(kX86InstCall             , "call"             , G(Call)          , F(Jump)          , O(Gqd) |O(Mem)      , 0                   , 0, 0         , 0),
-  INST(kX86InstCbw              , "cbw"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x66000098, 0),
-  INST(kX86InstCdq              , "cdq"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000099, 0),
-  INST(kX86InstCdqe             , "cdqe"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x48000098, 0),
-  INST(kX86InstClc              , "clc"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000F8, 0),
-  INST(kX86InstCld              , "cld"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000FC, 0),
-  INST(kX86InstClFlush          , "clflush"          , G(Mem)           , F(None)          , O(Mem)              , 0                   , 7, 0x00000FAE, 0),
-  INST(kX86InstCmc              , "cmc"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000F5, 0),
-  INST(kX86InstCMovA            , "cmova"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F47, 0),
-  INST(kX86InstCMovAE           , "cmovae"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F43, 0),
-  INST(kX86InstCMovB            , "cmovb"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F42, 0),
-  INST(kX86InstCMovBE           , "cmovbe"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F46, 0),
-  INST(kX86InstCMovC            , "cmovc"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F42, 0),
-  INST(kX86InstCMovE            , "cmove"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F44, 0),
-  INST(kX86InstCMovG            , "cmovg"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4F, 0),
-  INST(kX86InstCMovGE           , "cmovge"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4D, 0),
-  INST(kX86InstCMovL            , "cmovl"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4C, 0),
-  INST(kX86InstCMovLE           , "cmovle"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4E, 0),
-  INST(kX86InstCMovNA           , "cmovna"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F46, 0),
-  INST(kX86InstCMovNAE          , "cmovnae"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F42, 0),
-  INST(kX86InstCMovNB           , "cmovnb"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F43, 0),
-  INST(kX86InstCMovNBE          , "cmovnbe"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F47, 0),
-  INST(kX86InstCMovNC           , "cmovnc"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F43, 0),
-  INST(kX86InstCMovNE           , "cmovne"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F45, 0),
-  INST(kX86InstCMovNG           , "cmovng"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4E, 0),
-  INST(kX86InstCMovNGE          , "cmovnge"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4C, 0),
-  INST(kX86InstCMovNL           , "cmovnl"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4D, 0),
-  INST(kX86InstCMovNLE          , "cmovnle"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4F, 0),
-  INST(kX86InstCMovNO           , "cmovno"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F41, 0),
-  INST(kX86InstCMovNP           , "cmovnp"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4B, 0),
-  INST(kX86InstCMovNS           , "cmovns"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F49, 0),
-  INST(kX86InstCMovNZ           , "cmovnz"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F45, 0),
-  INST(kX86InstCMovO            , "cmovo"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F40, 0),
-  INST(kX86InstCMovP            , "cmovp"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4A, 0),
-  INST(kX86InstCMovPE           , "cmovpe"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4A, 0),
-  INST(kX86InstCMovPO           , "cmovpo"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4B, 0),
-  INST(kX86InstCMovS            , "cmovs"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F48, 0),
-  INST(kX86InstCMovZ            , "cmovz"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F44, 0),
-  INST(kX86InstCmp              , "cmp"              , G(Arith)         , F(None)          , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 7, 0x00000038, 0x00000080),
-  INST(kX86InstCmpPD            , "cmppd"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000FC2, 0),
-  INST(kX86InstCmpPS            , "cmpps"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000FC2, 0),
-  INST(kX86InstCmpSD            , "cmpsd"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000FC2, 0),
-  INST(kX86InstCmpSS            , "cmpss"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000FC2, 0),
-  INST(kX86InstCmpXCHG          , "cmpxchg"          , G(RmReg)         , F(Special)|F(Lockable), 0              , 0                   , 0, 0x00000FB0, 0),
-  INST(kX86InstCmpXCHG16B       , "cmpxchg16b"       , G(Mem)           , F(Special)       , O(Mem)              , 0                   , 1, 0x00000FC7, 1 /* RexW */),
-  INST(kX86InstCmpXCHG8B        , "cmpxchg8b"        , G(Mem)           , F(Special)       , O(Mem)              , 0                   , 1, 0x00000FC7, 0),
-  INST(kX86InstComISD           , "comisd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F2F, 0),
-  INST(kX86InstComISS           , "comiss"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F2F, 0),
-  INST(kX86InstCpuId            , "cpuid"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000FA2, 0),
-  INST(kX86InstCqo              , "cqo"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x48000099, 0), // TODO, set RexW bit instead?
-  INST(kX86InstCrc32            , "crc32"            , G(Crc32)         , F(None)          , O(Gqd)              , O(GqdwbMem)         , 0, 0xF20F38F0, 0),
-  INST(kX86InstCvtDQ2PD         , "cvtdq2pd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000FE6, 0),
-  INST(kX86InstCvtDQ2PS         , "cvtdq2ps"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5B, 0),
-  INST(kX86InstCvtPD2DQ         , "cvtpd2dq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF2000FE6, 0),
-  INST(kX86InstCvtPD2PI         , "cvtpd2pi"         , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x66000F2D, 0),
-  INST(kX86InstCvtPD2PS         , "cvtpd2ps"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5A, 0),
-  INST(kX86InstCvtPI2PD         , "cvtpi2pd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(MmMem)            , 0, 0x66000F2A, 0),
-  INST(kX86InstCvtPI2PS         , "cvtpi2ps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(MmMem)            , 0, 0x00000F2A, 0),
-  INST(kX86InstCvtPS2DQ         , "cvtps2dq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5B, 0),
-  INST(kX86InstCvtPS2PD         , "cvtps2pd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5A, 0),
-  INST(kX86InstCvtPS2PI         , "cvtps2pi"         , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x00000F2D, 0),
-  INST(kX86InstCvtSD2SI         , "cvtsd2si"         , G(MmuRmI)        , F(Mov)           , O(Gqd)              , O(XmmMem)           , 0, 0xF2000F2D, 0),
-  INST(kX86InstCvtSD2SS         , "cvtsd2ss"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5A, 0),
-  INST(kX86InstCvtSI2SD         , "cvtsi2sd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Gqd)|O(Mem)       , 0, 0xF2000F2A, 0),
-  INST(kX86InstCvtSI2SS         , "cvtsi2ss"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Gqd)|O(Mem)       , 0, 0xF3000F2A, 0),
-  INST(kX86InstCvtSS2SD         , "cvtss2sd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5A, 0),
-  INST(kX86InstCvtSS2SI         , "cvtss2si"         , G(MmuRmI)        , F(None)          , O(Gqd)              , O(XmmMem)           , 0, 0xF3000F2D, 0),
-  INST(kX86InstCvttPD2DQ        , "cvttpd2dq"        , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000FE6, 0),
-  INST(kX86InstCvttPD2PI        , "cvttpd2pi"        , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x66000F2C, 0),
-  INST(kX86InstCvttPS2DQ        , "cvttps2dq"        , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5B, 0),
-  INST(kX86InstCvttPS2PI        , "cvttps2pi"        , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x00000F2C, 0),
-  INST(kX86InstCvttSD2SI        , "cvttsd2si"        , G(MmuRmI)        , F(None)          , O(Gqd)              , O(XmmMem)           , 0, 0xF2000F2C, 0),
-  INST(kX86InstCvttSS2SI        , "cvttss2si"        , G(MmuRmI)        , F(None)          , O(Gqd)              , O(XmmMem)           , 0, 0xF3000F2C, 0),
-  INST(kX86InstCwd              , "cwd"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x66000099, 0),
-  INST(kX86InstCwde             , "cwde"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000098, 0),
-  INST(kX86InstDaa              , "daa"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000027, 0),
-  INST(kX86InstDas              , "das"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000002F, 0),
-  INST(kX86InstDec              , "dec"              , G(IncDec)        , F(Lockable)      , O(GqdwbMem)         , 0                   , 1, 0x00000048, 0x000000FE),
-  INST(kX86InstDiv              , "div"              , G(Rm)            , F(Special)       , 0                   , 0                   , 6, 0x000000F6, 0),
-  INST(kX86InstDivPD            , "divpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5E, 0),
-  INST(kX86InstDivPS            , "divps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5E, 0),
-  INST(kX86InstDivSD            , "divsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5E, 0),
-  INST(kX86InstDivSS            , "divss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5E, 0),
-  INST(kX86InstDpPD             , "dppd"             , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A41, 0),
-  INST(kX86InstDpPS             , "dpps"             , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A40, 0),
-  INST(kX86InstEmms             , "emms"             , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x00000F77, 0),
-  INST(kX86InstEnter            , "enter"            , G(Enter)         , F(Special)       , 0                   , 0                   , 0, 0x000000C8, 0),
-  INST(kX86InstExtractPS        , "extractps"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A17, 0),
-  INST(kX86InstF2XM1            , "f2xm1"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F0, 0),
-  INST(kX86InstFAbs             , "fabs"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E1, 0),
-  INST(kX86InstFAdd             , "fadd"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 0, 0xD8DCC0C0, 0),
-  INST(kX86InstFAddP            , "faddp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEC0, 0),
-  INST(kX86InstFBLd             , "fbld"             , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 4, 0x000000DF, 0),
-  INST(kX86InstFBStP            , "fbstp"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x000000DF, 0),
-  INST(kX86InstFCHS             , "fchs"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E0, 0),
-  INST(kX86InstFClex            , "fclex"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x9B00DBE2, 0),
-  INST(kX86InstFCMovB           , "fcmovb"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAC0, 0),
-  INST(kX86InstFCMovBE          , "fcmovbe"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAD0, 0),
-  INST(kX86InstFCMovE           , "fcmove"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAC8, 0),
-  INST(kX86InstFCMovNB          , "fcmovnb"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBC0, 0),
-  INST(kX86InstFCMovNBE         , "fcmovnbe"         , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBD0, 0),
-  INST(kX86InstFCMovNE          , "fcmovne"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBC8, 0),
-  INST(kX86InstFCMovNU          , "fcmovnu"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBD8, 0),
-  INST(kX86InstFCMovU           , "fcmovu"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAD8, 0),
-  INST(kX86InstFCom             , "fcom"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 2, 0xD8DCD0D0, 0),
-  INST(kX86InstFComI            , "fcomi"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBF0, 0),
-  INST(kX86InstFComIP           , "fcomip"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DFF0, 0),
-  INST(kX86InstFComP            , "fcomp"            , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 3, 0xD8DCD8D8, 0),
-  INST(kX86InstFComPP           , "fcompp"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DED9, 0),
-  INST(kX86InstFCos             , "fcos"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FF, 0),
-  INST(kX86InstFDecStP          , "fdecstp"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F6, 0),
-  INST(kX86InstFDiv             , "fdiv"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 6, 0xD8DCF0F8, 0),
-  INST(kX86InstFDivP            , "fdivp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEF8, 0),
-  INST(kX86InstFDivR            , "fdivr"            , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 7, 0xD8DCF8F0, 0),
-  INST(kX86InstFDivRP           , "fdivrp"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEF0, 0),
-  INST(kX86InstFEmms            , "femms"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x00000F0E, 0),
-  INST(kX86InstFFree            , "ffree"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DDC0, 0),
-  INST(kX86InstFIAdd            , "fiadd"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 0, 0xDEDA0000, 0),
-  INST(kX86InstFICom            , "ficom"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 2, 0xDEDA0000, 0),
-  INST(kX86InstFIComP           , "ficomp"           , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 3, 0xDEDA0000, 0),
-  INST(kX86InstFIDiv            , "fidiv"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 6, 0xDEDA0000, 0),
-  INST(kX86InstFIDivR           , "fidivr"           , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 7, 0xDEDA0000, 0),
-  INST(kX86InstFILd             , "fild"             , G(X87Mem)        , F(Fpu)           , O(StM2_4_8)         , 0                   , 0, 0xDFDBDF05, 0),
-  INST(kX86InstFIMul            , "fimul"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 1, 0xDEDA0000, 0),
-  INST(kX86InstFIncStP          , "fincstp"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F7, 0),
-  INST(kX86InstFInit            , "finit"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x9B00DBE3, 0),
-  INST(kX86InstFISt             , "fist"             , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 2, 0xDFDB0000, 0),
-  INST(kX86InstFIStP            , "fistp"            , G(X87Mem)        , F(Fpu)           , O(StM2_4_8)         , 0                   , 3, 0xDFDBDF07, 0),
-  INST(kX86InstFISttP           , "fisttp"           , G(X87Mem)        , F(Fpu)           , O(StM2_4_8)         , 0                   , 1, 0xDFDBDD01, 0),
-  INST(kX86InstFISub            , "fisub"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 4, 0xDEDA0000, 0),
-  INST(kX86InstFISubR           , "fisubr"           , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 5, 0xDEDA0000, 0),
-  INST(kX86InstFLd              , "fld"              , G(X87FldFst)     , F(Fpu)           , O(StM4_8_10)        , 0                   , 0, 0x00D9DD00, 0xD9C0DB05),
-  INST(kX86InstFLd1             , "fld1"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E8, 0),
-  INST(kX86InstFLdCw            , "fldcw"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 5, 0x000000D9, 0),
-  INST(kX86InstFLdEnv           , "fldenv"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 4, 0x000000D9, 0),
-  INST(kX86InstFLdL2E           , "fldl2e"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EA, 0),
-  INST(kX86InstFLdL2T           , "fldl2t"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E9, 0),
-  INST(kX86InstFLdLg2           , "fldlg2"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EC, 0),
-  INST(kX86InstFLdLn2           , "fldln2"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9ED, 0),
-  INST(kX86InstFLdPi            , "fldpi"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EB, 0),
-  INST(kX86InstFLdZ             , "fldz"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EE, 0),
-  INST(kX86InstFMul             , "fmul"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 1, 0xD8DCC8C8, 0),
-  INST(kX86InstFMulP            , "fmulp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEC8, 0),
-  INST(kX86InstFNClex           , "fnclex"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBE2, 0),
-  INST(kX86InstFNInit           , "fninit"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBE3, 0),
-  INST(kX86InstFNop             , "fnop"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9D0, 0),
-  INST(kX86InstFNSave           , "fnsave"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x000000DD, 0),
-  INST(kX86InstFNStCw           , "fnstcw"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 7, 0x000000D9, 0),
-  INST(kX86InstFNStEnv          , "fnstenv"          , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x000000D9, 0),
-  INST(kX86InstFNStSw           , "fnstsw"           , G(X87Status)     , F(Fpu)           , O(Mem)              , 0                   , 7, 0x000000DD, 0x0000DFE0),
-  INST(kX86InstFPAtan           , "fpatan"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F3, 0),
-  INST(kX86InstFPRem            , "fprem"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F8, 0),
-  INST(kX86InstFPRem1           , "fprem1"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F5, 0),
-  INST(kX86InstFPTan            , "fptan"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F2, 0),
-  INST(kX86InstFRndInt          , "frndint"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FC, 0),
-  INST(kX86InstFRstor           , "frstor"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 4, 0x000000DD, 0),
-  INST(kX86InstFSave            , "fsave"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x9B0000DD, 0),
-  INST(kX86InstFScale           , "fscale"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FD, 0),
-  INST(kX86InstFSin             , "fsin"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FE, 0),
-  INST(kX86InstFSinCos          , "fsincos"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FB, 0),
-  INST(kX86InstFSqrt            , "fsqrt"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FA, 0),
-  INST(kX86InstFSt              , "fst"              , G(X87FldFst)     , F(Fpu)           , O(StM4_8)           , 0                   , 2, 0x00D9DD02, 0xDDD00000),
-  INST(kX86InstFStCw            , "fstcw"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 7, 0x9B0000D9, 0),
-  INST(kX86InstFStEnv           , "fstenv"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x9B0000D9, 0),
-  INST(kX86InstFStP             , "fstp"             , G(X87FldFst)     , F(Fpu)           , O(StM4_8_10)        , 0                   , 3, 0x00D9DD03, 0xDDD8DB07),
-  INST(kX86InstFStSw            , "fstsw"            , G(X87Status)     , F(Fpu)           , O(Mem)              , 0                   , 7, 0x9B0000DD, 0x9B00DFE0),
-  INST(kX86InstFSub             , "fsub"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 4, 0xD8DCE0E8, 0),
-  INST(kX86InstFSubP            , "fsubp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEE8, 0),
-  INST(kX86InstFSubR            , "fsubr"            , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 5, 0xD8DCE8E0, 0),
-  INST(kX86InstFSubRP           , "fsubrp"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEE0, 0),
-  INST(kX86InstFTst             , "ftst"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E4, 0),
-  INST(kX86InstFUCom            , "fucom"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DDE0, 0),
-  INST(kX86InstFUComI           , "fucomi"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBE8, 0),
-  INST(kX86InstFUComIP          , "fucomip"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DFE8, 0),
-  INST(kX86InstFUComP           , "fucomp"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DDE8, 0),
-  INST(kX86InstFUComPP          , "fucompp"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAE9, 0),
-  INST(kX86InstFWait            , "fwait"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x000000DB, 0),
-  INST(kX86InstFXam             , "fxam"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E5, 0),
-  INST(kX86InstFXch             , "fxch"             , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9C8, 0),
-  INST(kX86InstFXRstor          , "fxrstor"          , G(Mem)           , F(Fpu)           , 0                   , 0                   , 1, 0x00000FAE, 0),
-  INST(kX86InstFXSave           , "fxsave"           , G(Mem)           , F(Fpu)           , 0                   , 0                   , 0, 0x00000FAE, 0),
-  INST(kX86InstFXtract          , "fxtract"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F4, 0),
-  INST(kX86InstFYL2X            , "fyl2x"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F1, 0),
-  INST(kX86InstFYL2XP1          , "fyl2xp1"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F9, 0),
-  INST(kX86InstHAddPD           , "haddpd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F7C, 0),
-  INST(kX86InstHAddPS           , "haddps"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F7C, 0),
-  INST(kX86InstHSubPD           , "hsubpd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F7D, 0),
-  INST(kX86InstHSubPS           , "hsubps"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F7D, 0),
-  INST(kX86InstIDiv             , "idiv"             , G(Rm)            , F(Special)       , 0                   , 0                   , 7, 0x000000F6, 0),
-  INST(kX86InstIMul             , "imul"             , G(IMul)          , F(Special)       , 0                   , 0                   , 0, 0         , 0),
-  INST(kX86InstInc              , "inc"              , G(IncDec)        , F(Lockable)      , O(GqdwbMem)         , 0                   , 0, 0x00000040, 0x000000FE),
-  INST(kX86InstInt3             , "int3"             , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000CC, 0),
-  INST(kX86InstJA               , "ja"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x7       , 0),
-  INST(kX86InstJAE              , "jae"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x3       , 0),
-  INST(kX86InstJB               , "jb"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x2       , 0),
-  INST(kX86InstJBE              , "jbe"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x6       , 0),
-  INST(kX86InstJC               , "jc"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x2       , 0),
-  INST(kX86InstJE               , "je"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x4       , 0),
-  INST(kX86InstJG               , "jg"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xF       , 0),
-  INST(kX86InstJGE              , "jge"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xD       , 0),
-  INST(kX86InstJL               , "jl"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xC       , 0),
-  INST(kX86InstJLE              , "jle"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xE       , 0),
-  INST(kX86InstJNA              , "jna"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x6       , 0),
-  INST(kX86InstJNAE             , "jnae"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x2       , 0),
-  INST(kX86InstJNB              , "jnb"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x3       , 0),
-  INST(kX86InstJNBE             , "jnbe"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x7       , 0),
-  INST(kX86InstJNC              , "jnc"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x3       , 0),
-  INST(kX86InstJNE              , "jne"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x5       , 0),
-  INST(kX86InstJNG              , "jng"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xE       , 0),
-  INST(kX86InstJNGE             , "jnge"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xC       , 0),
-  INST(kX86InstJNL              , "jnl"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xD       , 0),
-  INST(kX86InstJNLE             , "jnle"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xF       , 0),
-  INST(kX86InstJNO              , "jno"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x1       , 0),
-  INST(kX86InstJNP              , "jnp"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xB       , 0),
-  INST(kX86InstJNS              , "jns"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x9       , 0),
-  INST(kX86InstJNZ              , "jnz"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x5       , 0),
-  INST(kX86InstJO               , "jo"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x0       , 0),
-  INST(kX86InstJP               , "jp"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xA       , 0),
-  INST(kX86InstJPE              , "jpe"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xA       , 0),
-  INST(kX86InstJPO              , "jpo"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xB       , 0),
-  INST(kX86InstJS               , "js"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x8       , 0),
-  INST(kX86InstJZ               , "jz"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x4       , 0),
-  INST(kX86InstJmp              , "jmp"              , G(Jmp)           , F(Jump)          , 0                   , 0                   , 0, 0         , 0),
-  INST(kX86InstLdDQU            , "lddqu"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Mem)              , 0, 0xF2000FF0, 0),
-  INST(kX86InstLdMXCSR          , "ldmxcsr"          , G(Mem)           , F(None)          , O(Mem)              , 0                   , 2, 0x00000FAE, 0),
-  INST(kX86InstLahf             , "lahf"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009F, 0),
-  INST(kX86InstLea              , "lea"              , G(Lea)           , F(None)          , O(Gqd)              , O(Mem)              , 0, 0         , 0),
-  INST(kX86InstLeave            , "leave"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000000C9, 0),
-  INST(kX86InstLFence           , "lfence"           , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000FAEE8, 0),
-  INST(kX86InstMaskMovDQU       , "maskmovdqu"       , G(MmuRmI)        , F(Special)       , O(Xmm)              , O(Xmm)              , 0, 0x66000F57, 0),
-  INST(kX86InstMaskMovQ         , "maskmovq"         , G(MmuRmI)        , F(Special)       , O(Mm)               , O(Mm)               , 0, 0x00000FF7, 0),
-  INST(kX86InstMaxPD            , "maxpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5F, 0),
-  INST(kX86InstMaxPS            , "maxps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5F, 0),
-  INST(kX86InstMaxSD            , "maxsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5F, 0),
-  INST(kX86InstMaxSS            , "maxss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5F, 0),
-  INST(kX86InstMFence           , "mfence"           , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000FAEF0, 0),
-  INST(kX86InstMinPD            , "minpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5D, 0),
-  INST(kX86InstMinPS            , "minps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5D, 0),
-  INST(kX86InstMinSD            , "minsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5D, 0),
-  INST(kX86InstMinSS            , "minss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5D, 0),
-  INST(kX86InstMonitor          , "monitor"          , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000F01C8, 0),
-  INST(kX86InstMov              , "mov"              , G(Mov)           , F(Mov)           , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 0, 0         , 0),
-  INST(kX86InstMovAPD           , "movapd"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F28, 0x66000F29),
-  INST(kX86InstMovAPS           , "movaps"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F28, 0x00000F29),
-  INST(kX86InstMovBE            , "movbe"            , G(MovBE)         , F(Mov)           , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Mem)      , 0, 0x000F38F0, 0x000F38F1),
-  INST(kX86InstMovD             , "movd"             , G(MmuMovD)       , F(Mov)           , O(Gd)|O(MmXmmMem)   , O(Gd)|O(MmXmmMem)   , 0, 0         , 0),
-  INST(kX86InstMovDDup          , "movddup"          , G(MmuMov)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F12, 0),
-  INST(kX86InstMovDQ2Q          , "movdq2q"          , G(MmuMov)        , F(Mov)           , O(Mm)               , O(Xmm)              , 0, 0xF2000FD6, 0),
-  INST(kX86InstMovDQA           , "movdqa"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F6F, 0x66000F7F),
-  INST(kX86InstMovDQU           , "movdqu"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0xF3000F6F, 0xF3000F7F),
-  INST(kX86InstMovHLPS          , "movhlps"          , G(MmuMov)        , F(None)          , O(Xmm)              , O(Xmm)              , 0, 0x00000F12, 0),
-  INST(kX86InstMovHPD           , "movhpd"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F16, 0x66000F17),
-  INST(kX86InstMovHPS           , "movhps"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F16, 0x00000F17),
-  INST(kX86InstMovLHPS          , "movlhps"          , G(MmuMov)        , F(None)          , O(Xmm)              , O(Xmm)              , 0, 0x00000F16, 0),
-  INST(kX86InstMovLPD           , "movlpd"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F12, 0x66000F13),
-  INST(kX86InstMovLPS           , "movlps"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F12, 0x00000F13),
-  INST(kX86InstMovMskPD         , "movmskpd"         , G(MmuMov)        , F(Mov)           , O(Gqd)|O(NoRex)     , O(Xmm)              , 0, 0x66000F50, 0),
-  INST(kX86InstMovMskPS         , "movmskps"         , G(MmuMov)        , F(Mov)           , O(Gqd)|O(NoRex)     , O(Xmm)              , 0, 0x00000F50, 0),
-  INST(kX86InstMovNTDQ          , "movntdq"          , G(MmuMov)        , F(None)          , O(Mem)              , O(Xmm)              , 0, 0         , 0x66000FE7),
-  INST(kX86InstMovNTDQA         , "movntdqa"         , G(MmuMov)        , F(Mov)           , O(Xmm)              , O(Mem)              , 0, 0x660F382A, 0),
-  INST(kX86InstMovNTI           , "movnti"           , G(MmuMov)        , F(Mov)           , O(Mem)              , O(Gqd)              , 0, 0         , 0x00000FC3),
-  INST(kX86InstMovNTPD          , "movntpd"          , G(MmuMov)        , F(None)          , O(Mem)              , O(Xmm)              , 0, 0         , 0x66000F2B),
-  INST(kX86InstMovNTPS          , "movntps"          , G(MmuMov)        , F(None)          , O(Mem)              , O(Xmm)              , 0, 0         , 0x00000F2B),
-  INST(kX86InstMovNTQ           , "movntq"           , G(MmuMov)        , F(None)          , O(Mem)              , O(Mm)               , 0, 0         , 0x00000FE7),
-  INST(kX86InstMovQ             , "movq"             , G(MmuMovQ)       , F(Mov)           , O(Gq)|O(MmXmmMem)   , O(Gq)|O(MmXmmMem)   , 0, 0         , 0),
-  INST(kX86InstMovQ2DQ          , "movq2dq"          , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(Mm)               , 0, 0xF3000FD6, 0),
-  INST(kX86InstMovSD            , "movsd"            , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0xF2000F10, 0xF2000F11),
-  INST(kX86InstMovSHDup         , "movshdup"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F16, 0),
-  INST(kX86InstMovSLDup         , "movsldup"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F12, 0),
-  INST(kX86InstMovSS            , "movss"            , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0xF3000F10, 0xF3000F11),
-  INST(kX86InstMovSX            , "movsx"            , G(MovSxMovZx)    , F(None)          , O(Gqdw)             , O(GwbMem)           , 0, 0x00000FBE, 0),
-  INST(kX86InstMovSXD           , "movsxd"           , G(MovSxD)        , F(None)          , O(Gq)               , O(GdMem)            , 0, 0         , 0),
-  INST(kX86InstMovUPD           , "movupd"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F10, 0x66000F11),
-  INST(kX86InstMovUPS           , "movups"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F10, 0x00000F11),
-  INST(kX86InstMovZX            , "movzx"            , G(MovSxMovZx)    , F(Mov)           , O(Gqdw)             , O(GwbMem)           , 0, 0x00000FB6, 0),
-  INST(kX86InstMovPtr           , "mov_ptr"          , G(MovPtr)        , F(Mov)|F(Special), O(Gqdwb)            , O(Imm)              , 0, 0         , 0),
-  INST(kX86InstMPSADBW          , "mpsadbw"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A42, 0),
-  INST(kX86InstMul              , "mul"              , G(Rm)            , F(Special)       , 0                   , 0                   , 4, 0x000000F6, 0),
-  INST(kX86InstMulPD            , "mulpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F59, 0),
-  INST(kX86InstMulPS            , "mulps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F59, 0),
-  INST(kX86InstMulSD            , "mulsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F59, 0),
-  INST(kX86InstMulSS            , "mulss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F59, 0),
-  INST(kX86InstMWait            , "mwait"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000F01C9, 0),
-  INST(kX86InstNeg              , "neg"              , G(Rm)            , F(Lockable)      , O(GqdwbMem)         , 0                   , 3, 0x000000F6, 0),
-  INST(kX86InstNop              , "nop"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x00000090, 0),
-  INST(kX86InstNot              , "not"              , G(Rm)            , F(Lockable)      , O(GqdwbMem)         , 0                   , 2, 0x000000F6, 0),
-  INST(kX86InstOr               , "or"               , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 1, 0x00000008, 0x00000080),
-  INST(kX86InstOrPD             , "orpd"             , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F56, 0),
-  INST(kX86InstOrPS             , "orps"             , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F56, 0),
-  INST(kX86InstPAbsB            , "pabsb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F381C, 0),
-  INST(kX86InstPAbsD            , "pabsd"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F381E, 0),
-  INST(kX86InstPAbsW            , "pabsw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F381D, 0),
-  INST(kX86InstPackSSDW         , "packssdw"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F6B, 0),
-  INST(kX86InstPackSSWB         , "packsswb"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F63, 0),
-  INST(kX86InstPackUSDW         , "packusdw"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F382B, 0),
-  INST(kX86InstPackUSWB         , "packuswb"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F67, 0),
-  INST(kX86InstPAddB            , "paddb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFC, 0),
-  INST(kX86InstPAddD            , "paddd"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFE, 0),
-  INST(kX86InstPAddQ            , "paddq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD4, 0),
-  INST(kX86InstPAddSB           , "paddsb"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEC, 0),
-  INST(kX86InstPAddSW           , "paddsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FED, 0),
-  INST(kX86InstPAddUSB          , "paddusb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDC, 0),
-  INST(kX86InstPAddUSW          , "paddusw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDD, 0),
-  INST(kX86InstPAddW            , "paddw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFD, 0),
-  INST(kX86InstPAlignR          , "palignr"          , G(MmuRmImm8)     , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3A0F, 0),
-  INST(kX86InstPAnd             , "pand"             , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDB, 0),
-  INST(kX86InstPAndN            , "pandn"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDF, 0),
-  INST(kX86InstPause            , "pause"            , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0xF3000090, 0),
-  INST(kX86InstPAvgB            , "pavgb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE0, 0),
-  INST(kX86InstPAvgW            , "pavgw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE3, 0),
-  INST(kX86InstPBlendVB         , "pblendvb"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3810, 0),
-  INST(kX86InstPBlendW          , "pblendw"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0E, 0),
-  INST(kX86InstPCmpEqB          , "pcmpeqb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F74, 0),
-  INST(kX86InstPCmpEqD          , "pcmpeqd"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F76, 0),
-  INST(kX86InstPCmpEqQ          , "pcmpeqq"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3829, 0),
-  INST(kX86InstPCmpEqW          , "pcmpeqw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F75, 0),
-  INST(kX86InstPCmpEStrI        , "pcmpestri"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A61, 0),
-  INST(kX86InstPCmpEStrM        , "pcmpestrm"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A60, 0),
-  INST(kX86InstPCmpGtB          , "pcmpgtb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F64, 0),
-  INST(kX86InstPCmpGtD          , "pcmpgtd"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F66, 0),
-  INST(kX86InstPCmpGtQ          , "pcmpgtq"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3837, 0),
-  INST(kX86InstPCmpGtW          , "pcmpgtw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F65, 0),
-  INST(kX86InstPCmpIStrI        , "pcmpistri"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A63, 0),
-  INST(kX86InstPCmpIStrM        , "pcmpistrm"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A62, 0),
-  INST(kX86InstPExtrB           , "pextrb"           , G(MmuExtract)    , F(None)          , O(Gd)|O(Gb)|O(Mem)  , O(Xmm)              , 0, 0x000F3A14, 0),
-  INST(kX86InstPExtrD           , "pextrd"           , G(MmuExtract)    , F(None)          , O(Gd)      |O(Mem)  , O(Xmm)              , 0, 0x000F3A16, 0),
-  INST(kX86InstPExtrQ           , "pextrq"           , G(MmuExtract)    , F(None)          , O(Gqd)     |O(Mem)  , O(Xmm)              , 1, 0x000F3A16, 0),
-  INST(kX86InstPExtrW           , "pextrw"           , G(MmuExtract)    , F(None)          , O(Gd)      |O(Mem)  , O(MmXmm)            , 0, 0x000F3A15, 0),
-  INST(kX86InstPF2ID            , "pf2id"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x1D),
-  INST(kX86InstPF2IW            , "pf2iw"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x1C),
-  INST(kX86InstPFAcc            , "pfacc"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xAE),
-  INST(kX86InstPFAdd            , "pfadd"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x9E),
-  INST(kX86InstPFCmpEQ          , "pfcmpeq"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xB0),
-  INST(kX86InstPFCmpGE          , "pfcmpge"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x90),
-  INST(kX86InstPFCmpGT          , "pfcmpgt"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA0),
-  INST(kX86InstPFMax            , "pfmax"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA4),
-  INST(kX86InstPFMin            , "pfmin"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x94),
-  INST(kX86InstPFMul            , "pfmul"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xB4),
-  INST(kX86InstPFNAcc           , "pfnacc"           , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x8A),
-  INST(kX86InstPFPNAcc          , "pfpnacc"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x8E),
-  INST(kX86InstPFRcp            , "pfrcp"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x96),
-  INST(kX86InstPFRcpIt1         , "pfrcpit1"         , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA6),
-  INST(kX86InstPFRcpIt2         , "pfrcpit2"         , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xB6),
-  INST(kX86InstPFRSqIt1         , "pfrsqit1"         , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA7),
-  INST(kX86InstPFRSqrt          , "pfrsqrt"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x97),
-  INST(kX86InstPFSub            , "pfsub"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x9A),
-  INST(kX86InstPFSubR           , "pfsubr"           , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xAA),
-  INST(kX86InstPHAddD           , "phaddd"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3802, 0),
-  INST(kX86InstPHAddSW          , "phaddsw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3803, 0),
-  INST(kX86InstPHAddW           , "phaddw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3801, 0),
-  INST(kX86InstPHMinPOSUW       , "phminposuw"       , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3841, 0),
-  INST(kX86InstPHSubD           , "phsubd"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3806, 0),
-  INST(kX86InstPHSubSW          , "phsubsw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3807, 0),
-  INST(kX86InstPHSubW           , "phsubw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3805, 0),
-  INST(kX86InstPI2FD            , "pi2fd"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x0D),
-  INST(kX86InstPI2FW            , "pi2fw"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x0C),
-  INST(kX86InstPInsRB           , "pinsrb"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(Gd) | O(Mem)      , 0, 0x660F3A20, 0),
-  INST(kX86InstPInsRD           , "pinsrd"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(Gd) | O(Mem)      , 0, 0x660F3A22, 0),
-  INST(kX86InstPInsRQ           , "pinsrq"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(Gq) | O(Mem)      , 0, 0x660F3A22, 0),
-  INST(kX86InstPInsRW           , "pinsrw"           , G(MmuRmImm8)     , F(None)          , O(MmXmm)            , O(Gd) | O(Mem)      , 0, 0x00000FC4, 0),
-  INST(kX86InstPMAddUBSW        , "pmaddubsw"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3804, 0),
-  INST(kX86InstPMAddWD          , "pmaddwd"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF5, 0),
-  INST(kX86InstPMaxSB           , "pmaxsb"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383C, 0),
-  INST(kX86InstPMaxSD           , "pmaxsd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383D, 0),
-  INST(kX86InstPMaxSW           , "pmaxsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEE, 0),
-  INST(kX86InstPMaxUB           , "pmaxub"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDE, 0),
-  INST(kX86InstPMaxUD           , "pmaxud"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383F, 0),
-  INST(kX86InstPMaxUW           , "pmaxuw"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383E, 0),
-  INST(kX86InstPMinSB           , "pminsb"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3838, 0),
-  INST(kX86InstPMinSD           , "pminsd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3839, 0),
-  INST(kX86InstPMinSW           , "pminsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEA, 0),
-  INST(kX86InstPMinUB           , "pminub"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDA, 0),
-  INST(kX86InstPMinUD           , "pminud"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383B, 0),
-  INST(kX86InstPMinUW           , "pminuw"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383A, 0),
-  INST(kX86InstPMovMskB         , "pmovmskb"         , G(MmuRmI)        , F(Mov)           , O(Gqd)              , O(MmXmm)            , 0, 0x00000FD7, 0),
-  INST(kX86InstPMovSXBD         , "pmovsxbd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3821, 0),
-  INST(kX86InstPMovSXBQ         , "pmovsxbq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3822, 0),
-  INST(kX86InstPMovSXBW         , "pmovsxbw"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3820, 0),
-  INST(kX86InstPMovSXDQ         , "pmovsxdq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3825, 0),
-  INST(kX86InstPMovSXWD         , "pmovsxwd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3823, 0),
-  INST(kX86InstPMovSXWQ         , "pmovsxwq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3824, 0),
-  INST(kX86InstPMovZXBD         , "pmovzxbd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3831, 0),
-  INST(kX86InstPMovZXBQ         , "pmovzxbq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3832, 0),
-  INST(kX86InstPMovZXBW         , "pmovzxbw"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3830, 0),
-  INST(kX86InstPMovZXDQ         , "pmovzxdq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3835, 0),
-  INST(kX86InstPMovZXWD         , "pmovzxwd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3833, 0),
-  INST(kX86InstPMovZXWQ         , "pmovzxwq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3834, 0),
-  INST(kX86InstPMulDQ           , "pmuldq"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3828, 0),
-  INST(kX86InstPMulHRSW         , "pmulhrsw"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F380B, 0),
-  INST(kX86InstPMulHUW          , "pmulhuw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE4, 0),
-  INST(kX86InstPMulHW           , "pmulhw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE5, 0),
-  INST(kX86InstPMulLD           , "pmulld"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3840, 0),
-  INST(kX86InstPMulLW           , "pmullw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD5, 0),
-  INST(kX86InstPMulUDQ          , "pmuludq"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF4, 0),
-  INST(kX86InstPop              , "pop"              , G(Pop)           , F(Special)       , 0                   , 0                   , 0, 0x00000058, 0x0000008F),
-  INST(kX86InstPopAD            , "popad"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000061, 0),
-  INST(kX86InstPopCnt           , "popcnt"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0xF3000FB8, 0),
-  INST(kX86InstPopFD            , "popfd"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009D, 0),
-  INST(kX86InstPopFQ            , "popfq"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009D, 0),
-  INST(kX86InstPOr              , "por"              , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEB, 0),
-  INST(kX86InstPrefetch         , "prefetch"         , G(MmuPrefetch)   , F(None)          , O(Mem)              , O(Imm)              , 0, 0         , 0),
-  INST(kX86InstPSADBW           , "psadbw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF6, 0),
-  INST(kX86InstPShufB           , "pshufb"           , G(MmuRmI)        , F(Mov)           , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3800, 0),
-  INST(kX86InstPShufD           , "pshufd"           , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F70, 0),
-  INST(kX86InstPShufW           , "pshufw"           , G(MmuRmImm8)     , F(Mov)           , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F70, 0),
-  INST(kX86InstPShufHW          , "pshufhw"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F70, 0),
-  INST(kX86InstPShufLW          , "pshuflw"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F70, 0),
-  INST(kX86InstPSignB           , "psignb"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3808, 0),
-  INST(kX86InstPSignD           , "psignd"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F380A, 0),
-  INST(kX86InstPSignW           , "psignw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3809, 0),
-  INST(kX86InstPSllD            , "pslld"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 6, 0x00000FF2, 0x00000F72),
-  INST(kX86InstPSllDQ           , "pslldq"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Imm)              , 7, 0         , 0x66000F73),
-  INST(kX86InstPSllQ            , "psllq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 6, 0x00000FF3, 0x00000F73),
-  INST(kX86InstPSllW            , "psllw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 6, 0x00000FF1, 0x00000F71),
-  INST(kX86InstPSraD            , "psrad"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 4, 0x00000FE2, 0x00000F72),
-  INST(kX86InstPSraW            , "psraw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 4, 0x00000FE1, 0x00000F71),
-  INST(kX86InstPSrlD            , "psrld"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 2, 0x00000FD2, 0x00000F72),
-  INST(kX86InstPSrlDQ           , "psrldq"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Imm)              , 3, 0         , 0x66000F73),
-  INST(kX86InstPSrlQ            , "psrlq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 2, 0x00000FD3, 0x00000F73),
-  INST(kX86InstPSrlW            , "psrlw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 2, 0x00000FD1, 0x00000F71),
-  INST(kX86InstPSubB            , "psubb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF8, 0),
-  INST(kX86InstPSubD            , "psubd"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFA, 0),
-  INST(kX86InstPSubQ            , "psubq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFB, 0),
-  INST(kX86InstPSubSB           , "psubsb"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE8, 0),
-  INST(kX86InstPSubSW           , "psubsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE9, 0),
-  INST(kX86InstPSubUSB          , "psubusb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD8, 0),
-  INST(kX86InstPSubUSW          , "psubusw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD9, 0),
-  INST(kX86InstPSubW            , "psubw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF9, 0),
-  INST(kX86InstPSwapD           , "pswapd"           , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xBB),
-  INST(kX86InstPTest            , "ptest"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3817, 0),
-  INST(kX86InstPunpckHBW        , "punpckhbw"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F68, 0),
-  INST(kX86InstPunpckHDQ        , "punpckhdq"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F6A, 0),
-  INST(kX86InstPunpckHQDQ       , "punpckhqdq"       , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F6D, 0),
-  INST(kX86InstPunpckHWD        , "punpckhwd"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F69, 0),
-  INST(kX86InstPunpckLBW        , "punpcklbw"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F60, 0),
-  INST(kX86InstPunpckLDQ        , "punpckldq"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F62, 0),
-  INST(kX86InstPunpckLQDQ       , "punpcklqdq"       , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F6C, 0),
-  INST(kX86InstPunpckLWD        , "punpcklwd"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F61, 0),
-  INST(kX86InstPush             , "push"             , G(Push)          , F(Special)       , 0                   , 0                   , 6, 0x00000050, 0x000000FF),
-  INST(kX86InstPushAD           , "pushad"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000060, 0),
-  INST(kX86InstPushFD           , "pushfd"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009C, 0),
-  INST(kX86InstPushFQ           , "pushfq"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009C, 0),
-  INST(kX86InstPXor             , "pxor"             , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEF, 0),
-  INST(kX86InstRcl              , "rcl"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 2, 0         , 0),
-  INST(kX86InstRcpPS            , "rcpps"            , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F53, 0),
-  INST(kX86InstRcpSS            , "rcpss"            , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F53, 0),
-  INST(kX86InstRcr              , "rcr"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 3, 0         , 0),
-  INST(kX86InstRdtsc            , "rdtsc"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000F31, 0),
-  INST(kX86InstRdtscP           , "rdtscp"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000F01F9, 0),
-  INST(kX86InstRepLodSB         , "rep lodsb"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 1 /* Size of mem */),
-  INST(kX86InstRepLodSD         , "rep lodsd"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 4 /* Size of mem */),
-  INST(kX86InstRepLodSQ         , "rep lodsq"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 8 /* Size of mem */),
-  INST(kX86InstRepLodSW         , "rep lodsw"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 2 /* Size of mem */),
-  INST(kX86InstRepMovSB         , "rep movsb"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 1 /* Size of mem */),
-  INST(kX86InstRepMovSD         , "rep movsd"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 4 /* Size of mem */),
-  INST(kX86InstRepMovSQ         , "rep movsq"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 8 /* Size of mem */),
-  INST(kX86InstRepMovSW         , "rep movsw"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 2 /* Size of mem */),
-  INST(kX86InstRepStoSB         , "rep stosb"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 1 /* Size of mem */),
-  INST(kX86InstRepStoSD         , "rep stosd"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 4 /* Size of mem */),
-  INST(kX86InstRepStoSQ         , "rep stosq"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 8 /* Size of mem */),
-  INST(kX86InstRepStoSW         , "rep stosw"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 2 /* Size of mem */),
-  INST(kX86InstRepECmpSB        , "repe cmpsb"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 1 /* Size of mem */),
-  INST(kX86InstRepECmpSD        , "repe cmpsd"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 4 /* Size of mem */),
-  INST(kX86InstRepECmpSQ        , "repe cmpsq"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 8 /* Size of mem */),
-  INST(kX86InstRepECmpSW        , "repe cmpsw"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 2 /* Size of mem */),
-  INST(kX86InstRepEScaSB        , "repe scasb"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 1 /* Size of mem */),
-  INST(kX86InstRepEScaSD        , "repe scasd"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 4 /* Size of mem */),
-  INST(kX86InstRepEScaSQ        , "repe scasq"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 8 /* Size of mem */),
-  INST(kX86InstRepEScaSW        , "repe scasw"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 2 /* Size of mem */),
-  INST(kX86InstRepNECmpSB       , "repne cmpsb"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 1 /* Size of mem */),
-  INST(kX86InstRepNECmpSD       , "repne cmpsd"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 4 /* Size of mem */),
-  INST(kX86InstRepNECmpSQ       , "repne cmpsq"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 8 /* Size of mem */),
-  INST(kX86InstRepNECmpSW       , "repne cmpsw"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 2 /* Size of mem */),
-  INST(kX86InstRepNEScaSB       , "repne scasb"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 1 /* Size of mem */),
-  INST(kX86InstRepNEScaSD       , "repne scasd"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 4 /* Size of mem */),
-  INST(kX86InstRepNEScaSQ       , "repne scasq"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 8 /* Size of mem */),
-  INST(kX86InstRepNEScaSW       , "repne scasw"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 2 /* Size of mem */),
-  INST(kX86InstRet              , "ret"              , G(Ret)           , F(Special)       , 0                   , 0                   , 0, 0         , 0),
-  INST(kX86InstRol              , "rol"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 0, 0         , 0),
-  INST(kX86InstRor              , "ror"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 1, 0         , 0),
-  INST(kX86InstRoundPD          , "roundpd"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A09, 0),
-  INST(kX86InstRoundPS          , "roundps"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A08, 0),
-  INST(kX86InstRoundSD          , "roundsd"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0B, 0),
-  INST(kX86InstRoundSS          , "roundss"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0A, 0),
-  INST(kX86InstRSqrtPS          , "rsqrtps"          , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F52, 0),
-  INST(kX86InstRSqrtSS          , "rsqrtss"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F52, 0),
-  INST(kX86InstSahf             , "sahf"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009E, 0),
-  INST(kX86InstSal              , "sal"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 4, 0         , 0),
-  INST(kX86InstSar              , "sar"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 7, 0         , 0),
-  INST(kX86InstSbb              , "sbb"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 3, 0x00000018, 0x00000080),
-  INST(kX86InstSetA             , "seta"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F97, 0),
-  INST(kX86InstSetAE            , "setae"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F93, 0),
-  INST(kX86InstSetB             , "setb"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F92, 0),
-  INST(kX86InstSetBE            , "setbe"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F96, 0),
-  INST(kX86InstSetC             , "setc"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F92, 0),
-  INST(kX86InstSetE             , "sete"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F94, 0),
-  INST(kX86InstSetG             , "setg"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9F, 0),
-  INST(kX86InstSetGE            , "setge"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9D, 0),
-  INST(kX86InstSetL             , "setl"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9C, 0),
-  INST(kX86InstSetLE            , "setle"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9E, 0),
-  INST(kX86InstSetNA            , "setna"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F96, 0),
-  INST(kX86InstSetNAE           , "setnae"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F92, 0),
-  INST(kX86InstSetNB            , "setnb"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F93, 0),
-  INST(kX86InstSetNBE           , "setnbe"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F97, 0),
-  INST(kX86InstSetNC            , "setnc"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F93, 0),
-  INST(kX86InstSetNE            , "setne"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F95, 0),
-  INST(kX86InstSetNG            , "setng"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9E, 0),
-  INST(kX86InstSetNGE           , "setnge"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9C, 0),
-  INST(kX86InstSetNL            , "setnl"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9D, 0),
-  INST(kX86InstSetNLE           , "setnle"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9F, 0),
-  INST(kX86InstSetNO            , "setno"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F91, 0),
-  INST(kX86InstSetNP            , "setnp"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9B, 0),
-  INST(kX86InstSetNS            , "setns"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F99, 0),
-  INST(kX86InstSetNZ            , "setnz"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F95, 0),
-  INST(kX86InstSetO             , "seto"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F90, 0),
-  INST(kX86InstSetP             , "setp"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9A, 0),
-  INST(kX86InstSetPE            , "setpe"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9A, 0),
-  INST(kX86InstSetPO            , "setpo"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9B, 0),
-  INST(kX86InstSetS             , "sets"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F98, 0),
-  INST(kX86InstSetZ             , "setz"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F94, 0),
-  INST(kX86InstSFence           , "sfence"           , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000FAEF8, 0),
-  INST(kX86InstShl              , "shl"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 4, 0         , 0),
-  INST(kX86InstShld             , "shld"             , G(ShldShrd)      , F(Special)       , O(GqdwbMem)         , O(Gb)               , 0, 0x00000FA4, 0),
-  INST(kX86InstShr              , "shr"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 5, 0         , 0),
-  INST(kX86InstShrd             , "shrd"             , G(ShldShrd)      , F(Special)       , O(GqdwbMem)         , O(Gqdwb)            , 0, 0x00000FAC, 0),
-  INST(kX86InstShufPD           , "shufpd"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000FC6, 0),
-  INST(kX86InstShufPS           , "shufps"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000FC6, 0),
-  INST(kX86InstSqrtPD           , "sqrtpd"           , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F51, 0),
-  INST(kX86InstSqrtPS           , "sqrtps"           , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F51, 0),
-  INST(kX86InstSqrtSD           , "sqrtsd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F51, 0),
-  INST(kX86InstSqrtSS           , "sqrtss"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F51, 0),
-  INST(kX86InstStc              , "stc"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000F9, 0),
-  INST(kX86InstStd              , "std"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000FD, 0),
-  INST(kX86InstStMXCSR          , "stmxcsr"          , G(Mem)           , F(None)          , O(Mem)              , 0                   , 3, 0x00000FAE, 0),
-  INST(kX86InstSub              , "sub"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 5, 0x00000028, 0x00000080),
-  INST(kX86InstSubPD            , "subpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5C, 0),
-  INST(kX86InstSubPS            , "subps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5C, 0),
-  INST(kX86InstSubSD            , "subsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5C, 0),
-  INST(kX86InstSubSS            , "subss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5C, 0),
-  INST(kX86InstTest             , "test"             , G(Test)          , F(None)          , O(GqdwbMem)         , O(Gqdwb)|O(Imm)     , 0, 0         , 0),
-  INST(kX86InstUComISD          , "ucomisd"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F2E, 0),
-  INST(kX86InstUComISS          , "ucomiss"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F2E, 0),
-  INST(kX86InstUd2              , "ud2"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x00000F0B, 0),
-  INST(kX86InstUnpckHPD         , "unpckhpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F15, 0),
-  INST(kX86InstUnpckHPS         , "unpckhps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F15, 0),
-  INST(kX86InstUnpckLPD         , "unpcklpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F14, 0),
-  INST(kX86InstUnpckLPS         , "unpcklps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F14, 0),
-  INST(kX86InstXadd             , "xadd"             , G(RmReg)         , F(Lockable)      , O(GqdwbMem)         , O(Gqdwb)            , 0, 0x00000FC0, 0),
-  INST(kX86InstXchg             , "xchg"             , G(Xchg)          , F(Lockable)      , O(GqdwbMem)         , O(Gqdwb)            , 0, 0         , 0),
-  INST(kX86InstXor              , "xor"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 6, 0x00000030, 0x00000080),
-  INST(kX86InstXorPD            , "xorpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F57, 0),
-  INST(kX86InstXorPS            , "xorps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F57, 0)
+	// Instruction code           | Instruction name   | Instruction group| Instruction flags| Operand flags[0]    | Operand flags[1]    | r| opCode[0] | opcode[1]
+	INST(kInstNone                , ""                 , G(None)          , F(None)          , 0                   , 0                   , 0, 0         , 0),
+	INST(kX86InstAdc              , "adc"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 2, 0x00000010, 0x00000080),
+	INST(kX86InstAdd              , "add"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 0, 0x00000000, 0x00000080),
+	INST(kX86InstAddPD            , "addpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F58, 0),
+	INST(kX86InstAddPS            , "addps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F58, 0),
+	INST(kX86InstAddSD            , "addsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F58, 0),
+	INST(kX86InstAddSS            , "addss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F58, 0),
+	INST(kX86InstAddSubPD         , "addsubpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000FD0, 0),
+	INST(kX86InstAddSubPS         , "addsubps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000FD0, 0),
+	INST(kX86InstAmdPrefetch      , "amd_prefetch"     , G(Mem)           , F(None)          , O(Mem)              , 0                   , 0, 0x00000F0D, 0),
+	INST(kX86InstAmdPrefetchW     , "amd_prefetchw"    , G(Mem)           , F(None)          , O(Mem)              , 0                   , 1, 0x00000F0D, 0),
+	INST(kX86InstAnd              , "and"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 4, 0x00000020, 0x00000080),
+	INST(kX86InstAndnPD           , "andnpd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F55, 0),
+	INST(kX86InstAndnPS           , "andnps"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F55, 0),
+	INST(kX86InstAndPD            , "andpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F54, 0),
+	INST(kX86InstAndPS            , "andps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F54, 0),
+	INST(kX86InstBlendPD          , "blendpd"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0D, 0),
+	INST(kX86InstBlendPS          , "blendps"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0C, 0),
+	INST(kX86InstBlendVPD         , "blendvpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3815, 0),
+	INST(kX86InstBlendVPS         , "blendvps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3814, 0),
+	INST(kX86InstBsf              , "bsf"              , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000FBC, 0),
+	INST(kX86InstBsr              , "bsr"              , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000FBD, 0),
+	INST(kX86InstBSwap            , "bswap"            , G(BSwap)         , F(None)          , O(Gqd)              , 0                   , 0, 0         , 0),
+	INST(kX86InstBt               , "bt"               , G(BTest)         , F(None)          , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 4, 0x00000FA3, 0x00000FBA),
+	INST(kX86InstBtc              , "btc"              , G(BTest)         , F(Lockable)      , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 7, 0x00000FBB, 0x00000FBA),
+	INST(kX86InstBtr              , "btr"              , G(BTest)         , F(Lockable)      , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 6, 0x00000FB3, 0x00000FBA),
+	INST(kX86InstBts              , "bts"              , G(BTest)         , F(Lockable)      , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Imm)      , 5, 0x00000FAB, 0x00000FBA),
+	INST(kX86InstCall             , "call"             , G(Call)          , F(Jump)          , O(Gqd) |O(Mem)      , 0                   , 0, 0         , 0),
+	INST(kX86InstCbw              , "cbw"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x66000098, 0),
+	INST(kX86InstCdq              , "cdq"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000099, 0),
+	INST(kX86InstCdqe             , "cdqe"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x48000098, 0),
+	INST(kX86InstClc              , "clc"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000F8, 0),
+	INST(kX86InstCld              , "cld"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000FC, 0),
+	INST(kX86InstClFlush          , "clflush"          , G(Mem)           , F(None)          , O(Mem)              , 0                   , 7, 0x00000FAE, 0),
+	INST(kX86InstCmc              , "cmc"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000F5, 0),
+	INST(kX86InstCMovA            , "cmova"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F47, 0),
+	INST(kX86InstCMovAE           , "cmovae"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F43, 0),
+	INST(kX86InstCMovB            , "cmovb"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F42, 0),
+	INST(kX86InstCMovBE           , "cmovbe"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F46, 0),
+	INST(kX86InstCMovC            , "cmovc"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F42, 0),
+	INST(kX86InstCMovE            , "cmove"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F44, 0),
+	INST(kX86InstCMovG            , "cmovg"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4F, 0),
+	INST(kX86InstCMovGE           , "cmovge"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4D, 0),
+	INST(kX86InstCMovL            , "cmovl"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4C, 0),
+	INST(kX86InstCMovLE           , "cmovle"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4E, 0),
+	INST(kX86InstCMovNA           , "cmovna"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F46, 0),
+	INST(kX86InstCMovNAE          , "cmovnae"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F42, 0),
+	INST(kX86InstCMovNB           , "cmovnb"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F43, 0),
+	INST(kX86InstCMovNBE          , "cmovnbe"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F47, 0),
+	INST(kX86InstCMovNC           , "cmovnc"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F43, 0),
+	INST(kX86InstCMovNE           , "cmovne"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F45, 0),
+	INST(kX86InstCMovNG           , "cmovng"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4E, 0),
+	INST(kX86InstCMovNGE          , "cmovnge"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4C, 0),
+	INST(kX86InstCMovNL           , "cmovnl"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4D, 0),
+	INST(kX86InstCMovNLE          , "cmovnle"          , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4F, 0),
+	INST(kX86InstCMovNO           , "cmovno"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F41, 0),
+	INST(kX86InstCMovNP           , "cmovnp"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4B, 0),
+	INST(kX86InstCMovNS           , "cmovns"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F49, 0),
+	INST(kX86InstCMovNZ           , "cmovnz"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F45, 0),
+	INST(kX86InstCMovO            , "cmovo"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F40, 0),
+	INST(kX86InstCMovP            , "cmovp"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4A, 0),
+	INST(kX86InstCMovPE           , "cmovpe"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4A, 0),
+	INST(kX86InstCMovPO           , "cmovpo"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F4B, 0),
+	INST(kX86InstCMovS            , "cmovs"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F48, 0),
+	INST(kX86InstCMovZ            , "cmovz"            , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0x00000F44, 0),
+	INST(kX86InstCmp              , "cmp"              , G(Arith)         , F(None)          , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 7, 0x00000038, 0x00000080),
+	INST(kX86InstCmpPD            , "cmppd"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000FC2, 0),
+	INST(kX86InstCmpPS            , "cmpps"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000FC2, 0),
+	INST(kX86InstCmpSD            , "cmpsd"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000FC2, 0),
+	INST(kX86InstCmpSS            , "cmpss"            , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000FC2, 0),
+	INST(kX86InstCmpXCHG          , "cmpxchg"          , G(RmReg)         , F(Special)|F(Lockable), 0              , 0                   , 0, 0x00000FB0, 0),
+	INST(kX86InstCmpXCHG16B       , "cmpxchg16b"       , G(Mem)           , F(Special)       , O(Mem)              , 0                   , 1, 0x00000FC7, 1 /* RexW */),
+	INST(kX86InstCmpXCHG8B        , "cmpxchg8b"        , G(Mem)           , F(Special)       , O(Mem)              , 0                   , 1, 0x00000FC7, 0),
+	INST(kX86InstComISD           , "comisd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F2F, 0),
+	INST(kX86InstComISS           , "comiss"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F2F, 0),
+	INST(kX86InstCpuId            , "cpuid"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000FA2, 0),
+	INST(kX86InstCqo              , "cqo"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x48000099, 0), // TODO, set RexW bit instead?
+	INST(kX86InstCrc32            , "crc32"            , G(Crc32)         , F(None)          , O(Gqd)              , O(GqdwbMem)         , 0, 0xF20F38F0, 0),
+	INST(kX86InstCvtDQ2PD         , "cvtdq2pd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000FE6, 0),
+	INST(kX86InstCvtDQ2PS         , "cvtdq2ps"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5B, 0),
+	INST(kX86InstCvtPD2DQ         , "cvtpd2dq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF2000FE6, 0),
+	INST(kX86InstCvtPD2PI         , "cvtpd2pi"         , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x66000F2D, 0),
+	INST(kX86InstCvtPD2PS         , "cvtpd2ps"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5A, 0),
+	INST(kX86InstCvtPI2PD         , "cvtpi2pd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(MmMem)            , 0, 0x66000F2A, 0),
+	INST(kX86InstCvtPI2PS         , "cvtpi2ps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(MmMem)            , 0, 0x00000F2A, 0),
+	INST(kX86InstCvtPS2DQ         , "cvtps2dq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5B, 0),
+	INST(kX86InstCvtPS2PD         , "cvtps2pd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5A, 0),
+	INST(kX86InstCvtPS2PI         , "cvtps2pi"         , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x00000F2D, 0),
+	INST(kX86InstCvtSD2SI         , "cvtsd2si"         , G(MmuRmI)        , F(Mov)           , O(Gqd)              , O(XmmMem)           , 0, 0xF2000F2D, 0),
+	INST(kX86InstCvtSD2SS         , "cvtsd2ss"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5A, 0),
+	INST(kX86InstCvtSI2SD         , "cvtsi2sd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Gqd)|O(Mem)       , 0, 0xF2000F2A, 0),
+	INST(kX86InstCvtSI2SS         , "cvtsi2ss"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Gqd)|O(Mem)       , 0, 0xF3000F2A, 0),
+	INST(kX86InstCvtSS2SD         , "cvtss2sd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5A, 0),
+	INST(kX86InstCvtSS2SI         , "cvtss2si"         , G(MmuRmI)        , F(None)          , O(Gqd)              , O(XmmMem)           , 0, 0xF3000F2D, 0),
+	INST(kX86InstCvttPD2DQ        , "cvttpd2dq"        , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000FE6, 0),
+	INST(kX86InstCvttPD2PI        , "cvttpd2pi"        , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x66000F2C, 0),
+	INST(kX86InstCvttPS2DQ        , "cvttps2dq"        , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5B, 0),
+	INST(kX86InstCvttPS2PI        , "cvttps2pi"        , G(MmuRmI)        , F(Mov)           , O(Mm)               , O(XmmMem)           , 0, 0x00000F2C, 0),
+	INST(kX86InstCvttSD2SI        , "cvttsd2si"        , G(MmuRmI)        , F(None)          , O(Gqd)              , O(XmmMem)           , 0, 0xF2000F2C, 0),
+	INST(kX86InstCvttSS2SI        , "cvttss2si"        , G(MmuRmI)        , F(None)          , O(Gqd)              , O(XmmMem)           , 0, 0xF3000F2C, 0),
+	INST(kX86InstCwd              , "cwd"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x66000099, 0),
+	INST(kX86InstCwde             , "cwde"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000098, 0),
+	INST(kX86InstDaa              , "daa"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000027, 0),
+	INST(kX86InstDas              , "das"              , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000002F, 0),
+	INST(kX86InstDec              , "dec"              , G(IncDec)        , F(Lockable)      , O(GqdwbMem)         , 0                   , 1, 0x00000048, 0x000000FE),
+	INST(kX86InstDiv              , "div"              , G(Rm)            , F(Special)       , 0                   , 0                   , 6, 0x000000F6, 0),
+	INST(kX86InstDivPD            , "divpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5E, 0),
+	INST(kX86InstDivPS            , "divps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5E, 0),
+	INST(kX86InstDivSD            , "divsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5E, 0),
+	INST(kX86InstDivSS            , "divss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5E, 0),
+	INST(kX86InstDpPD             , "dppd"             , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A41, 0),
+	INST(kX86InstDpPS             , "dpps"             , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A40, 0),
+	INST(kX86InstEmms             , "emms"             , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x00000F77, 0),
+	INST(kX86InstEnter            , "enter"            , G(Enter)         , F(Special)       , 0                   , 0                   , 0, 0x000000C8, 0),
+	INST(kX86InstExtractPS        , "extractps"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A17, 0),
+	INST(kX86InstF2XM1            , "f2xm1"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F0, 0),
+	INST(kX86InstFAbs             , "fabs"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E1, 0),
+	INST(kX86InstFAdd             , "fadd"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 0, 0xD8DCC0C0, 0),
+	INST(kX86InstFAddP            , "faddp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEC0, 0),
+	INST(kX86InstFBLd             , "fbld"             , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 4, 0x000000DF, 0),
+	INST(kX86InstFBStP            , "fbstp"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x000000DF, 0),
+	INST(kX86InstFCHS             , "fchs"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E0, 0),
+	INST(kX86InstFClex            , "fclex"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x9B00DBE2, 0),
+	INST(kX86InstFCMovB           , "fcmovb"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAC0, 0),
+	INST(kX86InstFCMovBE          , "fcmovbe"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAD0, 0),
+	INST(kX86InstFCMovE           , "fcmove"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAC8, 0),
+	INST(kX86InstFCMovNB          , "fcmovnb"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBC0, 0),
+	INST(kX86InstFCMovNBE         , "fcmovnbe"         , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBD0, 0),
+	INST(kX86InstFCMovNE          , "fcmovne"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBC8, 0),
+	INST(kX86InstFCMovNU          , "fcmovnu"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBD8, 0),
+	INST(kX86InstFCMovU           , "fcmovu"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAD8, 0),
+	INST(kX86InstFCom             , "fcom"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 2, 0xD8DCD0D0, 0),
+	INST(kX86InstFComI            , "fcomi"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBF0, 0),
+	INST(kX86InstFComIP           , "fcomip"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DFF0, 0),
+	INST(kX86InstFComP            , "fcomp"            , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 3, 0xD8DCD8D8, 0),
+	INST(kX86InstFComPP           , "fcompp"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DED9, 0),
+	INST(kX86InstFCos             , "fcos"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FF, 0),
+	INST(kX86InstFDecStP          , "fdecstp"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F6, 0),
+	INST(kX86InstFDiv             , "fdiv"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 6, 0xD8DCF0F8, 0),
+	INST(kX86InstFDivP            , "fdivp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEF8, 0),
+	INST(kX86InstFDivR            , "fdivr"            , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 7, 0xD8DCF8F0, 0),
+	INST(kX86InstFDivRP           , "fdivrp"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEF0, 0),
+	INST(kX86InstFEmms            , "femms"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x00000F0E, 0),
+	INST(kX86InstFFree            , "ffree"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DDC0, 0),
+	INST(kX86InstFIAdd            , "fiadd"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 0, 0xDEDA0000, 0),
+	INST(kX86InstFICom            , "ficom"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 2, 0xDEDA0000, 0),
+	INST(kX86InstFIComP           , "ficomp"           , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 3, 0xDEDA0000, 0),
+	INST(kX86InstFIDiv            , "fidiv"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 6, 0xDEDA0000, 0),
+	INST(kX86InstFIDivR           , "fidivr"           , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 7, 0xDEDA0000, 0),
+	INST(kX86InstFILd             , "fild"             , G(X87Mem)        , F(Fpu)           , O(StM2_4_8)         , 0                   , 0, 0xDFDBDF05, 0),
+	INST(kX86InstFIMul            , "fimul"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 1, 0xDEDA0000, 0),
+	INST(kX86InstFIncStP          , "fincstp"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F7, 0),
+	INST(kX86InstFInit            , "finit"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x9B00DBE3, 0),
+	INST(kX86InstFISt             , "fist"             , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 2, 0xDFDB0000, 0),
+	INST(kX86InstFIStP            , "fistp"            , G(X87Mem)        , F(Fpu)           , O(StM2_4_8)         , 0                   , 3, 0xDFDBDF07, 0),
+	INST(kX86InstFISttP           , "fisttp"           , G(X87Mem)        , F(Fpu)           , O(StM2_4_8)         , 0                   , 1, 0xDFDBDD01, 0),
+	INST(kX86InstFISub            , "fisub"            , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 4, 0xDEDA0000, 0),
+	INST(kX86InstFISubR           , "fisubr"           , G(X87Mem)        , F(Fpu)           , O(StM2_4)           , 0                   , 5, 0xDEDA0000, 0),
+	INST(kX86InstFLd              , "fld"              , G(X87FldFst)     , F(Fpu)           , O(StM4_8_10)        , 0                   , 0, 0x00D9DD00, 0xD9C0DB05),
+	INST(kX86InstFLd1             , "fld1"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E8, 0),
+	INST(kX86InstFLdCw            , "fldcw"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 5, 0x000000D9, 0),
+	INST(kX86InstFLdEnv           , "fldenv"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 4, 0x000000D9, 0),
+	INST(kX86InstFLdL2E           , "fldl2e"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EA, 0),
+	INST(kX86InstFLdL2T           , "fldl2t"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E9, 0),
+	INST(kX86InstFLdLg2           , "fldlg2"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EC, 0),
+	INST(kX86InstFLdLn2           , "fldln2"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9ED, 0),
+	INST(kX86InstFLdPi            , "fldpi"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EB, 0),
+	INST(kX86InstFLdZ             , "fldz"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9EE, 0),
+	INST(kX86InstFMul             , "fmul"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 1, 0xD8DCC8C8, 0),
+	INST(kX86InstFMulP            , "fmulp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEC8, 0),
+	INST(kX86InstFNClex           , "fnclex"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBE2, 0),
+	INST(kX86InstFNInit           , "fninit"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBE3, 0),
+	INST(kX86InstFNop             , "fnop"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9D0, 0),
+	INST(kX86InstFNSave           , "fnsave"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x000000DD, 0),
+	INST(kX86InstFNStCw           , "fnstcw"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 7, 0x000000D9, 0),
+	INST(kX86InstFNStEnv          , "fnstenv"          , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x000000D9, 0),
+	INST(kX86InstFNStSw           , "fnstsw"           , G(X87Status)     , F(Fpu)           , O(Mem)              , 0                   , 7, 0x000000DD, 0x0000DFE0),
+	INST(kX86InstFPAtan           , "fpatan"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F3, 0),
+	INST(kX86InstFPRem            , "fprem"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F8, 0),
+	INST(kX86InstFPRem1           , "fprem1"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F5, 0),
+	INST(kX86InstFPTan            , "fptan"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F2, 0),
+	INST(kX86InstFRndInt          , "frndint"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FC, 0),
+	INST(kX86InstFRstor           , "frstor"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 4, 0x000000DD, 0),
+	INST(kX86InstFSave            , "fsave"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x9B0000DD, 0),
+	INST(kX86InstFScale           , "fscale"           , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FD, 0),
+	INST(kX86InstFSin             , "fsin"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FE, 0),
+	INST(kX86InstFSinCos          , "fsincos"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FB, 0),
+	INST(kX86InstFSqrt            , "fsqrt"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9FA, 0),
+	INST(kX86InstFSt              , "fst"              , G(X87FldFst)     , F(Fpu)           , O(StM4_8)           , 0                   , 2, 0x00D9DD02, 0xDDD00000),
+	INST(kX86InstFStCw            , "fstcw"            , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 7, 0x9B0000D9, 0),
+	INST(kX86InstFStEnv           , "fstenv"           , G(Mem)           , F(Fpu)           , O(Mem)              , 0                   , 6, 0x9B0000D9, 0),
+	INST(kX86InstFStP             , "fstp"             , G(X87FldFst)     , F(Fpu)           , O(StM4_8_10)        , 0                   , 3, 0x00D9DD03, 0xDDD8DB07),
+	INST(kX86InstFStSw            , "fstsw"            , G(X87Status)     , F(Fpu)           , O(Mem)              , 0                   , 7, 0x9B0000DD, 0x9B00DFE0),
+	INST(kX86InstFSub             , "fsub"             , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 4, 0xD8DCE0E8, 0),
+	INST(kX86InstFSubP            , "fsubp"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEE8, 0),
+	INST(kX86InstFSubR            , "fsubr"            , G(X87StM)        , F(Fpu)           , 0                   , 0                   , 5, 0xD8DCE8E0, 0),
+	INST(kX86InstFSubRP           , "fsubrp"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DEE0, 0),
+	INST(kX86InstFTst             , "ftst"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E4, 0),
+	INST(kX86InstFUCom            , "fucom"            , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DDE0, 0),
+	INST(kX86InstFUComI           , "fucomi"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DBE8, 0),
+	INST(kX86InstFUComIP          , "fucomip"          , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DFE8, 0),
+	INST(kX86InstFUComP           , "fucomp"           , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000DDE8, 0),
+	INST(kX86InstFUComPP          , "fucompp"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000DAE9, 0),
+	INST(kX86InstFWait            , "fwait"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x000000DB, 0),
+	INST(kX86InstFXam             , "fxam"             , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9E5, 0),
+	INST(kX86InstFXch             , "fxch"             , G(X87StI)        , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9C8, 0),
+	INST(kX86InstFXRstor          , "fxrstor"          , G(Mem)           , F(Fpu)           , 0                   , 0                   , 1, 0x00000FAE, 0),
+	INST(kX86InstFXSave           , "fxsave"           , G(Mem)           , F(Fpu)           , 0                   , 0                   , 0, 0x00000FAE, 0),
+	INST(kX86InstFXtract          , "fxtract"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F4, 0),
+	INST(kX86InstFYL2X            , "fyl2x"            , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F1, 0),
+	INST(kX86InstFYL2XP1          , "fyl2xp1"          , G(Emit)          , F(Fpu)           , 0                   , 0                   , 0, 0x0000D9F9, 0),
+	INST(kX86InstHAddPD           , "haddpd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F7C, 0),
+	INST(kX86InstHAddPS           , "haddps"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F7C, 0),
+	INST(kX86InstHSubPD           , "hsubpd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F7D, 0),
+	INST(kX86InstHSubPS           , "hsubps"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F7D, 0),
+	INST(kX86InstIDiv             , "idiv"             , G(Rm)            , F(Special)       , 0                   , 0                   , 7, 0x000000F6, 0),
+	INST(kX86InstIMul             , "imul"             , G(IMul)          , F(Special)       , 0                   , 0                   , 0, 0         , 0),
+	INST(kX86InstInc              , "inc"              , G(IncDec)        , F(Lockable)      , O(GqdwbMem)         , 0                   , 0, 0x00000040, 0x000000FE),
+	INST(kX86InstInt3             , "int3"             , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000CC, 0),
+	INST(kX86InstJA               , "ja"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x7       , 0),
+	INST(kX86InstJAE              , "jae"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x3       , 0),
+	INST(kX86InstJB               , "jb"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x2       , 0),
+	INST(kX86InstJBE              , "jbe"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x6       , 0),
+	INST(kX86InstJC               , "jc"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x2       , 0),
+	INST(kX86InstJE               , "je"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x4       , 0),
+	INST(kX86InstJG               , "jg"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xF       , 0),
+	INST(kX86InstJGE              , "jge"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xD       , 0),
+	INST(kX86InstJL               , "jl"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xC       , 0),
+	INST(kX86InstJLE              , "jle"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xE       , 0),
+	INST(kX86InstJNA              , "jna"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x6       , 0),
+	INST(kX86InstJNAE             , "jnae"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x2       , 0),
+	INST(kX86InstJNB              , "jnb"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x3       , 0),
+	INST(kX86InstJNBE             , "jnbe"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x7       , 0),
+	INST(kX86InstJNC              , "jnc"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x3       , 0),
+	INST(kX86InstJNE              , "jne"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x5       , 0),
+	INST(kX86InstJNG              , "jng"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xE       , 0),
+	INST(kX86InstJNGE             , "jnge"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xC       , 0),
+	INST(kX86InstJNL              , "jnl"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xD       , 0),
+	INST(kX86InstJNLE             , "jnle"             , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xF       , 0),
+	INST(kX86InstJNO              , "jno"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x1       , 0),
+	INST(kX86InstJNP              , "jnp"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xB       , 0),
+	INST(kX86InstJNS              , "jns"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x9       , 0),
+	INST(kX86InstJNZ              , "jnz"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x5       , 0),
+	INST(kX86InstJO               , "jo"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x0       , 0),
+	INST(kX86InstJP               , "jp"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xA       , 0),
+	INST(kX86InstJPE              , "jpe"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xA       , 0),
+	INST(kX86InstJPO              , "jpo"              , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0xB       , 0),
+	INST(kX86InstJS               , "js"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x8       , 0),
+	INST(kX86InstJZ               , "jz"               , G(Jcc)           , F(Jump)          , 0                   , 0                   , 0, 0x4       , 0),
+	INST(kX86InstJmp              , "jmp"              , G(Jmp)           , F(Jump)          , 0                   , 0                   , 0, 0         , 0),
+	INST(kX86InstLdDQU            , "lddqu"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Mem)              , 0, 0xF2000FF0, 0),
+	INST(kX86InstLdMXCSR          , "ldmxcsr"          , G(Mem)           , F(None)          , O(Mem)              , 0                   , 2, 0x00000FAE, 0),
+	INST(kX86InstLahf             , "lahf"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009F, 0),
+	INST(kX86InstLea              , "lea"              , G(Lea)           , F(None)          , O(Gqd)              , O(Mem)              , 0, 0         , 0),
+	INST(kX86InstLeave            , "leave"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000000C9, 0),
+	INST(kX86InstLFence           , "lfence"           , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000FAEE8, 0),
+	INST(kX86InstMaskMovDQU       , "maskmovdqu"       , G(MmuRmI)        , F(Special)       , O(Xmm)              , O(Xmm)              , 0, 0x66000F57, 0),
+	INST(kX86InstMaskMovQ         , "maskmovq"         , G(MmuRmI)        , F(Special)       , O(Mm)               , O(Mm)               , 0, 0x00000FF7, 0),
+	INST(kX86InstMaxPD            , "maxpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5F, 0),
+	INST(kX86InstMaxPS            , "maxps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5F, 0),
+	INST(kX86InstMaxSD            , "maxsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5F, 0),
+	INST(kX86InstMaxSS            , "maxss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5F, 0),
+	INST(kX86InstMFence           , "mfence"           , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000FAEF0, 0),
+	INST(kX86InstMinPD            , "minpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5D, 0),
+	INST(kX86InstMinPS            , "minps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5D, 0),
+	INST(kX86InstMinSD            , "minsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5D, 0),
+	INST(kX86InstMinSS            , "minss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5D, 0),
+	INST(kX86InstMonitor          , "monitor"          , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000F01C8, 0),
+	INST(kX86InstMov              , "mov"              , G(Mov)           , F(Mov)           , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 0, 0         , 0),
+	INST(kX86InstMovAPD           , "movapd"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F28, 0x66000F29),
+	INST(kX86InstMovAPS           , "movaps"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F28, 0x00000F29),
+	INST(kX86InstMovBE            , "movbe"            , G(MovBE)         , F(Mov)           , O(Gqdw)|O(Mem)      , O(Gqdw)|O(Mem)      , 0, 0x000F38F0, 0x000F38F1),
+	INST(kX86InstMovD             , "movd"             , G(MmuMovD)       , F(Mov)           , O(Gd)|O(MmXmmMem)   , O(Gd)|O(MmXmmMem)   , 0, 0         , 0),
+	INST(kX86InstMovDDup          , "movddup"          , G(MmuMov)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F12, 0),
+	INST(kX86InstMovDQ2Q          , "movdq2q"          , G(MmuMov)        , F(Mov)           , O(Mm)               , O(Xmm)              , 0, 0xF2000FD6, 0),
+	INST(kX86InstMovDQA           , "movdqa"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F6F, 0x66000F7F),
+	INST(kX86InstMovDQU           , "movdqu"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0xF3000F6F, 0xF3000F7F),
+	INST(kX86InstMovHLPS          , "movhlps"          , G(MmuMov)        , F(None)          , O(Xmm)              , O(Xmm)              , 0, 0x00000F12, 0),
+	INST(kX86InstMovHPD           , "movhpd"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F16, 0x66000F17),
+	INST(kX86InstMovHPS           , "movhps"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F16, 0x00000F17),
+	INST(kX86InstMovLHPS          , "movlhps"          , G(MmuMov)        , F(None)          , O(Xmm)              , O(Xmm)              , 0, 0x00000F16, 0),
+	INST(kX86InstMovLPD           , "movlpd"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F12, 0x66000F13),
+	INST(kX86InstMovLPS           , "movlps"           , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F12, 0x00000F13),
+	INST(kX86InstMovMskPD         , "movmskpd"         , G(MmuMov)        , F(Mov)           , O(Gqd)|O(NoRex)     , O(Xmm)              , 0, 0x66000F50, 0),
+	INST(kX86InstMovMskPS         , "movmskps"         , G(MmuMov)        , F(Mov)           , O(Gqd)|O(NoRex)     , O(Xmm)              , 0, 0x00000F50, 0),
+	INST(kX86InstMovNTDQ          , "movntdq"          , G(MmuMov)        , F(None)          , O(Mem)              , O(Xmm)              , 0, 0         , 0x66000FE7),
+	INST(kX86InstMovNTDQA         , "movntdqa"         , G(MmuMov)        , F(Mov)           , O(Xmm)              , O(Mem)              , 0, 0x660F382A, 0),
+	INST(kX86InstMovNTI           , "movnti"           , G(MmuMov)        , F(Mov)           , O(Mem)              , O(Gqd)              , 0, 0         , 0x00000FC3),
+	INST(kX86InstMovNTPD          , "movntpd"          , G(MmuMov)        , F(None)          , O(Mem)              , O(Xmm)              , 0, 0         , 0x66000F2B),
+	INST(kX86InstMovNTPS          , "movntps"          , G(MmuMov)        , F(None)          , O(Mem)              , O(Xmm)              , 0, 0         , 0x00000F2B),
+	INST(kX86InstMovNTQ           , "movntq"           , G(MmuMov)        , F(None)          , O(Mem)              , O(Mm)               , 0, 0         , 0x00000FE7),
+	INST(kX86InstMovQ             , "movq"             , G(MmuMovQ)       , F(Mov)           , O(Gq)|O(MmXmmMem)   , O(Gq)|O(MmXmmMem)   , 0, 0         , 0),
+	INST(kX86InstMovQ2DQ          , "movq2dq"          , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(Mm)               , 0, 0xF3000FD6, 0),
+	INST(kX86InstMovSD            , "movsd"            , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0xF2000F10, 0xF2000F11),
+	INST(kX86InstMovSHDup         , "movshdup"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F16, 0),
+	INST(kX86InstMovSLDup         , "movsldup"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F12, 0),
+	INST(kX86InstMovSS            , "movss"            , G(MmuMov)        , F(None)          , O(XmmMem)           , O(XmmMem)           , 0, 0xF3000F10, 0xF3000F11),
+	INST(kX86InstMovSX            , "movsx"            , G(MovSxMovZx)    , F(None)          , O(Gqdw)             , O(GwbMem)           , 0, 0x00000FBE, 0),
+	INST(kX86InstMovSXD           , "movsxd"           , G(MovSxD)        , F(None)          , O(Gq)               , O(GdMem)            , 0, 0         , 0),
+	INST(kX86InstMovUPD           , "movupd"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x66000F10, 0x66000F11),
+	INST(kX86InstMovUPS           , "movups"           , G(MmuMov)        , F(Mov)           , O(XmmMem)           , O(XmmMem)           , 0, 0x00000F10, 0x00000F11),
+	INST(kX86InstMovZX            , "movzx"            , G(MovSxMovZx)    , F(Mov)           , O(Gqdw)             , O(GwbMem)           , 0, 0x00000FB6, 0),
+	INST(kX86InstMovPtr           , "mov_ptr"          , G(MovPtr)        , F(Mov)|F(Special), O(Gqdwb)            , O(Imm)              , 0, 0         , 0),
+	INST(kX86InstMPSADBW          , "mpsadbw"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A42, 0),
+	INST(kX86InstMul              , "mul"              , G(Rm)            , F(Special)       , 0                   , 0                   , 4, 0x000000F6, 0),
+	INST(kX86InstMulPD            , "mulpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F59, 0),
+	INST(kX86InstMulPS            , "mulps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F59, 0),
+	INST(kX86InstMulSD            , "mulsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F59, 0),
+	INST(kX86InstMulSS            , "mulss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F59, 0),
+	INST(kX86InstMWait            , "mwait"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000F01C9, 0),
+	INST(kX86InstNeg              , "neg"              , G(Rm)            , F(Lockable)      , O(GqdwbMem)         , 0                   , 3, 0x000000F6, 0),
+	INST(kX86InstNop              , "nop"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x00000090, 0),
+	INST(kX86InstNot              , "not"              , G(Rm)            , F(Lockable)      , O(GqdwbMem)         , 0                   , 2, 0x000000F6, 0),
+	INST(kX86InstOr               , "or"               , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 1, 0x00000008, 0x00000080),
+	INST(kX86InstOrPD             , "orpd"             , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F56, 0),
+	INST(kX86InstOrPS             , "orps"             , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F56, 0),
+	INST(kX86InstPAbsB            , "pabsb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F381C, 0),
+	INST(kX86InstPAbsD            , "pabsd"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F381E, 0),
+	INST(kX86InstPAbsW            , "pabsw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F381D, 0),
+	INST(kX86InstPackSSDW         , "packssdw"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F6B, 0),
+	INST(kX86InstPackSSWB         , "packsswb"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F63, 0),
+	INST(kX86InstPackUSDW         , "packusdw"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F382B, 0),
+	INST(kX86InstPackUSWB         , "packuswb"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F67, 0),
+	INST(kX86InstPAddB            , "paddb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFC, 0),
+	INST(kX86InstPAddD            , "paddd"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFE, 0),
+	INST(kX86InstPAddQ            , "paddq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD4, 0),
+	INST(kX86InstPAddSB           , "paddsb"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEC, 0),
+	INST(kX86InstPAddSW           , "paddsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FED, 0),
+	INST(kX86InstPAddUSB          , "paddusb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDC, 0),
+	INST(kX86InstPAddUSW          , "paddusw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDD, 0),
+	INST(kX86InstPAddW            , "paddw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFD, 0),
+	INST(kX86InstPAlignR          , "palignr"          , G(MmuRmImm8)     , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3A0F, 0),
+	INST(kX86InstPAnd             , "pand"             , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDB, 0),
+	INST(kX86InstPAndN            , "pandn"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDF, 0),
+	INST(kX86InstPause            , "pause"            , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0xF3000090, 0),
+	INST(kX86InstPAvgB            , "pavgb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE0, 0),
+	INST(kX86InstPAvgW            , "pavgw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE3, 0),
+	INST(kX86InstPBlendVB         , "pblendvb"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3810, 0),
+	INST(kX86InstPBlendW          , "pblendw"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0E, 0),
+	INST(kX86InstPCmpEqB          , "pcmpeqb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F74, 0),
+	INST(kX86InstPCmpEqD          , "pcmpeqd"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F76, 0),
+	INST(kX86InstPCmpEqQ          , "pcmpeqq"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3829, 0),
+	INST(kX86InstPCmpEqW          , "pcmpeqw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F75, 0),
+	INST(kX86InstPCmpEStrI        , "pcmpestri"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A61, 0),
+	INST(kX86InstPCmpEStrM        , "pcmpestrm"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A60, 0),
+	INST(kX86InstPCmpGtB          , "pcmpgtb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F64, 0),
+	INST(kX86InstPCmpGtD          , "pcmpgtd"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F66, 0),
+	INST(kX86InstPCmpGtQ          , "pcmpgtq"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3837, 0),
+	INST(kX86InstPCmpGtW          , "pcmpgtw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F65, 0),
+	INST(kX86InstPCmpIStrI        , "pcmpistri"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A63, 0),
+	INST(kX86InstPCmpIStrM        , "pcmpistrm"        , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A62, 0),
+	INST(kX86InstPExtrB           , "pextrb"           , G(MmuExtract)    , F(None)          , O(Gd)|O(Gb)|O(Mem)  , O(Xmm)              , 0, 0x000F3A14, 0),
+	INST(kX86InstPExtrD           , "pextrd"           , G(MmuExtract)    , F(None)          , O(Gd)      |O(Mem)  , O(Xmm)              , 0, 0x000F3A16, 0),
+	INST(kX86InstPExtrQ           , "pextrq"           , G(MmuExtract)    , F(None)          , O(Gqd)     |O(Mem)  , O(Xmm)              , 1, 0x000F3A16, 0),
+	INST(kX86InstPExtrW           , "pextrw"           , G(MmuExtract)    , F(None)          , O(Gd)      |O(Mem)  , O(MmXmm)            , 0, 0x000F3A15, 0),
+	INST(kX86InstPF2ID            , "pf2id"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x1D),
+	INST(kX86InstPF2IW            , "pf2iw"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x1C),
+	INST(kX86InstPFAcc            , "pfacc"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xAE),
+	INST(kX86InstPFAdd            , "pfadd"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x9E),
+	INST(kX86InstPFCmpEQ          , "pfcmpeq"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xB0),
+	INST(kX86InstPFCmpGE          , "pfcmpge"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x90),
+	INST(kX86InstPFCmpGT          , "pfcmpgt"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA0),
+	INST(kX86InstPFMax            , "pfmax"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA4),
+	INST(kX86InstPFMin            , "pfmin"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x94),
+	INST(kX86InstPFMul            , "pfmul"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xB4),
+	INST(kX86InstPFNAcc           , "pfnacc"           , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x8A),
+	INST(kX86InstPFPNAcc          , "pfpnacc"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x8E),
+	INST(kX86InstPFRcp            , "pfrcp"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x96),
+	INST(kX86InstPFRcpIt1         , "pfrcpit1"         , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA6),
+	INST(kX86InstPFRcpIt2         , "pfrcpit2"         , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xB6),
+	INST(kX86InstPFRSqIt1         , "pfrsqit1"         , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xA7),
+	INST(kX86InstPFRSqrt          , "pfrsqrt"          , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x97),
+	INST(kX86InstPFSub            , "pfsub"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x9A),
+	INST(kX86InstPFSubR           , "pfsubr"           , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xAA),
+	INST(kX86InstPHAddD           , "phaddd"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3802, 0),
+	INST(kX86InstPHAddSW          , "phaddsw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3803, 0),
+	INST(kX86InstPHAddW           , "phaddw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3801, 0),
+	INST(kX86InstPHMinPOSUW       , "phminposuw"       , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3841, 0),
+	INST(kX86InstPHSubD           , "phsubd"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3806, 0),
+	INST(kX86InstPHSubSW          , "phsubsw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3807, 0),
+	INST(kX86InstPHSubW           , "phsubw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3805, 0),
+	INST(kX86InstPI2FD            , "pi2fd"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x0D),
+	INST(kX86InstPI2FW            , "pi2fw"            , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0x0C),
+	INST(kX86InstPInsRB           , "pinsrb"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(Gd) | O(Mem)      , 0, 0x660F3A20, 0),
+	INST(kX86InstPInsRD           , "pinsrd"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(Gd) | O(Mem)      , 0, 0x660F3A22, 0),
+	INST(kX86InstPInsRQ           , "pinsrq"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(Gq) | O(Mem)      , 0, 0x660F3A22, 0),
+	INST(kX86InstPInsRW           , "pinsrw"           , G(MmuRmImm8)     , F(None)          , O(MmXmm)            , O(Gd) | O(Mem)      , 0, 0x00000FC4, 0),
+	INST(kX86InstPMAddUBSW        , "pmaddubsw"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3804, 0),
+	INST(kX86InstPMAddWD          , "pmaddwd"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF5, 0),
+	INST(kX86InstPMaxSB           , "pmaxsb"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383C, 0),
+	INST(kX86InstPMaxSD           , "pmaxsd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383D, 0),
+	INST(kX86InstPMaxSW           , "pmaxsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEE, 0),
+	INST(kX86InstPMaxUB           , "pmaxub"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDE, 0),
+	INST(kX86InstPMaxUD           , "pmaxud"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383F, 0),
+	INST(kX86InstPMaxUW           , "pmaxuw"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383E, 0),
+	INST(kX86InstPMinSB           , "pminsb"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3838, 0),
+	INST(kX86InstPMinSD           , "pminsd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3839, 0),
+	INST(kX86InstPMinSW           , "pminsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEA, 0),
+	INST(kX86InstPMinUB           , "pminub"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FDA, 0),
+	INST(kX86InstPMinUD           , "pminud"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383B, 0),
+	INST(kX86InstPMinUW           , "pminuw"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F383A, 0),
+	INST(kX86InstPMovMskB         , "pmovmskb"         , G(MmuRmI)        , F(Mov)           , O(Gqd)              , O(MmXmm)            , 0, 0x00000FD7, 0),
+	INST(kX86InstPMovSXBD         , "pmovsxbd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3821, 0),
+	INST(kX86InstPMovSXBQ         , "pmovsxbq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3822, 0),
+	INST(kX86InstPMovSXBW         , "pmovsxbw"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3820, 0),
+	INST(kX86InstPMovSXDQ         , "pmovsxdq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3825, 0),
+	INST(kX86InstPMovSXWD         , "pmovsxwd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3823, 0),
+	INST(kX86InstPMovSXWQ         , "pmovsxwq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3824, 0),
+	INST(kX86InstPMovZXBD         , "pmovzxbd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3831, 0),
+	INST(kX86InstPMovZXBQ         , "pmovzxbq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3832, 0),
+	INST(kX86InstPMovZXBW         , "pmovzxbw"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3830, 0),
+	INST(kX86InstPMovZXDQ         , "pmovzxdq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3835, 0),
+	INST(kX86InstPMovZXWD         , "pmovzxwd"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3833, 0),
+	INST(kX86InstPMovZXWQ         , "pmovzxwq"         , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3834, 0),
+	INST(kX86InstPMulDQ           , "pmuldq"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3828, 0),
+	INST(kX86InstPMulHRSW         , "pmulhrsw"         , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F380B, 0),
+	INST(kX86InstPMulHUW          , "pmulhuw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE4, 0),
+	INST(kX86InstPMulHW           , "pmulhw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE5, 0),
+	INST(kX86InstPMulLD           , "pmulld"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3840, 0),
+	INST(kX86InstPMulLW           , "pmullw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD5, 0),
+	INST(kX86InstPMulUDQ          , "pmuludq"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF4, 0),
+	INST(kX86InstPop              , "pop"              , G(Pop)           , F(Special)       , 0                   , 0                   , 0, 0x00000058, 0x0000008F),
+	INST(kX86InstPopAD            , "popad"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000061, 0),
+	INST(kX86InstPopCnt           , "popcnt"           , G(RegRm)         , F(None)          , O(Gqdw)             , O(GqdwMem)          , 0, 0xF3000FB8, 0),
+	INST(kX86InstPopFD            , "popfd"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009D, 0),
+	INST(kX86InstPopFQ            , "popfq"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009D, 0),
+	INST(kX86InstPOr              , "por"              , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEB, 0),
+	INST(kX86InstPrefetch         , "prefetch"         , G(MmuPrefetch)   , F(None)          , O(Mem)              , O(Imm)              , 0, 0         , 0),
+	INST(kX86InstPSADBW           , "psadbw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF6, 0),
+	INST(kX86InstPShufB           , "pshufb"           , G(MmuRmI)        , F(Mov)           , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3800, 0),
+	INST(kX86InstPShufD           , "pshufd"           , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F70, 0),
+	INST(kX86InstPShufW           , "pshufw"           , G(MmuRmImm8)     , F(Mov)           , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F70, 0),
+	INST(kX86InstPShufHW          , "pshufhw"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F70, 0),
+	INST(kX86InstPShufLW          , "pshuflw"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F70, 0),
+	INST(kX86InstPSignB           , "psignb"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3808, 0),
+	INST(kX86InstPSignD           , "psignd"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F380A, 0),
+	INST(kX86InstPSignW           , "psignw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x000F3809, 0),
+	INST(kX86InstPSllD            , "pslld"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 6, 0x00000FF2, 0x00000F72),
+	INST(kX86InstPSllDQ           , "pslldq"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Imm)              , 7, 0         , 0x66000F73),
+	INST(kX86InstPSllQ            , "psllq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 6, 0x00000FF3, 0x00000F73),
+	INST(kX86InstPSllW            , "psllw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 6, 0x00000FF1, 0x00000F71),
+	INST(kX86InstPSraD            , "psrad"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 4, 0x00000FE2, 0x00000F72),
+	INST(kX86InstPSraW            , "psraw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 4, 0x00000FE1, 0x00000F71),
+	INST(kX86InstPSrlD            , "psrld"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 2, 0x00000FD2, 0x00000F72),
+	INST(kX86InstPSrlDQ           , "psrldq"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(Imm)              , 3, 0         , 0x66000F73),
+	INST(kX86InstPSrlQ            , "psrlq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 2, 0x00000FD3, 0x00000F73),
+	INST(kX86InstPSrlW            , "psrlw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)|O(Imm)  , 2, 0x00000FD1, 0x00000F71),
+	INST(kX86InstPSubB            , "psubb"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF8, 0),
+	INST(kX86InstPSubD            , "psubd"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFA, 0),
+	INST(kX86InstPSubQ            , "psubq"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FFB, 0),
+	INST(kX86InstPSubSB           , "psubsb"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE8, 0),
+	INST(kX86InstPSubSW           , "psubsw"           , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FE9, 0),
+	INST(kX86InstPSubUSB          , "psubusb"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD8, 0),
+	INST(kX86InstPSubUSW          , "psubusw"          , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FD9, 0),
+	INST(kX86InstPSubW            , "psubw"            , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FF9, 0),
+	INST(kX86InstPSwapD           , "pswapd"           , G(MmuRm3dNow)    , F(None)          , O(Mm)               , O(MmMem)            , 0, 0x00000F0F, 0xBB),
+	INST(kX86InstPTest            , "ptest"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3817, 0),
+	INST(kX86InstPunpckHBW        , "punpckhbw"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F68, 0),
+	INST(kX86InstPunpckHDQ        , "punpckhdq"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F6A, 0),
+	INST(kX86InstPunpckHQDQ       , "punpckhqdq"       , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F6D, 0),
+	INST(kX86InstPunpckHWD        , "punpckhwd"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F69, 0),
+	INST(kX86InstPunpckLBW        , "punpcklbw"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F60, 0),
+	INST(kX86InstPunpckLDQ        , "punpckldq"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F62, 0),
+	INST(kX86InstPunpckLQDQ       , "punpcklqdq"       , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F6C, 0),
+	INST(kX86InstPunpckLWD        , "punpcklwd"        , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000F61, 0),
+	INST(kX86InstPush             , "push"             , G(Push)          , F(Special)       , 0                   , 0                   , 6, 0x00000050, 0x000000FF),
+	INST(kX86InstPushAD           , "pushad"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000060, 0),
+	INST(kX86InstPushFD           , "pushfd"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009C, 0),
+	INST(kX86InstPushFQ           , "pushfq"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009C, 0),
+	INST(kX86InstPXor             , "pxor"             , G(MmuRmI)        , F(None)          , O(MmXmm)            , O(MmXmmMem)         , 0, 0x00000FEF, 0),
+	INST(kX86InstRcl              , "rcl"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 2, 0         , 0),
+	INST(kX86InstRcpPS            , "rcpps"            , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F53, 0),
+	INST(kX86InstRcpSS            , "rcpss"            , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F53, 0),
+	INST(kX86InstRcr              , "rcr"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 3, 0         , 0),
+	INST(kX86InstRdtsc            , "rdtsc"            , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x00000F31, 0),
+	INST(kX86InstRdtscP           , "rdtscp"           , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x000F01F9, 0),
+	INST(kX86InstRepLodSB         , "rep lodsb"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 1 /* Size of mem */),
+	INST(kX86InstRepLodSD         , "rep lodsd"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 4 /* Size of mem */),
+	INST(kX86InstRepLodSQ         , "rep lodsq"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 8 /* Size of mem */),
+	INST(kX86InstRepLodSW         , "rep lodsw"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AC, 2 /* Size of mem */),
+	INST(kX86InstRepMovSB         , "rep movsb"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 1 /* Size of mem */),
+	INST(kX86InstRepMovSD         , "rep movsd"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 4 /* Size of mem */),
+	INST(kX86InstRepMovSQ         , "rep movsq"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 8 /* Size of mem */),
+	INST(kX86InstRepMovSW         , "rep movsw"        , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A4, 2 /* Size of mem */),
+	INST(kX86InstRepStoSB         , "rep stosb"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 1 /* Size of mem */),
+	INST(kX86InstRepStoSD         , "rep stosd"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 4 /* Size of mem */),
+	INST(kX86InstRepStoSQ         , "rep stosq"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 8 /* Size of mem */),
+	INST(kX86InstRepStoSW         , "rep stosw"        , G(Rep)           , F(Special)       , O(Mem)              , 0                   , 0, 0xF30000AA, 2 /* Size of mem */),
+	INST(kX86InstRepECmpSB        , "repe cmpsb"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 1 /* Size of mem */),
+	INST(kX86InstRepECmpSD        , "repe cmpsd"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 4 /* Size of mem */),
+	INST(kX86InstRepECmpSQ        , "repe cmpsq"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 8 /* Size of mem */),
+	INST(kX86InstRepECmpSW        , "repe cmpsw"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000A6, 2 /* Size of mem */),
+	INST(kX86InstRepEScaSB        , "repe scasb"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 1 /* Size of mem */),
+	INST(kX86InstRepEScaSD        , "repe scasd"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 4 /* Size of mem */),
+	INST(kX86InstRepEScaSQ        , "repe scasq"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 8 /* Size of mem */),
+	INST(kX86InstRepEScaSW        , "repe scasw"       , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF30000AE, 2 /* Size of mem */),
+	INST(kX86InstRepNECmpSB       , "repne cmpsb"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 1 /* Size of mem */),
+	INST(kX86InstRepNECmpSD       , "repne cmpsd"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 4 /* Size of mem */),
+	INST(kX86InstRepNECmpSQ       , "repne cmpsq"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 8 /* Size of mem */),
+	INST(kX86InstRepNECmpSW       , "repne cmpsw"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000A6, 2 /* Size of mem */),
+	INST(kX86InstRepNEScaSB       , "repne scasb"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 1 /* Size of mem */),
+	INST(kX86InstRepNEScaSD       , "repne scasd"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 4 /* Size of mem */),
+	INST(kX86InstRepNEScaSQ       , "repne scasq"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 8 /* Size of mem */),
+	INST(kX86InstRepNEScaSW       , "repne scasw"      , G(Rep)           , F(Special)       , O(Mem)              , O(Mem)              , 0, 0xF20000AE, 2 /* Size of mem */),
+	INST(kX86InstRet              , "ret"              , G(Ret)           , F(Special)       , 0                   , 0                   , 0, 0         , 0),
+	INST(kX86InstRol              , "rol"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 0, 0         , 0),
+	INST(kX86InstRor              , "ror"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 1, 0         , 0),
+	INST(kX86InstRoundPD          , "roundpd"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A09, 0),
+	INST(kX86InstRoundPS          , "roundps"          , G(MmuRmImm8)     , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A08, 0),
+	INST(kX86InstRoundSD          , "roundsd"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0B, 0),
+	INST(kX86InstRoundSS          , "roundss"          , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x660F3A0A, 0),
+	INST(kX86InstRSqrtPS          , "rsqrtps"          , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F52, 0),
+	INST(kX86InstRSqrtSS          , "rsqrtss"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F52, 0),
+	INST(kX86InstSahf             , "sahf"             , G(Emit)          , F(Special)       , 0                   , 0                   , 0, 0x0000009E, 0),
+	INST(kX86InstSal              , "sal"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 4, 0         , 0),
+	INST(kX86InstSar              , "sar"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 7, 0         , 0),
+	INST(kX86InstSbb              , "sbb"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 3, 0x00000018, 0x00000080),
+	INST(kX86InstSetA             , "seta"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F97, 0),
+	INST(kX86InstSetAE            , "setae"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F93, 0),
+	INST(kX86InstSetB             , "setb"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F92, 0),
+	INST(kX86InstSetBE            , "setbe"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F96, 0),
+	INST(kX86InstSetC             , "setc"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F92, 0),
+	INST(kX86InstSetE             , "sete"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F94, 0),
+	INST(kX86InstSetG             , "setg"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9F, 0),
+	INST(kX86InstSetGE            , "setge"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9D, 0),
+	INST(kX86InstSetL             , "setl"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9C, 0),
+	INST(kX86InstSetLE            , "setle"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9E, 0),
+	INST(kX86InstSetNA            , "setna"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F96, 0),
+	INST(kX86InstSetNAE           , "setnae"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F92, 0),
+	INST(kX86InstSetNB            , "setnb"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F93, 0),
+	INST(kX86InstSetNBE           , "setnbe"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F97, 0),
+	INST(kX86InstSetNC            , "setnc"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F93, 0),
+	INST(kX86InstSetNE            , "setne"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F95, 0),
+	INST(kX86InstSetNG            , "setng"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9E, 0),
+	INST(kX86InstSetNGE           , "setnge"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9C, 0),
+	INST(kX86InstSetNL            , "setnl"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9D, 0),
+	INST(kX86InstSetNLE           , "setnle"           , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9F, 0),
+	INST(kX86InstSetNO            , "setno"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F91, 0),
+	INST(kX86InstSetNP            , "setnp"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9B, 0),
+	INST(kX86InstSetNS            , "setns"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F99, 0),
+	INST(kX86InstSetNZ            , "setnz"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F95, 0),
+	INST(kX86InstSetO             , "seto"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F90, 0),
+	INST(kX86InstSetP             , "setp"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9A, 0),
+	INST(kX86InstSetPE            , "setpe"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9A, 0),
+	INST(kX86InstSetPO            , "setpo"            , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F9B, 0),
+	INST(kX86InstSetS             , "sets"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F98, 0),
+	INST(kX86InstSetZ             , "setz"             , G(RmByte)        , F(None)          , O(GbMem)            , 0                   , 0, 0x00000F94, 0),
+	INST(kX86InstSFence           , "sfence"           , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000FAEF8, 0),
+	INST(kX86InstShl              , "shl"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 4, 0         , 0),
+	INST(kX86InstShld             , "shld"             , G(ShldShrd)      , F(Special)       , O(GqdwbMem)         , O(Gb)               , 0, 0x00000FA4, 0),
+	INST(kX86InstShr              , "shr"              , G(Rot)           , F(Special)       , O(GqdwbMem)         , O(Gb)|O(Imm)        , 5, 0         , 0),
+	INST(kX86InstShrd             , "shrd"             , G(ShldShrd)      , F(Special)       , O(GqdwbMem)         , O(Gqdwb)            , 0, 0x00000FAC, 0),
+	INST(kX86InstShufPD           , "shufpd"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000FC6, 0),
+	INST(kX86InstShufPS           , "shufps"           , G(MmuRmImm8)     , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000FC6, 0),
+	INST(kX86InstSqrtPD           , "sqrtpd"           , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x66000F51, 0),
+	INST(kX86InstSqrtPS           , "sqrtps"           , G(MmuRmI)        , F(Mov)           , O(Xmm)              , O(XmmMem)           , 0, 0x00000F51, 0),
+	INST(kX86InstSqrtSD           , "sqrtsd"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F51, 0),
+	INST(kX86InstSqrtSS           , "sqrtss"           , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F51, 0),
+	INST(kX86InstStc              , "stc"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000F9, 0),
+	INST(kX86InstStd              , "std"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x000000FD, 0),
+	INST(kX86InstStMXCSR          , "stmxcsr"          , G(Mem)           , F(None)          , O(Mem)              , 0                   , 3, 0x00000FAE, 0),
+	INST(kX86InstSub              , "sub"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 5, 0x00000028, 0x00000080),
+	INST(kX86InstSubPD            , "subpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F5C, 0),
+	INST(kX86InstSubPS            , "subps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F5C, 0),
+	INST(kX86InstSubSD            , "subsd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF2000F5C, 0),
+	INST(kX86InstSubSS            , "subss"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0xF3000F5C, 0),
+	INST(kX86InstTest             , "test"             , G(Test)          , F(None)          , O(GqdwbMem)         , O(Gqdwb)|O(Imm)     , 0, 0         , 0),
+	INST(kX86InstUComISD          , "ucomisd"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F2E, 0),
+	INST(kX86InstUComISS          , "ucomiss"          , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F2E, 0),
+	INST(kX86InstUd2              , "ud2"              , G(Emit)          , F(None)          , 0                   , 0                   , 0, 0x00000F0B, 0),
+	INST(kX86InstUnpckHPD         , "unpckhpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F15, 0),
+	INST(kX86InstUnpckHPS         , "unpckhps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F15, 0),
+	INST(kX86InstUnpckLPD         , "unpcklpd"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F14, 0),
+	INST(kX86InstUnpckLPS         , "unpcklps"         , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F14, 0),
+	INST(kX86InstXadd             , "xadd"             , G(RmReg)         , F(Lockable)      , O(GqdwbMem)         , O(Gqdwb)            , 0, 0x00000FC0, 0),
+	INST(kX86InstXchg             , "xchg"             , G(Xchg)          , F(Lockable)      , O(GqdwbMem)         , O(Gqdwb)            , 0, 0         , 0),
+	INST(kX86InstXor              , "xor"              , G(Arith)         , F(Lockable)      , O(GqdwbMem)         , O(GqdwbMem)|O(Imm)  , 6, 0x00000030, 0x00000080),
+	INST(kX86InstXorPD            , "xorpd"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x66000F57, 0),
+	INST(kX86InstXorPS            , "xorps"            , G(MmuRmI)        , F(None)          , O(Xmm)              , O(XmmMem)           , 0, 0x00000F57, 0)
 };
 
 #undef G
@@ -1795,17 +1795,17 @@ const X86InstInfo x86InstInfo[] =
 
 const X86VarInfo x86VarInfo[] = 
 {
-  /*  0 */ { kX86RegTypeGpd   , 4 , C(Gp) , 0                , "Gpd"         },
-  /*  1 */ { kX86RegTypeGpq   , 8 , C(Gp) , 0                , "Gpq"         },
-  /*  2 */ { kX86RegTypeX87   , 4 , C(X87), F(SP)            , "X87"         },
-  /*  3 */ { kX86RegTypeX87   , 4 , C(X87), F(SP)            , "X87.SS"      },
-  /*  4 */ { kX86RegTypeX87   , 8 , C(X87), F(DP)            , "X87.SD"      },
-  /*  5 */ { kX86RegTypeMm    , 8 , C(Mm) , 0                , "Mm"          },
-  /*  6 */ { kX86RegTypeXmm   , 16, C(Xmm), 0                , "Xmm"         },
-  /*  7 */ { kX86RegTypeXmm   , 4 , C(Xmm), F(SP)            , "Xmm.SS"      },
-  /*  8 */ { kX86RegTypeXmm   , 8 , C(Xmm), F(DP)            , "Xmm.SD"      },
-  /*  9 */ { kX86RegTypeXmm   , 16, C(Xmm), F(SP) | F(Packed), "Xmm.PS"      },
-  /* 10 */ { kX86RegTypeXmm   , 16, C(Xmm), F(DP) | F(Packed), "Xmm.PD"      }
+	/*  0 */ { kX86RegTypeGpd   , 4 , C(Gp) , 0                , "Gpd"         },
+	/*  1 */ { kX86RegTypeGpq   , 8 , C(Gp) , 0                , "Gpq"         },
+	/*  2 */ { kX86RegTypeX87   , 4 , C(X87), F(SP)            , "X87"         },
+	/*  3 */ { kX86RegTypeX87   , 4 , C(X87), F(SP)            , "X87.SS"      },
+	/*  4 */ { kX86RegTypeX87   , 8 , C(X87), F(DP)            , "X87.SD"      },
+	/*  5 */ { kX86RegTypeMm    , 8 , C(Mm) , 0                , "Mm"          },
+	/*  6 */ { kX86RegTypeXmm   , 16, C(Xmm), 0                , "Xmm"         },
+	/*  7 */ { kX86RegTypeXmm   , 4 , C(Xmm), F(SP)            , "Xmm.SS"      },
+	/*  8 */ { kX86RegTypeXmm   , 8 , C(Xmm), F(DP)            , "Xmm.SD"      },
+	/*  9 */ { kX86RegTypeXmm   , 16, C(Xmm), F(SP) | F(Packed), "Xmm.PS"      },
+	/* 10 */ { kX86RegTypeXmm   , 16, C(Xmm), F(DP) | F(Packed), "Xmm.PD"      }
 };
 
 #undef F
