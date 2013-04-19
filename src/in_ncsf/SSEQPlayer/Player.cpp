@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-01
+ * Last modification on 2013-04-18
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -120,6 +120,7 @@ int Player::ChannelAlloc(int type, int priority)
 	this->channels[curChnNo].ply = this;
 	this->channels[curChnNo].noteLength = -1;
 	this->channels[curChnNo].vol = 0;
+	this->channels[curChnNo].clearHistory();
 	return curChnNo;
 }
 

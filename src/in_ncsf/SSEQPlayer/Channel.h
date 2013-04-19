@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-02
+ * Last modification on 2013-04-18
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -127,6 +127,14 @@ struct Channel
 	const Player *ply;
 	NDSSoundRegister reg;
 
+	/*
+	 * Interpolation history buffer, which contains the maximum number of
+	 * samples required for any given interpolation mode. Doubled to
+	 * simplify the case of wrapping. Thanks to kode54 for providing this.
+	 */
+	uint32_t sampleHistoryPtr;
+	int16_t sampleHistory[16];
+
 	Channel();
 
 	void UpdateVol(const Track &trk);
@@ -141,6 +149,7 @@ struct Channel
 	int32_t Interpolate();
 	int32_t GenerateSample();
 	void IncrementSample();
+	void clearHistory();
 };
 
 #endif

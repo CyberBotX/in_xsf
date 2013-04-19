@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-12
+ * Last modification on 2013-04-18
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -47,6 +47,7 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 	key(0), ampl(0), extTune(0), orgKey(0), modType(0), modSpeed(0), modDepth(0), modRange(0), modDelay(0), modDelayCnt(0), modCounter(0),
 	sweepLen(0), sweepCnt(0), sweepPitch(0), attackLvl(0), sustainLvl(0x7F), decayRate(0), releaseRate(0xFFFF), noteLength(-1), vol(0), ply(nullptr), reg()
 {
+	this->clearHistory();
 }
 
 void Channel::UpdateVol(const Track &trk)
@@ -122,6 +123,7 @@ void Channel::Kill()
 	this->reg.ClearControlRegister();
 	this->vol = 0;
 	this->noteLength = -1;
+	this->clearHistory();
 }
 
 static inline int getModFlag(int type)
@@ -585,38 +587,17 @@ int32_t Channel::Interpolate()
 	double ratio = this->reg.samplePosition;
 	ratio -= static_cast<int32_t>(ratio);
 
-	uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition);
-	const auto &data = &this->reg.source->dataptr[loc];
-	int32_t a = data[0], b;
-	if (loc + 1 < this->reg.totalLength)
-		b = data[1];
-	else
-		b = a;
+	const auto &data = &this->sampleHistory[this->sampleHistoryPtr + 5];
+	int32_t a = data[0], b = data[1];
 
 	double c0, c1, c2, c3, c4, c5;
 	if (this->ply->interpolation > INTERPOLATION_COSINE)
 	{
-		int32_t c, z;
-		if (loc + 2 < this->reg.totalLength)
-			c = data[2];
-		else
-			c = b;
-		if (loc)
-			z = data[-1];
-		else
-			z = a;
+		int32_t c = data[2], z = data[-1];
 
 		if (this->ply->interpolation > INTERPOLATION_4POINTBSPLINE)
 		{
-			int32_t d, y;
-			if (loc + 3 < this->reg.totalLength)
-				d = data[3];
-			else
-				d = c;
-			if (loc > 1)
-				y = data[-2];
-			else
-				y = z;
+			int32_t d = data[3], y = data[-2];
 
 			if (this->ply->interpolation == INTERPOLATION_6POINTBSPLINE)
 			{
@@ -631,7 +612,7 @@ int32_t Channel::Interpolate()
 				c5 = 1 / 120.0 * (d - y) + 1 / 24.0 * (z - c) + 1 / 12.0 * (b - a);
 				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 			}
-			else
+			else // INTERPOLATION_6POINTOSCULATING
 			{
 				ratio -= 0.5;
 				double even1 = y + d, odd1 = y - d;
@@ -646,7 +627,7 @@ int32_t Channel::Interpolate()
 				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 			}
 		}
-		else
+		else // INTERPOLATION_4POINTBSPLINE
 		{
 			double ym1py1 = z + b;
 			c0 = 1 / 6.0 * ym1py1 + 2 / 3.0 * a;
@@ -661,7 +642,7 @@ int32_t Channel::Interpolate()
 		double ratio2 = (1.0 - std::cos(ratio * M_PI)) * 0.5;
 		return static_cast<int32_t>(a + ratio2 * (b - a));
 	}
-	else
+	else // INTERPOLATION_LINEAR
 		return static_cast<int32_t>(a + ratio * (b - a));
 }
 
@@ -712,7 +693,29 @@ int32_t Channel::GenerateSample()
 
 void Channel::IncrementSample()
 {
-	this->reg.samplePosition += this->reg.sampleIncrease;
+	double samplePosition = this->reg.samplePosition + this->reg.sampleIncrease;
+
+	if (this->reg.format != 3 && this->reg.samplePosition >= 0)
+	{
+		uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition);
+		uint32_t newloc = static_cast<uint32_t>(samplePosition);
+
+		if (newloc >= this->reg.totalLength)
+			newloc -= this->reg.length;
+
+		while (loc != newloc)
+		{
+			this->sampleHistory[this->sampleHistoryPtr] = this->sampleHistory[this->sampleHistoryPtr + 8] = this->reg.source->dataptr[loc++];
+
+			this->sampleHistoryPtr = (this->sampleHistoryPtr + 1) & 7;
+
+			if (loc >= this->reg.totalLength)
+				loc -= this->reg.length;
+		}
+	}
+
+	this->reg.samplePosition = samplePosition;
+
 	if (this->reg.format != 3 && this->reg.samplePosition >= this->reg.totalLength)
 	{
 		if (this->reg.repeatMode == 1)
@@ -723,4 +726,10 @@ void Channel::IncrementSample()
 		else
 			this->Kill();
 	}
+}
+
+void Channel::clearHistory()
+{
+	this->sampleHistoryPtr = 0;
+	memset(this->sampleHistory, 0, sizeof(this->sampleHistory));
 }
