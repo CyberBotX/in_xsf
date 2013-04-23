@@ -46,7 +46,6 @@
 #define RateTransposer_H
 
 #include "AAFilter.h"
-#include "FIFOSamplePipe.h"
 #include "FIFOSampleBuffer.h"
 
 namespace soundtouch

@@ -102,10 +102,6 @@ SoundTouch::SoundTouch()
 	this->bSrateSet = false;
 }
 
-SoundTouch::~SoundTouch()
-{
-}
-
 // Sets the number of channels, 1 = mono, 2 = stereo
 void SoundTouch::setChannels(uint32_t numChannels)
 {
@@ -124,56 +120,12 @@ void SoundTouch::setRate(float newRate)
 	this->calcEffectiveRateAndTempo();
 }
 
-// Sets new rate control value as a difference in percents compared
-// to the original rate (-50 .. +100 %)
-void SoundTouch::setRateChange(float newRate)
-{
-	this->virtualRate = 1.0f + 0.01f * newRate;
-	this->calcEffectiveRateAndTempo();
-}
-
 // Sets new tempo control value. Normal tempo = 1.0, smaller values
 // represent slower tempo, larger faster tempo.
 void SoundTouch::setTempo(float newTempo)
 {
 	this->virtualTempo = newTempo;
 	this->calcEffectiveRateAndTempo();
-}
-
-// Sets new tempo control value as a difference in percents compared
-// to the original tempo (-50 .. +100 %)
-void SoundTouch::setTempoChange(float newTempo)
-{
-	this->virtualTempo = 1.0f + 0.01f * newTempo;
-	this->calcEffectiveRateAndTempo();
-}
-
-// Sets new pitch control value. Original pitch = 1.0, smaller values
-// represent lower pitches, larger values higher pitch.
-void SoundTouch::setPitch(float newPitch)
-{
-	this->virtualPitch = newPitch;
-	this->calcEffectiveRateAndTempo();
-}
-
-// Sets pitch change in octaves compared to the original pitch
-// (-1.00 .. +1.00)
-void SoundTouch::setPitchOctaves(float newPitch)
-{
-	this->virtualPitch = std::exp(0.69314718056f * newPitch);
-	this->calcEffectiveRateAndTempo();
-}
-
-// Sets pitch change in semi-tones compared to the original pitch
-// (-12 .. +12)
-void SoundTouch::setPitchSemiTones(int newPitch)
-{
-	this->setPitchOctaves(newPitch / 12.0f);
-}
-
-void SoundTouch::setPitchSemiTones(float newPitch)
-{
-	this->setPitchOctaves(newPitch / 12.0f);
 }
 
 // Calculates 'effective' rate and tempo values from the
@@ -362,48 +314,6 @@ bool SoundTouch::setSetting(int32_t settingId, int32_t value)
 
 		default:
 			return false;
-	}
-}
-
-// Reads a setting controlling the processing system behaviour. See the
-// 'SETTING_...' defines for available setting ID's.
-//
-// Returns the setting value.
-int32_t SoundTouch::getSetting(int32_t settingId) const
-{
-	int32_t temp;
-
-	switch (settingId)
-	{
-		case SETTING_USE_AA_FILTER:
-			return this->pRateTransposer->isAAFilterEnabled();
-
-		case SETTING_AA_FILTER_LENGTH:
-			return this->pRateTransposer->getAAFilter()->getLength();
-
-		case SETTING_USE_QUICKSEEK:
-			return this->pTDStretch->isQuickSeekEnabled();
-
-		case SETTING_SEQUENCE_MS:
-			this->pTDStretch->getParameters(nullptr, &temp, nullptr, nullptr);
-			return temp;
-
-		case SETTING_SEEKWINDOW_MS:
-			this->pTDStretch->getParameters(nullptr, nullptr, &temp, nullptr);
-			return temp;
-
-		case SETTING_OVERLAP_MS:
-			this->pTDStretch->getParameters(nullptr, nullptr, nullptr, &temp);
-			return temp;
-
-		case SETTING_NOMINAL_INPUT_SEQUENCE:
-			return this->pTDStretch->getInputSampleReq();
-
-		case SETTING_NOMINAL_OUTPUT_SEQUENCE:
-			return this->pTDStretch->getOutputBatchSize();
-
-		default:
-			return 0;
 	}
 }
 

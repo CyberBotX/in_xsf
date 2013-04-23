@@ -8,6 +8,8 @@
 #ifndef _ASMJIT_CORE_ASSEMBLER_H
 #define _ASMJIT_CORE_ASSEMBLER_H
 
+#include <vector>
+
 // [Dependencies - AsmJit]
 #include "../core/buffer.h"
 #include "../core/context.h"
@@ -446,9 +448,9 @@ struct Assembler
 	LabelLink *_unusedLinks;
 
 	//! @brief Labels data.
-	PodVector<LabelData> _labels;
+	std::vector<LabelData> _labels;
 	//! @brief Relocations data.
-	PodVector<RelocData> _relocData;
+	std::vector<RelocData> _relocData;
 };
 
 //! @}

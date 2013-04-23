@@ -178,7 +178,6 @@ protected:
 
 public:
 	SoundTouch();
-	virtual ~SoundTouch();
 
 	/// Sets new rate control value. Normal rate = 1.0, smaller values
 	/// represent slower rate, larger faster rates.
@@ -187,27 +186,6 @@ public:
 	/// Sets new tempo control value. Normal tempo = 1.0, smaller values
 	/// represent slower tempo, larger faster tempo.
 	void setTempo(float newTempo);
-
-	/// Sets new rate control value as a difference in percents compared
-	/// to the original rate (-50 .. +100 %)
-	void setRateChange(float newRate);
-
-	/// Sets new tempo control value as a difference in percents compared
-	/// to the original tempo (-50 .. +100 %)
-	void setTempoChange(float newTempo);
-
-	/// Sets new pitch control value. Original pitch = 1.0, smaller values
-	/// represent lower pitches, larger values higher pitch.
-	void setPitch(float newPitch);
-
-	/// Sets pitch change in octaves compared to the original pitch
-	/// (-1.00 .. +1.00)
-	void setPitchOctaves(float newPitch);
-
-	/// Sets pitch change in semi-tones compared to the original pitch
-	/// (-12 .. +12)
-	void setPitchSemiTones(int newPitch);
-	void setPitchSemiTones(float newPitch);
 
 	/// Sets the number of channels, 1 = mono, 2 = stereo
 	void setChannels(uint32_t numChannels);
@@ -227,7 +205,7 @@ public:
 	/// Adds 'numSamples' pcs of samples from the 'samples' memory position into
 	/// the input of the object. Notice that sample rate _has_to_ be set before
 	/// calling this function, otherwise throws a runtime_error exception.
-	virtual void putSamples(
+	void putSamples(
             const SAMPLETYPE *samples,  ///< Pointer to sample buffer.
             uint32_t numSamples                         ///< Number of samples in buffer. Notice
                                                         ///< that in case of stereo-sound a single sample
@@ -236,7 +214,7 @@ public:
 
 	/// Clears all the samples in the object's output and internal processing
 	/// buffers.
-	virtual void clear();
+	void clear();
 
 	/// Changes a setting controlling the processing system behaviour. See the
 	/// 'SETTING_...' defines for available setting ID's.
@@ -246,15 +224,8 @@ public:
                     int32_t value        ///< New setting value.
                     );
 
-	/// Reads a setting controlling the processing system behaviour. See the
-	/// 'SETTING_...' defines for available setting ID's.
-	///
-	/// \return the setting value.
-	int32_t getSetting(int32_t settingId    ///< Setting ID number, see SETTING_... defines.
-                    ) const;
-
 	/// Returns number of samples currently unprocessed.
-	virtual uint32_t numUnprocessedSamples() const;
+	uint32_t numUnprocessedSamples() const;
 
 	/// Other handy functions that are implemented in the ancestor classes (see
 	/// classes 'FIFOProcessor' and 'FIFOSamplePipe')

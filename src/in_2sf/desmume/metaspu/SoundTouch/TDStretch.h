@@ -46,7 +46,6 @@
 
 #include <memory>
 #include "RateTransposer.h"
-#include "FIFOSamplePipe.h"
 
 namespace soundtouch
 {
@@ -193,9 +192,6 @@ public:
 	/// nonzero to enable
 	void enableQuickSeek(bool enable);
 
-	/// Returns nonzero if the quick seeking algorithm is enabled.
-	bool isQuickSeekEnabled() const;
-
 	/// Sets routine control parameters. These control are certain time constants
 	/// defining how the sound is stretched to the desired duration.
 	//
@@ -222,18 +218,6 @@ public:
             uint32_t numSamples                         ///< Number of samples in 'samples' so that one sample
                                                        ///< contains both channels if stereo
             );
-
-	/// return nominal input sample requirement for triggering a processing batch
-	int32_t getInputSampleReq() const
-	{
-		return static_cast<int32_t>(this->nominalSkip + 0.5);
-	}
-
-	/// return nominal output sample amount when running a processing batch
-	int32_t getOutputBatchSize() const
-	{
-		return this->seekWindowLength - this->overlapLength;
-	}
 };
 
 // Implementation-specific class declarations:

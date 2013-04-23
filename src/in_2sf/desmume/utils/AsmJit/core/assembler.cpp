@@ -25,7 +25,7 @@ namespace AsmJit
 // ============================================================================
 
 Assembler::Assembler(Context *context) : _zoneMemory(16384 - sizeof(ZoneChunk) - 32), _buffer(), _context(context ? context : static_cast<Context *>(JitContext::getGlobal())), _logger(nullptr), _error(kErrorOk),
-	_properties(0), _emitOptions(0), _trampolineSize(0), _inlineComment(nullptr), _unusedLinks(nullptr)
+	_properties(0), _emitOptions(0), _trampolineSize(0), _inlineComment(nullptr), _unusedLinks(nullptr), _labels(), _relocData()
 {
 }
 
@@ -114,8 +114,8 @@ void Assembler::reset()
 	this->_zoneMemory.reset();
 	this->_buffer.reset();
 
-	this->_labels.reset();
-	this->_relocData.reset();
+	this->_labels.clear();
+	this->_relocData.clear();
 
 	if (this->_error != kErrorOk)
 		this->setError(kErrorOk);

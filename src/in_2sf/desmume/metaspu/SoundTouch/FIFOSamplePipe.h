@@ -82,7 +82,7 @@ public:
 	{
 		int oNumSamples = other.numSamples();
 
-		putSamples(other.ptrBegin(), oNumSamples);
+		this->putSamples(other.ptrBegin(), oNumSamples);
 		other.receiveSamples(oNumSamples);
 	};
 

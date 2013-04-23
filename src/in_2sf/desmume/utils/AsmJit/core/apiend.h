@@ -6,14 +6,12 @@
 
 // [MSVC]
 #ifdef _MSC_VER
-
 // Pop disabled warnings by ApiBegin.h
-#pragma warning(pop)
+# pragma warning(pop)
 
 // Rename symbols back.
-#undef vsnprintf
-#undef snprintf
-
+# undef vsnprintf
+# undef snprintf
 #endif // _MSC_VER
 
 // [GNUC]

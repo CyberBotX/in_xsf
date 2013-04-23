@@ -97,9 +97,6 @@ public:
                                               ///< Default is stereo.
                      );
 
-	/// destructor
-	virtual ~FIFOSampleBuffer();
-
 	/// Returns a pointer to the beginning of the output samples.
 	/// This function is provided for accessing the output samples directly.
 	/// Please be careful for not to corrupt the book-keeping!
@@ -107,7 +104,7 @@ public:
 	/// When using this function to output samples, also remember to 'remove' the
 	/// output samples from the buffer by calling the
 	/// 'receiveSamples(numSamples)' function
-	virtual SAMPLETYPE *ptrBegin();
+	SAMPLETYPE *ptrBegin();
 
 	/// Returns a pointer to the end of the used part of the sample buffer (i.e.
 	/// where the new samples are to be inserted). This function may be used for
@@ -126,7 +123,7 @@ public:
 
 	/// Adds 'numSamples' pcs of samples from the 'samples' memory position to
 	/// the sample buffer.
-	virtual void putSamples(const SAMPLETYPE *samples,  ///< Pointer to samples.
+	void putSamples(const SAMPLETYPE *samples,  ///< Pointer to samples.
                             uint32_t numSamples                         ///< Number of samples to insert.
                             );
 
@@ -136,7 +133,7 @@ public:
 	/// This function is used to update the number of samples in the sample buffer
 	/// when accessing the buffer directly with 'ptrEnd' function. Please be
 	/// careful though!
-	virtual void putSamples(uint32_t numSamples   ///< Number of samples been inserted.
+	void putSamples(uint32_t numSamples   ///< Number of samples been inserted.
                             );
 
 	/// Output samples from beginning of the sample buffer. Copies requested samples to
@@ -144,7 +141,7 @@ public:
 	/// 'numsample' samples in the buffer, returns all that available.
 	///
 	/// \return Number of samples returned.
-	virtual uint32_t receiveSamples(SAMPLETYPE *output, ///< Buffer where to copy output samples.
+	uint32_t receiveSamples(SAMPLETYPE *output, ///< Buffer where to copy output samples.
                                 uint32_t maxSamples                 ///< How many samples to receive at max.
                                 );
 
@@ -153,26 +150,26 @@ public:
 	///
 	/// Used to reduce the number of samples in the buffer when accessing the sample buffer directly
 	/// with 'ptrBegin' function.
-	virtual uint32_t receiveSamples(uint32_t maxSamples   ///< Remove this many samples from the beginning of pipe.
+	uint32_t receiveSamples(uint32_t maxSamples   ///< Remove this many samples from the beginning of pipe.
                                 );
 
 	/// Returns number of samples currently available.
-	virtual uint32_t numSamples() const;
+	uint32_t numSamples() const;
 
 	/// Sets number of channels, 1 = mono, 2 = stereo.
 	void setChannels(int32_t numChannels);
 
 	/// Returns nonzero if there aren't any samples available for outputting.
-	virtual bool isEmpty() const;
+	bool isEmpty() const;
 
 	/// Clears all the samples.
-	virtual void clear();
+	void clear();
 
 	/// allow trimming (downwards) amount of samples in pipeline.
 	/// Returns adjusted amount of samples
 	uint32_t adjustAmountOfSamples(uint32_t numSamples);
 };
-	
+
 }
 
 #endif

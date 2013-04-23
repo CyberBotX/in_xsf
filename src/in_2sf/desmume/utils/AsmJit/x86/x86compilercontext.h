@@ -20,7 +20,8 @@
 // [Api-Begin]
 #include "../core/apibegin.h"
 
-namespace AsmJit {
+namespace AsmJit
+{
 
 //! @addtogroup AsmJit_X86
 //! @{
@@ -38,276 +39,267 @@ namespace AsmJit {
 //! function is generated).
 struct X86CompilerContext : public CompilerContext
 {
-  // --------------------------------------------------------------------------
-  // [Construction / Destruction]
-  // --------------------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	// [Construction / Destruction]
+	// --------------------------------------------------------------------------
 
-  //! @brief Create a new @ref X86CompilerContext instance.
-  ASMJIT_API X86CompilerContext(X86Compiler* x86Compiler);
-  //! @brief Destroy the @ref X86CompilerContext instance.
-  ASMJIT_API ~X86CompilerContext();
+	//! @brief Create a new @ref X86CompilerContext instance.
+	ASMJIT_API X86CompilerContext(X86Compiler *x86Compiler);
+	//! @brief Destroy the @ref X86CompilerContext instance.
+	ASMJIT_API ~X86CompilerContext();
 
-  // --------------------------------------------------------------------------
-  // [Accessor]
-  // --------------------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	// [Accessor]
+	// --------------------------------------------------------------------------
 
-  //! @brief Get compiler as @ref X86Compiler.
-  X86Compiler* getCompiler() const
-  { return reinterpret_cast<X86Compiler*>(_compiler); }
+	//! @brief Get compiler as @ref X86Compiler.
+	X86Compiler *getCompiler() const { return reinterpret_cast<X86Compiler *>(this->_compiler); }
 
-  //! @brief Get function as @ref X86CompilerFuncDecl.
-  X86CompilerFuncDecl* getFunc() const
-  { return reinterpret_cast<X86CompilerFuncDecl*>(_func); }
+	//! @brief Get function as @ref X86CompilerFuncDecl.
+	X86CompilerFuncDecl *getFunc() const { return reinterpret_cast<X86CompilerFuncDecl *>(this->_func); }
 
-  // --------------------------------------------------------------------------
-  // [Clear]
-  // --------------------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	// [Clear]
+	// --------------------------------------------------------------------------
 
-  //! @brief Clear context, preparing it for next function generation.
-  ASMJIT_API void _clear();
+	//! @brief Clear context, preparing it for next function generation.
+	ASMJIT_API void _clear();
 
-  // --------------------------------------------------------------------------
-  // [Register Allocator]
-  // --------------------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	// [Register Allocator]
+	// --------------------------------------------------------------------------
 
-  //! @brief Allocate variable
-  //!
-  //! Calls @c allocGpVar, @c allocMmVar or @c allocXmmVar methods.
-  ASMJIT_API void allocVar(X86CompilerVar* cv, uint32_t regMask, uint32_t vflags);
+	//! @brief Allocate variable
+	//!
+	//! Calls @c allocGpVar, @c allocMmVar or @c allocXmmVar methods.
+	ASMJIT_API void allocVar(X86CompilerVar *cv, uint32_t regMask, uint32_t vflags);
 
-  //! @brief Save variable.
-  //!
-  //! Calls @c saveGpVar, @c saveMmVar or @c saveXmmVar methods.
-  ASMJIT_API void saveVar(X86CompilerVar* cv);
+	//! @brief Save variable.
+	//!
+	//! Calls @c saveGpVar, @c saveMmVar or @c saveXmmVar methods.
+	ASMJIT_API void saveVar(X86CompilerVar *cv);
 
-  //! @brief Spill variable.
-  //!
-  //! Calls @c spillGpVar, @c spillMmVar or @c spillXmmVar methods.
-  ASMJIT_API void spillVar(X86CompilerVar* cv);
+	//! @brief Spill variable.
+	//!
+	//! Calls @c spillGpVar, @c spillMmVar or @c spillXmmVar methods.
+	ASMJIT_API void spillVar(X86CompilerVar *cv);
 
-  //! @brief Unuse variable (didn't spill, just forget about it).
-  ASMJIT_API void unuseVar(X86CompilerVar* cv, uint32_t toState);
+	//! @brief Unuse variable (didn't spill, just forget about it).
+	ASMJIT_API void unuseVar(X86CompilerVar *cv, uint32_t toState);
 
-  //! @brief Helper method that is called for each variable per item.
-  void _unuseVarOnEndOfScope(CompilerItem* item, X86CompilerVar* cv)
-  {
-    if (cv->lastItem == item)
-      unuseVar(cv, kVarStateUnused);
-  }
-  //! @overload
-  void _unuseVarOnEndOfScope(CompilerItem* item, VarAllocRecord* rec)
-  {
-    X86CompilerVar* cv = rec->vdata;
-    if (cv->lastItem == item || (rec->vflags & kVarAllocUnuseAfterUse))
-      unuseVar(cv, kVarStateUnused);
-  }
-  //! @overload
-  void _unuseVarOnEndOfScope(CompilerItem* item, VarCallRecord* rec)
-  {
-    X86CompilerVar* v = rec->vdata;
-    if (v->lastItem == item || (rec->flags & VarCallRecord::kFlagUnuseAfterUse))
-      unuseVar(v, kVarStateUnused);
-  }
+	//! @brief Helper method that is called for each variable per item.
+	void _unuseVarOnEndOfScope(CompilerItem *item, X86CompilerVar *cv)
+	{
+		if (cv->lastItem == item)
+			this->unuseVar(cv, kVarStateUnused);
+	}
+	//! @overload
+	void _unuseVarOnEndOfScope(CompilerItem *item, VarAllocRecord *rec)
+	{
+		X86CompilerVar *cv = rec->vdata;
+		if (cv->lastItem == item || (rec->vflags & kVarAllocUnuseAfterUse))
+			this->unuseVar(cv, kVarStateUnused);
+	}
+	//! @overload
+	void _unuseVarOnEndOfScope(CompilerItem *item, VarCallRecord *rec)
+	{
+		X86CompilerVar *v = rec->vdata;
+		if (v->lastItem == item || (rec->flags & VarCallRecord::kFlagUnuseAfterUse))
+			this->unuseVar(v, kVarStateUnused);
+	}
 
-  //! @brief Allocate variable (GP).
-  ASMJIT_API void allocGpVar(X86CompilerVar* cv, uint32_t regMask, uint32_t vflags);
-  //! @brief Save variable (GP).
-  ASMJIT_API void saveGpVar(X86CompilerVar* cv);
-  //! @brief Spill variable (GP).
-  ASMJIT_API void spillGpVar(X86CompilerVar* cv);
+	//! @brief Allocate variable (GP).
+	ASMJIT_API void allocGpVar(X86CompilerVar *cv, uint32_t regMask, uint32_t vflags);
+	//! @brief Save variable (GP).
+	ASMJIT_API void saveGpVar(X86CompilerVar *cv);
+	//! @brief Spill variable (GP).
+	ASMJIT_API void spillGpVar(X86CompilerVar *cv);
 
-  //! @brief Allocate variable (MM).
-  ASMJIT_API void allocMmVar(X86CompilerVar* cv, uint32_t regMask, uint32_t vflags);
-  //! @brief Save variable (MM).
-  ASMJIT_API void saveMmVar(X86CompilerVar* cv);
-  //! @brief Spill variable (MM).
-  ASMJIT_API void spillMmVar(X86CompilerVar* cv);
+	//! @brief Allocate variable (MM).
+	ASMJIT_API void allocMmVar(X86CompilerVar *cv, uint32_t regMask, uint32_t vflags);
+	//! @brief Save variable (MM).
+	ASMJIT_API void saveMmVar(X86CompilerVar *cv);
+	//! @brief Spill variable (MM).
+	ASMJIT_API void spillMmVar(X86CompilerVar *cv);
 
-  //! @brief Allocate variable (XMM).
-  ASMJIT_API void allocXmmVar(X86CompilerVar* cv, uint32_t regMask, uint32_t vflags);
-  //! @brief Save variable (XMM).
-  ASMJIT_API void saveXmmVar(X86CompilerVar* cv);
-  //! @brief Spill variable (XMM).
-  ASMJIT_API void spillXmmVar(X86CompilerVar* cv);
+	//! @brief Allocate variable (XMM).
+	ASMJIT_API void allocXmmVar(X86CompilerVar *cv, uint32_t regMask, uint32_t vflags);
+	//! @brief Save variable (XMM).
+	ASMJIT_API void saveXmmVar(X86CompilerVar *cv);
+	//! @brief Spill variable (XMM).
+	ASMJIT_API void spillXmmVar(X86CompilerVar *cv);
 
-  //! @brief Emit load variable instruction(s).
-  ASMJIT_API void emitLoadVar(X86CompilerVar* cv, uint32_t regIndex);
-  //! @brief Emit save variable instruction(s).
-  ASMJIT_API void emitSaveVar(X86CompilerVar* cv, uint32_t regIndex);
+	//! @brief Emit load variable instruction(s).
+	ASMJIT_API void emitLoadVar(X86CompilerVar *cv, uint32_t regIndex);
+	//! @brief Emit save variable instruction(s).
+	ASMJIT_API void emitSaveVar(X86CompilerVar *cv, uint32_t regIndex);
 
-  //! @brief Emit move variable instruction(s).
-  ASMJIT_API void emitMoveVar(X86CompilerVar* cv, uint32_t regIndex, uint32_t vflags);
-  //! @brief Emit exchange variable instruction(s).
-  ASMJIT_API void emitExchangeVar(X86CompilerVar* cv, uint32_t regIndex, uint32_t vflags, X86CompilerVar* other);
+	//! @brief Emit move variable instruction(s).
+	ASMJIT_API void emitMoveVar(X86CompilerVar *cv, uint32_t regIndex, uint32_t vflags);
+	//! @brief Emit exchange variable instruction(s).
+	ASMJIT_API void emitExchangeVar(X86CompilerVar *cv, uint32_t regIndex, uint32_t vflags, X86CompilerVar *other);
 
-  //! @brief Called each time a variable is alloceted.
-  ASMJIT_API void _postAlloc(X86CompilerVar* cv, uint32_t vflags);
-  //! @brief Marks variable home memory as used (must be called at least once
-  //! for each variable that uses function local memory - stack).
-  ASMJIT_API void _markMemoryUsed(X86CompilerVar* cv);
+	//! @brief Called each time a variable is alloceted.
+	ASMJIT_API void _postAlloc(X86CompilerVar *cv, uint32_t vflags);
+	//! @brief Marks variable home memory as used (must be called at least once
+	//! for each variable that uses function local memory - stack).
+	ASMJIT_API void _markMemoryUsed(X86CompilerVar *cv);
 
-  ASMJIT_API Mem _getVarMem(X86CompilerVar* cv);
+	ASMJIT_API Mem _getVarMem(X86CompilerVar *cv);
 
-  ASMJIT_API X86CompilerVar* _getSpillCandidateGP();
-  ASMJIT_API X86CompilerVar* _getSpillCandidateMM();
-  ASMJIT_API X86CompilerVar* _getSpillCandidateXMM();
-  ASMJIT_API X86CompilerVar* _getSpillCandidateGeneric(X86CompilerVar** varArray, uint32_t count);
+	ASMJIT_API X86CompilerVar *_getSpillCandidateGP();
+	ASMJIT_API X86CompilerVar *_getSpillCandidateMM();
+	ASMJIT_API X86CompilerVar *_getSpillCandidateXMM();
+	ASMJIT_API X86CompilerVar *_getSpillCandidateGeneric(X86CompilerVar **varArray, uint32_t count);
 
-  bool _isActive(X86CompilerVar* cv)
-  { return !!cv->nextActive; }
-  
-  ASMJIT_API void _addActive(X86CompilerVar* cv);
-  ASMJIT_API void _freeActive(X86CompilerVar* cv);
-  ASMJIT_API void _freeAllActive();
+	bool _isActive(X86CompilerVar *cv) { return !!cv->nextActive; }
 
-  ASMJIT_API void _allocatedVariable(X86CompilerVar* cv);
+	ASMJIT_API void _addActive(X86CompilerVar *cv);
+	ASMJIT_API void _freeActive(X86CompilerVar *cv);
+	ASMJIT_API void _freeAllActive();
 
-  void _allocatedGpRegister(uint32_t index)
-  {
-    _x86State.usedGP |= IntUtil::maskFromIndex(index);
-    _modifiedGpRegisters |= IntUtil::maskFromIndex(index);
-  }
-  
-  void _allocatedMmRegister(uint32_t index)
-  {
-    _x86State.usedMM |= IntUtil::maskFromIndex(index);
-    _modifiedMmRegisters |= IntUtil::maskFromIndex(index);
-  }
-  
-  void _allocatedXmmRegister(uint32_t index)
-  {
-    _x86State.usedXMM |= IntUtil::maskFromIndex(index);
-    _modifiedXmmRegisters |= IntUtil::maskFromIndex(index);
-  }
+	ASMJIT_API void _allocatedVariable(X86CompilerVar *cv);
 
-  void _freedGpRegister(uint32_t index)
-  { _x86State.usedGP &= ~IntUtil::maskFromIndex(index); }
+	void _allocatedGpRegister(uint32_t index)
+	{
+		this->_x86State.usedGP |= IntUtil::maskFromIndex(index);
+		this->_modifiedGpRegisters |= IntUtil::maskFromIndex(index);
+	}
 
-  void _freedMmRegister(uint32_t index)
-  { _x86State.usedMM &= ~IntUtil::maskFromIndex(index); }
+	void _allocatedMmRegister(uint32_t index)
+	{
+		this->_x86State.usedMM |= IntUtil::maskFromIndex(index);
+		this->_modifiedMmRegisters |= IntUtil::maskFromIndex(index);
+	}
 
-  void _freedXmmRegister(uint32_t index)
-  { _x86State.usedXMM &= ~IntUtil::maskFromIndex(index); }
+	void _allocatedXmmRegister(uint32_t index)
+	{
+		this->_x86State.usedXMM |= IntUtil::maskFromIndex(index);
+		this->_modifiedXmmRegisters |= IntUtil::maskFromIndex(index);
+	}
 
-  void _markGpRegisterModified(uint32_t index)
-  { _modifiedGpRegisters |= IntUtil::maskFromIndex(index); }
+	void _freedGpRegister(uint32_t index) { this->_x86State.usedGP &= ~IntUtil::maskFromIndex(index); }
 
-  void _markMmRegisterModified(uint32_t index)
-  { _modifiedMmRegisters |= IntUtil::maskFromIndex(index); }
+	void _freedMmRegister(uint32_t index) { this->_x86State.usedMM &= ~IntUtil::maskFromIndex(index); }
 
-  void _markXmmRegisterModified(uint32_t index)
-  { _modifiedXmmRegisters |= IntUtil::maskFromIndex(index); }
+	void _freedXmmRegister(uint32_t index) { this->_x86State.usedXMM &= ~IntUtil::maskFromIndex(index); }
 
-  // TODO: Find code which uses this and improve.
-  void _newRegisterHomeIndex(X86CompilerVar* cv, uint32_t idx)
-  {
-    if (cv->homeRegisterIndex == kRegIndexInvalid)
-      cv->homeRegisterIndex = idx;
-    cv->prefRegisterMask |= (1U << idx);
-  }
+	void _markGpRegisterModified(uint32_t index) { this->_modifiedGpRegisters |= IntUtil::maskFromIndex(index); }
 
-  // TODO: Find code which uses this and improve.
-  void _newRegisterHomeMask(X86CompilerVar* cv, uint32_t mask)
-  {
-    cv->prefRegisterMask |= mask;
-  }
+	void _markMmRegisterModified(uint32_t index) { this->_modifiedMmRegisters |= IntUtil::maskFromIndex(index); }
 
-  // --------------------------------------------------------------------------
-  // [Operand Patcher]
-  // --------------------------------------------------------------------------
+	void _markXmmRegisterModified(uint32_t index) { this->_modifiedXmmRegisters |= IntUtil::maskFromIndex(index); }
 
-  ASMJIT_API void translateOperands(Operand* operands, uint32_t count);
+	// TODO: Find code which uses this and improve.
+	void _newRegisterHomeIndex(X86CompilerVar *cv, uint32_t idx)
+	{
+		if (cv->homeRegisterIndex == kRegIndexInvalid)
+			cv->homeRegisterIndex = idx;
+		cv->prefRegisterMask |= 1U << idx;
+	}
 
-  // --------------------------------------------------------------------------
-  // [Backward Code]
-  // --------------------------------------------------------------------------
+	// TODO: Find code which uses this and improve.
+	void _newRegisterHomeMask(X86CompilerVar *cv, uint32_t mask)
+	{
+		cv->prefRegisterMask |= mask;
+	}
 
-  ASMJIT_API void addBackwardCode(X86CompilerJmpInst* from);
+	// --------------------------------------------------------------------------
+	// [Operand Patcher]
+	// --------------------------------------------------------------------------
 
-  // --------------------------------------------------------------------------
-  // [Forward Jump]
-  // --------------------------------------------------------------------------
+	ASMJIT_API void translateOperands(Operand *operands, uint32_t count);
 
-  ASMJIT_API void addForwardJump(X86CompilerJmpInst* inst);
+	// --------------------------------------------------------------------------
+	// [Backward Code]
+	// --------------------------------------------------------------------------
 
-  // --------------------------------------------------------------------------
-  // [State]
-  // --------------------------------------------------------------------------
+	ASMJIT_API void addBackwardCode(X86CompilerJmpInst *from);
 
-  ASMJIT_API X86CompilerState* _saveState();
-  ASMJIT_API void _assignState(X86CompilerState* state);
-  ASMJIT_API void _restoreState(X86CompilerState* state, uint32_t targetOffset = kInvalidValue);
+	// --------------------------------------------------------------------------
+	// [Forward Jump]
+	// --------------------------------------------------------------------------
 
-  // --------------------------------------------------------------------------
-  // [Memory Allocator]
-  // --------------------------------------------------------------------------
+	ASMJIT_API void addForwardJump(X86CompilerJmpInst *inst);
 
-  ASMJIT_API VarMemBlock* _allocMemBlock(uint32_t size);
-  ASMJIT_API void _freeMemBlock(VarMemBlock* mem);
+	// --------------------------------------------------------------------------
+	// [State]
+	// --------------------------------------------------------------------------
 
-  ASMJIT_API void _allocMemoryOperands();
-  ASMJIT_API void _patchMemoryOperands(CompilerItem* start, CompilerItem* stop);
+	ASMJIT_API X86CompilerState *_saveState();
+	ASMJIT_API void _assignState(X86CompilerState *state);
+	ASMJIT_API void _restoreState(X86CompilerState *state, uint32_t targetOffset = kInvalidValue);
 
-  // --------------------------------------------------------------------------
-  // [Members]
-  // --------------------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	// [Memory Allocator]
+	// --------------------------------------------------------------------------
 
-  //! @brief X86 specific compiler state (linked with @ref _state).
-  X86CompilerState _x86State;
+	ASMJIT_API VarMemBlock *_allocMemBlock(uint32_t size);
+	ASMJIT_API void _freeMemBlock(VarMemBlock *mem);
 
-  //! @brief Forward jumps (single linked list).
-  ForwardJumpData* _forwardJumps;
+	ASMJIT_API void _allocMemoryOperands();
+	ASMJIT_API void _patchMemoryOperands(CompilerItem *start, CompilerItem *stop);
 
-  //! @brief Global modified GP registers mask (per function).
-  uint32_t _modifiedGpRegisters;
-  //! @brief Global modified MM registers mask (per function).
-  uint32_t _modifiedMmRegisters;
-  //! @brief Global modified XMM registers mask (per function).
-  uint32_t _modifiedXmmRegisters;
+	// --------------------------------------------------------------------------
+	// [Members]
+	// --------------------------------------------------------------------------
 
-  //! @brief Whether the EBP/RBP register can be used by register allocator.
-  uint32_t _allocableEBP;
+	//! @brief X86 specific compiler state (linked with @ref _state).
+	X86CompilerState _x86State;
 
-  //! @brief ESP adjust constant (changed during PUSH/POP or when using
-  //! stack.
-  int _adjustESP;
+	//! @brief Forward jumps (single linked list).
+	ForwardJumpData *_forwardJumps;
 
-  //! @brief Function arguments base pointer (register).
-  uint32_t _argumentsBaseReg;
-  //! @brief Function arguments base offset.
-  int32_t _argumentsBaseOffset;
-  //! @brief Function arguments displacement.
-  int32_t _argumentsActualDisp;
+	//! @brief Global modified GP registers mask (per function).
+	uint32_t _modifiedGpRegisters;
+	//! @brief Global modified MM registers mask (per function).
+	uint32_t _modifiedMmRegisters;
+	//! @brief Global modified XMM registers mask (per function).
+	uint32_t _modifiedXmmRegisters;
 
-  //! @brief Function variables base pointer (register).
-  uint32_t _variablesBaseReg;
-  //! @brief Function variables base offset.
-  int32_t _variablesBaseOffset;
-  //! @brief Function variables displacement.
-  int32_t _variablesActualDisp;
+	//! @brief Whether the EBP/RBP register can be used by register allocator.
+	uint32_t _allocableEBP;
 
-  //! @brief Used memory blocks (for variables, here is each created mem block
-  //! that can be also in _memFree list).
-  VarMemBlock* _memUsed;
-  //! @brief Free memory blocks (freed, prepared for another allocation).
-  VarMemBlock* _memFree;
-  //! @brief Count of 4-byte memory blocks used by the function.
-  uint32_t _mem4BlocksCount;
-  //! @brief Count of 8-byte memory blocks used by the function.
-  uint32_t _mem8BlocksCount;
-  //! @brief Count of 16-byte memory blocks used by the function.
-  uint32_t _mem16BlocksCount;
-  //! @brief Count of total bytes of stack memory used by the function.
-  uint32_t _memBytesTotal;
+	//! @brief ESP adjust constant (changed during PUSH/POP or when using
+	//! stack.
+	int _adjustESP;
 
-  //! @brief List of items which need to be translated. These items are filled
-  //! by @c addBackwardCode().
-  PodVector<X86CompilerJmpInst*> _backCode;
+	//! @brief Function arguments base pointer (register).
+	uint32_t _argumentsBaseReg;
+	//! @brief Function arguments base offset.
+	int32_t _argumentsBaseOffset;
+	//! @brief Function arguments displacement.
+	int32_t _argumentsActualDisp;
 
-  //! @brief Backward code position (starts at 0).
-  sysuint_t _backPos;
-  //! @brief Whether to emit comments.
-  bool _emitComments;
+	//! @brief Function variables base pointer (register).
+	uint32_t _variablesBaseReg;
+	//! @brief Function variables base offset.
+	int32_t _variablesBaseOffset;
+	//! @brief Function variables displacement.
+	int32_t _variablesActualDisp;
+
+	//! @brief Used memory blocks (for variables, here is each created mem block
+	//! that can be also in _memFree list).
+	VarMemBlock *_memUsed;
+	//! @brief Free memory blocks (freed, prepared for another allocation).
+	VarMemBlock *_memFree;
+	//! @brief Count of 4-byte memory blocks used by the function.
+	uint32_t _mem4BlocksCount;
+	//! @brief Count of 8-byte memory blocks used by the function.
+	uint32_t _mem8BlocksCount;
+	//! @brief Count of 16-byte memory blocks used by the function.
+	uint32_t _mem16BlocksCount;
+	//! @brief Count of total bytes of stack memory used by the function.
+	uint32_t _memBytesTotal;
+
+	//! @brief List of items which need to be translated. These items are filled
+	//! by @c addBackwardCode().
+	PodVector<X86CompilerJmpInst *> _backCode;
+
+	//! @brief Backward code position (starts at 0).
+	sysuint_t _backPos;
+	//! @brief Whether to emit comments.
+	bool _emitComments;
 };
 
 //! @}

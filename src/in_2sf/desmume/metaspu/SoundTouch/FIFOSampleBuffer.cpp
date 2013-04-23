@@ -62,11 +62,6 @@ FIFOSampleBuffer::FIFOSampleBuffer(int32_t numChannels)
 	this->ensureCapacity(32); // allocate initial capacity 
 }
 
-// destructor
-FIFOSampleBuffer::~FIFOSampleBuffer()
-{
-}
-
 // Sets number of channels, 1 = mono, 2 = stereo
 void FIFOSampleBuffer::setChannels(int32_t numChannels)
 {

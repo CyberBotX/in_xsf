@@ -203,12 +203,6 @@ void TDStretch::enableQuickSeek(bool enable)
 	this->bQuickSeek = enable;
 }
 
-// Returns nonzero if the quick seeking algorithm is enabled.
-bool TDStretch::isQuickSeekEnabled() const
-{
-	return this->bQuickSeek;
-}
-
 // Seeks for the optimal overlap-mixing position.
 int32_t TDStretch::seekBestOverlapPosition(const SAMPLETYPE *refPos)
 {
