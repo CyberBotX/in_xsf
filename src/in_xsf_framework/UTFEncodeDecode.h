@@ -17,11 +17,11 @@ template<size_t buf_size = 100> class cp_converter
 	const std::locale loc;
 public:
 	cp_converter(const std::locale &L = std::locale::classic()) : loc(L) { }
-	inline std::wstring widen(const std::string &in)
+	std::wstring widen(const std::string &in)
 	{
 		return this->convert<char, wchar_t>(in);
 	}
-	inline std::string narrow(const std::wstring &in)
+	std::string narrow(const std::wstring &in)
 	{
 		return this->convert<wchar_t, char>(in);
 	}
@@ -29,13 +29,13 @@ private:
 	typedef std::codecvt<wchar_t, char, mbstate_t> codecvt_facet;
 
 	// widen
-	inline codecvt_facet::result cv(const codecvt_facet &facet, mbstate_t &s, const char *f1, const char *l1, const char *&n1, wchar_t *f2, wchar_t *l2, wchar_t *&n2) const
+	codecvt_facet::result cv(const codecvt_facet &facet, mbstate_t &s, const char *f1, const char *l1, const char *&n1, wchar_t *f2, wchar_t *l2, wchar_t *&n2) const
 	{
 		return facet.in(s, f1, l1, n1, f2, l2, n2);
 	}
 
 	// narrow
-	inline codecvt_facet::result cv(const codecvt_facet &facet, mbstate_t &s, const wchar_t *f1, const wchar_t *l1, const wchar_t *&n1, char *f2, char *l2, char *&n2) const
+	codecvt_facet::result cv(const codecvt_facet &facet, mbstate_t &s, const wchar_t *f1, const wchar_t *l1, const wchar_t *&n1, char *f2, char *l2, char *&n2) const
 	{
 		return facet.out(s, f1, l1, n1, f2, l2, n2);
 	}

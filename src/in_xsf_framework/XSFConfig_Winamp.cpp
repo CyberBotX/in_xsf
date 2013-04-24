@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp-specification configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  */
@@ -36,7 +36,7 @@ XSFConfigIO_Winamp::XSFConfigIO_Winamp() : iniFilename(L"")
 		this->iniFilename = String(reinterpret_cast<char *>(SendMessage(inMod.hMainWindow, WM_WA_IPC, 0, IPC_GETINIFILE))).GetWStr();
 	else
 	{
-		std::vector<wchar_t> executablePath(MAX_PATH / 2);
+		auto executablePath = std::vector<wchar_t>(MAX_PATH / 2);
 
 		DWORD result;
 		do
@@ -59,7 +59,7 @@ void XSFConfigIO_Winamp::SetValueString(const std::wstring &name, const std::wst
 
 std::wstring XSFConfigIO_Winamp::GetValueString(const std::wstring &name, const std::wstring &defaultValue)
 {
-	std::vector<wchar_t> value(MAX_PATH / 2);
+	auto value = std::vector<wchar_t>(MAX_PATH / 2);
 
 	DWORD result;
 	do

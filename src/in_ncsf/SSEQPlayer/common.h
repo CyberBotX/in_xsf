@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-3
+ * Last modification on 2013-04-23
  *
  * Some code from FeOS Sound System
  * By fincs
@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
-#include "pstdint.h"
+#include <cstdint>
 
 /*
  * Pseudo-file data structure

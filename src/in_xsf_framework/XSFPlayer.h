@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  */
@@ -22,7 +22,7 @@ protected:
 	static const unsigned CHECK_SILENCE_BIAS = 0x8000000;
 	static const unsigned CHECK_SILENCE_LEVEL = 7;
 
-	XSFFile *xSF;
+	std::unique_ptr<XSFFile> xSF;
 	unsigned sampleRate, detectedSilenceSample, detectedSilenceSec, skipSilenceOnStartSec, lengthSample, fadeSample, currentSample;
 	unsigned long prevSampleL, prevSampleR;
 	int lengthInMS, fadeInMS;
@@ -38,10 +38,10 @@ public:
 	static XSFPlayer *Create(const std::string &fn);
 	static XSFPlayer *Create(const std::wstring &fn);
 
-	virtual ~XSFPlayer() { if (this->xSF) delete this->xSF; }
+	virtual ~XSFPlayer() { }
 	XSFPlayer &operator=(const XSFPlayer &xSFPlayer);
-	XSFFile *GetXSFFile() { return this->xSF; }
-	const XSFFile *GetXSFFile() const { return this->xSF; }
+	XSFFile *GetXSFFile() { return this->xSF.get(); }
+	const XSFFile *GetXSFFile() const { return this->xSF.get(); }
 	unsigned GetLengthInSamples() const { return this->lengthSample + this->fadeSample; }
 	unsigned GetSampleRate() const { return this->sampleRate; }
 	void SetSampleRate(unsigned newSampleRate) { this->sampleRate = newSampleRate; }

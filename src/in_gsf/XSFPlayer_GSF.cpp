@@ -1,7 +1,7 @@
 /*
  * xSF - GSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-23
  *
  * Based on a modified viogsf v0.08
  *
@@ -192,17 +192,17 @@ static bool Load2SF(XSFFile *xSF)
 
 XSFPlayer_GSF::XSFPlayer_GSF(const std::string &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 8, 12);
+	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
 XSFPlayer_GSF::XSFPlayer_GSF(const std::wstring &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 8, 12);
+	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
 bool XSFPlayer_GSF::Load()
 {
-	if (!Load2SF(this->xSF))
+	if (!Load2SF(this->xSF.get()))
 		return false;
 
 	cpuIsMultiBoot = (loaderwork.entry >> 24) == 2;

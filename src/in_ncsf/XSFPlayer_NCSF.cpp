@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-01
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  *
@@ -96,17 +96,17 @@ bool XSFPlayer_NCSF::RecursiveLoadNCSF(XSFFile *xSFToLoad, int level)
 
 bool XSFPlayer_NCSF::LoadNCSF()
 {
-	return this->RecursiveLoadNCSF(this->xSF, 1);
+	return this->RecursiveLoadNCSF(this->xSF.get(), 1);
 }
 
 XSFPlayer_NCSF::XSFPlayer_NCSF(const std::string &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 8, 12);
+	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
 XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 8, 12);
+	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
 bool XSFPlayer_NCSF::Load()

@@ -39,7 +39,7 @@
 #ifndef STTypes_H
 #define STTypes_H
 
-#include "pstdint.h"
+#include <cstdint>
 
 namespace soundtouch
 {

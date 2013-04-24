@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-18
+ * Last modification on 2013-04-23
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -15,10 +15,9 @@
 #define SSEQPLAYER_CHANNEL_H
 
 #include <bitset>
-#include <tuple>
+#include <cstdint>
 #include "SWAV.h"
 #include "Track.h"
-#include "pstdint.h"
 
 /*
  * This structure is meant to be similar to what is stored in the actual
@@ -134,6 +133,20 @@ struct Channel
 	 */
 	uint32_t sampleHistoryPtr;
 	int16_t sampleHistory[16];
+
+	/*
+	 * Lookup tables for the cosine and Lanczos Sinc interpolations, to
+	 * avoid the need to call the sin/cos functions all the time.
+	 * These are static as they will not change between channels or runs
+	 * of the program.
+	 */
+	static bool initializedLUTs;
+	static const unsigned COSINE_RESOLUTION = 8192;
+	static const unsigned LANCZOS_RESOLUTION = 8192;
+	static const unsigned LANCZOS_WIDTH = 3;
+	static const unsigned LANCZOS_SAMPLES = LANCZOS_RESOLUTION * LANCZOS_WIDTH;
+	static double cosine_lut[COSINE_RESOLUTION];
+	static double lanczos_lut[LANCZOS_SAMPLES];
 
 	Channel();
 

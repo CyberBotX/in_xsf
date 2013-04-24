@@ -19,7 +19,7 @@
 #ifndef TYPES_HPP
 #define TYPES_HPP
 
-#include "pstdint.h"
+#include <cstdint>
 
 #ifdef _WINDOWS
 # define HAVE_LIBAGG

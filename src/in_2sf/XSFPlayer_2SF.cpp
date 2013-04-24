@@ -1,7 +1,7 @@
 /*
  * xSF - 2SF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-17
+ * Last modification on 2013-04-23
  *
  * Based on a modified vio2sf v0.22c
  *
@@ -185,12 +185,12 @@ bool XSFPlayer_2SF::Load2SF(XSFFile *xSFToLoad)
 
 XSFPlayer_2SF::XSFPlayer_2SF(const std::string &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 4, 8);
+	this->xSF.reset(new XSFFile(filename, 4, 8));
 }
 
 XSFPlayer_2SF::XSFPlayer_2SF(const std::wstring &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 4, 8);
+	this->xSF.reset(new XSFFile(filename, 4, 8));
 }
 
 bool XSFPlayer_2SF::Load()
@@ -199,7 +199,7 @@ bool XSFPlayer_2SF::Load()
 	sndifwork.sync_type = this->xSF->GetTagValue("_2sf_sync_type", 0);
 
 	sndifwork.xfs_load = false;
-	if (!this->Load2SF(this->xSF))
+	if (!this->Load2SF(this->xSF.get()))
 		return false;
 
 	if (NDS_Init())

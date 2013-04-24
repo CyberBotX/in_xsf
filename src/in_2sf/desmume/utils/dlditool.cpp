@@ -60,7 +60,7 @@
 #include <cstdlib>
 #include <cstdarg>
 
-#include "pstdint.h"
+#include <cstdint>
 #ifndef _MSC_VER
 # include <unistd.h>
 # include <sys/param.h>

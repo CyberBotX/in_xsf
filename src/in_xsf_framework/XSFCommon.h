@@ -1,7 +1,7 @@
 /*
  * xSF - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  */
@@ -14,7 +14,7 @@
 #include <string>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include "pstdint.h"
+#include <cstdint>
 
 // Code from http://learningcppisfun.blogspot.com/2010/04/comparing-floating-point-numbers.html
 template<typename T> inline bool fEqual(T x, T y, int N = 1)
@@ -39,7 +39,7 @@ inline uint32_t Get32BitsLE(std::ifstream &input)
 // This gets the directory for the path, including the final forward/backward slash
 template<typename T> inline std::basic_string<T> ExtractDirectoryFromPath(const std::basic_string<T> &fullPath)
 {
-	size_t lastSlash = fullPath.rfind('\\');
+	auto lastSlash = fullPath.rfind('\\');
 	if (lastSlash == std::basic_string<T>::npos)
 		lastSlash = fullPath.rfind('/');
 	return lastSlash != std::basic_string<T>::npos ? fullPath.substr(0, lastSlash + 1) : std::basic_string<T>();
@@ -48,7 +48,7 @@ template<typename T> inline std::basic_string<T> ExtractDirectoryFromPath(const 
 // This gets the filename for the path
 template<typename T> inline std::basic_string<T> ExtractFilenameFromPath(const std::basic_string<T> &fullPath)
 {
-	size_t lastSlash = fullPath.rfind('\\');
+	auto lastSlash = fullPath.rfind('\\');
 	if (lastSlash == std::basic_string<T>::npos)
 		lastSlash = fullPath.rfind('/');
 	return lastSlash != std::basic_string<T>::npos ? fullPath.substr(lastSlash + 1) : std::basic_string<T>();
@@ -56,7 +56,7 @@ template<typename T> inline std::basic_string<T> ExtractFilenameFromPath(const s
 
 // Code from the following answer on Stack Overflow:
 // http://stackoverflow.com/a/15479212
-template<typename T> static inline T NextHighestPowerOf2(T value)
+template<typename T> inline T NextHighestPowerOf2(T value)
 {
 	if (value < 1)
 		return 1;

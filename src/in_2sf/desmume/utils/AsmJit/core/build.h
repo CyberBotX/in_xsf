@@ -164,7 +164,7 @@ namespace AsmJit
 // [AsmJit - Types]
 // ============================================================================
 
-#include "pstdint.h"
+#include <cstdint>
 
 #ifdef ASMJIT_X86
 typedef int32_t sysint_t;

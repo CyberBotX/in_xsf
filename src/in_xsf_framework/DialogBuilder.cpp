@@ -1,7 +1,7 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-23
  */
 
 #include "DialogBuilder.h"
@@ -16,13 +16,33 @@ static inline uint32_t getNextMultipleOf4(uint32_t origNum)
 	return origNum + 4 - remainder;
 }
 
+Point<short> RelativePosition::CalculatePosition(const Rect<short> &child, const Rect<short> &other)
+{
+	Point<short> newPosition = child.position;
+	if (this->relativePosition.y != -1)
+	{
+		if (this->positionType == FROM_TOP || this->positionType == FROM_TOPLEFT || this->positionType == FROM_TOPRIGHT)
+			newPosition.y = other.position.y + this->relativePosition.y;
+		if (this->positionType == FROM_BOTTOM || this->positionType == FROM_BOTTOMLEFT || this->positionType == FROM_BOTTOMRIGHT)
+			newPosition.y = other.position.y + other.size.height + this->relativePosition.y;
+	}
+	if (this->relativePosition.x != -1)
+	{
+		if (this->positionType == FROM_LEFT || this->positionType == FROM_TOPLEFT || this->positionType == FROM_BOTTOMLEFT)
+			newPosition.x = other.position.x + this->relativePosition.x;
+		if (this->positionType == FROM_RIGHT || this->positionType == FROM_TOPRIGHT || this->positionType == FROM_BOTTOMRIGHT)
+			newPosition.x = other.position.x + other.size.width + this->relativePosition.x;
+	}
+	return newPosition;
+}
+
 void DialogTemplate::DialogGroup::CalculatePositions(bool doRightAndBottom)
 {
 	short x = 0, num = this->controls.empty() ? 0 : this->controls.size();
 	for (; x < num; ++x)
 	{
 		auto &control = this->controls[x];
-		if (control->relativePosition.get())
+		if (control->relativePosition)
 		{
 			bool valid = true;
 			if (!doRightAndBottom && control->relativePosition->type == RelativePosition::TO_PARENT)
@@ -61,7 +81,7 @@ void DialogTemplate::DialogGroup::CalculateSize()
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
 		bool usePosition = true;
-		if (control->relativePosition.get())
+		if (control->relativePosition)
 		{
 			if (control->relativePosition->type == RelativePosition::TO_PARENT)
 			{
@@ -129,6 +149,7 @@ std::vector<uint8_t> DialogTemplate::DialogGroup::GenerateControlTemplate() cons
 std::vector<uint8_t> DialogTemplate::DialogControlWithoutLabel::GenerateControlTemplate() const
 {
 	auto data = std::vector<uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t)), 0);
+
 	*reinterpret_cast<uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | this->style;
 	*reinterpret_cast<uint32_t *>(&data[4]) = this->exstyle;
 	*reinterpret_cast<uint16_t *>(&data[8]) = this->rect.position.x;
@@ -145,6 +166,7 @@ std::vector<uint8_t> DialogTemplate::DialogControlWithoutLabel::GenerateControlT
 std::vector<uint8_t> DialogTemplate::DialogControlWithLabel::GenerateControlTemplate() const
 {
 	auto data = std::vector<uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t) * (this->label.length() + 1)), 0);
+
 	*reinterpret_cast<uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | this->style;
 	*reinterpret_cast<uint32_t *>(&data[4]) = this->exstyle;
 	*reinterpret_cast<uint16_t *>(&data[8]) = this->rect.position.x;
@@ -168,7 +190,7 @@ uint16_t DialogTemplate::GetTotalControlCount() const
 
 void DialogTemplate::AddGroupControl(const DialogControlBuilder<DialogGroupBuilder> &builder)
 {
-	std::unique_ptr<DialogControl> newGroup = DialogGroup::CreateControl(builder);
+	auto newGroup = DialogGroup::CreateControl(builder);
 	if (builder.index == -1)
 		this->controls.push_back(std::move(newGroup));
 	else
@@ -209,7 +231,7 @@ bool DialogTemplate::CalculateControlPosition(short index, bool doRightAndBottom
 {
 	auto &control = this->controls[index];
 	bool valid = true;
-	if (control->relativePosition.get())
+	if (control->relativePosition)
 	{
 		if (!doRightAndBottom && control->relativePosition->type == RelativePosition::TO_PARENT)
 		{
@@ -247,7 +269,7 @@ void DialogTemplate::CalculateSize()
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
 		bool usePosition = true;
-		if (control->relativePosition.get())
+		if (control->relativePosition)
 		{
 			if (control->relativePosition->type == RelativePosition::TO_PARENT)
 			{
@@ -319,6 +341,7 @@ const DLGTEMPLATE *DialogTemplate::GenerateTemplate()
 	this->templateData.clear();
 	uint16_t controlCount = this->GetTotalControlCount();
 	this->templateData.resize(getNextMultipleOf4(24 + sizeof(wchar_t) * (this->title.length() + 1 + (this->fontName.empty() ? 0 : this->fontName.length() + 1))), 0);
+
 	*reinterpret_cast<uint32_t *>(&this->templateData[0]) = this->style | (this->fontName.empty() ? 0 : DS_SETFONT);
 	*reinterpret_cast<uint32_t *>(&this->templateData[4]) = this->exstyle;
 	*reinterpret_cast<uint16_t *>(&this->templateData[8]) = controlCount;

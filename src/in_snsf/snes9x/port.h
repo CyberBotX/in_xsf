@@ -211,7 +211,7 @@
 #define PIXEL_FORMAT RGB555
 #endif
 
-#include "pstdint.h"
+#include <cstdint>
 /*#ifndef snes9x_types_defined
 #define snes9x_types_defined
 typedef unsigned char		bool8;

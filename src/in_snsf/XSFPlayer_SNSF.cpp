@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-23
  *
  * Based on a modified in_snsf by Caitsith2
  * http://snsf.caitsith2.net/
@@ -207,17 +207,17 @@ static bool Load2SF(XSFFile *xSF)
 
 XSFPlayer_SNSF::XSFPlayer_SNSF(const std::string &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 4, 8);
+	this->xSF.reset(new XSFFile(filename, 4, 8));
 }
 
 XSFPlayer_SNSF::XSFPlayer_SNSF(const std::wstring &filename) : XSFPlayer()
 {
-	this->xSF = new XSFFile(filename, 4, 8);
+	this->xSF.reset(new XSFFile(filename, 4, 8));
 }
 
 bool XSFPlayer_SNSF::Load()
 {
-	if (!Load2SF(this->xSF))
+	if (!Load2SF(this->xSF.get()))
 		return false;
 
 	Settings.SoundSync = true;

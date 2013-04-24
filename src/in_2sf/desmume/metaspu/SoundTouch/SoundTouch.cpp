@@ -328,7 +328,7 @@ void SoundTouch::clear()
 /// Returns number of samples currently unprocessed.
 uint32_t SoundTouch::numUnprocessedSamples() const
 {
-	if (this->pTDStretch.get())
+	if (this->pTDStretch)
 	{
 		FIFOSamplePipe *psp = this->pTDStretch->getInput();
 		if (psp)

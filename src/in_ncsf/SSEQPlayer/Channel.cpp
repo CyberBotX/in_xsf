@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-18
+ * Last modification on 2013-04-23
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -11,8 +11,7 @@
  * http://desmume.org/
  */
 
-#define _USE_MATH_DEFINES
-#include <cmath>
+#include "XSFCommon.h"
 #include "Channel.h"
 #include "Player.h"
 #include "common.h"
@@ -43,11 +42,33 @@ TempSndReg::TempSndReg() : CR(0), SOURCE(nullptr), TIMER(0), REPEAT_POINT(0), LE
 {
 }
 
+bool Channel::initializedLUTs = false;
+double Channel::cosine_lut[Channel::COSINE_RESOLUTION];
+double Channel::lanczos_lut[Channel::LANCZOS_SAMPLES];
+
+#ifndef M_PI
+static const double M_PI = 3.14159265358979323846;
+#endif
+
+static inline double sinc(double x)
+{
+	return fEqual(x, 0.0) ? 1.0 : std::sin(x * M_PI) / (x * M_PI);
+}
+
 Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0), manualSweep(false), flags(), pan(0), extAmpl(0), velocity(0), extPan(0),
 	key(0), ampl(0), extTune(0), orgKey(0), modType(0), modSpeed(0), modDepth(0), modRange(0), modDelay(0), modDelayCnt(0), modCounter(0),
 	sweepLen(0), sweepCnt(0), sweepPitch(0), attackLvl(0), sustainLvl(0x7F), decayRate(0), releaseRate(0xFFFF), noteLength(-1), vol(0), ply(nullptr), reg()
 {
 	this->clearHistory();
+	if (!this->initializedLUTs)
+	{
+		for (unsigned i = 0; i < COSINE_RESOLUTION; ++i)
+			this->cosine_lut[i] = (1.0 - std::cos((static_cast<double>(i) / COSINE_RESOLUTION) * M_PI)) * 0.5;
+		double dx = static_cast<double>(LANCZOS_WIDTH) / LANCZOS_SAMPLES, x = 0.0;
+		for (unsigned i = 0; i < LANCZOS_SAMPLES; ++i, x += dx)
+			this->lanczos_lut[i] = std::abs(x) < LANCZOS_WIDTH ? sinc(x) * sinc(x / LANCZOS_WIDTH) : 0.0;
+		this->initializedLUTs = true;
+	}
 }
 
 void Channel::UpdateVol(const Track &trk)
@@ -575,10 +596,6 @@ static const int16_t wavedutytbl[8][8] =
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF }
 };
 
-#ifndef M_PI
-static const double M_PI = 3.14159265358979323846;
-#endif
-
 // Linear and Cosine interpolation code originally from DeSmuME
 // B-spline and Osculating come from Olli Niemitalo:
 // http://www.student.oulu.fi/~oniemita/dsp/deip.pdf
@@ -612,7 +629,7 @@ int32_t Channel::Interpolate()
 				c5 = 1 / 120.0 * (d - y) + 1 / 24.0 * (z - c) + 1 / 12.0 * (b - a);
 				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 			}
-			else // INTERPOLATION_6POINTOSCULATING
+			else if (this->ply->interpolation == INTERPOLATION_6POINTOSCULATING)
 			{
 				ratio -= 0.5;
 				double even1 = y + d, odd1 = y - d;
@@ -626,6 +643,19 @@ int32_t Channel::Interpolate()
 				c5 = 25 / 24.0 * odd2 - 25 / 12.0 * odd3 - 5 / 24.0 * odd1;
 				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 			}
+			else // INTERPOLATION_6POINTLANCZOS
+			{
+				double kernel[6], kernel_sum = 0.0;
+				int i = 3, shift = static_cast<int>(std::floor(ratio * LANCZOS_RESOLUTION));
+				for (; i >= -2; --i)
+				{
+					int pos = i * LANCZOS_RESOLUTION;
+					kernel_sum += kernel[i + 2] = this->lanczos_lut[std::abs(shift - pos)];
+				}
+				for (i = 0; i < 6; ++i)
+					kernel[i] /= kernel_sum;
+				return static_cast<int32_t>(y * kernel[0] + z * kernel[1] + a * kernel[2] + b * kernel[3] + c * kernel[4] + d * kernel[5]);
+			}
 		}
 		else // INTERPOLATION_4POINTBSPLINE
 		{
@@ -638,10 +668,7 @@ int32_t Channel::Interpolate()
 		}
 	}
 	else if (this->ply->interpolation == INTERPOLATION_COSINE)
-	{
-		double ratio2 = (1.0 - std::cos(ratio * M_PI)) * 0.5;
-		return static_cast<int32_t>(a + ratio2 * (b - a));
-	}
+		return static_cast<int32_t>(a + this->cosine_lut[static_cast<unsigned>(ratio * COSINE_RESOLUTION)] * (b - a));
 	else // INTERPOLATION_LINEAR
 		return static_cast<int32_t>(a + ratio * (b - a));
 }

@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-02
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  */
@@ -57,7 +57,7 @@ const String &XSFConfig::CommonNameWithVersion()
 std::wstring XSFConfig::GetTextFromWindow(HWND hwnd)
 {
 	LRESULT length = SendMessageW(hwnd, WM_GETTEXTLENGTH, 0, 0);
-	std::vector<wchar_t> value(length + 1);
+	auto value = std::vector<wchar_t>(length + 1);
 	length = SendMessageW(hwnd, WM_GETTEXT, length + 1, reinterpret_cast<LPARAM>(&value[0]));
 	return std::wstring(value.begin(), value.begin() + length);
 }
@@ -340,7 +340,7 @@ void XSFConfig::ResetConfigDefaults(HWND hwndDlg)
 	SetWindowTextW(GetDlgItem(hwndDlg, idVolume), wstringify(XSFConfig::initVolume).c_str());
 	SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_SETCURSEL, XSFConfig::initVolumeType, 0);
 	SendMessageW(GetDlgItem(hwndDlg, idClipProtect), CB_SETCURSEL, XSFConfig::initPeakType, 0);
-	std::vector<unsigned>::const_iterator found = std::find(this->supportedSampleRates.begin(), this->supportedSampleRates.end(), XSFConfig::initSampleRate);
+	auto found = std::find(this->supportedSampleRates.begin(), this->supportedSampleRates.end(), XSFConfig::initSampleRate);
 	SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_SETCURSEL, found - this->supportedSampleRates.begin(), 0);
 	SetWindowTextW(GetDlgItem(hwndDlg, idTitleFormat), XSFConfig::initTitleFormat.c_str());
 

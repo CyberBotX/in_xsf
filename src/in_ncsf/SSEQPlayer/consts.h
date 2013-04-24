@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Constants/Macros
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-12
+ * Last modification on 2013-04-23
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -14,7 +14,7 @@
 #ifndef SSEQPLAYER_CONSTS_H
 #define SSEQPLAYER_CONSTS_H
 
-#include "pstdint.h"
+#include <cstdint>
 
 const uint32_t ARM7_CLOCK = 33513982;
 const double SecondsPerClockCycle = 64.0 * 2728.0 / ARM7_CLOCK;
@@ -58,7 +58,8 @@ enum Interpolation
 	INTERPOLATION_COSINE,
 	INTERPOLATION_4POINTBSPLINE,
 	INTERPOLATION_6POINTOSCULATING,
-	INTERPOLATION_6POINTBSPLINE
+	INTERPOLATION_6POINTBSPLINE,
+	INTERPOLATION_6POINTLANCZOS
 };
 
 #endif

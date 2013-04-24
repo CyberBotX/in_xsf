@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-10
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  */
@@ -308,7 +308,7 @@ extern "C" __declspec(dllexport) In_Module *winampGetInModule2()
 
 static eq_str eqstr;
 
-extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, const char *data, char *dest, size_t destlen)
+template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, const char *data, T *dest, size_t destlen)
 {
 	if (eqstr(data, "type"))
 	{
@@ -324,7 +324,6 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, c
 	{
 		try
 		{
-			XSFFile file = XSFFile(fn);
 			std::string tagToGet = data;
 			if (eqstr(data, "album"))
 				tagToGet = "game";
@@ -336,7 +335,7 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, c
 			}
 			else if (eqstr(tagToGet, "length"))
 			{
-				strcpy(dest, stringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade())).c_str());
+				String(stringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade()))).Substring(0, destlen - 1).CopyToString(dest, true);
 				return 1;
 			}
 			file.GetTagValue(tagToGet).Substring(0, destlen - 1).CopyToString(dest, true);
@@ -349,44 +348,29 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, c
 	}
 }
 
-extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *fn, const char *data, wchar_t *dest, size_t destlen)
+extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, const char *data, char *dest, size_t destlen)
 {
-	if (eqstr(data, "type"))
+	try
 	{
-		dest[0] = L'0';
-		dest[1] = 0;
-		return 1;
+		auto file = XSFFile(fn);
+		return wrapperWinampGetExtendedFileInfo(file, data, dest, destlen);
 	}
-	else if (eqstr(data, "family"))
+	catch (const std::exception &)
 	{
 		return 0;
 	}
-	else
+}
+
+extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *fn, const char *data, wchar_t *dest, size_t destlen)
+{
+	try
 	{
-		try
-		{
-			XSFFile file = XSFFile(fn);
-			std::string tagToGet = data;
-			if (eqstr(data, "album"))
-				tagToGet = "game";
-			if (!file.GetTagExists(tagToGet))
-			{
-				if (eqstr(tagToGet, "replaygain_track_gain"))
-					return 1;
-				return 0;
-			}
-			else if (eqstr(tagToGet, "length"))
-			{
-				wcscpy(dest, wstringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade())).c_str());
-				return 1;
-			}
-			file.GetTagValue(tagToGet).Substring(0, destlen - 1).CopyToString(dest);
-			return 1;
-		}
-		catch (const std::exception &)
-		{
-			return 0;
-		}
+		auto file = XSFFile(fn);
+		return wrapperWinampGetExtendedFileInfo(file, data, dest, destlen);
+	}
+	catch (const std::exception &)
+	{
+		return 0;
 	}
 }
 
@@ -402,7 +386,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfo(const char *fn, c
 {
 	try
 	{
-		if (!extendedXSFFile.get() || extendedXSFFile->GetFilename().GetStr() != fn)
+		if (!extendedXSFFile || extendedXSFFile->GetFilename().GetStr() != fn)
 			extendedXSFFile.reset(new XSFFile(fn));
 		return wrapperWinampSetExtendedFileInfo(data, val);
 	}
@@ -416,7 +400,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *f
 {
 	try
 	{
-		if (!extendedXSFFile.get() || extendedXSFFile->GetFilename().GetWStr() != fn)
+		if (!extendedXSFFile || extendedXSFFile->GetFilename().GetWStr() != fn)
 			extendedXSFFile.reset(new XSFFile(fn));
 		return wrapperWinampSetExtendedFileInfo(data, val);
 	}
@@ -428,7 +412,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *f
 
 extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
 {
-	if (!extendedXSFFile.get() || extendedXSFFile->GetFilename().empty())
+	if (!extendedXSFFile || extendedXSFFile->GetFilename().empty())
 		return 0;
 	extendedXSFFile->SaveFile();
 	return 1;

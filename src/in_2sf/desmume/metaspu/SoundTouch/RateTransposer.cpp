@@ -221,7 +221,7 @@ void RateTransposer::processSamples(const SAMPLETYPE *src, uint32_t nSamples)
 {
 	if (!nSamples)
 		return;
-	assert(this->pAAFilter.get());
+	assert(this->pAAFilter);
 
 	// If anti-alias filter is turned off, simply transpose without applying
 	// the filter

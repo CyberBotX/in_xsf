@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  */
@@ -13,8 +13,8 @@
 
 extern XSFConfig *xSFConfig;
 
-XSFPlayer::XSFPlayer() : xSF(nullptr), sampleRate(0), detectedSilenceSample(0), detectedSilenceSec(0), skipSilenceOnStartSec(5), lengthSample(0), fadeSample(0), currentSample(0),
-	prevSampleL(XSFPlayer::CHECK_SILENCE_BIAS), prevSampleR(XSFPlayer::CHECK_SILENCE_BIAS), lengthInMS(-1), fadeInMS(-1), volume(1.0), ignoreVolume(false)
+XSFPlayer::XSFPlayer() : xSF(), sampleRate(0), detectedSilenceSample(0), detectedSilenceSec(0), skipSilenceOnStartSec(5), lengthSample(0), fadeSample(0), currentSample(0),
+	prevSampleL(CHECK_SILENCE_BIAS), prevSampleR(CHECK_SILENCE_BIAS), lengthInMS(-1), fadeInMS(-1), volume(1.0), ignoreVolume(false)
 {
 }
 
@@ -30,7 +30,7 @@ XSFPlayer &XSFPlayer::operator=(const XSFPlayer &xSFPlayer)
 	if (this != &xSFPlayer)
 	{
 		if (!this->xSF)
-			this->xSF = new XSFFile();
+			this->xSF.reset(new XSFFile());
 		*this->xSF = *xSFPlayer.xSF;
 		this->sampleRate = xSFPlayer.sampleRate;
 		this->detectedSilenceSample = xSFPlayer.detectedSilenceSample;
@@ -65,8 +65,8 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 			{
 				short *bufShort = reinterpret_cast<short *>(&buf[0]);
 				unsigned long sampleL = bufShort[2 * (offset + ofs)], sampleR = bufShort[2 * (offset + ofs) + 1];
-				bool silence = (sampleL + XSFPlayer::CHECK_SILENCE_BIAS + XSFPlayer::CHECK_SILENCE_LEVEL) - this->prevSampleL <= XSFPlayer::CHECK_SILENCE_LEVEL * 2 &&
-					(sampleR + XSFPlayer::CHECK_SILENCE_BIAS + XSFPlayer::CHECK_SILENCE_LEVEL) - this->prevSampleR <= XSFPlayer::CHECK_SILENCE_LEVEL * 2;
+				bool silence = (sampleL + CHECK_SILENCE_BIAS + CHECK_SILENCE_LEVEL) - this->prevSampleL <= CHECK_SILENCE_LEVEL * 2 &&
+					(sampleR + CHECK_SILENCE_BIAS + CHECK_SILENCE_LEVEL) - this->prevSampleR <= CHECK_SILENCE_LEVEL * 2;
 
 				if (silence)
 				{
@@ -93,15 +93,15 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 					}
 				}
 
-				prevSampleL = sampleL + XSFPlayer::CHECK_SILENCE_BIAS;
-				prevSampleR = sampleR + XSFPlayer::CHECK_SILENCE_BIAS;
+				prevSampleL = sampleL + CHECK_SILENCE_BIAS;
+				prevSampleR = sampleR + CHECK_SILENCE_BIAS;
 			}
 
 			if (!this->skipSilenceOnStartSec)
 			{
 				if (skipOffset)
 				{
-					std::vector<uint8_t> tmpBuf = std::vector<uint8_t>(2 * skipOffset);
+					auto tmpBuf = std::vector<uint8_t>(2 * skipOffset);
 					memcpy(&tmpBuf[0], &buf[offset + 2 * skipOffset], 2 * skipOffset);
 					memcpy(&buf[offset], &tmpBuf[0], 2 * skipOffset);
 					pos += skipOffset;
@@ -186,11 +186,10 @@ void XSFPlayer::SeekTop()
 {
 	this->skipSilenceOnStartSec = xSFConfig->GetSkipSilenceOnStartSec();
 	this->currentSample = this->detectedSilenceSec = this->detectedSilenceSample = 0;
-	this->prevSampleL = this->prevSampleR = XSFPlayer::CHECK_SILENCE_BIAS;
+	this->prevSampleL = this->prevSampleR = CHECK_SILENCE_BIAS;
 }
 
 #ifdef WINAMP_PLUGIN
-
 static inline DWORD TicksDiff(DWORD prev, DWORD cur) { return cur >= prev ? cur - prev : 0xFFFFFFFF - prev + cur; }
 
 int XSFPlayer::Seek(unsigned seekPosition, volatile int *killswitch, std::vector<uint8_t> &buf, Out_Module *outMod)
@@ -229,5 +228,4 @@ int XSFPlayer::Seek(unsigned seekPosition, volatile int *killswitch, std::vector
 		outMod->Flush(seekPosition);
 	return 0;
 }
-
 #endif

@@ -1,7 +1,7 @@
 /*
  * Common conversion functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-23
  */
 
 #ifndef _CONVERT_H_
@@ -66,14 +66,14 @@ template<typename T, typename S> inline T convertTo(const std::basic_string<S> &
 class ConvertFuncs
 {
 private:
-	static inline bool IsDigitsOnly(const std::string &input, const std::locale &loc = std::locale::classic())
+	template<typename T> static bool IsDigitsOnly(const std::basic_string<T> &input, const std::locale &loc = std::locale::classic())
 	{
-		auto inputChars = std::vector<char>(input.begin(), input.end());
+		auto inputChars = std::vector<T>(input.begin(), input.end());
 		size_t length = inputChars.size();
-		auto masks = std::vector<std::ctype<char>::mask>(length);
-		std::use_facet<std::ctype<char>>(loc).is(&inputChars[0], &inputChars[length], &masks[0]);
+		auto masks = std::vector<std::ctype<T>::mask>(length);
+		std::use_facet<std::ctype<T>>(loc).is(&inputChars[0], &inputChars[length], &masks[0]);
 		for (size_t x = 0; x < length; ++x)
-			if (inputChars[x] != '.' && !(masks[x] & std::ctype<char>::digit))
+			if (inputChars[x] != '.' && !(masks[x] & std::ctype<T>::digit))
 				return false;
 		return true;
 	}

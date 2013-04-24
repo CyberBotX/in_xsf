@@ -1,7 +1,7 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2013-04-23
  */
 
 #ifndef DIALOG_BUILDER_H
@@ -12,7 +12,7 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
-#include "pstdint.h"
+#include <cstdint>
 #include "windowsh_wrapper.h"
 #include "UtfConverter.h"
 
@@ -38,7 +38,7 @@ template<typename T> struct Rect
 	Size<T> size;
 
 	Rect() : position(), size() { }
-	Rect(Point<T> Position, Size<T> Sz) : position(Position), size(Sz) { }
+	Rect(const Point<T> &Position, const Size<T> &Sz) : position(Position), size(Sz) { }
 	Rect(T X, T Y, T Width, T Height) : position(X, Y), size(Width, Height) { }
 };
 
@@ -63,34 +63,16 @@ public:
 		FROM_BOTTOMRIGHT
 	} positionType;
 
-	RelativePosition(Point<short> RelPosition, BaseType Type, PositionType PosType) : relativePosition(RelPosition), type(Type), positionType(PosType) { }
+	RelativePosition(const Point<short> &RelPosition, BaseType Type, PositionType PosType) : relativePosition(RelPosition), type(Type), positionType(PosType) { }
 	virtual ~RelativePosition() { }
 	virtual RelativePosition *Clone() const = 0;
-	Point<short> CalculatePosition(Rect<short> child, Rect<short> other)
-	{
-		Point<short> newPosition = child.position;
-		if (this->relativePosition.y != -1)
-		{
-			if (this->positionType == FROM_TOP || this->positionType == FROM_TOPLEFT || this->positionType == FROM_TOPRIGHT)
-				newPosition.y = other.position.y + this->relativePosition.y;
-			if (this->positionType == FROM_BOTTOM || this->positionType == FROM_BOTTOMLEFT || this->positionType == FROM_BOTTOMRIGHT)
-				newPosition.y = other.position.y + other.size.height + this->relativePosition.y;
-		}
-		if (this->relativePosition.x != -1)
-		{
-			if (this->positionType == FROM_LEFT || this->positionType == FROM_TOPLEFT || this->positionType == FROM_BOTTOMLEFT)
-				newPosition.x = other.position.x + this->relativePosition.x;
-			if (this->positionType == FROM_RIGHT || this->positionType == FROM_TOPRIGHT || this->positionType == FROM_BOTTOMRIGHT)
-				newPosition.x = other.position.x + other.size.width + this->relativePosition.x;
-		}
-		return newPosition;
-	}
+	Point<short> CalculatePosition(const Rect<short> &child, const Rect<short> &other);
 };
 
 class RelativePositionToParent : public RelativePosition
 {
 public:
-	RelativePositionToParent(Point<short> RelPosition, PositionType PosType) : RelativePosition(RelPosition, TO_PARENT, PosType) { }
+	RelativePositionToParent(const Point<short> &RelPosition, PositionType PosType) : RelativePosition(RelPosition, TO_PARENT, PosType) { }
 	RelativePositionToParent *Clone() const { return new RelativePositionToParent(this->relativePosition, this->positionType); }
 };
 
@@ -99,7 +81,7 @@ class RelativePositionToSibling : public RelativePosition
 public:
 	short siblingsBack;
 
-	RelativePositionToSibling(Point<short> RelPosition, PositionType PosType, short SiblingsBack = 1) : RelativePosition(RelPosition, TO_SIBLING, PosType), siblingsBack(SiblingsBack) { }
+	RelativePositionToSibling(const Point<short> &RelPosition, PositionType PosType, short SiblingsBack = 1) : RelativePosition(RelPosition, TO_SIBLING, PosType), siblingsBack(SiblingsBack) { }
 	RelativePositionToSibling *Clone() const { return new RelativePositionToSibling(this->relativePosition, this->positionType, this->siblingsBack); }
 };
 
@@ -131,7 +113,7 @@ public:
 	DialogBuilder &WithTitle(const std::wstring &Title) { this->title = Title; return *this; }
 	DialogBuilder &WithFont(const std::wstring &FontName, uint16_t FontSizeInPts) { this->fontName = FontName; this->fontSizeInPts = FontSizeInPts; return *this; }
 	DialogBuilder &WithSize(short Width, short Height) { this->size.width = Width; this->size.height = Height; return *this; }
-	DialogBuilder &WithSize(Size<short> Sz) { this->size = Sz; return *this; }
+	DialogBuilder &WithSize(const Size<short> &Sz) { this->size = Sz; return *this; }
 	DialogBuilder &ResetControls(bool Reset = true) { this->resetControls = Reset; return *this; }
 	DialogBuilder &IsOverlapped() { this->style &= ~(WS_OVERLAPPED | WS_POPUP | WS_CHILD); this->style |= WS_OVERLAPPED; return *this; }
 	DialogBuilder &IsPopup() { this->style &= ~(WS_OVERLAPPED | WS_POPUP | WS_CHILD); this->style |= WS_POPUP; return *this; }
@@ -170,19 +152,19 @@ public:
 	DialogControlBuilder(DialogControlType Type = NO_CONTROL) : controlType(Type), style(0), exstyle(0), rect(), id(-1), index(-1), relativePosition() { }
 	virtual ~DialogControlBuilder() { }
 	T &WithPosition(short X, short Y) { this->rect.position.x = X; this->rect.position.y = Y; return this->me(); }
-	T &WithPosition(Point<short> Position) { this->rect.position = Position; return this->me(); }
-	T &WithRelativePositionToParent(RelativePosition::PositionType PosType, Point<short> RelativePosition)
+	T &WithPosition(const Point<short> &Position) { this->rect.position = Position; return this->me(); }
+	T &WithRelativePositionToParent(RelativePosition::PositionType PosType, const Point<short> &RelativePosition)
 	{
 		this->relativePosition.reset(new RelativePositionToParent(RelativePosition, PosType));
 		return this->me();
 	}
-	T &WithRelativePositionToSibling(RelativePosition::PositionType PosType, Point<short> RelativePosition, short SiblingsBack = 1)
+	T &WithRelativePositionToSibling(RelativePosition::PositionType PosType, const Point<short> &RelativePosition, short SiblingsBack = 1)
 	{
 		this->relativePosition.reset(new RelativePositionToSibling(RelativePosition, PosType, SiblingsBack));
 		return this->me();
 	}
 	T &WithSize(short Width, short Height) { this->rect.size.width = Width; this->rect.size.height = Height; return this->me(); }
-	T &WithSize(Size<short> Sz) { this->rect.size = Sz; return this->me(); }
+	T &WithSize(const Size<short> &Sz) { this->rect.size = Sz; return this->me(); }
 	T &WithID(short ID) { this->id = ID; return this->me(); }
 	T &AtIndex(int Index) { this->index = Index; return this->me(); }
 	T &IsDisabled(bool Disabled = true) { if (Disabled) this->style |= WS_DISABLED; else this->style &= ~WS_DISABLED; return this->me(); }
@@ -400,7 +382,7 @@ class DialogTemplate
 		friend class DialogTemplate;
 		DialogControl() : controlType(NO_CONTROL), style(0), exstyle(0), rect(), id(-1), relativePosition() { }
 		DialogControl(const DialogControl &control) : controlType(control.controlType), style(control.style), exstyle(control.exstyle), rect(control.rect), id(control.id),
-			relativePosition(control.relativePosition.get() ? control.relativePosition->Clone() : nullptr) { }
+			relativePosition(control.relativePosition ? control.relativePosition->Clone() : nullptr) { }
 		DialogControl &operator=(const DialogControl &control)
 		{
 			this->controlType = control.controlType;
@@ -408,7 +390,7 @@ class DialogTemplate
 			this->exstyle = control.exstyle;
 			this->rect = control.rect;
 			this->id = control.id;
-			if (control.relativePosition.get())
+			if (control.relativePosition)
 				this->relativePosition.reset(control.relativePosition->Clone());
 			else
 				this->relativePosition.reset();
@@ -426,7 +408,7 @@ class DialogTemplate
 			control->exstyle = builder.exstyle;
 			control->rect = builder.rect;
 			control->id = builder.id;
-			if (builder.relativePosition.get())
+			if (builder.relativePosition)
 				control->relativePosition.reset(builder.relativePosition->Clone());
 
 			return control;
@@ -616,7 +598,7 @@ class DialogTemplate
 
 	template<typename Builder> void AddControlToGroup(std::unique_ptr<DialogControl> &&control, const DialogControlBuilder<Builder> &builder)
 	{
-		const DialogInGroupBuilder<Builder> &groupBuilder = dynamic_cast<const DialogInGroupBuilder<Builder> &>(builder);
+		const auto &groupBuilder = dynamic_cast<const DialogInGroupBuilder<Builder> &>(builder);
 		if (groupBuilder.groupName.empty())
 		{
 			if (builder.index == -1)

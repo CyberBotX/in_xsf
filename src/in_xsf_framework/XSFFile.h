@@ -1,7 +1,7 @@
 /*
  * xSF - File structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2013-04-23
  *
  * Partially based on the vio*sf framework
  */
@@ -9,9 +9,9 @@
 #ifndef XSFFILE_H
 #define XSFFILE_H
 
+#include <cstdint>
 #include "TagList.h"
 #include "BigSString.h"
-#include "pstdint.h"
 
 enum VolumeType
 {
