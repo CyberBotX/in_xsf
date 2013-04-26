@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-04-26
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -132,7 +132,7 @@ struct Channel
 	 * simplify the case of wrapping. Thanks to kode54 for providing this.
 	 */
 	uint32_t sampleHistoryPtr;
-	int16_t sampleHistory[16];
+	int16_t sampleHistory[64];
 
 	/*
 	 * Lookup tables for the cosine and Lanczos Sinc interpolations, to
@@ -143,10 +143,10 @@ struct Channel
 	static bool initializedLUTs;
 	static const unsigned COSINE_RESOLUTION = 8192;
 	static const unsigned LANCZOS_RESOLUTION = 8192;
-	static const unsigned LANCZOS_WIDTH = 3;
+	static const unsigned LANCZOS_WIDTH = 8;
 	static const unsigned LANCZOS_SAMPLES = LANCZOS_RESOLUTION * LANCZOS_WIDTH;
 	static double cosine_lut[COSINE_RESOLUTION];
-	static double lanczos_lut[LANCZOS_SAMPLES];
+	static double lanczos_lut[LANCZOS_SAMPLES + 1];
 
 	Channel();
 

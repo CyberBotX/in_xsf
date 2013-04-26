@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-04-26
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -44,7 +44,7 @@ TempSndReg::TempSndReg() : CR(0), SOURCE(nullptr), TIMER(0), REPEAT_POINT(0), LE
 
 bool Channel::initializedLUTs = false;
 double Channel::cosine_lut[Channel::COSINE_RESOLUTION];
-double Channel::lanczos_lut[Channel::LANCZOS_SAMPLES];
+double Channel::lanczos_lut[Channel::LANCZOS_SAMPLES + 1];
 
 #ifndef M_PI
 static const double M_PI = 3.14159265358979323846;
@@ -65,7 +65,7 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 		for (unsigned i = 0; i < COSINE_RESOLUTION; ++i)
 			this->cosine_lut[i] = (1.0 - std::cos((static_cast<double>(i) / COSINE_RESOLUTION) * M_PI)) * 0.5;
 		double dx = static_cast<double>(LANCZOS_WIDTH) / LANCZOS_SAMPLES, x = 0.0;
-		for (unsigned i = 0; i < LANCZOS_SAMPLES; ++i, x += dx)
+		for (unsigned i = 0; i <= LANCZOS_SAMPLES; ++i, x += dx)
 			this->lanczos_lut[i] = std::abs(x) < LANCZOS_WIDTH ? sinc(x) * sinc(x / LANCZOS_WIDTH) : 0.0;
 		this->initializedLUTs = true;
 	}
@@ -604,37 +604,48 @@ int32_t Channel::Interpolate()
 	double ratio = this->reg.samplePosition;
 	ratio -= static_cast<int32_t>(ratio);
 
-	const auto &data = &this->sampleHistory[this->sampleHistoryPtr + 5];
-	int32_t a = data[0], b = data[1];
+	const auto &data = &this->sampleHistory[this->sampleHistoryPtr + 16];
 
-	double c0, c1, c2, c3, c4, c5;
-	if (this->ply->interpolation > INTERPOLATION_COSINE)
+	if (this->ply->interpolation == INTERPOLATION_LANCZOS)
 	{
-		int32_t c = data[2], z = data[-1];
+		double kernel[LANCZOS_WIDTH * 2], kernel_sum = 0.0;
+		int i = LANCZOS_WIDTH, shift = static_cast<int>(std::floor(ratio * LANCZOS_RESOLUTION));
+		int step = this->reg.sampleIncrease > 1.0 ? static_cast<int>(LANCZOS_RESOLUTION / this->reg.sampleIncrease) : LANCZOS_RESOLUTION;
+		for (; i >= -static_cast<int>(LANCZOS_WIDTH - 1); --i)
+		{
+			int pos = i * step;
+			kernel_sum += kernel[i + LANCZOS_WIDTH - 1] = this->lanczos_lut[std::abs(shift - pos)];
+		}
+		double sum = 0.0;
+		for (i = 0; i < static_cast<int>(LANCZOS_WIDTH * 2); ++i)
+			sum += data[i - static_cast<int>(LANCZOS_WIDTH) + 1] * kernel[i];
+		return static_cast<int32_t>(sum / kernel_sum);
+	}
+	else if (this->ply->interpolation > INTERPOLATION_COSINE)
+	{
+		double c0, c1, c2, c3, c4, c5;
 
 		if (this->ply->interpolation > INTERPOLATION_4POINTBSPLINE)
 		{
-			int32_t d = data[3], y = data[-2];
-
 			if (this->ply->interpolation == INTERPOLATION_6POINTBSPLINE)
 			{
-				double ym2py2 = y + c, ym1py1 = z + b;
-				double y2mym2 = c - y, y1mym1 = b - z;
+				double ym2py2 = data[-2] + data[2], ym1py1 = data[-1] + data[1];
+				double y2mym2 = data[2] - data[-2], y1mym1 = data[1] - data[-1];
 				double sixthym1py1 = 1 / 6.0 * ym1py1;
-				c0 = 1 / 120.0 * ym2py2 + 13 / 60.0 * ym1py1 + 0.55 * a;
+				c0 = 1 / 120.0 * ym2py2 + 13 / 60.0 * ym1py1 + 0.55 * data[0];
 				c1 = 1 / 24.0 * y2mym2 + 5 / 12.0 * y1mym1;
-				c2 = 1 / 12.0 * ym2py2 + sixthym1py1 - 0.5 * a;
+				c2 = 1 / 12.0 * ym2py2 + sixthym1py1 - 0.5 * data[0];
 				c3 = 1 / 12.0 * y2mym2 - 1 / 6.0 * y1mym1;
-				c4 = 1 / 24.0 * ym2py2 - sixthym1py1 + 0.25 * a;
-				c5 = 1 / 120.0 * (d - y) + 1 / 24.0 * (z - c) + 1 / 12.0 * (b - a);
+				c4 = 1 / 24.0 * ym2py2 - sixthym1py1 + 0.25 * data[0];
+				c5 = 1 / 120.0 * (data[3] - data[-2]) + 1 / 24.0 * (data[-1] - data[2]) + 1 / 12.0 * (data[1] - data[0]);
 				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 			}
-			else if (this->ply->interpolation == INTERPOLATION_6POINTOSCULATING)
+			else // INTERPOLATION_6POINTOSCULATING
 			{
 				ratio -= 0.5;
-				double even1 = y + d, odd1 = y - d;
-				double even2 = z + c, odd2 = z - c;
-				double even3 = a + b, odd3 = a - b;
+				double even1 = data[-2] + data[3], odd1 = data[-2] - data[3];
+				double even2 = data[-1] + data[2], odd2 = data[-1] - data[2];
+				double even3 = data[0] + data[1], odd3 = data[0] - data[1];
 				c0 = 0.01171875 * even1 - 0.09765625 * even2 + 0.5859375 * even3;
 				c1 = 0.2109375 * odd2 - 281 / 192.0 * odd3 - 13 / 384.0 * odd1;
 				c2 = 0.40625 * even2 - 17 / 48.0 * even3 - 5 / 96.0 * even1;
@@ -643,34 +654,21 @@ int32_t Channel::Interpolate()
 				c5 = 25 / 24.0 * odd2 - 25 / 12.0 * odd3 - 5 / 24.0 * odd1;
 				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 			}
-			else // INTERPOLATION_6POINTLANCZOS
-			{
-				double kernel[6], kernel_sum = 0.0;
-				int i = 3, shift = static_cast<int>(std::floor(ratio * LANCZOS_RESOLUTION));
-				for (; i >= -2; --i)
-				{
-					int pos = i * LANCZOS_RESOLUTION;
-					kernel_sum += kernel[i + 2] = this->lanczos_lut[std::abs(shift - pos)];
-				}
-				for (i = 0; i < 6; ++i)
-					kernel[i] /= kernel_sum;
-				return static_cast<int32_t>(y * kernel[0] + z * kernel[1] + a * kernel[2] + b * kernel[3] + c * kernel[4] + d * kernel[5]);
-			}
 		}
 		else // INTERPOLATION_4POINTBSPLINE
 		{
-			double ym1py1 = z + b;
-			c0 = 1 / 6.0 * ym1py1 + 2 / 3.0 * a;
-			c1 = 0.5 * (b - z);
-			c2 = 0.5 * ym1py1 - a;
-			c3 = 0.5 * (a - b) + 1 / 6.0 * (c - z);
+			double ym1py1 = data[-1] + data[1];
+			c0 = 1 / 6.0 * ym1py1 + 2 / 3.0 * data[0];
+			c1 = 0.5 * (data[1] - data[-1]);
+			c2 = 0.5 * ym1py1 - data[0];
+			c3 = 0.5 * (data[0] - data[1]) + 1 / 6.0 * (data[2] - data[-1]);
 			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
 		}
 	}
 	else if (this->ply->interpolation == INTERPOLATION_COSINE)
-		return static_cast<int32_t>(a + this->cosine_lut[static_cast<unsigned>(ratio * COSINE_RESOLUTION)] * (b - a));
+		return static_cast<int32_t>(data[0] + this->cosine_lut[static_cast<unsigned>(ratio * COSINE_RESOLUTION)] * (data[1] - data[0]));
 	else // INTERPOLATION_LINEAR
-		return static_cast<int32_t>(a + ratio * (b - a));
+		return static_cast<int32_t>(data[0] + ratio * (data[1] - data[0]));
 }
 
 int32_t Channel::GenerateSample()
@@ -732,9 +730,9 @@ void Channel::IncrementSample()
 
 		while (loc != newloc)
 		{
-			this->sampleHistory[this->sampleHistoryPtr] = this->sampleHistory[this->sampleHistoryPtr + 8] = this->reg.source->dataptr[loc++];
+			this->sampleHistory[this->sampleHistoryPtr] = this->sampleHistory[this->sampleHistoryPtr + 32] = this->reg.source->dataptr[loc++];
 
-			this->sampleHistoryPtr = (this->sampleHistoryPtr + 1) & 7;
+			this->sampleHistoryPtr = (this->sampleHistoryPtr + 1) & 31;
 
 			if (loc >= this->reg.totalLength)
 				loc -= this->reg.length;

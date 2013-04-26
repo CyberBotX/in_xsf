@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-04-26
  *
  * Partially based on the vio*sf framework
  */
@@ -19,15 +19,15 @@
 class XSFPlayer
 {
 protected:
-	static const unsigned CHECK_SILENCE_BIAS = 0x8000000;
-	static const unsigned CHECK_SILENCE_LEVEL = 7;
+	static const uint32_t CHECK_SILENCE_BIAS = 0x8000000;
+	static const uint32_t CHECK_SILENCE_LEVEL = 7;
 
 	std::unique_ptr<XSFFile> xSF;
 	unsigned sampleRate, detectedSilenceSample, detectedSilenceSec, skipSilenceOnStartSec, lengthSample, fadeSample, currentSample;
-	unsigned long prevSampleL, prevSampleR;
+	uint32_t prevSampleL, prevSampleR;
 	int lengthInMS, fadeInMS;
 	double volume;
-	bool ignoreVolume;
+	bool ignoreVolume, uses32BitSamplesClampedTo16Bit;
 
 	XSFPlayer();
 	XSFPlayer(const XSFPlayer &xSFPLayer);

@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-04-26
  *
  * Partially based on the vio*sf framework
  *
@@ -101,11 +101,13 @@ bool XSFPlayer_NCSF::LoadNCSF()
 
 XSFPlayer_NCSF::XSFPlayer_NCSF(const std::string &filename) : XSFPlayer()
 {
+	this->uses32BitSamplesClampedTo16Bit = true;
 	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
 XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer()
 {
+	this->uses32BitSamplesClampedTo16Bit = true;
 	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
@@ -128,14 +130,6 @@ bool XSFPlayer_NCSF::Load()
 	this->secondsUntilNextClock = SecondsPerClockCycle;
 
 	return XSFPlayer::Load();
-}
-
-template<typename T1, typename T2> static inline void clamp(T1 &valueToClamp, const T2 &minValue, const T2 &maxValue)
-{
-	if (valueToClamp < minValue)
-		valueToClamp = minValue;
-	else if (valueToClamp > maxValue)
-		valueToClamp = maxValue;
 }
 
 static inline int32_t muldiv7(int32_t val, uint8_t mul)
@@ -182,13 +176,14 @@ void XSFPlayer_NCSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset,
 		leftChannel = muldiv7(leftChannel, this->sseqVol);
 		rightChannel = muldiv7(rightChannel, this->sseqVol);
 
-		clamp(leftChannel, -0x8000, 0x7FFF);
-		clamp(rightChannel, -0x8000, 0x7FFF);
-
 		buf[offset++] = leftChannel & 0xFF;
 		buf[offset++] = (leftChannel >> 8) & 0xFF;
+		buf[offset++] = (leftChannel >> 16) & 0xFF;
+		buf[offset++] = (leftChannel >> 24) & 0xFF;
 		buf[offset++] = rightChannel & 0xFF;
 		buf[offset++] = (rightChannel >> 8) & 0xFF;
+		buf[offset++] = (rightChannel >> 16) & 0xFF;
+		buf[offset++] = (rightChannel >> 24) & 0xFF;
 
 		if (this->secondsIntoPlayback > this->secondsUntilNextClock)
 		{

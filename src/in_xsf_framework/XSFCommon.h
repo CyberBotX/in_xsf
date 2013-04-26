@@ -1,7 +1,7 @@
 /*
  * xSF - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-04-26
  *
  * Partially based on the vio*sf framework
  */
@@ -64,6 +64,15 @@ template<typename T> inline T NextHighestPowerOf2(T value)
 	for (size_t i = 1; i < sizeof(T) * CHAR_BIT; i <<= 1)
 		value |= value >> i;
 	return value + 1;
+}
+
+// Clamp a value between a minimum and maximum value
+template<typename T1, typename T2> inline void clamp(T1 &valueToClamp, const T2 &minValue, const T2 &maxValue)
+{
+	if (valueToClamp < minValue)
+		valueToClamp = minValue;
+	else if (valueToClamp > maxValue)
+		valueToClamp = maxValue;
 }
 
 inline bool FileExists(const std::string &filename)

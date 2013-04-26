@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-04-26
  *
  * Partially based on the vio*sf framework
  */
@@ -14,13 +14,14 @@
 extern XSFConfig *xSFConfig;
 
 XSFPlayer::XSFPlayer() : xSF(), sampleRate(0), detectedSilenceSample(0), detectedSilenceSec(0), skipSilenceOnStartSec(5), lengthSample(0), fadeSample(0), currentSample(0),
-	prevSampleL(CHECK_SILENCE_BIAS), prevSampleR(CHECK_SILENCE_BIAS), lengthInMS(-1), fadeInMS(-1), volume(1.0), ignoreVolume(false)
+	prevSampleL(CHECK_SILENCE_BIAS), prevSampleR(CHECK_SILENCE_BIAS), lengthInMS(-1), fadeInMS(-1), volume(1.0), ignoreVolume(false), uses32BitSamplesClampedTo16Bit(false)
 {
 }
 
 XSFPlayer::XSFPlayer(const XSFPlayer &xSFPlayer) : xSF(new XSFFile()), sampleRate(xSFPlayer.sampleRate), detectedSilenceSample(xSFPlayer.detectedSilenceSample), detectedSilenceSec(xSFPlayer.detectedSilenceSec),
 	skipSilenceOnStartSec(xSFPlayer.skipSilenceOnStartSec), lengthSample(xSFPlayer.lengthSample), fadeSample(xSFPlayer.fadeSample), currentSample(xSFPlayer.currentSample), prevSampleL(xSFPlayer.prevSampleL),
-	prevSampleR(xSFPlayer.prevSampleR), lengthInMS(xSFPlayer.lengthInMS), fadeInMS(xSFPlayer.fadeInMS), volume(xSFPlayer.volume), ignoreVolume(xSFPlayer.ignoreVolume)
+	prevSampleR(xSFPlayer.prevSampleR), lengthInMS(xSFPlayer.lengthInMS), fadeInMS(xSFPlayer.fadeInMS), volume(xSFPlayer.volume), ignoreVolume(xSFPlayer.ignoreVolume),
+	uses32BitSamplesClampedTo16Bit(xSFPlayer.uses32BitSamplesClampedTo16Bit)
 {
 	*this->xSF = *xSFPlayer.xSF;
 }
@@ -45,6 +46,7 @@ XSFPlayer &XSFPlayer::operator=(const XSFPlayer &xSFPlayer)
 		this->fadeInMS = xSFPlayer.fadeInMS;
 		this->volume = xSFPlayer.volume;
 		this->ignoreVolume = xSFPlayer.ignoreVolume;
+		this->uses32BitSamplesClampedTo16Bit = xSFPlayer.uses32BitSamplesClampedTo16Bit;
 	}
 	return *this;
 }
@@ -54,17 +56,33 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 	bool endFlag = false;
 	unsigned detectSilence = xSFConfig->GetDetectSilenceSec();
 	unsigned pos = 0, bufsize = buf.size() >> 2;
+	std::vector<uint8_t> trueBuffer;
+	if (this->uses32BitSamplesClampedTo16Bit)
+		trueBuffer.resize(bufsize << 3);
+	else
+		trueBuffer.resize(bufsize << 2);
+	auto longBuffer = std::vector<uint8_t>(bufsize << 3);
+	int32_t *bufLong = reinterpret_cast<int32_t *>(&longBuffer[0]);
 	while (pos < bufsize)
 	{
 		unsigned remain = bufsize - pos, offset = pos;
-		this->GenerateSamples(buf, pos << 1, remain);
+		this->GenerateSamples(trueBuffer, pos << (this->uses32BitSamplesClampedTo16Bit ? 2 : 1), remain);
+		if (this->uses32BitSamplesClampedTo16Bit)
+		{
+			int32_t *trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
+			std::copy(&trueBufLong[0], &trueBufLong[bufsize << 1], &bufLong[0]);
+		}
+		else
+		{
+			int16_t *trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+			std::copy(&trueBufShort[0], &trueBufShort[bufsize << 1], &bufLong[0]);
+		}
 		if (detectSilence || skipSilenceOnStartSec)
 		{
 			unsigned skipOffset = 0;
 			for (unsigned ofs = 0; ofs < remain; ++ofs)
 			{
-				short *bufShort = reinterpret_cast<short *>(&buf[0]);
-				unsigned long sampleL = bufShort[2 * (offset + ofs)], sampleR = bufShort[2 * (offset + ofs) + 1];
+				uint32_t sampleL = bufLong[2 * (offset + ofs)], sampleR = bufLong[2 * (offset + ofs) + 1];
 				bool silence = (sampleL + CHECK_SILENCE_BIAS + CHECK_SILENCE_LEVEL) - this->prevSampleL <= CHECK_SILENCE_LEVEL * 2 &&
 					(sampleR + CHECK_SILENCE_BIAS + CHECK_SILENCE_LEVEL) - this->prevSampleR <= CHECK_SILENCE_LEVEL * 2;
 
@@ -101,9 +119,9 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 			{
 				if (skipOffset)
 				{
-					auto tmpBuf = std::vector<uint8_t>(2 * skipOffset);
-					memcpy(&tmpBuf[0], &buf[offset + 2 * skipOffset], 2 * skipOffset);
-					memcpy(&buf[offset], &tmpBuf[0], 2 * skipOffset);
+					auto tmpBuf = std::vector<int32_t>((bufsize - skipOffset) << 1);
+					std::copy(&bufLong[(offset + skipOffset) << 1], &bufLong[bufsize << 1], &tmpBuf[0]);
+					std::copy(&tmpBuf[0], &tmpBuf[(bufsize - skipOffset) << 1], &bufLong[offset << 1]);
 					pos += skipOffset;
 				}
 				else
@@ -112,6 +130,19 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 		}
 		else
 			pos += remain;
+		if (pos < bufsize)
+		{
+			if (this->uses32BitSamplesClampedTo16Bit)
+			{
+				int32_t *trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
+				std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufLong[0]);
+			}
+			else
+			{
+				int16_t *trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+				std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufShort[0]);
+			}
+		}
 	}
 
 	/* Detect end of song */
@@ -133,27 +164,42 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 	if (!this->ignoreVolume && (!fEqual(this->volume, 1.0) || !fEqual(xSFConfig->GetVolume(), 1.0)))
 	{
 		double scale = this->volume * xSFConfig->GetVolume();
-		short *bufShort = reinterpret_cast<short *>(&buf[0]);
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
-			double s1 = bufShort[2 * ofs] * scale, s2 = bufShort[2 * ofs + 1] * scale;
-			if (s1 > 0x7FFF)
-				s1 = 0x7FFF;
-			else if (s1 < -0x8000)
-				s1 = -0x8000;
-			if (s2 > 0x7FFF)
-				s2 = 0x7FFF;
-			else if (s2 < -0x8000)
-				s2 = -0x8000;
-			bufShort[2 * ofs] = static_cast<short>(s1);
-			bufShort[2 * ofs + 1] = static_cast<short>(s2);
+			double s1 = bufLong[2 * ofs] * scale, s2 = bufLong[2 * ofs + 1] * scale;
+			if (!this->uses32BitSamplesClampedTo16Bit)
+			{
+				clamp(s1, -0x7FFF, 0x8000);
+				clamp(s2, -0x7FFF, 0x8000);
+			}
+			bufLong[2 * ofs] = static_cast<int32_t>(s1);
+			bufLong[2 * ofs + 1] = static_cast<int32_t>(s2);
 		}
+	}
+
+	if (this->uses32BitSamplesClampedTo16Bit)
+	{
+		int16_t *bufShort = reinterpret_cast<int16_t *>(&buf[0]);
+		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
+		{
+			int32_t s1 = bufLong[2 * ofs], s2 = bufLong[2 * ofs + 1];
+			clamp(s1, -0x7FFF, 0x8000);
+			clamp(s2, -0x7FFF, 0x8000);
+			bufShort[2 * ofs] = static_cast<int16_t>(s1);
+			bufShort[2 * ofs + 1] = static_cast<int16_t>(s2);
+		}
+	}
+	else
+	{
+		int16_t *trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+		std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufShort[0]);
+		std::copy(&trueBuffer[0], &trueBuffer[bufsize << 2], &buf[0]);
 	}
 
 	/* Fading */
 	if (!xSFConfig->GetPlayInfinitely() && this->fadeSample && this->currentSample + bufsize >= this->lengthSample)
 	{
-		short *bufShort = reinterpret_cast<short *>(&buf[0]);
+		int16_t *bufShort = reinterpret_cast<int16_t *>(&buf[0]);
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
 			if (this->currentSample + ofs >= this->lengthSample && this->currentSample + ofs < this->lengthSample + this->fadeSample)
