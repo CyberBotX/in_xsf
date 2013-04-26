@@ -42,7 +42,7 @@ public:
 
 unsigned XSFConfig::initSampleRate = 44100;
 std::wstring XSFConfig::commonName = L"NCSF Decoder";
-std::wstring XSFConfig::versionNumber = L"1.7";
+std::wstring XSFConfig::versionNumber = L"1.7.1";
 unsigned XSFConfig_NCSF::initInterpolation = 5;
 std::wstring XSFConfig_NCSF::initMutes = L"0000000000000000";
 

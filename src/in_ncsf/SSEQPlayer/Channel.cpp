@@ -611,10 +611,11 @@ int32_t Channel::Interpolate()
 		double kernel[LANCZOS_WIDTH * 2], kernel_sum = 0.0;
 		int i = LANCZOS_WIDTH, shift = static_cast<int>(std::floor(ratio * LANCZOS_RESOLUTION));
 		int step = this->reg.sampleIncrease > 1.0 ? static_cast<int>(LANCZOS_RESOLUTION / this->reg.sampleIncrease) : LANCZOS_RESOLUTION;
+		int shift_adj = shift * step / LANCZOS_RESOLUTION;
 		for (; i >= -static_cast<int>(LANCZOS_WIDTH - 1); --i)
 		{
 			int pos = i * step;
-			kernel_sum += kernel[i + LANCZOS_WIDTH - 1] = this->lanczos_lut[std::abs(shift - pos)];
+			kernel_sum += kernel[i + LANCZOS_WIDTH - 1] = this->lanczos_lut[std::abs(shift_adj - pos)];
 		}
 		double sum = 0.0;
 		for (i = 0; i < static_cast<int>(LANCZOS_WIDTH * 2); ++i)
