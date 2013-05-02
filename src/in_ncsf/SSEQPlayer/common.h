@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-05-01
  *
  * Some code from FeOS Sound System
  * By fincs
@@ -143,11 +143,15 @@ inline int Cnv_Attack(int attk)
 		0x5C, 0x64, 0x6D, 0x74, 0x7B, 0x7F, 0x84, 0x89, 0x8F
 	};
 
+	if (attk & 0x80) // Supposedly invalid value...
+		attk = 0; // Use apparently correct default
 	return attk >= 0x6D ? lut[0x7F - attk] : 0xFF - attk;
 }
 
 inline int Cnv_Fall(int fall)
 {
+	if (fall & 0x80) // Supposedly invalid value...
+		fall = 0; // Use apparently correct default
 	if (fall == 0x7F)
 		return 0xFFFF;
 	else if (fall == 0x7E)
@@ -180,6 +184,8 @@ inline int Cnv_Sust(int sust)
 		-10, -8, -7, -6, -4, -3, -1, 0
 	};
 
+	if (sust & 0x80) // Supposedly invalid value...
+		sust = 0; // Use apparently correct default
 	return lut[sust];
 }
 
