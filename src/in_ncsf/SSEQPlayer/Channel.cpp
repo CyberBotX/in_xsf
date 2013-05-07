@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-26
+ * Last modification on 2013-05-07
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -44,7 +44,7 @@ TempSndReg::TempSndReg() : CR(0), SOURCE(nullptr), TIMER(0), REPEAT_POINT(0), LE
 
 bool Channel::initializedLUTs = false;
 double Channel::cosine_lut[Channel::COSINE_RESOLUTION];
-double Channel::lanczos_lut[Channel::LANCZOS_SAMPLES + 1];
+double Channel::sinc_lut[Channel::SINC_SAMPLES + 1];
 
 #ifndef M_PI
 static const double M_PI = 3.14159265358979323846;
@@ -57,16 +57,16 @@ static inline double sinc(double x)
 
 Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0), manualSweep(false), flags(), pan(0), extAmpl(0), velocity(0), extPan(0),
 	key(0), ampl(0), extTune(0), orgKey(0), modType(0), modSpeed(0), modDepth(0), modRange(0), modDelay(0), modDelayCnt(0), modCounter(0),
-	sweepLen(0), sweepCnt(0), sweepPitch(0), attackLvl(0), sustainLvl(0x7F), decayRate(0), releaseRate(0xFFFF), noteLength(-1), vol(0), ply(nullptr), reg()
+	sweepLen(0), sweepCnt(0), sweepPitch(0), attackLvl(0), sustainLvl(0x7F), decayRate(0), releaseRate(0xFFFF), noteLength(-1), vol(0), ply(nullptr), reg(),
+	ringBuffer()
 {
-	this->clearHistory();
 	if (!this->initializedLUTs)
 	{
 		for (unsigned i = 0; i < COSINE_RESOLUTION; ++i)
 			this->cosine_lut[i] = (1.0 - std::cos((static_cast<double>(i) / COSINE_RESOLUTION) * M_PI)) * 0.5;
-		double dx = static_cast<double>(LANCZOS_WIDTH) / LANCZOS_SAMPLES, x = 0.0;
-		for (unsigned i = 0; i <= LANCZOS_SAMPLES; ++i, x += dx)
-			this->lanczos_lut[i] = std::abs(x) < LANCZOS_WIDTH ? sinc(x) * sinc(x / LANCZOS_WIDTH) : 0.0;
+		double dx = static_cast<double>(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
+		for (unsigned i = 0; i <= SINC_SAMPLES; ++i, x += dx)
+			this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * (0.5 * (1.0 + std::cos((M_PI * x) / SINC_WIDTH))) : 0.0;
 		this->initializedLUTs = true;
 	}
 }
@@ -144,7 +144,6 @@ void Channel::Kill()
 	this->reg.ClearControlRegister();
 	this->vol = 0;
 	this->noteLength = -1;
-	this->clearHistory();
 }
 
 static inline int getModFlag(int type)
@@ -604,22 +603,22 @@ int32_t Channel::Interpolate()
 	double ratio = this->reg.samplePosition;
 	ratio -= static_cast<int32_t>(ratio);
 
-	const auto &data = &this->sampleHistory[this->sampleHistoryPtr + 16];
+	const auto &data = this->ringBuffer.GetBuffer();
 
-	if (this->ply->interpolation == INTERPOLATION_LANCZOS)
+	if (this->ply->interpolation == INTERPOLATION_SINC)
 	{
-		double kernel[LANCZOS_WIDTH * 2], kernel_sum = 0.0;
-		int i = LANCZOS_WIDTH, shift = static_cast<int>(std::floor(ratio * LANCZOS_RESOLUTION));
-		int step = this->reg.sampleIncrease > 1.0 ? static_cast<int>(LANCZOS_RESOLUTION / this->reg.sampleIncrease) : LANCZOS_RESOLUTION;
-		int shift_adj = shift * step / LANCZOS_RESOLUTION;
-		for (; i >= -static_cast<int>(LANCZOS_WIDTH - 1); --i)
+		double kernel[SINC_WIDTH * 2], kernel_sum = 0.0;
+		int i = SINC_WIDTH, shift = static_cast<int>(std::floor(ratio * SINC_RESOLUTION));
+		int step = this->reg.sampleIncrease > 1.0 ? static_cast<int>(SINC_RESOLUTION / this->reg.sampleIncrease) : SINC_RESOLUTION;
+		int shift_adj = shift * step / SINC_RESOLUTION;
+		for (; i >= -static_cast<int>(SINC_WIDTH - 1); --i)
 		{
 			int pos = i * step;
-			kernel_sum += kernel[i + LANCZOS_WIDTH - 1] = this->lanczos_lut[std::abs(shift_adj - pos)];
+			kernel_sum += kernel[i + SINC_WIDTH - 1] = this->sinc_lut[std::abs(shift_adj - pos)];
 		}
 		double sum = 0.0;
-		for (i = 0; i < static_cast<int>(LANCZOS_WIDTH * 2); ++i)
-			sum += data[i - static_cast<int>(LANCZOS_WIDTH) + 1] * kernel[i];
+		for (i = 0; i < static_cast<int>(SINC_WIDTH * 2); ++i)
+			sum += data[i - static_cast<int>(SINC_WIDTH) + 1] * kernel[i];
 		return static_cast<int32_t>(sum / kernel_sum);
 	}
 	else if (this->ply->interpolation > INTERPOLATION_COSINE)
@@ -721,22 +720,59 @@ void Channel::IncrementSample()
 {
 	double samplePosition = this->reg.samplePosition + this->reg.sampleIncrease;
 
-	if (this->reg.format != 3 && this->reg.samplePosition >= 0)
+	if (this->reg.format != 3)
 	{
-		uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition);
-		uint32_t newloc = static_cast<uint32_t>(samplePosition);
-
-		if (newloc >= this->reg.totalLength)
-			newloc -= this->reg.length;
-
-		while (loc != newloc)
+		if (this->reg.samplePosition < 0 && samplePosition >= 0)
 		{
-			this->sampleHistory[this->sampleHistoryPtr] = this->sampleHistory[this->sampleHistoryPtr + 32] = this->reg.source->dataptr[loc++];
+			this->ringBuffer.Clear();
+			this->ringBuffer.bufferPos += SINC_WIDTH + 1;
+			auto preData = std::vector<int16_t>(SINC_WIDTH + 1, this->reg.source->dataptr[0]);
+			this->ringBuffer.PushSamples(&preData[0], SINC_WIDTH + 1);
+			if (this->reg.totalLength < SINC_WIDTH + 1)
+			{
+				this->ringBuffer.PushSamples(&this->reg.source->dataptr[0], this->reg.totalLength);
+				if (this->reg.repeatMode == 1)
+				{
+					size_t samplesLeft = SINC_WIDTH + 1 - this->reg.totalLength;
+					while (samplesLeft)
+					{
+						size_t samplesToPush = std::min(samplesLeft, this->reg.length);
+						this->ringBuffer.PushSamples(&this->reg.source->dataptr[this->reg.loopStart], samplesToPush);
+						samplesLeft -= samplesToPush;
+					}
+				}
+			}
+			else
+				this->ringBuffer.PushSamples(&this->reg.source->dataptr[0], SINC_WIDTH + 1);
+		}
+		if (this->reg.samplePosition >= 0)
+		{
+			uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition) + SINC_WIDTH + 1;
+			uint32_t newloc = static_cast<uint32_t>(samplePosition) + SINC_WIDTH + 1;
 
-			this->sampleHistoryPtr = (this->sampleHistoryPtr + 1) & 31;
+			if (this->reg.repeatMode == 1)
+			{
+				if (loc >= this->reg.totalLength)
+					loc -= this->reg.length;
+				if (newloc >= this->reg.totalLength)
+					newloc -= this->reg.length;
+			}
 
-			if (loc >= this->reg.totalLength)
-				loc -= this->reg.length;
+			while (loc != newloc)
+			{
+				this->ringBuffer.NextSample();
+
+				if (loc < this->reg.totalLength)
+					this->ringBuffer.PushSample(this->reg.source->dataptr[loc++]);
+				else
+				{
+					++loc;
+					this->ringBuffer.PushSample(this->reg.source->dataptr[this->reg.totalLength - 1]);
+				}
+
+				if (this->reg.repeatMode == 1 && loc >= this->reg.totalLength)
+					loc -= this->reg.length;
+			}
 		}
 	}
 
@@ -752,10 +788,4 @@ void Channel::IncrementSample()
 		else
 			this->Kill();
 	}
-}
-
-void Channel::clearHistory()
-{
-	this->sampleHistoryPtr = 0;
-	memset(this->sampleHistory, 0, sizeof(this->sampleHistory));
 }

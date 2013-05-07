@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Constants/Macros
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-26
+ * Last modification on 2013-05-07
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -59,7 +59,7 @@ enum Interpolation
 	INTERPOLATION_4POINTBSPLINE,
 	INTERPOLATION_6POINTOSCULATING,
 	INTERPOLATION_6POINTBSPLINE,
-	INTERPOLATION_LANCZOS
+	INTERPOLATION_SINC
 };
 
 #endif

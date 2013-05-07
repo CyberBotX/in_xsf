@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-26
+ * Last modification on 2013-05-07
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -83,6 +83,89 @@ struct TempSndReg
 
 struct Player;
 
+/*
+ * This creates a ring buffer, which will store N samples of SWAV
+ * data, duplicated. The way it is duplicated is done as follows:
+ * the samples are stored in the center of the buffer, and on both
+ * sides is half of the data, the first half being after the data
+ * and the second half before before the data. This in essense
+ * mirrors the data while allowing a pointer to always be retrieved
+ * and no extra copies of the buffer are created. Part of the idea
+ * for this came from kode54's original buffer implementation, but
+ * this has been designed to make sure that there are no delays in
+ * accessing the SWAVs samples and also doesn't use 0s before the
+ * start of the SWAV or use 0s after the end of a non-looping SWAV.
+ */
+template<size_t N> struct RingBuffer
+{
+	int16_t buffer[N * 2];
+	size_t bufferPos, getPos;
+
+	RingBuffer() : bufferPos(N / 2), getPos(N / 2)
+	{
+		std::fill(&this->buffer[0], &this->buffer[N * 2], 0);
+	}
+	void Clear()
+	{
+		std::fill(&this->buffer[0], &this->buffer[N * 2], 0);
+		this->bufferPos = this->getPos = N / 2;
+	}
+	void PushSample(int16_t sample)
+	{
+		this->buffer[this->bufferPos] = sample;
+		if (this->bufferPos >= N)
+			this->buffer[this->bufferPos - N] = sample;
+		else
+			this->buffer[this->bufferPos + N] = sample;
+		++this->bufferPos;
+		if (this->bufferPos >= N * 3 / 2)
+			this->bufferPos -= N;
+	}
+	void PushSamples(const int16_t *samples, size_t size)
+	{
+		if (this->bufferPos + size > N * 3 / 2)
+		{
+			size_t free = N * 3 / 2 - this->bufferPos;
+			std::copy(&samples[0], &samples[free], &this->buffer[this->bufferPos]);
+			std::copy(&samples[free], &samples[size], &this->buffer[N / 2]);
+		}
+		else
+			std::copy(&samples[0], &samples[size], &this->buffer[this->bufferPos]);
+		size_t rightFree = this->bufferPos < N ? N - this->bufferPos : 0;
+		if (rightFree < size)
+		{
+			if (!rightFree)
+			{
+				size_t leftStart = this->bufferPos - N;
+				size_t leftSize = std::min(N / 2 - leftStart, size);
+				std::copy(&samples[0], &samples[leftSize], &this->buffer[leftStart]);
+				if (leftSize < size)
+					std::copy(&samples[leftSize], &samples[size], &this->buffer[N * 3 / 2]);
+			}
+			else
+			{
+				std::copy(&samples[0], &samples[rightFree], &this->buffer[this->bufferPos + N]);
+				std::copy(&samples[rightFree], &samples[size], &this->buffer[0]);
+			}
+		}
+		else
+			std::copy(&samples[0], &samples[size], &this->buffer[this->bufferPos + N]);
+		this->bufferPos += size;
+		if (this->bufferPos >= N * 3 / 2)
+			this->bufferPos -= N;
+	}
+	const int16_t *const GetBuffer() const
+	{
+		return &this->buffer[this->getPos];
+	}
+	void NextSample()
+	{
+		++this->getPos;
+		if (this->getPos >= N * 3 / 2)
+			this->getPos -= N;
+	}
+};
+
 struct Channel
 {
 	int8_t chnId;
@@ -127,14 +210,6 @@ struct Channel
 	NDSSoundRegister reg;
 
 	/*
-	 * Interpolation history buffer, which contains the maximum number of
-	 * samples required for any given interpolation mode. Doubled to
-	 * simplify the case of wrapping. Thanks to kode54 for providing this.
-	 */
-	uint32_t sampleHistoryPtr;
-	int16_t sampleHistory[64];
-
-	/*
 	 * Lookup tables for the cosine and Lanczos Sinc interpolations, to
 	 * avoid the need to call the sin/cos functions all the time.
 	 * These are static as they will not change between channels or runs
@@ -142,11 +217,13 @@ struct Channel
 	 */
 	static bool initializedLUTs;
 	static const unsigned COSINE_RESOLUTION = 8192;
-	static const unsigned LANCZOS_RESOLUTION = 8192;
-	static const unsigned LANCZOS_WIDTH = 8;
-	static const unsigned LANCZOS_SAMPLES = LANCZOS_RESOLUTION * LANCZOS_WIDTH;
+	static const unsigned SINC_RESOLUTION = 8192;
+	static const unsigned SINC_WIDTH = 8;
+	static const unsigned SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH;
 	static double cosine_lut[COSINE_RESOLUTION];
-	static double lanczos_lut[LANCZOS_SAMPLES + 1];
+	static double sinc_lut[SINC_SAMPLES + 1];
+
+	RingBuffer<SINC_WIDTH * 2> ringBuffer;
 
 	Channel();
 
@@ -162,7 +239,6 @@ struct Channel
 	int32_t Interpolate();
 	int32_t GenerateSample();
 	void IncrementSample();
-	void clearHistory();
 };
 
 #endif

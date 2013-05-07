@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-26
+ * Last modification on 2013-05-07
  *
  * Partially based on the vio*sf framework
  */
@@ -12,6 +12,7 @@
 #include "XSFFile.h"
 
 #ifdef WINAMP_PLUGIN
+# include "windowsh_wrapper.h"
 # include <winamp/out.h>
 #endif
 

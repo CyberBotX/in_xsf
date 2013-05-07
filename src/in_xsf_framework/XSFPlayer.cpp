@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-26
+ * Last modification on 2013-05-07
  *
  * Partially based on the vio*sf framework
  */
@@ -169,8 +169,8 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 			double s1 = bufLong[2 * ofs] * scale, s2 = bufLong[2 * ofs + 1] * scale;
 			if (!this->uses32BitSamplesClampedTo16Bit)
 			{
-				clamp(s1, -0x7FFF, 0x8000);
-				clamp(s2, -0x7FFF, 0x8000);
+				clamp(s1, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+				clamp(s2, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
 			}
 			bufLong[2 * ofs] = static_cast<int32_t>(s1);
 			bufLong[2 * ofs + 1] = static_cast<int32_t>(s2);
@@ -183,8 +183,8 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
 			int32_t s1 = bufLong[2 * ofs], s2 = bufLong[2 * ofs + 1];
-			clamp(s1, -0x7FFF, 0x8000);
-			clamp(s2, -0x7FFF, 0x8000);
+			clamp(s1, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+			clamp(s2, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
 			bufShort[2 * ofs] = static_cast<int16_t>(s1);
 			bufShort[2 * ofs + 1] = static_cast<int16_t>(s2);
 		}
