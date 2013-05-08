@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2013-05-08
  *
  * Based on a modified in_snsf by Caitsith2
  * http://snsf.caitsith2.net/
@@ -26,6 +26,7 @@
 #include "snes9x/apu/hermite_resampler.h"
 #include "snes9x/apu/bspline_resampler.h"
 #include "snes9x/apu/osculating_resampler.h"
+#include "snes9x/apu/sinc_resampler.h"
 #include "snes9x/memmap.h"
 
 class XSFPlayer_SNSF : public XSFPlayer
@@ -71,8 +72,11 @@ public:
 	BUFFER() : buf(), fil(0), cur(0), len(0) { }
 	bool Init()
 	{
+		if (!this->buf.empty())
+			this->buf.clear();
 		this->len = 2 * 2 * 48000 / 5;
-		buf.resize(len);
+		this->buf.resize(len, 0);
+		this->fil = this->cur = 0;
 		return true;
 	}
 	void Fill()
@@ -230,9 +234,11 @@ bool XSFPlayer_SNSF::Load()
 
 	S9xInitAPU();
 	XSFConfig_SNSF *xSFConfig_SNSF = dynamic_cast<XSFConfig_SNSF *>(xSFConfig);
-	if (xSFConfig_SNSF->resampler == 3)
+	if (xSFConfig_SNSF->resampler == 4)
+		S9xInitSound<SincResampler>(10, 0);
+	else if (xSFConfig_SNSF->resampler == 3)
 		S9xInitSound<OsculatingResampler>(10, 0);
-	if (xSFConfig_SNSF->resampler == 2)
+	else if (xSFConfig_SNSF->resampler == 2)
 		S9xInitSound<BsplineResampler>(10, 0);
 	else if (xSFConfig_SNSF->resampler == 1)
 		S9xInitSound<HermiteResampler>(10, 0);

@@ -8,8 +8,6 @@
 
 #undef CLAMP
 #undef SHORT_CLAMP
-//template<typename T1, typename T2> static inline T1 CLAMP(T1 x, T2 low, T2 high) { return x > high ? high : (x < low ? low : x); }
-//template<typename T> static inline short SHORT_CLAMP(T n) { return static_cast<short>(CLAMP(n, -32768, 32767)); }
 
 class OsculatingResampler : public Resampler
 {
@@ -17,6 +15,9 @@ protected:
 	double r_step;
 	double r_frac;
 	int r_left[6], r_right[6];
+
+	template<typename T1, typename T2> static T1 CLAMP(T1 x, T2 low, T2 high) { return x > high ? high : (x < low ? low : x); }
+	template<typename T> static short SHORT_CLAMP(T n) { return static_cast<short>(CLAMP(n, -32768, 32767)); }
 
 	double osculating(double x, double a, double b, double c, double d, double e, double f)
 	{

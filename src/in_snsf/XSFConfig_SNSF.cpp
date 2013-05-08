@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-12
+ * Last modification on 2013-05-08
  *
  * Partially based on the vio*sf framework
  *
@@ -98,6 +98,7 @@ INT_PTR CALLBACK XSFConfig_SNSF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARA
 			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Hermite Resampler"));
 			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Bspline Resampler"));
 			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Osculating Resampler"));
+			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Sinc Resampler"));
 			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_SETCURSEL, this->resampler, 0);
 			// Mutes
 			for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)

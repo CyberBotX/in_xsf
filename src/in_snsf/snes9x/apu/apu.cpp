@@ -184,6 +184,10 @@
 #include "hermite_resampler.h"
 #include "bspline_resampler.h"
 #include "osculating_resampler.h"
+#include "sinc_resampler.h"
+
+bool SincResampler::initializedLUTs = false;
+double SincResampler::sinc_lut[SincResampler::SINC_SAMPLES + 1];
 
 #define APU_DEFAULT_INPUT_RATE		32000
 #define APU_MINIMUM_SAMPLE_COUNT	512
@@ -479,6 +483,7 @@ template bool S9xInitSound<LinearResampler>(int, int);
 template bool S9xInitSound<HermiteResampler>(int, int);
 template bool S9xInitSound<BsplineResampler>(int, int);
 template bool S9xInitSound<OsculatingResampler>(int, int);
+template bool S9xInitSound<SincResampler>(int, int);
 
 void S9xSetSoundControl (uint8_t voice_switch)
 {
