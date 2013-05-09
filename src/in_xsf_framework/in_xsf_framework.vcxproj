@@ -98,6 +98,9 @@
     <ClCompile Include="XSFFile.cpp" />
     <ClCompile Include="XSFPlayer.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="common.props" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

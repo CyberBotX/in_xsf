@@ -90,4 +90,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="common.props" />
+  </ItemGroup>
 </Project>
