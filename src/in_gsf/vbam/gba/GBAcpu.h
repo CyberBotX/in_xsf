@@ -20,7 +20,7 @@ extern int thumbExecute();
 
 #define UPDATE_REG(address, value)\
   {\
-    WRITE16LE(((u16 *)&ioMem[address]),value);\
+    WRITE16LE(((uint16_t *)&ioMem[address]),value);\
   }\
 
 #define ARM_PREFETCH \
@@ -43,20 +43,20 @@ extern int thumbExecute();
 
 
 extern int SWITicks;
-extern u32 mastercode;
+extern uint32_t mastercode;
 extern bool busPrefetch;
 extern bool busPrefetchEnable;
-extern u32 busPrefetchCount;
+extern uint32_t busPrefetchCount;
 extern int cpuNextEvent;
 extern bool holdState;
-extern u32 cpuPrefetch[2];
+extern uint32_t cpuPrefetch[2];
 extern int cpuTotalTicks;
-extern u8 memoryWait[16];
-extern u8 memoryWait32[16];
-extern u8 memoryWaitSeq[16];
-extern u8 memoryWaitSeq32[16];
-extern u8 cpuBitsSet[256];
-extern u8 cpuLowestBitSet[256];
+extern uint8_t memoryWait[16];
+extern uint8_t memoryWait32[16];
+extern uint8_t memoryWaitSeq[16];
+extern uint8_t memoryWaitSeq32[16];
+extern uint8_t cpuBitsSet[256];
+extern uint8_t cpuLowestBitSet[256];
 extern void CPUSwitchMode(int mode, bool saveState, bool breakLoop);
 extern void CPUSwitchMode(int mode, bool saveState);
 extern void CPUUpdateCPSR();
@@ -68,7 +68,7 @@ extern void CPUSoftwareInterrupt(int comment);
 
 
 // Waitstates when accessing data
-inline int dataTicksAccess16(u32 address) // DATA 8/16bits NON SEQ
+inline int dataTicksAccess16(uint32_t address) // DATA 8/16bits NON SEQ
 {
   int addr = (address>>24)&15;
   int value =  memoryWait[addr];
@@ -89,7 +89,7 @@ inline int dataTicksAccess16(u32 address) // DATA 8/16bits NON SEQ
   return value;
 }
 
-inline int dataTicksAccess32(u32 address) // DATA 32bits NON SEQ
+inline int dataTicksAccess32(uint32_t address) // DATA 32bits NON SEQ
 {
   int addr = (address>>24)&15;
   int value = memoryWait32[addr];
@@ -110,7 +110,7 @@ inline int dataTicksAccess32(u32 address) // DATA 32bits NON SEQ
   return value;
 }
 
-inline int dataTicksAccessSeq16(u32 address)// DATA 8/16bits SEQ
+inline int dataTicksAccessSeq16(uint32_t address)// DATA 8/16bits SEQ
 {
   int addr = (address>>24)&15;
   int value = memoryWaitSeq[addr];
@@ -131,7 +131,7 @@ inline int dataTicksAccessSeq16(u32 address)// DATA 8/16bits SEQ
   return value;
 }
 
-inline int dataTicksAccessSeq32(u32 address)// DATA 32bits SEQ
+inline int dataTicksAccessSeq32(uint32_t address)// DATA 32bits SEQ
 {
   int addr = (address>>24)&15;
   int value =  memoryWaitSeq32[addr];
@@ -154,7 +154,7 @@ inline int dataTicksAccessSeq32(u32 address)// DATA 32bits SEQ
 
 
 // Waitstates when executing opcode
-inline int codeTicksAccess16(u32 address) // THUMB NON SEQ
+inline int codeTicksAccess16(uint32_t address) // THUMB NON SEQ
 {
   int addr = (address>>24)&15;
 
@@ -183,7 +183,7 @@ inline int codeTicksAccess16(u32 address) // THUMB NON SEQ
   }
 }
 
-inline int codeTicksAccess32(u32 address) // ARM NON SEQ
+inline int codeTicksAccess32(uint32_t address) // ARM NON SEQ
 {
   int addr = (address>>24)&15;
 
@@ -212,7 +212,7 @@ inline int codeTicksAccess32(u32 address) // ARM NON SEQ
   }
 }
 
-inline int codeTicksAccessSeq16(u32 address) // THUMB SEQ
+inline int codeTicksAccessSeq16(uint32_t address) // THUMB SEQ
 {
   int addr = (address>>24)&15;
 
@@ -239,7 +239,7 @@ inline int codeTicksAccessSeq16(u32 address) // THUMB SEQ
   }
 }
 
-inline int codeTicksAccessSeq32(u32 address) // ARM SEQ
+inline int codeTicksAccessSeq32(uint32_t address) // ARM SEQ
 {
   int addr = (address>>24)&15;
 

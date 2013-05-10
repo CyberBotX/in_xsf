@@ -4,7 +4,7 @@
 //#include "../System.h"
 #include "../common/Types.h"
 
-#define SAVE_GAME_VERSION_1 1
+/*#define SAVE_GAME_VERSION_1 1
 #define SAVE_GAME_VERSION_2 2
 #define SAVE_GAME_VERSION_3 3
 #define SAVE_GAME_VERSION_4 4
@@ -14,40 +14,40 @@
 #define SAVE_GAME_VERSION_8 8
 #define SAVE_GAME_VERSION_9 9
 #define SAVE_GAME_VERSION_10 10
-#define SAVE_GAME_VERSION  SAVE_GAME_VERSION_10
+#define SAVE_GAME_VERSION  SAVE_GAME_VERSION_10*/
 
 typedef struct {
-  u8 *address;
-  u32 mask;
+  uint8_t *address;
+  uint32_t mask;
 } memoryMap;
 
 typedef union {
   struct {
 #ifdef WORDS_BIGENDIAN
-    u8 B3;
-    u8 B2;
-    u8 B1;
-    u8 B0;
+    uint8_t B3;
+    uint8_t B2;
+    uint8_t B1;
+    uint8_t B0;
 #else
-    u8 B0;
-    u8 B1;
-    u8 B2;
-    u8 B3;
+    uint8_t B0;
+    uint8_t B1;
+    uint8_t B2;
+    uint8_t B3;
 #endif
   } B;
   struct {
 #ifdef WORDS_BIGENDIAN
-    u16 W1;
-    u16 W0;
+    uint16_t W1;
+    uint16_t W0;
 #else
-    u16 W0;
-    u16 W1;
+    uint16_t W0;
+    uint16_t W1;
 #endif
   } W;
 #ifdef WORDS_BIGENDIAN
-  volatile u32 I;
+  volatile uint32_t I;
 #else
-	u32 I;
+	uint32_t I;
 #endif
 } reg_pair;
 
@@ -56,7 +56,7 @@ extern memoryMap map[256];
 #endif
 
 extern reg_pair reg[45];
-extern u8 biosProtected[4];
+extern uint8_t biosProtected[4];
 
 extern bool N_FLAG;
 extern bool Z_FLAG;
@@ -68,11 +68,11 @@ extern int armMode;
 //extern void (*cpuSaveGameFunc)(u32,u8);
 
 #ifdef BKPT_SUPPORT
-extern u8 freezeWorkRAM[0x40000];
-extern u8 freezeInternalRAM[0x8000];
-extern u8 freezeVRAM[0x18000];
-extern u8 freezeOAM[0x400];
-extern u8 freezePRAM[0x400];
+extern uint8_t freezeWorkRAM[0x40000];
+extern uint8_t freezeInternalRAM[0x8000];
+extern uint8_t freezeVRAM[0x18000];
+extern uint8_t freezeOAM[0x400];
+extern uint8_t freezePRAM[0x400];
 extern bool debugger_last;
 extern int  oldreg[18];
 extern char oldbuffer[10];
@@ -96,7 +96,7 @@ extern bool CPUWriteMemState(char *, int);
 extern bool CPUWriteState(const char *);
 extern int CPULoadRom(const char *);
 extern void doMirroring(bool);
-extern void CPUUpdateRegister(u32, u16);
+extern void CPUUpdateRegister(uint32_t, uint16_t);
 extern void applyTimer ();
 extern void CPUInit(const char *,bool);
 extern void CPUReset();

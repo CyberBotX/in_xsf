@@ -75,9 +75,6 @@
     <ClCompile Include="XSFConfig_GSF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vbam\apu\Gb_Apu_State.cpp">
-      <Filter>Source Files\vbam\apu</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vbam\apu\blargg_common.h">
@@ -127,6 +124,9 @@
     </ClInclude>
     <ClInclude Include="vbam\gba\Sound.h">
       <Filter>Header Files\vbam\gba</Filter>
+    </ClInclude>
+    <ClInclude Include="vbam\common\Types.h">
+      <Filter>Header Files\vbam\common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

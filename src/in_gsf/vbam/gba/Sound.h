@@ -6,6 +6,8 @@
 //#include "../System.h"
 #include "../common/Types.h"
 
+extern bool soundDeclicking;
+
 //// Setup/options (these affect GBA and GB sound)
 
 // Initializes sound and returns true if successful. Sets sound quality to
@@ -60,8 +62,8 @@ extern float soundFiltering;    // 0.0 = none, 1.0 = max
 void soundReset();
 
 // Emulates write to sound hardware
-void soundEvent( u32 addr, u8  data );
-void soundEvent( u32 addr, u16 data ); // TODO: error-prone to overload like this
+void soundEvent( uint32_t addr, uint8_t  data );
+void soundEvent( uint32_t addr, uint16_t data ); // TODO: error-prone to overload like this
 
 // Notifies emulator that a timer has overflowed
 void soundTimerOverflow( int which );

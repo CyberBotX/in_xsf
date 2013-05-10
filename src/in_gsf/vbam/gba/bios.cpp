@@ -7,39 +7,39 @@
 #include "GBAinline.h"
 #include "Globals.h"
 
-s16 sineTable[256] = {
-  (s16)0x0000, (s16)0x0192, (s16)0x0323, (s16)0x04B5, (s16)0x0645, (s16)0x07D5, (s16)0x0964, (s16)0x0AF1,
-  (s16)0x0C7C, (s16)0x0E05, (s16)0x0F8C, (s16)0x1111, (s16)0x1294, (s16)0x1413, (s16)0x158F, (s16)0x1708,
-  (s16)0x187D, (s16)0x19EF, (s16)0x1B5D, (s16)0x1CC6, (s16)0x1E2B, (s16)0x1F8B, (s16)0x20E7, (s16)0x223D,
-  (s16)0x238E, (s16)0x24DA, (s16)0x261F, (s16)0x275F, (s16)0x2899, (s16)0x29CD, (s16)0x2AFA, (s16)0x2C21,
-  (s16)0x2D41, (s16)0x2E5A, (s16)0x2F6B, (s16)0x3076, (s16)0x3179, (s16)0x3274, (s16)0x3367, (s16)0x3453,
-  (s16)0x3536, (s16)0x3612, (s16)0x36E5, (s16)0x37AF, (s16)0x3871, (s16)0x392A, (s16)0x39DA, (s16)0x3A82,
-  (s16)0x3B20, (s16)0x3BB6, (s16)0x3C42, (s16)0x3CC5, (s16)0x3D3E, (s16)0x3DAE, (s16)0x3E14, (s16)0x3E71,
-  (s16)0x3EC5, (s16)0x3F0E, (s16)0x3F4E, (s16)0x3F84, (s16)0x3FB1, (s16)0x3FD3, (s16)0x3FEC, (s16)0x3FFB,
-  (s16)0x4000, (s16)0x3FFB, (s16)0x3FEC, (s16)0x3FD3, (s16)0x3FB1, (s16)0x3F84, (s16)0x3F4E, (s16)0x3F0E,
-  (s16)0x3EC5, (s16)0x3E71, (s16)0x3E14, (s16)0x3DAE, (s16)0x3D3E, (s16)0x3CC5, (s16)0x3C42, (s16)0x3BB6,
-  (s16)0x3B20, (s16)0x3A82, (s16)0x39DA, (s16)0x392A, (s16)0x3871, (s16)0x37AF, (s16)0x36E5, (s16)0x3612,
-  (s16)0x3536, (s16)0x3453, (s16)0x3367, (s16)0x3274, (s16)0x3179, (s16)0x3076, (s16)0x2F6B, (s16)0x2E5A,
-  (s16)0x2D41, (s16)0x2C21, (s16)0x2AFA, (s16)0x29CD, (s16)0x2899, (s16)0x275F, (s16)0x261F, (s16)0x24DA,
-  (s16)0x238E, (s16)0x223D, (s16)0x20E7, (s16)0x1F8B, (s16)0x1E2B, (s16)0x1CC6, (s16)0x1B5D, (s16)0x19EF,
-  (s16)0x187D, (s16)0x1708, (s16)0x158F, (s16)0x1413, (s16)0x1294, (s16)0x1111, (s16)0x0F8C, (s16)0x0E05,
-  (s16)0x0C7C, (s16)0x0AF1, (s16)0x0964, (s16)0x07D5, (s16)0x0645, (s16)0x04B5, (s16)0x0323, (s16)0x0192,
-  (s16)0x0000, (s16)0xFE6E, (s16)0xFCDD, (s16)0xFB4B, (s16)0xF9BB, (s16)0xF82B, (s16)0xF69C, (s16)0xF50F,
-  (s16)0xF384, (s16)0xF1FB, (s16)0xF074, (s16)0xEEEF, (s16)0xED6C, (s16)0xEBED, (s16)0xEA71, (s16)0xE8F8,
-  (s16)0xE783, (s16)0xE611, (s16)0xE4A3, (s16)0xE33A, (s16)0xE1D5, (s16)0xE075, (s16)0xDF19, (s16)0xDDC3,
-  (s16)0xDC72, (s16)0xDB26, (s16)0xD9E1, (s16)0xD8A1, (s16)0xD767, (s16)0xD633, (s16)0xD506, (s16)0xD3DF,
-  (s16)0xD2BF, (s16)0xD1A6, (s16)0xD095, (s16)0xCF8A, (s16)0xCE87, (s16)0xCD8C, (s16)0xCC99, (s16)0xCBAD,
-  (s16)0xCACA, (s16)0xC9EE, (s16)0xC91B, (s16)0xC851, (s16)0xC78F, (s16)0xC6D6, (s16)0xC626, (s16)0xC57E,
-  (s16)0xC4E0, (s16)0xC44A, (s16)0xC3BE, (s16)0xC33B, (s16)0xC2C2, (s16)0xC252, (s16)0xC1EC, (s16)0xC18F,
-  (s16)0xC13B, (s16)0xC0F2, (s16)0xC0B2, (s16)0xC07C, (s16)0xC04F, (s16)0xC02D, (s16)0xC014, (s16)0xC005,
-  (s16)0xC000, (s16)0xC005, (s16)0xC014, (s16)0xC02D, (s16)0xC04F, (s16)0xC07C, (s16)0xC0B2, (s16)0xC0F2,
-  (s16)0xC13B, (s16)0xC18F, (s16)0xC1EC, (s16)0xC252, (s16)0xC2C2, (s16)0xC33B, (s16)0xC3BE, (s16)0xC44A,
-  (s16)0xC4E0, (s16)0xC57E, (s16)0xC626, (s16)0xC6D6, (s16)0xC78F, (s16)0xC851, (s16)0xC91B, (s16)0xC9EE,
-  (s16)0xCACA, (s16)0xCBAD, (s16)0xCC99, (s16)0xCD8C, (s16)0xCE87, (s16)0xCF8A, (s16)0xD095, (s16)0xD1A6,
-  (s16)0xD2BF, (s16)0xD3DF, (s16)0xD506, (s16)0xD633, (s16)0xD767, (s16)0xD8A1, (s16)0xD9E1, (s16)0xDB26,
-  (s16)0xDC72, (s16)0xDDC3, (s16)0xDF19, (s16)0xE075, (s16)0xE1D5, (s16)0xE33A, (s16)0xE4A3, (s16)0xE611,
-  (s16)0xE783, (s16)0xE8F8, (s16)0xEA71, (s16)0xEBED, (s16)0xED6C, (s16)0xEEEF, (s16)0xF074, (s16)0xF1FB,
-  (s16)0xF384, (s16)0xF50F, (s16)0xF69C, (s16)0xF82B, (s16)0xF9BB, (s16)0xFB4B, (s16)0xFCDD, (s16)0xFE6E
+int16_t sineTable[256] = {
+  (int16_t)0x0000, (int16_t)0x0192, (int16_t)0x0323, (int16_t)0x04B5, (int16_t)0x0645, (int16_t)0x07D5, (int16_t)0x0964, (int16_t)0x0AF1,
+  (int16_t)0x0C7C, (int16_t)0x0E05, (int16_t)0x0F8C, (int16_t)0x1111, (int16_t)0x1294, (int16_t)0x1413, (int16_t)0x158F, (int16_t)0x1708,
+  (int16_t)0x187D, (int16_t)0x19EF, (int16_t)0x1B5D, (int16_t)0x1CC6, (int16_t)0x1E2B, (int16_t)0x1F8B, (int16_t)0x20E7, (int16_t)0x223D,
+  (int16_t)0x238E, (int16_t)0x24DA, (int16_t)0x261F, (int16_t)0x275F, (int16_t)0x2899, (int16_t)0x29CD, (int16_t)0x2AFA, (int16_t)0x2C21,
+  (int16_t)0x2D41, (int16_t)0x2E5A, (int16_t)0x2F6B, (int16_t)0x3076, (int16_t)0x3179, (int16_t)0x3274, (int16_t)0x3367, (int16_t)0x3453,
+  (int16_t)0x3536, (int16_t)0x3612, (int16_t)0x36E5, (int16_t)0x37AF, (int16_t)0x3871, (int16_t)0x392A, (int16_t)0x39DA, (int16_t)0x3A82,
+  (int16_t)0x3B20, (int16_t)0x3BB6, (int16_t)0x3C42, (int16_t)0x3CC5, (int16_t)0x3D3E, (int16_t)0x3DAE, (int16_t)0x3E14, (int16_t)0x3E71,
+  (int16_t)0x3EC5, (int16_t)0x3F0E, (int16_t)0x3F4E, (int16_t)0x3F84, (int16_t)0x3FB1, (int16_t)0x3FD3, (int16_t)0x3FEC, (int16_t)0x3FFB,
+  (int16_t)0x4000, (int16_t)0x3FFB, (int16_t)0x3FEC, (int16_t)0x3FD3, (int16_t)0x3FB1, (int16_t)0x3F84, (int16_t)0x3F4E, (int16_t)0x3F0E,
+  (int16_t)0x3EC5, (int16_t)0x3E71, (int16_t)0x3E14, (int16_t)0x3DAE, (int16_t)0x3D3E, (int16_t)0x3CC5, (int16_t)0x3C42, (int16_t)0x3BB6,
+  (int16_t)0x3B20, (int16_t)0x3A82, (int16_t)0x39DA, (int16_t)0x392A, (int16_t)0x3871, (int16_t)0x37AF, (int16_t)0x36E5, (int16_t)0x3612,
+  (int16_t)0x3536, (int16_t)0x3453, (int16_t)0x3367, (int16_t)0x3274, (int16_t)0x3179, (int16_t)0x3076, (int16_t)0x2F6B, (int16_t)0x2E5A,
+  (int16_t)0x2D41, (int16_t)0x2C21, (int16_t)0x2AFA, (int16_t)0x29CD, (int16_t)0x2899, (int16_t)0x275F, (int16_t)0x261F, (int16_t)0x24DA,
+  (int16_t)0x238E, (int16_t)0x223D, (int16_t)0x20E7, (int16_t)0x1F8B, (int16_t)0x1E2B, (int16_t)0x1CC6, (int16_t)0x1B5D, (int16_t)0x19EF,
+  (int16_t)0x187D, (int16_t)0x1708, (int16_t)0x158F, (int16_t)0x1413, (int16_t)0x1294, (int16_t)0x1111, (int16_t)0x0F8C, (int16_t)0x0E05,
+  (int16_t)0x0C7C, (int16_t)0x0AF1, (int16_t)0x0964, (int16_t)0x07D5, (int16_t)0x0645, (int16_t)0x04B5, (int16_t)0x0323, (int16_t)0x0192,
+  (int16_t)0x0000, (int16_t)0xFE6E, (int16_t)0xFCDD, (int16_t)0xFB4B, (int16_t)0xF9BB, (int16_t)0xF82B, (int16_t)0xF69C, (int16_t)0xF50F,
+  (int16_t)0xF384, (int16_t)0xF1FB, (int16_t)0xF074, (int16_t)0xEEEF, (int16_t)0xED6C, (int16_t)0xEBED, (int16_t)0xEA71, (int16_t)0xE8F8,
+  (int16_t)0xE783, (int16_t)0xE611, (int16_t)0xE4A3, (int16_t)0xE33A, (int16_t)0xE1D5, (int16_t)0xE075, (int16_t)0xDF19, (int16_t)0xDDC3,
+  (int16_t)0xDC72, (int16_t)0xDB26, (int16_t)0xD9E1, (int16_t)0xD8A1, (int16_t)0xD767, (int16_t)0xD633, (int16_t)0xD506, (int16_t)0xD3DF,
+  (int16_t)0xD2BF, (int16_t)0xD1A6, (int16_t)0xD095, (int16_t)0xCF8A, (int16_t)0xCE87, (int16_t)0xCD8C, (int16_t)0xCC99, (int16_t)0xCBAD,
+  (int16_t)0xCACA, (int16_t)0xC9EE, (int16_t)0xC91B, (int16_t)0xC851, (int16_t)0xC78F, (int16_t)0xC6D6, (int16_t)0xC626, (int16_t)0xC57E,
+  (int16_t)0xC4E0, (int16_t)0xC44A, (int16_t)0xC3BE, (int16_t)0xC33B, (int16_t)0xC2C2, (int16_t)0xC252, (int16_t)0xC1EC, (int16_t)0xC18F,
+  (int16_t)0xC13B, (int16_t)0xC0F2, (int16_t)0xC0B2, (int16_t)0xC07C, (int16_t)0xC04F, (int16_t)0xC02D, (int16_t)0xC014, (int16_t)0xC005,
+  (int16_t)0xC000, (int16_t)0xC005, (int16_t)0xC014, (int16_t)0xC02D, (int16_t)0xC04F, (int16_t)0xC07C, (int16_t)0xC0B2, (int16_t)0xC0F2,
+  (int16_t)0xC13B, (int16_t)0xC18F, (int16_t)0xC1EC, (int16_t)0xC252, (int16_t)0xC2C2, (int16_t)0xC33B, (int16_t)0xC3BE, (int16_t)0xC44A,
+  (int16_t)0xC4E0, (int16_t)0xC57E, (int16_t)0xC626, (int16_t)0xC6D6, (int16_t)0xC78F, (int16_t)0xC851, (int16_t)0xC91B, (int16_t)0xC9EE,
+  (int16_t)0xCACA, (int16_t)0xCBAD, (int16_t)0xCC99, (int16_t)0xCD8C, (int16_t)0xCE87, (int16_t)0xCF8A, (int16_t)0xD095, (int16_t)0xD1A6,
+  (int16_t)0xD2BF, (int16_t)0xD3DF, (int16_t)0xD506, (int16_t)0xD633, (int16_t)0xD767, (int16_t)0xD8A1, (int16_t)0xD9E1, (int16_t)0xDB26,
+  (int16_t)0xDC72, (int16_t)0xDDC3, (int16_t)0xDF19, (int16_t)0xE075, (int16_t)0xE1D5, (int16_t)0xE33A, (int16_t)0xE4A3, (int16_t)0xE611,
+  (int16_t)0xE783, (int16_t)0xE8F8, (int16_t)0xEA71, (int16_t)0xEBED, (int16_t)0xED6C, (int16_t)0xEEEF, (int16_t)0xF074, (int16_t)0xF1FB,
+  (int16_t)0xF384, (int16_t)0xF50F, (int16_t)0xF69C, (int16_t)0xF82B, (int16_t)0xF9BB, (int16_t)0xFB4B, (int16_t)0xFCDD, (int16_t)0xFE6E
 };
 
 void BIOS_ArcTan()
@@ -52,15 +52,15 @@ void BIOS_ArcTan()
   }
 #endif
 
-  s32 a =  -(((s32)(reg[0].I*reg[0].I)) >> 14);
-  s32 b = ((0xA9 * a) >> 14) + 0x390;
+  int32_t a =  -(((int32_t)(reg[0].I*reg[0].I)) >> 14);
+  int32_t b = ((0xA9 * a) >> 14) + 0x390;
   b = ((b * a) >> 14) + 0x91C;
   b = ((b * a) >> 14) + 0xFB6;
   b = ((b * a) >> 14) + 0x16AA;
   b = ((b * a) >> 14) + 0x2081;
   b = ((b * a) >> 14) + 0x3651;
   b = ((b * a) >> 14) + 0xA2F9;
-  a = ((s32)reg[0].I * b) >> 16;
+  a = ((int32_t)reg[0].I * b) >> 16;
   reg[0].I = a;
 
 #ifdef GBA_LOGGING
@@ -82,9 +82,9 @@ void BIOS_ArcTan2()
   }
 #endif
 
-  s32 x = reg[0].I;
-  s32 y = reg[1].I;
-  u32 res = 0;
+  int32_t x = reg[0].I;
+  int32_t y = reg[1].I;
+  uint32_t res = 0;
   if (y == 0) {
     res = ((x>>16) & 0x8000);
   } else {
@@ -130,9 +130,9 @@ void BIOS_BitUnPack()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
-  u32 header = reg[2].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
+  uint32_t header = reg[2].I;
 
   int len = CPUReadHalfWord(header);
     // check address
@@ -143,7 +143,7 @@ void BIOS_BitUnPack()
   int bits = CPUReadByte(header+2);
   int revbits = 8 - bits;
   // u32 value = 0;
-  u32 base = CPUReadMemory(header+4);
+  uint32_t base = CPUReadMemory(header+4);
   bool addBase = (base & 0x80000000) ? true : false;
   base &= 0x7fffffff;
   int dataSize = CPUReadByte(header+3);
@@ -155,14 +155,14 @@ void BIOS_BitUnPack()
     if(len < 0)
       break;
     int mask = 0xff >> revbits;
-    u8 b = CPUReadByte(source);
+    uint8_t b = CPUReadByte(source);
     source++;
     int bitcount = 0;
     while(1) {
       if(bitcount >= 8)
         break;
-      u32 d = b & mask;
-      u32 temp = d >> bitcount;
+      uint32_t d = b & mask;
+      uint32_t temp = d >> bitcount;
       if(d || addBase) {
         temp += base;
       }
@@ -197,32 +197,32 @@ void BIOS_BgAffineSet()
   }
 #endif
 
-  u32 src = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t src = reg[0].I;
+  uint32_t dest = reg[1].I;
   int num = reg[2].I;
 
   for(int i = 0; i < num; i++) {
-    s32 cx = CPUReadMemory(src);
+    int32_t cx = CPUReadMemory(src);
     src+=4;
-    s32 cy = CPUReadMemory(src);
+    int32_t cy = CPUReadMemory(src);
     src+=4;
-    s16 dispx = CPUReadHalfWord(src);
+    int16_t dispx = CPUReadHalfWord(src);
     src+=2;
-    s16 dispy = CPUReadHalfWord(src);
+    int16_t dispy = CPUReadHalfWord(src);
     src+=2;
-    s16 rx = CPUReadHalfWord(src);
+    int16_t rx = CPUReadHalfWord(src);
     src+=2;
-    s16 ry = CPUReadHalfWord(src);
+    int16_t ry = CPUReadHalfWord(src);
     src+=2;
-    u16 theta = CPUReadHalfWord(src)>>8;
+    uint16_t theta = CPUReadHalfWord(src)>>8;
     src+=4; // keep structure alignment
-    s32 a = sineTable[(theta+0x40)&255];
-    s32 b = sineTable[theta];
+    int32_t a = sineTable[(theta+0x40)&255];
+    int32_t b = sineTable[theta];
 
-    s16 dx =  (rx * a)>>14;
-    s16 dmx = (rx * b)>>14;
-    s16 dy =  (ry * b)>>14;
-    s16 dmy = (ry * a)>>14;
+    int16_t dx =  (rx * a)>>14;
+    int16_t dmx = (rx * b)>>14;
+    int16_t dy =  (ry * b)>>14;
+    int16_t dmy = (ry * a)>>14;
 
     CPUWriteHalfWord(dest, dx);
     dest += 2;
@@ -233,8 +233,8 @@ void BIOS_BgAffineSet()
     CPUWriteHalfWord(dest, dmy);
     dest += 2;
 
-    s32 startx = cx - dx * dispx + dmx * dispy;
-    s32 starty = cy - dy * dispx - dmy * dispy;
+    int32_t startx = cx - dx * dispx + dmx * dispy;
+    int32_t starty = cy - dy * dispx - dmy * dispy;
 
     CPUWriteMemory(dest, startx);
     dest += 4;
@@ -252,9 +252,9 @@ void BIOS_CpuSet()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
-  u32 cnt = reg[2].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
+  uint32_t cnt = reg[2].I;
 
   if(((source & 0xe000000) == 0) ||
      ((source + (((cnt << 11)>>9) & 0x1fffff)) & 0xe000000) == 0)
@@ -269,7 +269,7 @@ void BIOS_CpuSet()
     dest &= 0xFFFFFFFC;
     // fill ?
     if((cnt >> 24) & 1) {
-        u32 value = (source>0x0EFFFFFF ? 0x1CAD1CAD : CPUReadMemory(source));
+        uint32_t value = (source>0x0EFFFFFF ? 0x1CAD1CAD : CPUReadMemory(source));
       while(count) {
         CPUWriteMemory(dest, value);
         dest += 4;
@@ -287,7 +287,7 @@ void BIOS_CpuSet()
   } else {
     // 16-bit fill?
     if((cnt >> 24) & 1) {
-      u16 value = (source>0x0EFFFFFF ? 0x1CAD : CPUReadHalfWord(source));
+      uint16_t value = (source>0x0EFFFFFF ? 0x1CAD : CPUReadHalfWord(source));
       while(count) {
         CPUWriteHalfWord(dest, value);
         dest += 2;
@@ -314,9 +314,9 @@ void BIOS_CpuFastSet()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
-  u32 cnt = reg[2].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
+  uint32_t cnt = reg[2].I;
 
   if(((source & 0xe000000) == 0) ||
      ((source + (((cnt << 11)>>9) & 0x1fffff)) & 0xe000000) == 0)
@@ -332,7 +332,7 @@ void BIOS_CpuFastSet()
   if((cnt >> 24) & 1) {
     while(count > 0) {
       // BIOS always transfers 32 bytes at a time
-      u32 value = (source>0x0EFFFFFF ? 0xBAFFFFFB : CPUReadMemory(source));
+      uint32_t value = (source>0x0EFFFFFF ? 0xBAFFFFFB : CPUReadMemory(source));
       for(int i = 0; i < 8; i++) {
         CPUWriteMemory(dest, value);
         dest += 4;
@@ -362,10 +362,10 @@ void BIOS_Diff8bitUnFilterWram()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source);
+  uint32_t header = CPUReadMemory(source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -374,12 +374,12 @@ void BIOS_Diff8bitUnFilterWram()
 
   int len = header >> 8;
 
-  u8 data = CPUReadByte(source++);
+  uint8_t data = CPUReadByte(source++);
   CPUWriteByte(dest++, data);
   len--;
 
   while(len > 0) {
-    u8 diff = CPUReadByte(source++);
+    uint8_t diff = CPUReadByte(source++);
     data += diff;
     CPUWriteByte(dest++, data);
     len--;
@@ -395,10 +395,10 @@ void BIOS_Diff8bitUnFilterVram()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source);
+  uint32_t header = CPUReadMemory(source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -407,13 +407,13 @@ void BIOS_Diff8bitUnFilterVram()
 
   int len = header >> 8;
 
-  u8 data = CPUReadByte(source++);
-  u16 writeData = data;
+  uint8_t data = CPUReadByte(source++);
+  uint16_t writeData = data;
   int shift = 8;
   int bytes = 1;
 
   while(len >= 2) {
-    u8 diff = CPUReadByte(source++);
+    uint8_t diff = CPUReadByte(source++);
     data += diff;
     writeData |= (data << shift);
     bytes++;
@@ -438,10 +438,10 @@ void BIOS_Diff16bitUnFilter()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source);
+  uint32_t header = CPUReadMemory(source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -450,14 +450,14 @@ void BIOS_Diff16bitUnFilter()
 
   int len = header >> 8;
 
-  u16 data = CPUReadHalfWord(source);
+  uint16_t data = CPUReadHalfWord(source);
   source += 2;
   CPUWriteHalfWord(dest, data);
   dest += 2;
   len -= 2;
 
   while(len >= 2) {
-    u16 diff = CPUReadHalfWord(source);
+    uint16_t diff = CPUReadHalfWord(source);
     source += 2;
     data += diff;
     CPUWriteHalfWord(dest, data);
@@ -483,8 +483,8 @@ void BIOS_Div()
   if(denom != 0) {
     reg[0].I = number / denom;
     reg[1].I = number % denom;
-    s32 temp = (s32)reg[0].I;
-    reg[3].I = temp < 0 ? (u32)-temp : (u32)temp;
+    int32_t temp = (int32_t)reg[0].I;
+    reg[3].I = temp < 0 ? (uint32_t)-temp : (uint32_t)temp;
   }
 #ifdef GBA_LOGGING
   if(systemVerbose & VERBOSE_SWI) {
@@ -506,7 +506,7 @@ void BIOS_DivARM()
   }
 #endif
 
-  u32 temp = reg[0].I;
+  uint32_t temp = reg[0].I;
   reg[0].I = reg[1].I;
   reg[1].I = temp;
   BIOS_Div();
@@ -523,35 +523,35 @@ void BIOS_HuffUnComp()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source);
+  uint32_t header = CPUReadMemory(source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
      ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
     return;
 
-  u8 treeSize = CPUReadByte(source++);
+  uint8_t treeSize = CPUReadByte(source++);
 
-  u32 treeStart = source;
+  uint32_t treeStart = source;
 
   source += ((treeSize+1)<<1)-1; // minus because we already skipped one byte
 
   int len = header >> 8;
 
-  u32 mask = 0x80000000;
-  u32 data = CPUReadMemory(source);
+  uint32_t mask = 0x80000000;
+  uint32_t data = CPUReadMemory(source);
   source += 4;
 
   int pos = 0;
-  u8 rootNode = CPUReadByte(treeStart);
-  u8 currentNode = rootNode;
+  uint8_t rootNode = CPUReadByte(treeStart);
+  uint8_t currentNode = rootNode;
   bool writeData = false;
   int byteShift = 0;
   int byteCount = 0;
-  u32 writeValue = 0;
+  uint32_t writeValue = 0;
 
   if((header & 0x0F) == 8) {
     while(len > 0) {
@@ -669,10 +669,10 @@ void BIOS_LZ77UnCompVram()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source);
+  uint32_t header = CPUReadMemory(source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -681,21 +681,21 @@ void BIOS_LZ77UnCompVram()
 
   int byteCount = 0;
   int byteShift = 0;
-  u32 writeValue = 0;
+  uint32_t writeValue = 0;
 
   int len = header >> 8;
 
   while(len > 0) {
-    u8 d = CPUReadByte(source++);
+    uint8_t d = CPUReadByte(source++);
 
     if(d) {
       for(int i = 0; i < 8; i++) {
         if(d & 0x80) {
-          u16 data = CPUReadByte(source++) << 8;
+          uint16_t data = CPUReadByte(source++) << 8;
           data |= CPUReadByte(source++);
           int length = (data >> 12) + 3;
           int offset = (data & 0x0FFF);
-          u32 windowOffset = dest + byteCount - offset - 1;
+          uint32_t windowOffset = dest + byteCount - offset - 1;
           for(int i2 = 0; i2 < length; i2++) {
             writeValue |= (CPUReadByte(windowOffset++) << byteShift);
             byteShift += 8;
@@ -758,10 +758,10 @@ void BIOS_LZ77UnCompWram()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source);
+  uint32_t header = CPUReadMemory(source);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -771,16 +771,16 @@ void BIOS_LZ77UnCompWram()
   int len = header >> 8;
 
   while(len > 0) {
-    u8 d = CPUReadByte(source++);
+    uint8_t d = CPUReadByte(source++);
 
     if(d) {
       for(int i = 0; i < 8; i++) {
         if(d & 0x80) {
-          u16 data = CPUReadByte(source++) << 8;
+          uint16_t data = CPUReadByte(source++) << 8;
           data |= CPUReadByte(source++);
           int length = (data >> 12) + 3;
           int offset = (data & 0x0FFF);
-          u32 windowOffset = dest - offset - 1;
+          uint32_t windowOffset = dest - offset - 1;
           for(int i2 = 0; i2 < length; i2++) {
             CPUWriteByte(dest++, CPUReadByte(windowOffset++));
             len--;
@@ -819,26 +819,26 @@ void BIOS_ObjAffineSet()
   }
 #endif
 
-  u32 src = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t src = reg[0].I;
+  uint32_t dest = reg[1].I;
   int num = reg[2].I;
   int offset = reg[3].I;
 
   for(int i = 0; i < num; i++) {
-    s16 rx = CPUReadHalfWord(src);
+    int16_t rx = CPUReadHalfWord(src);
     src+=2;
-    s16 ry = CPUReadHalfWord(src);
+    int16_t ry = CPUReadHalfWord(src);
     src+=2;
-    u16 theta = CPUReadHalfWord(src)>>8;
+    uint16_t theta = CPUReadHalfWord(src)>>8;
     src+=4; // keep structure alignment
 
-    s32 a = (s32)sineTable[(theta+0x40)&255];
-    s32 b = (s32)sineTable[theta];
+    int32_t a = (int32_t)sineTable[(theta+0x40)&255];
+    int32_t b = (int32_t)sineTable[theta];
 
-    s16 dx =  ((s32)rx * a)>>14;
-    s16 dmx = ((s32)rx * b)>>14;
-    s16 dy =  ((s32)ry * b)>>14;
-    s16 dmy = ((s32)ry * a)>>14;
+    int16_t dx =  ((int32_t)rx * a)>>14;
+    int16_t dmx = ((int32_t)rx * b)>>14;
+    int16_t dy =  ((int32_t)ry * b)>>14;
+    int16_t dmy = ((int32_t)ry * a)>>14;
 
     CPUWriteHalfWord(dest, dx);
     dest += offset;
@@ -851,7 +851,7 @@ void BIOS_ObjAffineSet()
   }
 }
 
-void BIOS_RegisterRamReset(u32 flags)
+void BIOS_RegisterRamReset(uint32_t flags)
 {
   // no need to trace here. this is only called directly from GBA.cpp
   // to emulate bios initialization
@@ -951,10 +951,10 @@ void BIOS_RLUnCompVram()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source & 0xFFFFFFFC);
+  uint32_t header = CPUReadMemory(source & 0xFFFFFFFC);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -964,13 +964,13 @@ void BIOS_RLUnCompVram()
   int len = header >> 8;
   int byteCount = 0;
   int byteShift = 0;
-  u32 writeValue = 0;
+  uint32_t writeValue = 0;
 
   while(len > 0) {
-    u8 d = CPUReadByte(source++);
+    uint8_t d = CPUReadByte(source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = CPUReadByte(source++);
+      uint8_t data = CPUReadByte(source++);
       l += 3;
       for(int i = 0;i < l; i++) {
         writeValue |= (data << byteShift);
@@ -1020,10 +1020,10 @@ void BIOS_RLUnCompWram()
   }
 #endif
 
-  u32 source = reg[0].I;
-  u32 dest = reg[1].I;
+  uint32_t source = reg[0].I;
+  uint32_t dest = reg[1].I;
 
-  u32 header = CPUReadMemory(source & 0xFFFFFFFC);
+  uint32_t header = CPUReadMemory(source & 0xFFFFFFFC);
   source += 4;
 
   if(((source & 0xe000000) == 0) ||
@@ -1033,10 +1033,10 @@ void BIOS_RLUnCompWram()
   int len = header >> 8;
 
   while(len > 0) {
-    u8 d = CPUReadByte(source++);
+    uint8_t d = CPUReadByte(source++);
     int l = d & 0x7F;
     if(d & 0x80) {
-      u8 data = CPUReadByte(source++);
+      uint8_t data = CPUReadByte(source++);
       l += 3;
       for(int i = 0;i < l; i++) {
         CPUWriteByte(dest++, data);
@@ -1077,7 +1077,7 @@ void BIOS_SoftReset()
   reg[R13_SVC].I = 0x03007FE0;
   reg[R14_SVC].I = 0x00000000;
   reg[SPSR_SVC].I = 0x00000000;
-  u8 b = internalRAM[0x7ffa];
+  uint8_t b = internalRAM[0x7ffa];
 
   memset(&internalRAM[0x7e00], 0, 0x200);
 
@@ -1099,7 +1099,7 @@ void BIOS_Sqrt()
         VCOUNT);
   }
 #endif
-  reg[0].I = (u32)sqrt((double)reg[0].I);
+  reg[0].I = (uint32_t)sqrt((double)reg[0].I);
 #ifdef GBA_LOGGING
   if(systemVerbose & VERBOSE_SWI) {
     log("Sqrt: return=%08x\n",

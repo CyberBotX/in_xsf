@@ -83,7 +83,6 @@
     <ClCompile Include="vbam\apu\Blip_Buffer.cpp" />
     <ClCompile Include="vbam\apu\Effects_Buffer.cpp" />
     <ClCompile Include="vbam\apu\Gb_Apu.cpp" />
-    <ClCompile Include="vbam\apu\Gb_Apu_State.cpp" />
     <ClCompile Include="vbam\apu\Gb_Oscs.cpp" />
     <ClCompile Include="vbam\apu\Multi_Buffer.cpp" />
     <ClCompile Include="vbam\gba\bios.cpp" />
@@ -106,6 +105,7 @@
     <ClInclude Include="vbam\apu\Multi_Buffer.h" />
     <ClInclude Include="vbam\common\Port.h" />
     <ClInclude Include="vbam\common\SoundDriver.h" />
+    <ClInclude Include="vbam\common\Types.h" />
     <ClInclude Include="vbam\gba\bios.h" />
     <ClInclude Include="vbam\gba\GBA.h" />
     <ClInclude Include="vbam\gba\GBAcpu.h" />

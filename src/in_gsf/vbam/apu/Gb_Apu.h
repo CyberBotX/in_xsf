@@ -78,16 +78,6 @@ public:
 	// tempo in a game music player.
 	void set_tempo( double );
 
-// Save states
-
-	// Saves full emulation state to state_out. Data format is portable and
-	// includes some extra space to avoid expansion in case more state needs
-	// to be stored in the future.
-	void save_state( gb_apu_state_t* state_out );
-
-	// Loads state. You should call reset() BEFORE this.
-	blargg_err_t load_state( gb_apu_state_t const& in );
-
 public:
 	Gb_Apu();
 
@@ -131,8 +121,6 @@ private:
 	void run_until( blip_time_t );
 	void silence_osc( Gb_Osc& );
 	void write_osc( int index, int reg, int old_data, int data );
-	const char* save_load( gb_apu_state_t*, bool save );
-	void save_load2( gb_apu_state_t*, bool save );
 	friend class Gb_Apu_Tester;
 
 public:

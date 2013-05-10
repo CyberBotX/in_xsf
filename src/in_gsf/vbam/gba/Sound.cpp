@@ -13,6 +13,7 @@
 #include "../common/SoundDriver.h"
 
 extern SoundDriver *systemSoundInit();
+bool soundDeclicking = true;
 
 #define NR10 0x60
 #define NR11 0x62
@@ -42,7 +43,7 @@ extern bool stopState;      // TODO: silence sound when true
 
 int const SOUND_CLOCK_TICKS_ = 167772; // 1/100 second
 
-static u16   soundFinalWave [6400];
+static uint16_t   soundFinalWave [6400];
 long  soundSampleRate    = 44100;
 bool  soundInterpolation = true;
 bool  soundPaused        = true;
@@ -84,7 +85,7 @@ public:
 	int  readIndex;
 	int  count;
 	int  writeIndex;
-	u8   fifo [32];
+	uint8_t   fifo [32];
 	int  dac;
 private:
 
@@ -155,7 +156,7 @@ void Gba_Pcm::update( int dac )
 	{
 		blip_time_t time = blip_time();
 
-		dac = (s8) dac >> shift;
+		dac = (int8_t) dac >> shift;
 		int delta = dac - last_amp;
 		if ( delta )
 		{
@@ -195,8 +196,8 @@ void Gba_Pcm_Fifo::timer_overflowed( int which_timer )
 				int reg = which ? FIFOB_L : FIFOA_L;
 				for ( int n = 4; n--; )
 				{
-					soundEvent(reg  , (u16)0);
-					soundEvent(reg+2, (u16)0);
+					soundEvent(reg  , (uint16_t)0);
+					soundEvent(reg+2, (uint16_t)0);
 				}
 			}
 		}
@@ -260,7 +261,7 @@ static int gba_to_gb_sound( int addr )
 	return 0;
 }
 
-void soundEvent(u32 address, u8 data)
+void soundEvent(uint32_t address, uint8_t data)
 {
 	int gb_addr = gba_to_gb_sound( address );
 	if ( gb_addr )
@@ -303,7 +304,7 @@ static void write_SGCNT0_H( int data )
 	apply_volume( true );
 }
 
-void soundEvent(u32 address, u16 data)
+void soundEvent(uint32_t address, uint16_t data)
 {
 	switch ( address )
 	{
@@ -329,8 +330,8 @@ void soundEvent(u32 address, u16 data)
 		break;
 
 	default:
-		soundEvent( address & ~1, (u8) (data     ) ); // even
-		soundEvent( address |  1, (u8) (data >> 8) ); // odd
+		soundEvent( address & ~1, (uint8_t) (data     ) ); // even
+		soundEvent( address |  1, (uint8_t) (data >> 8) ); // odd
 		break;
 	}
 }
@@ -435,6 +436,7 @@ static void apply_muting()
 
 static void reset_apu()
 {
+	gb_apu->reduce_clicks(soundDeclicking);
 	gb_apu->reset( gb_apu->mode_agb, true );
 
 	if ( stereo_buffer )
@@ -483,6 +485,20 @@ void soundShutdown()
 	{
 		delete soundDriver;
 		soundDriver = 0;
+	}
+
+	// APU
+	if ( gb_apu )
+	{
+		delete gb_apu;
+		gb_apu = 0;
+	}
+
+	// Stereo_Buffer
+	if (stereo_buffer)
+	{
+		delete stereo_buffer;
+		stereo_buffer = 0;
 	}
 
 	//systemOnSoundShutdown();
@@ -534,7 +550,7 @@ void soundReset()
 	SOUND_CLOCK_TICKS = SOUND_CLOCK_TICKS_;
 	soundTicks        = SOUND_CLOCK_TICKS_;
 
-	soundEvent( NR52, (u8) 0x80 );
+	soundEvent( NR52, (uint8_t) 0x80 );
 }
 
 bool soundInit()
