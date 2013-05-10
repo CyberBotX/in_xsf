@@ -1826,10 +1826,10 @@ void CPUSoftwareInterrupt(int comment)
           VCOUNT);*/
     }
 #endif
-    holdState = true;
+    /*holdState = true;
     holdType = -1;
     stopState = true;
-    cpuNextEvent = cpuTotalTicks;
+    cpuNextEvent = cpuTotalTicks;*/
     break;
   case 0x04:
 #ifdef GBA_LOGGING
