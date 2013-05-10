@@ -1,8 +1,7 @@
 #ifndef GBA_H
 #define GBA_H
 
-//#include "../System.h"
-#include "../common/Types.h"
+#include <cstdint>
 
 /*#define SAVE_GAME_VERSION_1 1
 #define SAVE_GAME_VERSION_2 2

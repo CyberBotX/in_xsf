@@ -1,7 +1,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include "../common/Types.h"
+#include <cstdint>
 #include "GBA.h"
 
 #define VERBOSE_SWI                  1

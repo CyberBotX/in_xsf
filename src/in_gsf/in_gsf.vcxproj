@@ -105,7 +105,6 @@
     <ClInclude Include="vbam\apu\Multi_Buffer.h" />
     <ClInclude Include="vbam\common\Port.h" />
     <ClInclude Include="vbam\common\SoundDriver.h" />
-    <ClInclude Include="vbam\common\Types.h" />
     <ClInclude Include="vbam\gba\bios.h" />
     <ClInclude Include="vbam\gba\GBA.h" />
     <ClInclude Include="vbam\gba\GBAcpu.h" />

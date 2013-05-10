@@ -1,7 +1,7 @@
 #ifndef PORT_H
 #define PORT_H
 
-#include "Types.h"
+#include <cstdint>
 
 // swaps a 16-bit value
 static inline uint16_t swap16(uint16_t v)

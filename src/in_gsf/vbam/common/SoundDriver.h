@@ -18,7 +18,7 @@
 #ifndef __VBA_SOUND_DRIVER_H__
 #define __VBA_SOUND_DRIVER_H__
 
-#include "Types.h"
+#include <cstdint>
 
 /**
  * Sound driver abstract interface for the core to use to output sound.

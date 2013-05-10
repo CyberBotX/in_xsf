@@ -125,8 +125,5 @@
     <ClInclude Include="vbam\gba\Sound.h">
       <Filter>Header Files\vbam\gba</Filter>
     </ClInclude>
-    <ClInclude Include="vbam\common\Types.h">
-      <Filter>Header Files\vbam\common</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

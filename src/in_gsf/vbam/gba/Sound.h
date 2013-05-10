@@ -3,8 +3,7 @@
 
 // Sound emulation setup/options and GBA sound emulation
 
-//#include "../System.h"
-#include "../common/Types.h"
+#include <cstdint>
 
 extern bool soundDeclicking;
 
