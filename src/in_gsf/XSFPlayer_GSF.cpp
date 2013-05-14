@@ -207,14 +207,14 @@ bool XSFPlayer_GSF::Load()
 
 	cpuIsMultiBoot = (loaderwork.entry >> 24) == 2;
 
-	CPULoadRom(nullptr);
+	CPULoadRom();
 
 	soundSetSampleRate(this->sampleRate);
 	soundInit();
 	soundReset();
-	soundSetEnable(0x3FF);
+	soundSetEnable(0x30F);
 
-	CPUInit(nullptr, false);
+	CPUInit();
 	CPUReset();
 
 	return XSFPlayer::Load();
@@ -245,7 +245,6 @@ void XSFPlayer_GSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, 
 
 void XSFPlayer_GSF::Terminate()
 {
-	CPUCleanUp();
 	soundShutdown();
 
 	loaderwork.rom.clear();

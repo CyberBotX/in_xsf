@@ -12,7 +12,6 @@ extern void BIOS_Diff8bitUnFilterWram();
 extern void BIOS_Diff8bitUnFilterVram();
 extern void BIOS_Diff16bitUnFilter();
 extern void BIOS_Div();
-extern void BIOS_DivARM();
 extern void BIOS_HuffUnComp();
 extern void BIOS_LZ77UnCompVram();
 extern void BIOS_LZ77UnCompWram();

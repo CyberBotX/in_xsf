@@ -4,18 +4,6 @@
 #include <cstdint>
 #include "GBA.h"
 
-#define VERBOSE_SWI                  1
-#define VERBOSE_UNALIGNED_MEMORY     2
-#define VERBOSE_ILLEGAL_WRITE        4
-#define VERBOSE_ILLEGAL_READ         8
-#define VERBOSE_DMA0                16
-#define VERBOSE_DMA1                32
-#define VERBOSE_DMA2                64
-#define VERBOSE_DMA3               128
-#define VERBOSE_UNDEFINED          256
-#define VERBOSE_AGBPRINT           512
-#define VERBOSE_SOUNDOUTPUT       1024
-
 extern reg_pair reg[45];
 extern bool ioReadable[0x400];
 extern bool N_FLAG;
@@ -26,35 +14,18 @@ extern bool armState;
 extern bool armIrqEnable;
 extern uint32_t armNextPC;
 extern int armMode;
-extern uint32_t stop;
-extern int saveType;
-extern bool useBios;
-extern bool skipBios;
-extern int frameSkip;
-extern bool speedup;
-extern bool synchronize;
-extern bool cpuDisableSfx;
 extern bool cpuIsMultiBoot;
-extern bool parseDebug;
 extern int layerSettings;
 extern int layerEnable;
-extern bool speedHack;
-extern int cpuSaveType;
-extern bool cheatsEnabled;
-extern bool mirroringEnable;
-extern bool skipSaveGameBattery; // skip battery data when reading save states
-extern bool skipSaveGameCheats;  // skip cheat list data when reading save states
-extern int customBackdropColor;
 
-extern uint8_t *bios;
-extern uint8_t *rom;
-extern uint8_t *internalRAM;
-extern uint8_t *workRAM;
-extern uint8_t *paletteRAM;
-extern uint8_t *vram;
-extern uint8_t *pix;
-extern uint8_t *oam;
-extern uint8_t *ioMem;
+extern uint8_t bios[0x4000];
+extern uint8_t rom[0x2000000];
+extern uint8_t internalRAM[0x8000];
+extern uint8_t workRAM[0x40000];
+extern uint8_t paletteRAM[0x400];
+extern uint8_t vram[0x20000];
+extern uint8_t oam[0x400];
+extern uint8_t ioMem[0x400];
 
 extern uint16_t DISPCNT;
 extern uint16_t DISPSTAT;

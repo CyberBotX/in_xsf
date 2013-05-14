@@ -27,11 +27,10 @@
 class SoundDriver
 {
 public:
-
 	/**
 	 * Destructor. Free the resources allocated by the sound driver.
 	 */
-	virtual ~SoundDriver() { };
+	virtual ~SoundDriver() { }
 
 	/**
 	 * Initialize the sound driver.
@@ -57,9 +56,9 @@ public:
 	/**
 	 * Write length bytes of data from the finalWave buffer to the driver output buffer.
 	 */
-	virtual void write(uint16_t * finalWave, int length) = 0;
+	virtual void write(uint16_t *finalWave, int length) = 0;
 
-	virtual void setThrottle(unsigned short throttle) { };
+	virtual void setThrottle(unsigned short throttle) { }
 };
 
 #endif // __VBA_SOUND_DRIVER_H__
