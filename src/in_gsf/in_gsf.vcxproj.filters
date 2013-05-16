@@ -83,9 +83,6 @@
     <ClInclude Include="vbam\apu\blargg_config.h">
       <Filter>Header Files\vbam\apu</Filter>
     </ClInclude>
-    <ClInclude Include="vbam\apu\blargg_source.h">
-      <Filter>Header Files\vbam\apu</Filter>
-    </ClInclude>
     <ClInclude Include="vbam\apu\Blip_Buffer.h">
       <Filter>Header Files\vbam\apu</Filter>
     </ClInclude>

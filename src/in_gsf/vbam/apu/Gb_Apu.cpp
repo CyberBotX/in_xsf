@@ -14,8 +14,6 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-#include "blargg_source.h"
-
 static const unsigned vol_reg = 0xFF24;
 static const unsigned stereo_reg = 0xFF25;
 static const unsigned status_reg = 0xFF26;
@@ -76,7 +74,7 @@ void Gb_Apu::apply_volume()
 
 void Gb_Apu::volume(double v)
 {
-	if (volume_ != v)
+	if (this->volume_ != v)
 	{
 		this->volume_ = v;
 		this->apply_volume();
@@ -117,7 +115,7 @@ void Gb_Apu::reduce_clicks(bool reduce)
 		this->oscs[i]->dac_off_amp = dac_off_amp;
 
 	// AGB always eliminates clicks on wave channel using same method
-	if (wave.mode == mode_agb)
+	if (this->wave.mode == mode_agb)
 		this->wave.dac_off_amp = -Gb_Osc::dac_bias;
 }
 
@@ -166,10 +164,10 @@ Gb_Apu::Gb_Apu()
 {
 	this->wave.wave_ram = &this->regs[wave_ram - start_addr];
 
-	this->oscs [0] = &this->square1;
-	this->oscs [1] = &this->square2;
-	this->oscs [2] = &this->wave;
-	this->oscs [3] = &this->noise;
+	this->oscs[0] = &this->square1;
+	this->oscs[1] = &this->square2;
+	this->oscs[2] = &this->wave;
+	this->oscs[3] = &this->noise;
 
 	for (int i = osc_count; --i >= 0; )
 	{
@@ -199,10 +197,10 @@ void Gb_Apu::run_until_(blip_time_t end_time)
 		if (time > this->frame_time)
 			time = this->frame_time;
 
-		this->square1.run(last_time, time);
-		this->square2.run(last_time, time);
-		this->wave.run(last_time, time);
-		this->noise.run(last_time, time);
+		this->square1.run(this->last_time, time);
+		this->square2.run(this->last_time, time);
+		this->wave.run(this->last_time, time);
+		this->noise.run(this->last_time, time);
 		this->last_time = time;
 
 		if (time == end_time)
@@ -358,7 +356,7 @@ int Gb_Apu::read_register(blip_time_t time, unsigned addr)
 		return this->wave.read(addr);
 
 	// Value read back has some bits always set
-	static const uint8_t masks [] =
+	static const uint8_t masks[] =
 	{
 		0x80, 0x3F, 0x00, 0xFF, 0xBF,
 		0xFF, 0x3F, 0x00, 0xFF, 0xBF,

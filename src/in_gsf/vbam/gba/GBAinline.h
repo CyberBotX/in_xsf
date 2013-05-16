@@ -98,8 +98,8 @@ inline uint32_t CPUReadMemory(uint32_t address)
 		unreadable:
 			if (armState)
 				return CPUReadMemoryQuick(reg[15].I);
-			else 
-				return CPUReadHalfWordQuick(reg[15].I) | CPUReadHalfWordQuick(reg[15].I) << 16;
+			else
+				return CPUReadHalfWordQuick(reg[15].I) | (CPUReadHalfWordQuick(reg[15].I) << 16);
 	}
 
 	if (oldAddress & 3)
@@ -108,13 +108,13 @@ inline uint32_t CPUReadMemory(uint32_t address)
 		int shift = (oldAddress & 3) << 3;
 		value = (value >> shift) | (value << (32 - shift));
 #else
-#ifdef __GNUC__
+# ifdef __GNUC__
 		asm("and $3, %%ecx;"
 			"shl $3 ,%%ecx;"
 			"ror %%cl, %0"
 			: "=r" (value)
 			: "r" (value), "c" (oldAddress));
-#else
+# else
 		__asm
 		{
 			mov ecx, oldAddress;
@@ -122,7 +122,7 @@ inline uint32_t CPUReadMemory(uint32_t address)
 			shl ecx, 3;
 			ror [dword ptr value], cl;
 		}
-#endif
+# endif
 #endif
 	}
 
@@ -204,16 +204,12 @@ inline uint32_t CPUReadHalfWord(uint32_t address)
 			else
 				value = READ16LE(&rom[address & 0x1FFFFFE]);
 			break;
-		case 13:
-		case 14:
-			return 0;
-		// default
 		default:
 		unreadable:
 			if (armState)
 				return CPUReadMemoryQuick(reg[15].I);
 			else
-				return CPUReadHalfWordQuick(reg[15].I) | CPUReadHalfWordQuick(reg[15].I) << 16;
+				return CPUReadHalfWordQuick(reg[15].I) | (CPUReadHalfWordQuick(reg[15].I) << 16);
 	}
 
 	if (oldAddress & 1)
@@ -272,16 +268,12 @@ inline uint8_t CPUReadByte(uint32_t address)
 		case 11:
 		case 12:
 			return rom[address & 0x1FFFFFF];
-		case 13:
-		case 14:
-			return 0;
-		// default
 		default:
 		unreadable:
 			if (armState)
 				return CPUReadMemoryQuick(reg[15].I);
 			else
-				return CPUReadHalfWordQuick(reg[15].I) | CPUReadHalfWordQuick(reg[15].I) << 16;
+				return CPUReadHalfWordQuick(reg[15].I) | (CPUReadHalfWordQuick(reg[15].I) << 16);
 	}
 }
 

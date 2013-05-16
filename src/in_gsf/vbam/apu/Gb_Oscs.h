@@ -186,7 +186,7 @@ inline void Gb_Wave::write(unsigned addr, int data)
 {
 	int index = this->access(addr);
 	if (index >= 0)
-		this->wave_bank()[index] = data;;
+		this->wave_bank()[index] = data;
 }
 
 #endif

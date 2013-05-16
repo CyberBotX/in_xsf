@@ -17,12 +17,10 @@ enum { blip_sample_max = 32767 };
 class Blip_Buffer
 {
 public:
-	typedef const char *blargg_err_t;
-
 	// Sets output sample rate and buffer length in milliseconds (1/1000 sec, defaults
 	// to 1/4 second) and clears buffer. If there isn't enough memory, leaves buffer
 	// untouched and returns "Out of memory", otherwise returns NULL.
-	blargg_err_t set_sample_rate(long samples_per_sec, int msec_length = 1000 / 4);
+	void set_sample_rate(long samples_per_sec, int msec_length = 1000 / 4);
 
 	// Sets number of source time units per second
 	void clock_rate(long clocks_per_sec);
@@ -96,8 +94,6 @@ public:
 
 	// Deprecated
 	typedef blip_resampled_time_t resampled_time_t;
-	blargg_err_t sample_rate(long r) { return this->set_sample_rate(r); }
-	blargg_err_t sample_rate(long r, int msec) { return this->set_sample_rate(r, msec); }
 private:
 	// noncopyable
 	Blip_Buffer(const Blip_Buffer &);
@@ -116,7 +112,6 @@ private:
 	int bass_freq_;
 	int length_;
 	Blip_Buffer *modified_; // non-zero = true (more optimal than using bool, heh)
-	friend class Blip_Reader;
 };
 
 // Number of bits in resample ratio fraction. Higher values give a more accurate ratio
@@ -282,8 +277,6 @@ const int blip_reader_default_bass = 9;
 // experimental
 #define BLIP_READER_ADJ_(name, offset) (name##_reader_buf += offset)
 
-const int32_t blip_reader_idx_factor = sizeof(Blip_Buffer::buf_t_);
-
 #define BLIP_READER_NEXT_IDX_(name, bass, idx) \
 { \
 	name##_reader_accum -= name##_reader_accum >> (bass); \
@@ -292,14 +285,9 @@ const int32_t blip_reader_idx_factor = sizeof(Blip_Buffer::buf_t_);
 
 #define BLIP_READER_NEXT_RAW_IDX_(name, bass, idx) \
 { \
-	name##_reader_accum -= name##_reader_accum >> (bass);\
-	name##_reader_accum += *reinterpret_cast<const Blip_Buffer::buf_t_ *>(reinterpret_cast<const char *>(name##_reader_buf) + (idx));\
+	name##_reader_accum -= name##_reader_accum >> (bass); \
+	name##_reader_accum += *reinterpret_cast<const Blip_Buffer::buf_t_ *>(reinterpret_cast<const char *>(name##_reader_buf) + (idx)); \
 }
-
-// Compatibility with older version
-const long blip_unscaled = 65535;
-const int blip_low_quality = blip_med_quality;
-const int blip_best_quality = blip_high_quality;
 
 #if defined(_M_IX86) || defined(_M_IA64) || defined(__i486__) || defined(__x86_64__) || defined(__ia64__) || defined(__i386__)
 template<typename T> inline bool BLIP_CLAMP_(const T &in) { return in < -0x8000 || 0x7FFF < in; }
@@ -338,7 +326,7 @@ template<int quality, int range> inline void Blip_Synth<quality, range>::offset_
 	// sub-sample resolution.
 	int32_t right = (delta >> BLIP_PHASE_BITS) * phase;
 	left -= right;
-	right += buf [1];
+	right += buf[1];
 
 	buf[0] = left;
 	buf[1] = right;

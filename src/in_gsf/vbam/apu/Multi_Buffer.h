@@ -19,7 +19,7 @@ public:
 	// (type information used by Effects_Buffer)
 	enum { type_index_mask = 0xFF };
 	enum { wave_type = 0x100, noise_type = 0x200, mixed_type = wave_type | noise_type };
-	virtual blargg_err_t set_channel_count(int, const int* types = nullptr);
+	virtual void set_channel_count(int, const int* types = nullptr);
 	int channel_count() const { return this->channel_count_; }
 
 	// Gets indexed channel, from 0 to channel count - 1
@@ -32,7 +32,7 @@ public:
 	virtual channel_t channel(int index);
 
 	// See Blip_Buffer.h
-	virtual blargg_err_t set_sample_rate(long rate, int msec = blip_default_length);
+	virtual void set_sample_rate(long rate, int msec = blip_default_length);
 	virtual void clock_rate(long) { }
 	virtual void bass_freq(int) { }
 	virtual void clear() { }
@@ -72,27 +72,6 @@ private:
 	const int samples_per_frame_;
 	const int *channel_types_;
 	bool immediate_removal_;
-};
-
-// Uses a single buffer and outputs mono samples.
-class Mono_Buffer : public Multi_Buffer
-{
-	Blip_Buffer buf;
-	channel_t chan;
-public:
-	// Buffer used for all channels
-	Blip_Buffer *center() { return &this->buf; }
-
-	Mono_Buffer();
-	~Mono_Buffer();
-	blargg_err_t set_sample_rate(long rate, int msec = blip_default_length);
-	void clock_rate(long rate) { this->buf.clock_rate(rate); }
-	void bass_freq(int freq) { this->buf.bass_freq(freq); }
-	void clear() { this->buf.clear(); }
-	long samples_avail() const { return this->buf.samples_avail(); }
-	long read_samples(blip_sample_t *p, long s) { return this->buf.read_samples(p, s); }
-	channel_t channel(int) { return this->chan; }
-	void end_frame(blip_time_t t) { this->buf.end_frame(t); }
 };
 
 class Tracked_Blip_Buffer : public Blip_Buffer
@@ -137,7 +116,7 @@ public:
 
 	Stereo_Buffer();
 	~Stereo_Buffer();
-	blargg_err_t set_sample_rate(long, int msec = blip_default_length);
+	void set_sample_rate(long, int msec = blip_default_length);
 	void clock_rate(long);
 	void bass_freq(int);
 	void clear();
@@ -156,32 +135,10 @@ private:
 	long samples_avail_;
 };
 
-// Silent_Buffer generates no samples, useful where no sound is wanted
-class Silent_Buffer : public Multi_Buffer
-{
-	channel_t chan;
-public:
-	Silent_Buffer();
-	blargg_err_t set_sample_rate(long rate, int msec = blip_default_length);
-	void clock_rate(long) { }
-	void bass_freq(int) { }
-	void clear() { }
-	channel_t channel(int) { return this->chan; }
-	void end_frame(blip_time_t) { }
-	long samples_avail() const { return 0; }
-	long read_samples(blip_sample_t *, long) { return 0; }
-};
-
-inline blargg_err_t Multi_Buffer::set_sample_rate(long rate, int msec)
+inline void Multi_Buffer::set_sample_rate(long rate, int msec)
 {
 	this->sample_rate_ = rate;
 	this->length_ = msec;
-	return 0;
-}
-
-inline blargg_err_t Silent_Buffer::set_sample_rate(long rate, int msec)
-{
-	return Multi_Buffer::set_sample_rate(rate, msec);
 }
 
 inline int Multi_Buffer::samples_per_frame() const { return this->samples_per_frame_; }
@@ -190,11 +147,10 @@ inline long Multi_Buffer::sample_rate() const { return this->sample_rate_; }
 
 inline int Multi_Buffer::length() const { return this->length_; }
 
-inline blargg_err_t Multi_Buffer::set_channel_count(int n, const int *types)
+inline void Multi_Buffer::set_channel_count(int n, const int *types)
 {
 	this->channel_count_ = n;
 	this->channel_types_ = types;
-	return 0;
 }
 
 #endif

@@ -1,12 +1,11 @@
 // Blip_Buffer 0.4.1. http://www.slack.net/~ant/
 
-#include "Blip_Buffer.h"
-
 #include <numeric>
 #include <cassert>
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
+#include "Blip_Buffer.h"
 
 /* Copyright (C) 2003-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -23,7 +22,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 Blip_Buffer::Blip_Buffer()
 {
-	this->factor_ = LONG_MAX;
+	this->factor_ = static_cast<uint32_t>(LONG_MAX);
 	this->buffer_.clear();
 	this->buffer_size_ = 0;
 	this->sample_rate_ = 0;
@@ -62,7 +61,7 @@ void Blip_Buffer::clear(int entire_buffer)
 	}
 }
 
-Blip_Buffer::blargg_err_t Blip_Buffer::set_sample_rate(long new_rate, int msec)
+void Blip_Buffer::set_sample_rate(long new_rate, int msec)
 {
 	// start with maximum length that resampled time can represent
 	long new_size = (ULONG_MAX >> BLIP_BUFFER_ACCURACY) - blip_buffer_extra_ - 64;
@@ -92,8 +91,6 @@ Blip_Buffer::blargg_err_t Blip_Buffer::set_sample_rate(long new_rate, int msec)
 	this->bass_freq(this->bass_freq_);
 
 	this->clear();
-
-	return 0; // success
 }
 
 blip_resampled_time_t Blip_Buffer::clock_rate_factor(long rate) const
@@ -153,7 +150,7 @@ void Blip_Buffer::remove_samples(long count)
 		// copy remaining samples to beginning and clear old samples
 		long remain = this->samples_avail() + blip_buffer_extra_;
 		memmove(&this->buffer_[0], &this->buffer_[count], remain * sizeof(this->buffer_[0]));
-		memset(&this->buffer_[0] + remain, 0, count * sizeof(this->buffer_[0]));
+		memset(&this->buffer_[remain], 0, count * sizeof(this->buffer_[0]));
 	}
 }
 
@@ -182,8 +179,9 @@ Blip_Synth_::Blip_Synth_(short *p, int w) : impulses(p), width(w)
 	this->delta_factor = 0;
 }
 
-#undef M_PI
+#ifndef M_PI
 static const double M_PI = 3.1415926535897932384626433832795029;
+#endif
 
 static void gen_sinc(float *out, int count, double oversample, double treble, double cutoff)
 {
@@ -251,7 +249,7 @@ void Blip_Synth_::adjust_impulse()
 	}
 
 	//for (int i = blip_res; i--; printf("\n"))
-		//for (int j = 0; j < width / 2; ++j)
+		//for (int j = 0; j < this->width / 2; ++j)
 			//printf("%5ld,", this->impulses[j * blip_res + i + 1]);
 }
 
@@ -259,7 +257,7 @@ void Blip_Synth_::treble_eq(const blip_eq_t &eq)
 {
 	float fimpulse[blip_res / 2 * (blip_widest_impulse_ - 1) + blip_res * 2];
 
-	static const int half_size = blip_res / 2 * (this->width - 1);
+	int half_size = blip_res / 2 * (this->width - 1);
 	eq.generate(&fimpulse[blip_res], half_size);
 
 	int i;
@@ -376,7 +374,7 @@ void Blip_Buffer::mix_samples(const blip_sample_t *in, long count)
 {
 	auto out = &this->buffer_[(this->offset_ >> BLIP_BUFFER_ACCURACY) + blip_widest_impulse_ / 2];
 
-	int sample_shift = blip_sample_bits - 16;
+	static const int sample_shift = blip_sample_bits - 16;
 	int prev = 0;
 	while (count--)
 	{

@@ -20,7 +20,7 @@ extern int thumbExecute();
 # define UNLIKELY(x) (x)
 #endif
 
-inline void UPDATE_REG(uint32_t address, uint16_t value) { WRITE16LE(&ioMem[address],value); }
+inline void UPDATE_REG(uint32_t address, uint16_t value) { WRITE16LE(&ioMem[address], value); }
 
 extern uint32_t cpuPrefetch[2];
 

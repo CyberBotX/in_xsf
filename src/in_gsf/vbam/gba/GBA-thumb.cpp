@@ -5,10 +5,6 @@
 #include "Sound.h"
 #include "bios.h"
 
-#ifdef _MSC_VER
-# define snprintf _snprintf
-#endif
-
 ///////////////////////////////////////////////////////////////////////////
 
 static int clockTicks;
@@ -20,8 +16,8 @@ static INSN_REGPARM void thumbUnknownInsn(uint32_t opcode)
 
 // Common macros //////////////////////////////////////////////////////////
 
-static inline uint32_t NEG(uint32_t i) { return i >> 31; }
-static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
+template<typename T> static inline T NEG(const T &i) { return i >> 31; }
+template<typename T> static inline T POS(const T &i) { return ~i >> 31; }
 
 #ifndef C_CORE
 # ifdef __GNUC__
@@ -82,7 +78,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 	V_FLAG = (Flags >> 26) & 1; \
 }
 #   define CMN_RD_RS \
-{\
+{ \
 	register int Flags; \
 	register int Result; \
 	asm volatile("addco. %0, %2, %3\n" \
@@ -105,7 +101,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 	asm volatile("mtspr 1, %4\n" \ /* reg 1 is xer */
 		"addeo. %0, %2, %3\n" \
 		"mcrxr cr1\n" \
-		"mfcr	%1\n" \
+		"mfcr %1\n" \
 		: "=r" (Result), \
 		"=r" (Flags) \
 		: "r" (reg[dest].I), \
@@ -221,7 +217,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 		"=r" (Flags) \
 		: "r" (reg[source].I), \
 		"r" (0) \
-	); \
+		); \
 	reg[dest].I = Result; \
 	Z_FLAG = (Flags >> 29) & 1; \
 	N_FLAG = (Flags >> 31) & 1; \
@@ -259,7 +255,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 #   define ecx "%%ecx"
 #   define edx "%%edx"
 #   define ADD_RN_O8(d) \
-	asm("andl $0xFF, %%eax;"\
+	asm("andl $0xFF, %%eax;" \
 		"addl %%eax, %0;" \
 		EMIT1(setsb, VAR(N_FLAG)) \
 		EMIT1(setzb, VAR(Z_FLAG)) \
@@ -352,7 +348,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 		EMIT1(setob, VAR(V_FLAG)) \
 		: \
 		: "r" (value), "r" (reg[dest].I) : "1");
-#   define IMM5_INSN(OP,N) \
+#   define IMM5_INSN(OP, N) \
 	asm("movl %%eax,%%ecx;" \
 		"shrl $1,%%eax;" \
 		"andl $7,%%ecx;" \
@@ -361,7 +357,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 		OP \
 		EMIT1(setsb, VAR(N_FLAG)) \
 		EMIT1(setzb, VAR(Z_FLAG)) \
-		EMIT2(movl, edx, REGREF2(ecx,4)) \
+		EMIT2(movl, edx, REGREF2(ecx, 4)) \
 		: : "i" (N))
 #   define IMM5_INSN_0(OP) \
 	asm("movl %%eax,%%ecx;" \
@@ -372,25 +368,25 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 		OP \
 		EMIT1(setsb, VAR(N_FLAG)) \
 		EMIT1(setzb, VAR(Z_FLAG)) \
-		EMIT2(movl, edx, REGREF2(ecx,4)) \
+		EMIT2(movl, edx, REGREF2(ecx, 4)) \
 		: : )
 #   define IMM5_LSL \
-	"shll %0,%%edx;"\
+	"shll %0,%%edx;" \
 	EMIT1(setcb, VAR(C_FLAG))
 #   define IMM5_LSL_0 \
 	"testl %%edx,%%edx;"
 #   define IMM5_LSR \
-	"shrl %0,%%edx;"\
+	"shrl %0,%%edx;" \
 	EMIT1(setcb, VAR(C_FLAG))
 #   define IMM5_LSR_0 \
-	"testl %%edx,%%edx;"\
+	"testl %%edx,%%edx;" \
 	EMIT1(setsb, VAR(C_FLAG)) \
 	"xorl %%edx,%%edx;"
 #   define IMM5_ASR \
-	"sarl %0,%%edx;"\
+	"sarl %0,%%edx;" \
 	EMIT1(setcb, VAR(C_FLAG))
-#  define IMM5_ASR_0 \
-	"sarl $31,%%edx;"\
+#   define IMM5_ASR_0 \
+	"sarl $31,%%edx;" \
 	EMIT1(setsb, VAR(C_FLAG))
 #   define THREEARG_INSN(OP, N) \
 	asm("movl %%eax,%%edx;" \
@@ -401,7 +397,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 		OP(N) \
 		EMIT1(setsb, VAR(N_FLAG)) \
 		EMIT1(setzb, VAR(Z_FLAG)) \
-		EMIT2(movl, ecx, REGREF2(eax,4)) \
+		EMIT2(movl, ecx, REGREF2(eax, 4)) \
 		: : )
 #   define ADD_RD_RS_RN(N) \
 	EMIT2(add, VAR(reg) "+" #N "*4", ecx) \
@@ -420,7 +416,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 	EMIT1(setncb, VAR(C_FLAG)) \
 	EMIT1(setob, VAR(V_FLAG))
 #   define SUB_RD_RS_O3(N) \
-	"sub $"#N",%%ecx;" \
+	"sub $" #N ",%%ecx;" \
 	EMIT1(setncb, VAR(C_FLAG)) \
 	EMIT1(setob, VAR(V_FLAG))
 #   define SUB_RD_RS_O3_0(N) \
@@ -718,7 +714,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 	uint32_t lhs = reg[(d)].I; \
 	uint32_t rhs = opcode & 255; \
 	uint32_t res = lhs + rhs; \
-	reg[(d)].I = res;\
+	reg[(d)].I = res; \
 	Z_FLAG = !res; \
 	N_FLAG = !!NEG(res); \
 	ADDCARRY(lhs, rhs, res); \
@@ -863,7 +859,7 @@ static inline uint32_t POS(uint32_t i) { return ~i >> 31; }
 #ifndef ASR_RD_RS
 # define ASR_RD_RS \
 { \
-	C_FLAG = !!((static_cast<int32_t>(reg[dest].I >> static_cast<int>(value - 1)) & 1); \
+	C_FLAG = !!((static_cast<int32_t>(reg[dest].I) >> static_cast<int>(value - 1)) & 1); \
 	value = static_cast<int32_t>(reg[dest].I) >> static_cast<int>(value); \
 }
 #endif
@@ -1224,7 +1220,7 @@ static INSN_REGPARM void thumb41_3(uint32_t opcode)
 
 	if (value)
 	{
-		value &= 0x1f;
+		value = value & 0x1f;
 		if (!value)
 			C_FLAG = !!(reg[dest].I & 0x80000000);
 		else
@@ -1233,9 +1229,9 @@ static INSN_REGPARM void thumb41_3(uint32_t opcode)
 			reg[dest].I = value;
 		}
 	}
-	clockTicks = codeTicksAccess16(armNextPC) + 2;
 	N_FLAG = !!(reg[dest].I & 0x80000000);
 	Z_FLAG = !reg[dest].I;
+	clockTicks = codeTicksAccess16(armNextPC) + 2;
 }
 
 // TST Rd, Rs
@@ -1275,8 +1271,8 @@ static INSN_REGPARM void thumb43_0(uint32_t opcode)
 {
 	int dest = opcode & 7;
 	reg[dest].I |= reg[(opcode >> 3) & 7].I;
-	Z_FLAG = !reg[dest].I;
 	N_FLAG = !!(reg[dest].I & 0x80000000);
+	Z_FLAG = !reg[dest].I;
 }
 
 // MUL Rd, Rs
@@ -1289,7 +1285,7 @@ static INSN_REGPARM void thumb43_1(uint32_t opcode)
 	if (static_cast<int32_t>(rm) < 0)
 		rm = ~rm;
 	if (!(rm & 0xFFFFFF00))
-		; // No-op
+		; /* No-op */
 	else if (!(rm & 0xFFFF0000))
 		++clockTicks;
 	else if (!(rm & 0xFF000000))
@@ -1297,9 +1293,9 @@ static INSN_REGPARM void thumb43_1(uint32_t opcode)
 	else
 		clockTicks += 3;
 	busPrefetchCount = (busPrefetchCount << clockTicks) | (0xFF >> (8 - clockTicks));
-	clockTicks += codeTicksAccess16(armNextPC) + 1;
-	Z_FLAG = !reg[dest].I;
 	N_FLAG = !!(reg[dest].I & 0x80000000);
+	Z_FLAG = !reg[dest].I;
+	clockTicks += codeTicksAccess16(armNextPC) + 1;
 }
 
 // BIC Rd, Rs
@@ -1307,8 +1303,8 @@ static INSN_REGPARM void thumb43_2(uint32_t opcode)
 {
 	int dest = opcode & 7;
 	reg[dest].I &= ~reg[(opcode >> 3) & 7].I;
-	Z_FLAG = !reg[dest].I;
 	N_FLAG = !!(reg[dest].I & 0x80000000);
+	Z_FLAG = !reg[dest].I;
 }
 
 // MVN Rd, Rs
@@ -1316,8 +1312,8 @@ static INSN_REGPARM void thumb43_3(uint32_t opcode)
 {
 	int dest = opcode & 7;
 	reg[dest].I = ~reg[(opcode >> 3) & 7].I;
-	Z_FLAG = !reg[dest].I;
 	N_FLAG = !!(reg[dest].I & 0x80000000);
+	Z_FLAG = !reg[dest].I;
 }
 
 // High-register instructions and BX //////////////////////////////////////
@@ -1339,7 +1335,7 @@ static INSN_REGPARM void thumb44_2(uint32_t opcode)
 		reg[15].I += 2;
 		THUMB_PREFETCH();
 		clockTicks = codeTicksAccessSeq16(armNextPC) * 2 + codeTicksAccess16(armNextPC) + 3;
-  }
+	}
 }
 
 // ADD Hd, Hs
@@ -1538,7 +1534,7 @@ static INSN_REGPARM void thumb5E(uint32_t opcode)
 	if (!busPrefetchCount)
 		busPrefetch = busPrefetchEnable;
 	uint32_t address = reg[(opcode >> 3) & 7].I + reg[(opcode >> 6) & 7].I;
-	reg[opcode & 7].I = (uint32_t)CPUReadHalfWordSigned(address);
+	reg[opcode & 7].I = static_cast<uint32_t>(CPUReadHalfWordSigned(address));
 	clockTicks = 3 + dataTicksAccess16(address) + codeTicksAccess16(armNextPC);
 }
 
@@ -1803,7 +1799,7 @@ static INSN_REGPARM void thumbC0(uint32_t opcode)
 	if (!busPrefetchCount)
 		busPrefetch = busPrefetchEnable;
 	uint32_t address = reg[regist].I & 0xFFFFFFFC;
-	uint32_t temp = reg[regist].I + 4*cpuBitsSet[opcode & 0xff];
+	uint32_t temp = reg[regist].I + 4 * cpuBitsSet[opcode & 0xff];
 	int count = 0;
 	// store
 	THUMB_STM_REG(1, 0, regist);
@@ -1824,7 +1820,7 @@ static INSN_REGPARM void thumbC8(uint32_t opcode)
 	if (!busPrefetchCount)
 		busPrefetch = busPrefetchEnable;
 	uint32_t address = reg[regist].I & 0xFFFFFFFC;
-	uint32_t temp = reg[regist].I + 4*cpuBitsSet[opcode & 0xFF];
+	uint32_t temp = reg[regist].I + 4 * cpuBitsSet[opcode & 0xFF];
 	int count = 0;
 	// load
 	THUMB_LDM_REG(1, 0);
@@ -2057,7 +2053,6 @@ static INSN_REGPARM void thumbDD(uint32_t opcode)
 // SWI #comment
 static INSN_REGPARM void thumbDF(uint32_t opcode)
 {
-	uint32_t address = 0;
 	clockTicks = 3;
 	busPrefetchCount = 0;
 	CPUSoftwareInterrupt(opcode & 0xFF);

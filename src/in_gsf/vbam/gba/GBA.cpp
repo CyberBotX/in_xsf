@@ -11,10 +11,6 @@
 
 extern int mapgsf(uint8_t *a, int l, int &s);
 
-#ifdef __GNUC__
-#define _stricmp strcasecmp
-#endif
-
 int SWITicks = 0;
 static int IRQTicks = 0;
 
@@ -306,8 +302,7 @@ int CPULoadRom()
 		mapgsf(rom, 0x2000000, romSize);
 
 	uint16_t *temp = reinterpret_cast<uint16_t *>(rom + ((romSize + 1) & ~1));
-	int i;
-	for (i = (romSize + 1) & ~1; i < 0x2000000; i += 2)
+	for (int i = (romSize + 1) & ~1; i < 0x2000000; i += 2)
 	{
 		WRITE16LE(temp, (i >> 1) & 0xFFFF);
 		++temp;
@@ -498,9 +493,6 @@ void CPUSoftwareInterrupt(int comment)
 		comment >>= 16;
 	if (comment == 0xfa)
 		return;
-	// This would be correct, but it causes problems if uncommented
-	//else
-		//biosProtected = 0xe3a02004;
 
 	switch (comment)
 	{
@@ -543,7 +535,7 @@ void CPUSoftwareInterrupt(int comment)
 					if ((reg[2].I >> 26) & 1)
 						SWITicks = (7 + memoryWait32[(reg[1].I >> 24) & 0xF]) * (len >> 1);
 					else
-						SWITicks = (8 + memoryWait[(reg[1].I >> 24) & 0xF]) * (len);
+						SWITicks = (8 + memoryWait[(reg[1].I >> 24) & 0xF]) * len;
 				}
 				else
 				{
@@ -638,7 +630,7 @@ void CPUSoftwareInterrupt(int comment)
 		{
 			uint32_t len = CPUReadMemory(reg[0].I) >> 9;
 			if (!(!(reg[0].I & 0xe000000) || !((reg[0].I + (len & 0x1fffff)) & 0xe000000)))
-				SWITicks = (39 + (memoryWait[(reg[0].I >> 24) & 0xF]<<1) + memoryWait[(reg[1].I >> 24) & 0xF]) * len;
+				SWITicks = (39 + (memoryWait[(reg[0].I >> 24) & 0xF] << 1) + memoryWait[(reg[1].I >> 24) & 0xF]) * len;
 			BIOS_Diff8bitUnFilterVram();
 			break;
 		}
@@ -786,8 +778,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			uint32_t destIncrement = 4;
 			switch ((DM0CNT_H >> 7) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					sourceIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -796,8 +786,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			}
 			switch ((DM0CNT_H >> 5) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					destIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -833,8 +821,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			uint32_t destIncrement = 4;
 			switch ((DM1CNT_H >> 7) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					sourceIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -843,8 +829,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			}
 			switch ((DM1CNT_H >> 5) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					destIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -883,8 +867,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			uint32_t destIncrement = 4;
 			switch ((DM2CNT_H >> 7) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					sourceIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -893,8 +875,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			}
 			switch ((DM2CNT_H >> 5) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					destIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -933,8 +913,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			uint32_t destIncrement = 4;
 			switch ((DM3CNT_H >> 7) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					sourceIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -943,8 +921,6 @@ void CPUCheckDMA(int reason, int dmamask)
 			}
 			switch ((DM3CNT_H >> 5) & 3)
 			{
-				case 0:
-					break;
 				case 1:
 					destIncrement = static_cast<uint32_t>(-4);
 					break;
@@ -952,6 +928,7 @@ void CPUCheckDMA(int reason, int dmamask)
 					destIncrement = 0;
 			}
 			doDMA(dma3Source, dma3Dest, sourceIncrement, destIncrement, DM3CNT_L ? DM3CNT_L : 0x10000, DM3CNT_H & 0x0400);
+			
 			if (DM3CNT_H & 0x4000)
 			{
 				IF |= 0x0800;
@@ -1002,6 +979,8 @@ void CPUUpdateRegister(uint32_t address, uint16_t value)
 				if (!(DISPSTAT & 1))
 				{
 					lcdTicks = 1008;
+					//VCOUNT = 0;
+					//UPDATE_REG(0x06, VCOUNT);
 					DISPSTAT &= 0xFFFC;
 					UPDATE_REG(0x04, DISPSTAT);
 					CPUCompareVCOUNT();
@@ -1085,7 +1064,7 @@ void CPUUpdateRegister(uint32_t address, uint16_t value)
 			UPDATE_REG(0x28, BG2X_L);
 			break;
 		case 0x2A:
-			BG2X_H = (value & 0xFFF);
+			BG2X_H = value & 0xFFF;
 			UPDATE_REG(0x2A, BG2X_H);
 			break;
 		case 0x2C:
@@ -1476,7 +1455,7 @@ void applyTimer()
 			timer2Ticks = (0x10000 - TM2D) << timer2ClockReload;
 			UPDATE_REG(0x108, TM2D);
 		}
-		timer2On = !(timer2Value & 0x80);
+		timer2On = !!(timer2Value & 0x80);
 		TM2CNT = timer2Value & 0xC7;
 		UPDATE_REG(0x10A, TM2CNT);
 	}
@@ -1511,7 +1490,8 @@ void CPUInit()
 		cpuBiosSwapped = true;
 	}
 #endif
-	memcpy(&bios[0], myROM, sizeof(myROM));
+
+	memcpy(&bios[0], &myROM[0], sizeof(myROM));
 
 	biosProtected[0] = 0x00;
 	biosProtected[1] = 0xf0;
@@ -1724,7 +1704,7 @@ void CPUReset()
 	map[2].mask = 0x3FFFF;
 	map[3].address = &internalRAM[0];
 	map[3].mask = 0x7FFF;
-	map[4].address = ioMem;
+	map[4].address = &ioMem[0];
 	map[4].mask = 0x3FF;
 	map[5].address = &paletteRAM[0];
 	map[5].mask = 0x3FF;

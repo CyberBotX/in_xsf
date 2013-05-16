@@ -104,7 +104,7 @@ void BIOS_BitUnPack()
 
 	int bits = CPUReadByte(header + 2);
 	int revbits = 8 - bits;
-	// u32 value = 0;
+	//uint32_t value = 0;
 	uint32_t base = CPUReadMemory(header + 4);
 	bool addBase = !!(base & 0x80000000);
 	base &= 0x7fffffff;
@@ -346,7 +346,7 @@ void BIOS_Diff8bitUnFilterVram()
 	uint32_t header = CPUReadMemory(source);
 	source += 4;
 
-	if (!(source & 0xe000000) | !((source + ((header >> 8) & 0x1fffff)) & 0xe000000))
+	if (!(source & 0xe000000) || !((source + ((header >> 8) & 0x1fffff)) & 0xe000000))
 		return;
 
 	int len = header >> 8;
@@ -416,7 +416,7 @@ void BIOS_Div()
 		reg[1].I = number % denom;
 		int32_t temp = static_cast<int32_t>(reg[0].I);
 		reg[3].I = static_cast<uint32_t>(temp < 0 ? -temp : temp);
-  }
+	}
 }
 
 void BIOS_HuffUnComp()

@@ -68,7 +68,7 @@ static Gba_Pcm_Fifo pcm[2];
 static std::unique_ptr<Gb_Apu> gb_apu;
 static std::unique_ptr<Stereo_Buffer> stereo_buffer;
 
-static Blip_Synth<blip_best_quality, 1> pcm_synth[3]; // 32 kHz, 16 kHz, 8 kHz
+static Blip_Synth<blip_high_quality, 1> pcm_synth[3]; // 32 kHz, 16 kHz, 8 kHz
 
 static inline blip_time_t blip_time()
 {

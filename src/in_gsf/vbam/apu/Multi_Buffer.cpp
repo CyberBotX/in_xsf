@@ -14,8 +14,6 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-#include "blargg_source.h"
-
 #ifdef BLARGG_ENABLE_OPTIMIZER
 # include BLARGG_ENABLE_OPTIMIZER
 #endif
@@ -34,31 +32,6 @@ Multi_Buffer::channel_t Multi_Buffer::channel(int /*index*/)
 {
 	static const channel_t ch = { 0, 0, 0 };
 	return ch;
-}
-
-// Silent_Buffer
-
-Silent_Buffer::Silent_Buffer() : Multi_Buffer(1) // 0 channels would probably confuse
-{
-	// TODO: better to use empty Blip_Buffer so caller never has to check for NULL?
-	this->chan.left = this->chan.center = this->chan.right = nullptr;
-}
-
-// Mono_Buffer
-
-Mono_Buffer::Mono_Buffer() : Multi_Buffer(1)
-{
-	this->chan.center = &this->buf;
-	this->chan.left = &this->buf;
-	this->chan.right = &this->buf;
-}
-
-Mono_Buffer::~Mono_Buffer() { }
-
-blargg_err_t Mono_Buffer::set_sample_rate(long rate, int msec)
-{
-	RETURN_ERR(this->buf.set_sample_rate(rate, msec));
-	return Multi_Buffer::set_sample_rate(this->buf.sample_rate(), this->buf.length());
 }
 
 // Tracked_Blip_Buffer
@@ -86,7 +59,7 @@ uint32_t Tracked_Blip_Buffer::non_silent() const
 	return this->last_non_silence | this->unsettled();
 }
 
-inline void Tracked_Blip_Buffer::remove_(long n)
+void Tracked_Blip_Buffer::remove_(long n)
 {
 	if ((this->last_non_silence -= n) < 0)
 		this->last_non_silence = 0;
@@ -125,12 +98,12 @@ Stereo_Buffer::Stereo_Buffer() : Multi_Buffer(2)
 
 Stereo_Buffer::~Stereo_Buffer() { }
 
-blargg_err_t Stereo_Buffer::set_sample_rate(long rate, int msec)
+void Stereo_Buffer::set_sample_rate(long rate, int msec)
 {
 	this->mixer.samples_read = 0;
 	for (int i = bufs_size; --i >= 0; )
-		RETURN_ERR(this->bufs[i].set_sample_rate(rate, msec));
-	return Multi_Buffer::set_sample_rate(this->bufs[0].sample_rate(), this->bufs[0].length());
+		this->bufs[i].set_sample_rate(rate, msec);
+	Multi_Buffer::set_sample_rate(this->bufs[0].sample_rate(), this->bufs[0].length());
 }
 
 void Stereo_Buffer::clock_rate(long rate)
@@ -196,7 +169,7 @@ void Stereo_Mixer::read_pairs(blip_sample_t *out, int count)
 	// except that buffer isn't cleared, so caller can encounter
 	// subtle problems and not realize the cause.
 	this->samples_read += count;
-	if (this->bufs[0]->non_silent() || this->bufs[1]->non_silent())
+	if (this->bufs[0]->non_silent() | this->bufs[1]->non_silent())
 		this->mix_stereo(out, count);
 	else
 		this->mix_mono(out, count);
@@ -238,8 +211,8 @@ void Stereo_Mixer::mix_stereo(blip_sample_t *out_, int count)
 		BLIP_READER_BEGIN(side, **buf);
 		BLIP_READER_BEGIN(center, *this->bufs[2]);
 
-		BLIP_READER_ADJ_(side, samples_read);
-		BLIP_READER_ADJ_(center, samples_read);
+		BLIP_READER_ADJ_(side, this->samples_read);
+		BLIP_READER_ADJ_(center, this->samples_read);
 
 		int offset = -count;
 		do
@@ -256,7 +229,7 @@ void Stereo_Mixer::mix_stereo(blip_sample_t *out_, int count)
 
 		BLIP_READER_END(side, **buf);
 
-		if (buf != bufs)
+		if (buf != this->bufs)
 			continue;
 
 		// only end center once

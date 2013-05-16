@@ -15,11 +15,6 @@
 #ifndef BLARGG_COMMON_H
 #define BLARGG_COMMON_H
 
-// blargg_err_t (0 on success, otherwise error string)
-#ifndef blargg_err_t
-typedef const char *blargg_err_t;
-#endif
-
 // BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1,
 // compiler is assumed to support bool. If undefined, availability is determined.
 #ifndef BLARGG_COMPILER_HAS_BOOL

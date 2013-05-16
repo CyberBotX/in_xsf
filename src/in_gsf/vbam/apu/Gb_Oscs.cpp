@@ -13,8 +13,6 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-#include "blargg_source.h"
-
 static const bool cgb_02 = false; // enables bug in early CGB units that causes problems in some games
 static const bool cgb_05 = false; // enables CGB-05 zombie behavior
 
@@ -45,14 +43,14 @@ void Gb_Osc::update_amp(blip_time_t time, int new_amp)
 
 void Gb_Osc::clock_length()
 {
-	if ((this->regs [4] & length_enabled) && this->length_ctr)
+	if ((this->regs[4] & length_enabled) && this->length_ctr)
 	{
 		if (--this->length_ctr <= 0)
 			this->enabled = false;
 	}
 }
 
-inline int Gb_Env::reload_env_timer()
+int Gb_Env::reload_env_timer()
 {
 	int raw = this->regs[2] & 7;
 	this->env_delay = raw ? raw : 8;
@@ -154,7 +152,7 @@ int Gb_Osc::write_trig(int frame_phase, int max_len, int old_data)
 	return data & trigger_mask;
 }
 
-inline void Gb_Env::zombie_volume(int old, int data)
+void Gb_Env::zombie_volume(int old, int data)
 {
 	int v = this->volume;
 	if (this->mode == Gb_Apu::mode_agb || cgb_05)
@@ -188,7 +186,7 @@ inline void Gb_Env::zombie_volume(int old, int data)
 	this->volume = v & 0x0F;
 }
 
-bool Gb_Env::write_register( int frame_phase, int reg, int old, int data )
+bool Gb_Env::write_register(int frame_phase, int reg, int old, int data)
 {
 	static const int max_len = 64;
 
@@ -235,7 +233,7 @@ bool Gb_Square::write_register(int frame_phase, int reg, int old_data, int data)
 	return result;
 }
 
-inline void Gb_Noise::write_register( int frame_phase, int reg, int old_data, int data )
+void Gb_Noise::write_register(int frame_phase, int reg, int old_data, int data)
 {
 	if (Gb_Env::write_register(frame_phase, reg, old_data, data))
 	{
@@ -244,7 +242,7 @@ inline void Gb_Noise::write_register( int frame_phase, int reg, int old_data, in
 	}
 }
 
-inline void Gb_Sweep_Square::write_register(int frame_phase, int reg, int old_data, int data)
+void Gb_Sweep_Square::write_register(int frame_phase, int reg, int old_data, int data)
 {
 	if (!reg && this->sweep_enabled && this->sweep_neg && !(data & 0x08))
 		this->enabled = false; // sweep negate disabled after used
@@ -270,7 +268,7 @@ void Gb_Wave::corrupt_wave()
 			this->wave_ram[i] = this->wave_ram[(pos & ~3) + i];
 }
 
-inline void Gb_Wave::write_register(int frame_phase, int reg, int old_data, int data)
+void Gb_Wave::write_register(int frame_phase, int reg, int old_data, int data)
 {
 	static const int max_len = 256;
 
@@ -455,7 +453,7 @@ static unsigned run_lfsr(unsigned s, unsigned mask, int count)
 		}
 
 		// Need to keep one extra bit of history
-		s = s << 1 & 0xFF;
+		s = (s << 1) & 0xFF;
 
 		// Convert from Fibonacci to Galois configuration,
 		// shifted left 2 bits
@@ -521,7 +519,7 @@ void Gb_Noise::run(blip_time_t time, blip_time_t end_time)
 		int per2 = this->period2();
 		time += this->delay + ((this->divider ^ (per2 >> 1)) & (per2 - 1)) * period1;
 
-		int count = (extra < 0 ? 0 : (extra + period1 - 1) / period1);
+		int count = extra < 0 ? 0 : (extra + period1 - 1) / period1;
 		this->divider = (this->divider - count) & period2_mask;
 		this->delay = count * period1 - extra;
 	}
@@ -579,7 +577,7 @@ void Gb_Wave::run(blip_time_t time, blip_time_t end_time)
 	auto out = this->output;
 	if (out)
 	{
-		int amp = dac_off_amp;
+		int amp = this->dac_off_amp;
 		if (this->dac_enabled())
 		{
 			// Play inaudible frequencies as constant amplitude
@@ -589,7 +587,7 @@ void Gb_Wave::run(blip_time_t time, blip_time_t end_time)
 			if (this->frequency() <= 0x7FB || this->delay > 15 * clk_mul)
 			{
 				if (volume_mul)
-					playing = enabled;
+					playing = this->enabled;
 
 				amp = (this->sample_buf << ((this->phase << 2) & 4) & 0xF0) * playing;
 			}
@@ -634,7 +632,7 @@ void Gb_Wave::run(blip_time_t time, blip_time_t end_time)
 			do
 			{
 				// Extract nybble
-				int nybble = wave[ph >> 1] << ((ph << 2) & 4) & 0xF0;
+				int nybble = (wave[ph >> 1] << ((ph << 2) & 4)) & 0xF0;
 				ph = (ph + 1) & wave_mask;
 
 				// Scale by volume
