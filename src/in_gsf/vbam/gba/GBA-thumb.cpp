@@ -663,22 +663,22 @@ template<typename T> static inline T POS(const T &i) { return ~i >> 31; }
 #endif
 
 // C core
-#ifndef ADDCARRY
-# define ADDCARRY(a, b, c) \
+static inline void ADDCARRY(uint32_t a, uint32_t b, uint32_t c)
+{
 	C_FLAG = !!((NEG(a) & NEG(b)) | (NEG(a) & POS(c)) | (NEG(b) & POS(c)));
-#endif
-#ifndef ADDOVERFLOW
-# define ADDOVERFLOW(a, b, c) \
+}
+static inline void ADDOVERFLOW(uint32_t a, uint32_t b, uint32_t c)
+{
 	V_FLAG = !!((NEG(a) & NEG(b) & POS(c)) | (POS(a) & POS(b) & NEG(c)));
-#endif
-#ifndef SUBCARRY
-# define SUBCARRY(a, b, c) \
+}
+static inline void SUBCARRY(uint32_t a, uint32_t b, uint32_t c)
+{
 	C_FLAG = !!((NEG(a) & POS(b)) | (NEG(a) & POS(c)) | (POS(b) & POS(c)));
-#endif
-#ifndef SUBOVERFLOW
-# define SUBOVERFLOW(a, b, c) \
+}
+static inline void SUBOVERFLOW(uint32_t a, uint32_t b, uint32_t c)
+{
 	V_FLAG = !!((NEG(a) & POS(b) & POS(c)) | (POS(a) & NEG(b) & NEG(c)));
-#endif
+}
 #ifndef ADD_RD_RS_RN
 # define ADD_RD_RS_RN(N) \
 { \
@@ -1767,31 +1767,6 @@ static INSN_REGPARM void thumbBD(uint32_t opcode)
 
 // Load/store multiple ////////////////////////////////////////////////////
 
-#define THUMB_STM_REG(val, r, b) \
-	if (opcode & (val)) \
-	{ \
-		CPUWriteMemory(address, reg[(r)].I); \
-		reg[(b)].I = temp; \
-		if (!count) \
-			clockTicks += 1 + dataTicksAccess32(address); \
-		else \
-			clockTicks += 1 + dataTicksAccessSeq32(address); \
-		++count; \
-		address += 4; \
-	}
-
-#define THUMB_LDM_REG(val, r) \
-	if (opcode & (val)) \
-	{ \
-		reg[(r)].I = CPUReadMemory(address); \
-		if (!count) \
-			clockTicks += 1 + dataTicksAccess32(address); \
-		else \
-			clockTicks += 1 + dataTicksAccessSeq32(address); \
-		++count; \
-		address += 4; \
-	}
-
 // STM R0~7!, {Rlist}
 static INSN_REGPARM void thumbC0(uint32_t opcode)
 {
@@ -1802,6 +1777,20 @@ static INSN_REGPARM void thumbC0(uint32_t opcode)
 	uint32_t temp = reg[regist].I + 4 * cpuBitsSet[opcode & 0xff];
 	int count = 0;
 	// store
+	auto THUMB_STM_REG = [&](int val, int r, uint8_t b)
+	{
+		if (opcode & val)
+		{
+			CPUWriteMemory(address, reg[r].I);
+			reg[b].I = temp;
+			if (!count)
+				clockTicks += 1 + dataTicksAccess32(address);
+			else
+				clockTicks += 1 + dataTicksAccessSeq32(address);
+			++count;
+			address += 4;
+		}
+	};
 	THUMB_STM_REG(1, 0, regist);
 	THUMB_STM_REG(2, 1, regist);
 	THUMB_STM_REG(4, 2, regist);
@@ -1823,6 +1812,19 @@ static INSN_REGPARM void thumbC8(uint32_t opcode)
 	uint32_t temp = reg[regist].I + 4 * cpuBitsSet[opcode & 0xFF];
 	int count = 0;
 	// load
+	auto THUMB_LDM_REG = [&](int val, int r)
+	{
+		if (opcode & val)
+		{
+			reg[r].I = CPUReadMemory(address);
+			if (!count)
+				clockTicks += 1 + dataTicksAccess32(address);
+			else
+				clockTicks += 1 + dataTicksAccessSeq32(address);
+			++count;
+			address += 4;
+		}
+	};
 	THUMB_LDM_REG(1, 0);
 	THUMB_LDM_REG(2, 1);
 	THUMB_LDM_REG(4, 2);
