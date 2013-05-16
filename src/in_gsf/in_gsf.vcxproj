@@ -81,9 +81,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="vbam\apu\Blip_Buffer.cpp" />
-    <ClCompile Include="vbam\apu\Effects_Buffer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="vbam\apu\Gb_Apu.cpp" />
     <ClCompile Include="vbam\apu\Gb_Oscs.cpp" />
     <ClCompile Include="vbam\apu\Multi_Buffer.cpp" />
@@ -100,7 +97,6 @@
     <ClInclude Include="vbam\apu\blargg_common.h" />
     <ClInclude Include="vbam\apu\blargg_config.h" />
     <ClInclude Include="vbam\apu\Blip_Buffer.h" />
-    <ClInclude Include="vbam\apu\Effects_Buffer.h" />
     <ClInclude Include="vbam\apu\Gb_Apu.h" />
     <ClInclude Include="vbam\apu\Gb_Oscs.h" />
     <ClInclude Include="vbam\apu\Multi_Buffer.h" />

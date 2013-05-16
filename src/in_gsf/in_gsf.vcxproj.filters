@@ -42,9 +42,6 @@
     <ClCompile Include="vbam\apu\Blip_Buffer.cpp">
       <Filter>Source Files\vbam\apu</Filter>
     </ClCompile>
-    <ClCompile Include="vbam\apu\Effects_Buffer.cpp">
-      <Filter>Source Files\vbam\apu</Filter>
-    </ClCompile>
     <ClCompile Include="vbam\apu\Gb_Apu.cpp">
       <Filter>Source Files\vbam\apu</Filter>
     </ClCompile>
@@ -84,9 +81,6 @@
       <Filter>Header Files\vbam\apu</Filter>
     </ClInclude>
     <ClInclude Include="vbam\apu\Blip_Buffer.h">
-      <Filter>Header Files\vbam\apu</Filter>
-    </ClInclude>
-    <ClInclude Include="vbam\apu\Effects_Buffer.h">
       <Filter>Header Files\vbam\apu</Filter>
     </ClInclude>
     <ClInclude Include="vbam\apu\Gb_Apu.h">
