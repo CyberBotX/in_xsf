@@ -175,64 +175,42 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
+#include <algorithm>
 #include "snes9x.h"
 #include "memmap.h"
 #include "dma.h"
 #include "apu/apu.h"
-//#include "fxemu.h"
-#include "sdd1.h"
-//#include "srtc.h"
-//#include "snapshot.h"
-//#include "cheats.h"
-//#include "logger.h"
-#ifdef DEBUGGER
-#include "debug.h"
-#endif
-
-//static void S9xResetCPU();
-//static void S9xSoftResetCPU();
 
 static void S9xSoftResetCPU()
 {
 	CPU.Cycles = 182; // Or 188. This is the cycle count just after the jump to the Reset Vector.
 	CPU.PrevCycles = CPU.Cycles;
 	CPU.V_Counter = 0;
-	CPU.Flags = CPU.Flags & (DEBUG_MODE_FLAG | TRACE_FLAG);
-	CPU.PCBase = NULL;
-	CPU.NMILine = false;
-	CPU.IRQLine = false;
-	CPU.IRQTransition = false;
-	CPU.IRQLastState = false;
-	CPU.IRQExternal = false;
+	CPU.Flags &= DEBUG_MODE_FLAG | TRACE_FLAG;
+	CPU.PCBase = nullptr;
+	CPU.NMILine = CPU.IRQLine = CPU.IRQTransition = CPU.IRQLastState = false;
 	CPU.IRQPending = Timings.IRQPendCount;
 	CPU.MemSpeed = SLOW_ONE_CYCLE;
 	CPU.MemSpeedx2 = SLOW_ONE_CYCLE * 2;
 	CPU.FastROMSpeed = SLOW_ONE_CYCLE;
-	CPU.InDMA = false;
-	CPU.InHDMA = false;
-	CPU.InDMAorHDMA = false;
-	CPU.InWRAMDMAorHDMA = false;
+	CPU.InDMA = CPU.InHDMA = CPU.InDMAorHDMA = CPU.InWRAMDMAorHDMA = false;
 	CPU.HDMARanInDMA = 0;
 	CPU.CurrentDMAorHDMAChannel = -1;
 	CPU.WhichEvent = HC_RENDER_EVENT;
 	CPU.NextEvent  = Timings.RenderPos;
 	CPU.WaitingForInterrupt = false;
-	CPU.AutoSaveTimer = 0;
-	CPU.SRAMModified = false;
 
-	Registers.PBPC = 0;
-	Registers.PB = 0;
-	Registers.PCw = S9xGetWord(0xfffc);
-	OpenBus = Registers.PCh;
+	Registers.PC.xPBPC = 0;
+	Registers.PC.B.xPB = 0;
+	Registers.PC.W.xPC = S9xGetWord(0xfffc);
+	OpenBus = Registers.PC.B.xPCh;
 	Registers.D.W = 0;
 	Registers.DB = 0;
-	Registers.SH = 1;
-	Registers.SL -= 3;
-	Registers.XH = 0;
-	Registers.YH = 0;
+	Registers.S.B.h = 1;
+	Registers.S.B.l -= 3;
+	Registers.X.B.h = Registers.Y.B.h = 0;
 
-	ICPU.ShiftedPB = 0;
-	ICPU.ShiftedDB = 0;
+	ICPU.ShiftedPB = ICPU.ShiftedDB = 0;
 	SetFlags(MemoryFlag | IndexFlag | IRQ | Emulation);
 	ClearFlags(Decimal);
 
@@ -245,7 +223,7 @@ static void S9xSoftResetCPU()
 	else
 		Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v1;
 
-	S9xSetPCBase(Registers.PBPC);
+	S9xSetPCBase(Registers.PC.xPBPC);
 
 	ICPU.S9xOpcodes = S9xOpcodesE1;
 	ICPU.S9xOpLengths = S9xOpLengthsM1X1;
@@ -256,82 +234,20 @@ static void S9xSoftResetCPU()
 static void S9xResetCPU()
 {
 	S9xSoftResetCPU();
-	Registers.SL = 0xff;
-	Registers.P.W = 0;
-	Registers.A.W = 0;
-	Registers.X.W = 0;
-	Registers.Y.W = 0;
+	Registers.S.B.l = 0xff;
+	Registers.P.W = Registers.A.W = Registers.X.W = Registers.Y.W = 0;
 	SetFlags(MemoryFlag | IndexFlag | IRQ | Emulation);
 	ClearFlags(Decimal);
 }
 
 void S9xReset()
 {
-	/*S9xResetSaveTimer(false);
-	S9xResetLogger();*/
-
-	memset(Memory.RAM, 0x55, 0x20000);
-	memset(Memory.VRAM, 0x00, 0x10000);
-	ZeroMemory(Memory.FillRAM, 0x8000);
-
-	/*if (Settings.BS)
-		S9xResetBSX();*/
+	std::fill(&Memory.RAM[0], &Memory.RAM[0x20000], 0x55);
+	std::fill(&Memory.VRAM[0], &Memory.VRAM[0x10000], 0);
+	std::fill(&Memory.FillRAM[0], &Memory.FillRAM[0x8000], 0);
 
 	S9xResetCPU();
 	S9xResetPPU();
 	S9xResetDMA();
 	S9xResetAPU();
-
-	/*if (Settings.DSP)
-		S9xResetDSP();
-	if (Settings.SuperFX)
-		S9xResetSuperFX();
-	if (Settings.SA1)
-		S9xSA1Init();*/
-	if (Settings.SDD1)
-		S9xResetSDD1();
-	/*if (Settings.SPC7110)
-		S9xResetSPC7110();
-	if (Settings.C4)
-		S9xInitC4();
-	if (Settings.OBC1)
-		S9xResetOBC1();
-	if (Settings.SRTC)
-		S9xResetSRTC();
-
-	S9xInitCheatData();*/
-}
-
-void S9xSoftReset()
-{
-	//S9xResetSaveTimer(false);
-
-	ZeroMemory(Memory.FillRAM, 0x8000);
-
-	/*if (Settings.BS)
-		S9xResetBSX();*/
-
-	S9xSoftResetCPU();
-	S9xSoftResetPPU();
-	S9xResetDMA();
-	S9xSoftResetAPU();
-
-	/*if (Settings.DSP)
-		S9xResetDSP();
-	if (Settings.SuperFX)
-		S9xResetSuperFX();
-	if (Settings.SA1)
-		S9xSA1Init();*/
-	if (Settings.SDD1)
-		S9xResetSDD1();
-	/*if (Settings.SPC7110)
-		S9xResetSPC7110();
-	if (Settings.C4)
-		S9xInitC4();
-	if (Settings.OBC1)
-		S9xResetOBC1();
-	if (Settings.SRTC)
-		S9xResetSRTC();
-
-	S9xInitCheatData();*/
 }

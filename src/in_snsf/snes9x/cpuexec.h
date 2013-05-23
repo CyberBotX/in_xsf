@@ -175,14 +175,10 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #ifndef _CPUEXEC_H_
 #define _CPUEXEC_H_
 
 #include "ppu.h"
-#ifdef DEBUGGER
-#include "debug.h"
-#endif
 
 struct SOpcodes
 {
@@ -191,59 +187,57 @@ struct SOpcodes
 
 struct SICPU
 {
-	struct SOpcodes	*S9xOpcodes;
-	uint8_t	*S9xOpLengths;
-	uint8_t	_Carry;
-	uint8_t	_Zero;
-	uint8_t	_Negative;
-	uint8_t	_Overflow;
-	uint32_t	ShiftedPB;
-	uint32_t	ShiftedDB;
-	uint32_t	Frame;
-	uint32_t	FrameAdvanceCount;
+	SOpcodes *S9xOpcodes;
+	uint8_t *S9xOpLengths;
+	uint8_t _Carry;
+	uint8_t _Zero;
+	uint8_t _Negative;
+	uint8_t _Overflow;
+	uint32_t ShiftedPB;
+	uint32_t ShiftedDB;
 };
 
-extern struct SICPU		ICPU;
+extern SICPU ICPU;
 
-extern struct SOpcodes	S9xOpcodesE1[256];
-extern struct SOpcodes	S9xOpcodesM1X1[256];
-extern struct SOpcodes	S9xOpcodesM1X0[256];
-extern struct SOpcodes	S9xOpcodesM0X1[256];
-extern struct SOpcodes	S9xOpcodesM0X0[256];
-extern struct SOpcodes	S9xOpcodesSlow[256];
-extern uint8_t			S9xOpLengthsM1X1[256];
-extern uint8_t			S9xOpLengthsM1X0[256];
-extern uint8_t			S9xOpLengthsM0X1[256];
-extern uint8_t			S9xOpLengthsM0X0[256];
+extern SOpcodes S9xOpcodesE1[256];
+extern SOpcodes S9xOpcodesM1X1[256];
+extern SOpcodes S9xOpcodesM1X0[256];
+extern SOpcodes S9xOpcodesM0X1[256];
+extern SOpcodes S9xOpcodesM0X0[256];
+extern SOpcodes S9xOpcodesSlow[256];
+extern uint8_t S9xOpLengthsM1X1[256];
+extern uint8_t S9xOpLengthsM1X0[256];
+extern uint8_t S9xOpLengthsM0X1[256];
+extern uint8_t S9xOpLengthsM0X0[256];
 
 void S9xMainLoop();
 void S9xReset();
-void S9xSoftReset();
 void S9xDoHEventProcessing();
 
-static inline void S9xUnpackStatus()
+#include "65c816.h"
+
+inline void S9xUnpackStatus()
 {
-	ICPU._Zero = (Registers.PL & Zero) == 0;
-	ICPU._Negative = (Registers.PL & Negative);
-	ICPU._Carry = (Registers.PL & Carry);
-	ICPU._Overflow = (Registers.PL & Overflow) >> 6;
+	ICPU._Zero = !(Registers.P.B.l & Zero);
+	ICPU._Negative = Registers.P.B.l & Negative;
+	ICPU._Carry = Registers.P.B.l & Carry;
+	ICPU._Overflow = (Registers.P.B.l & Overflow) >> 6;
 }
 
-static inline void S9xPackStatus()
+inline void S9xPackStatus()
 {
-	Registers.PL &= ~(Zero | Negative | Carry | Overflow);
-	Registers.PL |= ICPU._Carry | ((ICPU._Zero == 0) << 1) | (ICPU._Negative & 0x80) | (ICPU._Overflow << 6);
+	Registers.P.B.l &= ~(Zero | Negative | Carry | Overflow);
+	Registers.P.B.l |= ICPU._Carry | ((!ICPU._Zero) << 1) | (ICPU._Negative & 0x80) | (ICPU._Overflow << 6);
 }
 
-static inline void S9xFixCycles()
+inline void S9xFixCycles()
 {
 	if (CheckEmulation())
 	{
 		ICPU.S9xOpcodes = S9xOpcodesE1;
 		ICPU.S9xOpLengths = S9xOpLengthsM1X1;
 	}
-	else
-	if (CheckMemory())
+	else if (CheckMemory())
 	{
 		if (CheckIndex())
 		{
@@ -271,16 +265,16 @@ static inline void S9xFixCycles()
 	}
 }
 
-static inline void S9xCheckInterrupts()
+inline void S9xCheckInterrupts()
 {
-	bool	thisIRQ = PPU.HTimerEnabled || PPU.VTimerEnabled;
+	bool thisIRQ = PPU.HTimerEnabled || PPU.VTimerEnabled;
 
 	if (CPU.IRQLine && thisIRQ)
 		CPU.IRQTransition = true;
 
 	if (PPU.HTimerEnabled)
 	{
-		int32_t	htimepos = PPU.HTimerPosition;
+		int32_t htimepos = PPU.HTimerPosition;
 		if (CPU.Cycles >= Timings.H_Max)
 			htimepos += Timings.H_Max;
 
@@ -290,22 +284,16 @@ static inline void S9xCheckInterrupts()
 
 	if (PPU.VTimerEnabled)
 	{
-		int32_t	vcounter = CPU.V_Counter;
+		int32_t vcounter = CPU.V_Counter;
 		if (CPU.Cycles >= Timings.H_Max)
-			vcounter++;
+			++vcounter;
 
 		if (vcounter != PPU.VTimerPosition)
 			thisIRQ = false;
 	}
 
 	if (!CPU.IRQLastState && thisIRQ)
-	{
-#ifdef DEBUGGER
-		S9xTraceFormattedMessage("--- /IRQ High->Low  prev HC:%04d  curr HC:%04d  HTimer:%d Pos:%04d  VTimer:%d Pos:%03d",
-			CPU.PrevCycles, CPU.Cycles, PPU.HTimerEnabled, PPU.HTimerPosition, PPU.VTimerEnabled, PPU.VTimerPosition);
-#endif
 		CPU.IRQLine = true;
-	}
 
 	CPU.IRQLastState = thisIRQ;
 }

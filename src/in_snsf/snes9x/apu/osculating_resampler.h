@@ -6,9 +6,6 @@
 #include <cmath>
 #include "resampler.h"
 
-#undef CLAMP
-#undef SHORT_CLAMP
-
 class OsculatingResampler : public Resampler
 {
 protected:
@@ -48,7 +45,7 @@ public:
 
 	void clear()
 	{
-		ring_buffer::clear ();
+		ring_buffer::clear();
 		this->r_frac = 1.0;
 		this->r_left[0] = this->r_left[1] = this->r_left[2] = this->r_left[3] = this->r_left[4] = this->r_left[5] = 0;
 		this->r_right[0] = this->r_right[1] = this->r_right[2] = this->r_right[3] = this->r_right[4] = this->r_right[5] = 0;
@@ -66,7 +63,7 @@ public:
 			int s_left = internal_buffer[i_position];
 			int s_right = internal_buffer[i_position + 1];
 			int max_samples = this->buffer_size >> 1;
-			const double margin_of_error = 1.0e-10;
+			static const double margin_of_error = 1.0e-10;
 
 			if (std::abs(this->r_step - 1.0) < margin_of_error)
 			{
@@ -123,7 +120,7 @@ public:
 			this->start -= this->buffer_size;
 	}
 
-	inline int avail()
+	int avail()
 	{
 		return static_cast<int>(std::floor(((this->size >> 2) - this->r_frac) / this->r_step) * 2);
 	}

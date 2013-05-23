@@ -83,7 +83,6 @@
     <ClCompile Include="snes9x\apu\apu.cpp" />
     <ClCompile Include="snes9x\apu\SNES_SPC.cpp" />
     <ClCompile Include="snes9x\apu\SNES_SPC_misc.cpp" />
-    <ClCompile Include="snes9x\apu\SNES_SPC_state.cpp" />
     <ClCompile Include="snes9x\apu\SPC_DSP.cpp" />
     <ClCompile Include="snes9x\cpu.cpp" />
     <ClCompile Include="snes9x\cpuexec.cpp" />
@@ -105,7 +104,6 @@
     <ClInclude Include="snes9x\apu\blargg_common.h" />
     <ClInclude Include="snes9x\apu\blargg_config.h" />
     <ClInclude Include="snes9x\apu\blargg_endian.h" />
-    <ClInclude Include="snes9x\apu\blargg_source.h" />
     <ClInclude Include="snes9x\apu\hermite_resampler.h" />
     <ClInclude Include="snes9x\apu\linear_resampler.h" />
     <ClInclude Include="snes9x\apu\resampler.h" />

@@ -175,45 +175,29 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #ifndef _APU_H_
 #define _APU_H_
 
 #include "../snes9x.h"
 #include "SNES_SPC.h"
 
-typedef void (*apu_callback) (void *);
-
-#define SPC_SAVE_STATE_BLOCK_SIZE	(SNES_SPC::state_size + 8)
-
 bool S9xInitAPU();
 void S9xDeinitAPU();
 void S9xResetAPU();
-void S9xSoftResetAPU();
-uint8_t S9xAPUReadPort (int);
-void S9xAPUWritePort (int, uint8_t);
-void S9xAPUExecute();
+uint8_t S9xAPUReadPort(int);
+void S9xAPUWritePort(int, uint8_t);
 void S9xAPUEndScanline();
-void S9xAPUSetReferenceTime (int32_t);
-void S9xAPUTimingSetSpeedup (int);
-void S9xAPUAllowTimeOverflow (bool);
-void S9xAPULoadState (uint8_t *);
-void S9xAPUSaveState (uint8_t *);
-void S9xDumpSPCSnapshot();
+void S9xAPUSetReferenceTime(int32_t);
+void S9xAPUTimingSetSpeedup(int);
+void S9xAPUAllowTimeOverflow(bool);
 
-template<class ResamplerClass> bool S9xInitSound (int, int);
+template<class ResamplerClass> bool S9xInitSound(int, int);
 bool S9xOpenSoundDevice();
 
 bool S9xSyncSound();
 int S9xGetSampleCount();
-void S9xSetSoundControl (uint8_t);
-void S9xSetSoundMute (bool);
-void S9xLandSamples();
-void S9xFinalizeSamples();
-void S9xClearSamples();
-bool S9xMixSamples (uint8_t *, int);
-void S9xSetSamplesAvailableCallback (apu_callback, void *);
-
-extern SNES_SPC	*spc_core;
+void S9xSetSoundControl(uint8_t);
+void S9xSetSoundMute(bool);
+bool S9xMixSamples(uint8_t *, int);
 
 #endif

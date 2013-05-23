@@ -175,11 +175,8 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#include <math.h>
+#include <memory>
 #include "apu.h"
-//#include "snapshot.h"
-//#include "display.h"
 #include "linear_resampler.h"
 #include "hermite_resampler.h"
 #include "bspline_resampler.h"
@@ -189,18 +186,17 @@
 bool SincResampler::initializedLUTs = false;
 double SincResampler::sinc_lut[SincResampler::SINC_SAMPLES + 1];
 
-#define APU_DEFAULT_INPUT_RATE		32000
-#define APU_MINIMUM_SAMPLE_COUNT	512
-#define APU_MINIMUM_SAMPLE_BLOCK	128
-#define APU_NUMERATOR_NTSC			15664
-#define APU_DENOMINATOR_NTSC		328125
-#define APU_NUMERATOR_PAL			34176
-#define APU_DENOMINATOR_PAL			709379
-#define APU_DEFAULT_RESAMPLER		HermiteResampler
+static const uint32_t APU_DEFAULT_INPUT_RATE = 32000;
+static const int APU_MINIMUM_SAMPLE_COUNT = 512;
+static const int APU_MINIMUM_SAMPLE_BLOCK = 128;
+static const uint32_t APU_NUMERATOR_NTSC = 15664;
+static const uint32_t APU_DENOMINATOR_NTSC = 328125;
+static const uint32_t APU_NUMERATOR_PAL = 34176;
+static const uint32_t APU_DENOMINATOR_PAL = 709379;
 
-SNES_SPC	*spc_core = NULL;
+static std::unique_ptr<SNES_SPC> spc_core;
 
-static uint8_t APUROM[64] =
+static const uint8_t APUROM[] =
 {
 	0xCD, 0xEF, 0xBD, 0xE8, 0x00, 0xC6, 0x1D, 0xD0,
 	0xFC, 0x8F, 0xAA, 0xF4, 0x8F, 0xBB, 0xF5, 0x78,
@@ -214,81 +210,62 @@ static uint8_t APUROM[64] =
 
 namespace spc
 {
-	static apu_callback	sa_callback     = NULL;
-	static void			*extra_data     = NULL;
+	static bool sound_in_sync = true;
+	static bool sound_enabled = false;
 
-	static bool		sound_in_sync   = true;
-	static bool		sound_enabled   = false;
+	static int buffer_size;
+	static int lag_master = 0;
+	static int lag = 0;
 
-	static int			buffer_size;
-	static int			lag_master      = 0;
-	static int			lag             = 0;
+	static std::unique_ptr<uint8_t[]> landing_buffer;
+	static std::unique_ptr<uint8_t[]> shrink_buffer;
 
-	static uint8_t		*landing_buffer = NULL;
-	static uint8_t		*shrink_buffer  = NULL;
+	static std::unique_ptr<Resampler> resampler;
 
-	static Resampler	*resampler      = NULL;
+	static int32_t reference_time;
+	static uint32_t remainder;
 
-	static int32_t		reference_time;
-	static uint32_t		remainder;
-
-	static const int	timing_hack_numerator   = SNES_SPC::tempo_unit;
-	static int			timing_hack_denominator = SNES_SPC::tempo_unit;
+	static const int timing_hack_numerator = SNES_SPC::tempo_unit;
+	static int timing_hack_denominator = SNES_SPC::tempo_unit;
 	/* Set these to NTSC for now. Will change to PAL in S9xAPUTimingSetSpeedup
 	   if necessary on game load. */
-	static uint32_t		ratio_numerator = APU_NUMERATOR_NTSC;
-	static uint32_t		ratio_denominator = APU_DENOMINATOR_NTSC;
+	static uint32_t ratio_numerator = APU_NUMERATOR_NTSC;
+	static uint32_t ratio_denominator = APU_DENOMINATOR_NTSC;
 }
 
-static void EightBitize (uint8_t *, int);
-static void DeStereo (uint8_t *, int);
-static void ReverseStereo (uint8_t *, int);
-static void UpdatePlaybackRate();
-static void from_apu_to_state (uint8_t **, void *, size_t);
-static void to_apu_from_state (uint8_t **, void *, size_t);
-//static void SPCSnapshotCallback();
-static inline int S9xAPUGetClock (int32_t);
-static inline int S9xAPUGetClockRemainder (int32_t);
-
-
-static void EightBitize (uint8_t *buffer, int sample_count)
+static void EightBitize(uint8_t *buffer, int sample_count)
 {
-	uint8_t	*buf8  = (uint8_t *) buffer;
-	int16_t	*buf16 = (int16_t *) buffer;
+	uint8_t *buf8 = buffer;
+	int16_t *buf16 = reinterpret_cast<int16_t *>(buffer);
 
-	for (int i = 0; i < sample_count; i++)
-		buf8[i] = (uint8_t) ((buf16[i] / 256) + 128);
+	for (int i = 0; i < sample_count; ++i)
+		buf8[i] = static_cast<uint8_t>((buf16[i] / 256) + 128);
 }
 
-static void DeStereo (uint8_t *buffer, int sample_count)
+static void DeStereo(uint8_t *buffer, int sample_count)
 {
-	int16_t	*buf = (int16_t *) buffer;
-	int32_t	s1, s2;
+	int16_t *buf = reinterpret_cast<int16_t *>(buffer);
 
-	for (int i = 0; i < sample_count >> 1; i++)
+	for (int i = 0; i < sample_count >> 1; ++i)
 	{
-		s1 = (int32_t) buf[2 * i];
-		s2 = (int32_t) buf[2 * i + 1];
-		buf[i] = (int16_t) ((s1 + s2) >> 1);
+		int32_t s1 = static_cast<int32_t>(buf[2 * i]);
+		int32_t s2 = static_cast<int32_t>(buf[2 * i + 1]);
+		buf[i] = static_cast<int16_t>((s1 + s2) >> 1);
 	}
 }
 
-static void ReverseStereo (uint8_t *src_buffer, int sample_count)
+static void ReverseStereo(uint8_t *src_buffer, int sample_count)
 {
-	int16_t	*buffer = (int16_t *) src_buffer;
+	int16_t *buffer = reinterpret_cast<int16_t *>(src_buffer);
 
 	for (int i = 0; i < sample_count; i += 2)
-	{
-		buffer[i + 1] ^= buffer[i];
-		buffer[i] ^= buffer[i + 1];
-		buffer[i + 1] ^= buffer[i];
-	}
+		std::swap(buffer[i], buffer[i + 1]);
 }
 
-bool S9xMixSamples (uint8_t *buffer, int sample_count)
+bool S9xMixSamples(uint8_t *buffer, int sample_count)
 {
-	static int	shrink_buffer_size = -1;
-	uint8_t		*dest;
+	static int shrink_buffer_size = -1;
+	uint8_t *dest;
 
 	if (!Settings.SixteenBitSound || !Settings.Stereo)
 	{
@@ -299,35 +276,34 @@ bool S9xMixSamples (uint8_t *buffer, int sample_count)
 		/* We still have to generate 16-bit samples for bit-dropping, too */
 		if (shrink_buffer_size < (sample_count << 1))
 		{
-			delete[] spc::shrink_buffer;
-			spc::shrink_buffer = new uint8_t[sample_count << 1];
+			spc::shrink_buffer.reset(new uint8_t[sample_count << 1]);
 			shrink_buffer_size = sample_count << 1;
 		}
 
-		dest = spc::shrink_buffer;
+		dest = spc::shrink_buffer.get();
 	}
 	else
 		dest = buffer;
 
 	if (Settings.Mute)
 	{
-		memset(dest, 0, sample_count << 1);
+		std::fill(&dest[0], &dest[sample_count << 1], 0);
 		spc::resampler->clear();
 
 		return false;
 	}
 	else
 	{
-		if (spc::resampler->avail() >= (sample_count + spc::lag))
+		if (spc::resampler->avail() >= sample_count + spc::lag)
 		{
-			spc::resampler->read((short *) dest, sample_count);
+			spc::resampler->read(reinterpret_cast<short *>(dest), sample_count);
 			if (spc::lag == spc::lag_master)
 				spc::lag = 0;
 		}
 		else
 		{
-			memset(buffer, (Settings.SixteenBitSound ? 0 : 128), (sample_count << (Settings.SixteenBitSound ? 1 : 0)) >> (Settings.Stereo ? 0 : 1));
-			if (spc::lag == 0)
+			std::fill(&buffer[0], &buffer[(sample_count << (Settings.SixteenBitSound ? 1 : 0)) >> (Settings.Stereo ? 0 : 1)], Settings.SixteenBitSound ? 0 : 128);
+			if (!spc::lag)
 				spc::lag = spc::lag_master;
 
 			return false;
@@ -348,7 +324,7 @@ bool S9xMixSamples (uint8_t *buffer, int sample_count)
 		if (!Settings.SixteenBitSound)
 			EightBitize(dest, sample_count);
 
-		memcpy(buffer, dest, (sample_count << (Settings.SixteenBitSound ? 1 : 0)));
+		std::copy(&dest[0], &dest[sample_count << (Settings.SixteenBitSound ? 1 : 0)], &buffer[0]);
 	}
 
 	return true;
@@ -363,7 +339,7 @@ void S9xFinalizeSamples()
 {
 	if (!Settings.Mute)
 	{
-		if (!spc::resampler->push((short *) spc::landing_buffer, spc_core->sample_count()))
+		if (!spc::resampler->push(reinterpret_cast<short *>(spc::landing_buffer.get()), spc_core->sample_count()))
 		{
 			/* We weren't able to process the entire buffer. Potential overrun. */
 			spc::sound_in_sync = false;
@@ -375,27 +351,17 @@ void S9xFinalizeSamples()
 
 	if (!Settings.SoundSync || Settings.TurboMode || Settings.Mute)
 		spc::sound_in_sync = true;
-	else
-	if (spc::resampler->space_empty() >= spc::resampler->space_filled())
+	else if (spc::resampler->space_empty() >= spc::resampler->space_filled())
 		spc::sound_in_sync = true;
 	else
 		spc::sound_in_sync = false;
 
-	spc_core->set_output((SNES_SPC::sample_t *) spc::landing_buffer, spc::buffer_size >> 1);
+	spc_core->set_output(reinterpret_cast<SNES_SPC::sample_t *>(spc::landing_buffer.get()), spc::buffer_size >> 1);
 }
 
 void S9xLandSamples()
 {
-	if (spc::sa_callback != NULL)
-		spc::sa_callback(spc::extra_data);
-	else
-		S9xFinalizeSamples();
-}
-
-void S9xClearSamples()
-{
-	spc::resampler->clear();
-	spc::lag = spc::lag_master;
+	S9xFinalizeSamples();
 }
 
 bool S9xSyncSound()
@@ -408,28 +374,22 @@ bool S9xSyncSound()
 	return spc::sound_in_sync;
 }
 
-void S9xSetSamplesAvailableCallback (apu_callback callback, void *data)
-{
-	spc::sa_callback = callback;
-	spc::extra_data  = data;
-}
-
 static void UpdatePlaybackRate()
 {
-	if (Settings.SoundInputRate == 0)
+	if (!Settings.SoundInputRate)
 		Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
 
-	double time_ratio = (double) Settings.SoundInputRate * spc::timing_hack_numerator / (Settings.SoundPlaybackRate * spc::timing_hack_denominator);
+	double time_ratio = static_cast<double>(Settings.SoundInputRate) * spc::timing_hack_numerator / (Settings.SoundPlaybackRate * spc::timing_hack_denominator);
 	spc::resampler->time_ratio(time_ratio);
 }
 
-template<class ResamplerClass> bool S9xInitSound (int buffer_ms, int lag_ms)
+template<class ResamplerClass> bool S9xInitSound(int buffer_ms, int lag_ms)
 {
 	// buffer_ms : buffer size given in millisecond
 	// lag_ms    : allowable time-lag given in millisecond
 
-	int	sample_count     = buffer_ms * 32000 / 1000;
-	int	lag_sample_count = lag_ms    * 32000 / 1000;
+	int sample_count = buffer_ms * 32000 / 1000;
+	int lag_sample_count = lag_ms * 32000 / 1000;
 
 	spc::lag_master = lag_sample_count;
 	if (Settings.Stereo)
@@ -445,32 +405,20 @@ template<class ResamplerClass> bool S9xInitSound (int buffer_ms, int lag_ms)
 	if (Settings.SixteenBitSound)
 		spc::buffer_size <<= 1;
 
-	printf("Sound buffer size: %d (%d samples)\n", spc::buffer_size, sample_count);
-
-	if (spc::landing_buffer)
-		delete[] spc::landing_buffer;
-	spc::landing_buffer = new uint8_t[spc::buffer_size * 2];
+	spc::landing_buffer.reset(new uint8_t[spc::buffer_size * 2]);
 	if (!spc::landing_buffer)
 		return false;
 
 	/* The resampler and spc unit use samples (16-bit short) as
 	/*   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
-	/*if (!spc::resampler)
-	{*/
-	if (spc::resampler)
-		delete spc::resampler;
+	spc::resampler.reset(new ResamplerClass(spc::buffer_size >> (Settings.SoundSync ? 0 : 1)));
+	if (!spc::resampler)
+	{
+		spc::landing_buffer.reset();
+		return false;
+	}
 
-		spc::resampler = new ResamplerClass(spc::buffer_size >> (Settings.SoundSync ? 0 : 1));
-		if (!spc::resampler)
-		{
-			delete[] spc::landing_buffer;
-			return false;
-		}
-	/*}
-	else
-		spc::resampler->resize(spc::buffer_size >> (Settings.SoundSync ? 0 : 1));*/
-
-	spc_core->set_output((SNES_SPC::sample_t *) spc::landing_buffer, spc::buffer_size >> 1);
+	spc_core->set_output(reinterpret_cast<SNES_SPC::sample_t *>(spc::landing_buffer.get()), spc::buffer_size >> 1);
 
 	UpdatePlaybackRate();
 
@@ -485,97 +433,63 @@ template bool S9xInitSound<BsplineResampler>(int, int);
 template bool S9xInitSound<OsculatingResampler>(int, int);
 template bool S9xInitSound<SincResampler>(int, int);
 
-void S9xSetSoundControl (uint8_t voice_switch)
+void S9xSetSoundControl(uint8_t voice_switch)
 {
-	spc_core->dsp_set_stereo_switch(voice_switch << 8 | voice_switch);
+	spc_core->dsp_set_stereo_switch((voice_switch << 8) | voice_switch);
 }
 
-void S9xSetSoundMute (bool mute)
+void S9xSetSoundMute(bool mute)
 {
 	Settings.Mute = mute;
 	if (!spc::sound_enabled)
 		Settings.Mute = true;
 }
 
-void S9xDumpSPCSnapshot()
-{
-	spc_core->dsp_dump_spc_snapshot();
-}
-
-/*static void SPCSnapshotCallback()
-{
-	S9xSPCDump(S9xGetFilenameInc((".spc"), SPC_DIR));
-	printf("Dumped key-on triggered spc snapshot.\n");
-}*/
-
 bool S9xInitAPU()
 {
-	spc_core = new SNES_SPC;
+	spc_core.reset(new SNES_SPC);
 	if (!spc_core)
 		return false;
 
 	spc_core->init();
 	spc_core->init_rom(APUROM);
 
-	//spc_core->dsp_set_spc_snapshot_callback(SPCSnapshotCallback);
-
-	spc::landing_buffer = NULL;
-	spc::shrink_buffer  = NULL;
-	spc::resampler      = NULL;
+	spc::landing_buffer.reset();
+	spc::shrink_buffer.reset();
+	spc::resampler.reset();
 
 	return true;
 }
 
 void S9xDeinitAPU()
 {
-	if (spc_core)
-	{
-		delete spc_core;
-		spc_core = NULL;
-	}
-
-	if (spc::resampler)
-	{
-		delete spc::resampler;
-		spc::resampler = NULL;
-	}
-
-	if (spc::landing_buffer)
-	{
-		delete[] spc::landing_buffer;
-		spc::landing_buffer = NULL;
-	}
-
-	if (spc::shrink_buffer)
-	{
-		delete[] spc::shrink_buffer;
-		spc::shrink_buffer = NULL;
-	}
+	spc_core.reset();
+	spc::resampler.reset();
+	spc::landing_buffer.reset();
+	spc::shrink_buffer.reset();
 }
 
-static inline int S9xAPUGetClock (int32_t cpucycles)
+static inline int S9xAPUGetClock(int32_t cpucycles)
 {
-	return (spc::ratio_numerator * (cpucycles - spc::reference_time) + spc::remainder) /
-			spc::ratio_denominator;
+	return (spc::ratio_numerator * (cpucycles - spc::reference_time) + spc::remainder) / spc::ratio_denominator;
 }
 
-static inline int S9xAPUGetClockRemainder (int32_t cpucycles)
+static inline int S9xAPUGetClockRemainder(int32_t cpucycles)
 {
-	return (spc::ratio_numerator * (cpucycles - spc::reference_time) + spc::remainder) %
-			spc::ratio_denominator;
+	return (spc::ratio_numerator * (cpucycles - spc::reference_time) + spc::remainder) % spc::ratio_denominator;
 }
 
-uint8_t S9xAPUReadPort (int port)
+uint8_t S9xAPUReadPort(int port)
 {
-	return (uint8_t) spc_core->read_port(S9xAPUGetClock(CPU.Cycles), port);
+	return static_cast<uint8_t>(spc_core->read_port(S9xAPUGetClock(CPU.Cycles), port));
 }
 
-void S9xAPUWritePort (int port, uint8_t byte)
+void S9xAPUWritePort(int port, uint8_t byte)
 {
 	spc_core->write_port(S9xAPUGetClock(CPU.Cycles), port, byte);
 }
 
-void S9xAPUSetReferenceTime (int32_t cpucycles)
+void S9xAPUSetReferenceTime(int32_t cpucycles)
 {
 	spc::reference_time = cpucycles;
 }
@@ -598,26 +512,19 @@ void S9xAPUEndScanline()
 		S9xLandSamples();
 }
 
-void S9xAPUTimingSetSpeedup (int ticks)
+void S9xAPUTimingSetSpeedup(int ticks)
 {
-	if (ticks != 0)
-		printf("APU speedup hack: %d\n", ticks);
-
 	spc::timing_hack_denominator = SNES_SPC::tempo_unit - ticks;
 	spc_core->set_tempo(spc::timing_hack_denominator);
 
 	spc::ratio_numerator = Settings.PAL ? APU_NUMERATOR_PAL : APU_NUMERATOR_NTSC;
-	spc::ratio_denominator = Settings.PAL ? APU_DENOMINATOR_PAL : APU_DENOMINATOR_NTSC;
-	spc::ratio_denominator = spc::ratio_denominator * spc::timing_hack_denominator / spc::timing_hack_numerator;
+	spc::ratio_denominator = (Settings.PAL ? APU_DENOMINATOR_PAL : APU_DENOMINATOR_NTSC) * spc::timing_hack_denominator / spc::timing_hack_numerator;
 
 	UpdatePlaybackRate();
 }
 
-void S9xAPUAllowTimeOverflow (bool allow)
+void S9xAPUAllowTimeOverflow(bool allow)
 {
-	if (allow)
-		printf("APU time overflow allowed\n");
-
 	spc_core->spc_allow_time_overflow(allow);
 }
 
@@ -626,53 +533,7 @@ void S9xResetAPU()
 	spc::reference_time = 0;
 	spc::remainder = 0;
 	spc_core->reset();
-	spc_core->set_output((SNES_SPC::sample_t *) spc::landing_buffer, spc::buffer_size >> 1);
+	spc_core->set_output(reinterpret_cast<SNES_SPC::sample_t *>(spc::landing_buffer.get()), spc::buffer_size >> 1);
 
 	spc::resampler->clear();
-}
-
-void S9xSoftResetAPU()
-{
-	spc::reference_time = 0;
-	spc::remainder = 0;
-	spc_core->soft_reset();
-	spc_core->set_output((SNES_SPC::sample_t *) spc::landing_buffer, spc::buffer_size >> 1);
-
-	spc::resampler->clear();
-}
-
-static void from_apu_to_state (uint8_t **buf, void *var, size_t size)
-{
-	memcpy(*buf, var, size);
-	*buf += size;
-}
-
-static void to_apu_from_state (uint8_t **buf, void *var, size_t size)
-{
-	memcpy(var, *buf, size);
-	*buf += size;
-}
-
-void S9xAPUSaveState (uint8_t *block)
-{
-	uint8_t	*ptr = block;
-
-	spc_core->copy_state(&ptr, from_apu_to_state);
-
-	SET_LE32(ptr, spc::reference_time);
-	ptr += sizeof(int32_t);
-	SET_LE32(ptr, spc::remainder);
-}
-
-void S9xAPULoadState (uint8_t *block)
-{
-	uint8_t	*ptr = block;
-
-	S9xResetAPU();
-
-	spc_core->copy_state(&ptr, to_apu_from_state);
-
-	spc::reference_time = GET_LE32(ptr);
-	ptr += sizeof(int32_t);
-	spc::remainder = GET_LE32(ptr);
 }

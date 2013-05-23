@@ -175,192 +175,112 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #ifndef _MEMMAP_H_
 #define _MEMMAP_H_
 
-#define MEMMAP_BLOCK_SIZE	(0x1000)
-#define MEMMAP_NUM_BLOCKS	(0x1000000 / MEMMAP_BLOCK_SIZE)
-#define MEMMAP_SHIFT		(12)
-#define MEMMAP_MASK			(MEMMAP_BLOCK_SIZE - 1)
+#include <memory>
+#include <cstdint>
+
+const int32_t MEMMAP_BLOCK_SIZE = 0x1000;
+const size_t MEMMAP_NUM_BLOCKS = 0x1000000 / MEMMAP_BLOCK_SIZE;
+const uint32_t MEMMAP_SHIFT = 12;
+const uint32_t MEMMAP_MASK = MEMMAP_BLOCK_SIZE - 1;
 
 struct CMemory
 {
-	enum
-	{ MAX_ROM_SIZE = 0x800000 };
-
-	enum file_formats
-	{ FILE_ZIP, FILE_JMA, FILE_DEFAULT };
+	enum { MAX_ROM_SIZE = 0x800000 };
 
 	enum
-	{ NOPE, YEAH, BIGFIRST, SMALLFIRST };
+	{
+		NOPE,
+		YEAH,
+		BIGFIRST,
+		SMALLFIRST
+	};
 
 	enum
-	{ MAP_TYPE_I_O, MAP_TYPE_ROM, MAP_TYPE_RAM };
+	{
+		MAP_TYPE_I_O,
+		MAP_TYPE_RAM
+	};
 
 	enum
 	{
 		MAP_CPU,
 		MAP_PPU,
 		MAP_LOROM_SRAM,
-		MAP_LOROM_SRAM_B,
 		MAP_HIROM_SRAM,
-		MAP_DSP,
 		MAP_SA1RAM,
-		MAP_BWRAM,
-		MAP_BWRAM_BITMAP,
-		MAP_BWRAM_BITMAP2,
-		MAP_SPC7110_ROM,
-		MAP_SPC7110_DRAM,
 		MAP_RONLY_SRAM,
-		MAP_C4,
-		MAP_OBC_RAM,
-		MAP_SETA_DSP,
-		MAP_SETA_RISC,
-		MAP_BSX,
 		MAP_NONE,
 		MAP_LAST
 	};
 
-	uint8_t	NSRTHeader[32];
-	int32_t	HeaderCount;
+	std::unique_ptr<uint8_t[]> RAM;
+	std::unique_ptr<uint8_t[]> RealROM;
+	uint8_t *ROM;
+	std::unique_ptr<uint8_t[]> SRAM;
+	std::unique_ptr<uint8_t[]> VRAM;
+	uint8_t *FillRAM;
 
-	uint8_t	*RAM;
-	uint8_t	*ROM;
-	uint8_t	*SRAM;
-	uint8_t	*VRAM;
-	uint8_t	*FillRAM;
-	uint8_t	*BWRAM;
-	uint8_t	*C4RAM;
-	uint8_t	*OBC1RAM;
-	uint8_t	*BSRAM;
-	uint8_t	*BIOSROM;
+	uint8_t *Map[MEMMAP_NUM_BLOCKS];
+	uint8_t *WriteMap[MEMMAP_NUM_BLOCKS];
+	uint8_t BlockIsRAM[MEMMAP_NUM_BLOCKS];
+	uint8_t BlockIsROM[MEMMAP_NUM_BLOCKS];
+	uint8_t ExtendedFormat;
 
-	uint8_t	*Map[MEMMAP_NUM_BLOCKS];
-	uint8_t	*WriteMap[MEMMAP_NUM_BLOCKS];
-	uint8_t	BlockIsRAM[MEMMAP_NUM_BLOCKS];
-	uint8_t	BlockIsROM[MEMMAP_NUM_BLOCKS];
-	uint8_t	ExtendedFormat;
+	char ROMName[ROM_NAME_LEN];
+	char ROMId[5];
+	uint8_t ROMRegion;
+	uint8_t ROMSpeed;
+	uint8_t ROMType;
 
-	char	ROMFilename[PATH_MAX + 1];
-	char	ROMName[ROM_NAME_LEN];
-	char	RawROMName[ROM_NAME_LEN];
-	char	ROMId[5];
-	int32_t	CompanyId;
-	uint8_t	ROMRegion;
-	uint8_t	ROMSpeed;
-	uint8_t	ROMType;
-	uint8_t	ROMSize;
-	uint32_t	ROMChecksum;
-	uint32_t	ROMComplementChecksum;
-	uint32_t	ROMCRC32;
-	int32_t	ROMFramesPerSecond;
+	bool HiROM;
+	bool LoROM;
+	uint8_t SRAMSize;
+	uint32_t SRAMMask;
+	uint32_t CalculatedSize;
 
-	bool	HiROM;
-	bool	LoROM;
-	uint8_t	SRAMSize;
-	uint32_t	SRAMMask;
-	uint32_t	CalculatedSize;
-	uint32_t	CalculatedChecksum;
+	bool Init();
+	void Deinit();
 
-	// ports can assign this to perform some custom action upon loading a ROM (such as adjusting controls)
-	void	(*PostRomInitFunc)();
+	int ScoreHiROM(bool, int32_t romoff = 0);
+	int ScoreLoROM(bool, int32_t romoff = 0);
+	bool LoadROMSNSF(const uint8_t *, int32_t, const uint8_t *, int32_t);
 
-	bool	Init();
-	void	Deinit();
+	char *Safe(const char *);
+	void ParseSNESHeader(uint8_t *);
+	void InitROM();
 
-	int		ScoreHiROM (bool, int32_t romoff = 0);
-	int		ScoreLoROM (bool, int32_t romoff = 0);
-	//uint32_t	HeaderRemove (uint32_t, int32_t &, uint8_t *);
-	//uint32_t	FileLoader (uint8_t *, const char *, int32_t);
-	/*bool	LoadROM (const char *);
-	bool	LoadMultiCart (const char *, const char *);
-	bool	LoadSufamiTurbo (const char *, const char *);
-	bool	LoadSameGame (const char *, const char *);
-	bool	LoadSRAM (const char *);
-	bool	SaveSRAM (const char *);
-	void	ClearSRAM (bool onlyNonSavedSRAM = 0);
-	bool	LoadSRTC();
-	bool	SaveSRTC();*/
-	bool LoadROMSNSF(const unsigned char *, int32_t, const unsigned char *, int32_t);
+	uint32_t map_mirror(uint32_t, uint32_t);
+	void map_lorom(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+	void map_hirom(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+	void map_lorom_offset(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+	void map_hirom_offset(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+	void map_space(uint32_t, uint32_t, uint32_t, uint32_t, uint8_t *);
+	void map_index(uint32_t, uint32_t, uint32_t, uint32_t, int, int);
+	void map_System();
+	void map_WRAM();
+	void map_LoROMSRAM();
+	void map_HiROMSRAM();
+	void map_WriteProtectROM();
+	void Map_Initialize();
+	void Map_LoROMMap();
+	void Map_NoMAD1LoROMMap();
+	void Map_JumboLoROMMap();
+	void Map_ROM24MBSLoROMMap();
+	void Map_SRAM512KLoROMMap();
+	void Map_SDD1LoROMMap();
+	void Map_HiROMMap();
+	void Map_ExtendedHiROMMap();
 
-	char *	Safe (const char *);
-	char *	SafeANK (const char *);
-	void	ParseSNESHeader (uint8_t *);
-	void	InitROM();
-
-	uint32_t	map_mirror (uint32_t, uint32_t);
-	void	map_lorom (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
-	void	map_hirom (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
-	void	map_lorom_offset (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
-	void	map_hirom_offset (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
-	void	map_space (uint32_t, uint32_t, uint32_t, uint32_t, uint8_t *);
-	void	map_index (uint32_t, uint32_t, uint32_t, uint32_t, int, int);
-	void	map_System();
-	void	map_WRAM();
-	void	map_LoROMSRAM();
-	void	map_HiROMSRAM();
-	//void	map_DSP();
-	//void	map_C4();
-	//void	map_OBC1();
-	//void	map_SetaRISC();
-	//void	map_SetaDSP();
-	void	map_WriteProtectROM();
-	void	Map_Initialize();
-	void	Map_LoROMMap();
-	void	Map_NoMAD1LoROMMap();
-	void	Map_JumboLoROMMap();
-	void	Map_ROM24MBSLoROMMap();
-	void	Map_SRAM512KLoROMMap();
-	//void	Map_SufamiTurboLoROMMap();
-	//void	Map_SufamiTurboPseudoLoROMMap();
-	//void	Map_SuperFXLoROMMap();
-	//void	Map_SetaDSPLoROMMap();
-	void	Map_SDD1LoROMMap();
-	//void	Map_SA1LoROMMap();
-	void	Map_HiROMMap();
-	void	Map_ExtendedHiROMMap();
-	//void	Map_SameGameHiROMMap();
-	//void	Map_SPC7110HiROMMap();
-
-	uint16_t	checksum_calc_sum (uint8_t *, uint32_t);
-	uint16_t	checksum_mirror_sum (uint8_t *, uint32_t &, uint32_t mask = 0x800000);
-	void	Checksum_Calculate();
-
-	bool	match_na (const char *);
-	bool	match_nn (const char *);
-	//bool	match_nc (const char *);
-	bool	match_id (const char *);
-	void	ApplyROMFixes();
-	//void	CheckForAnyPatch (const char *, bool, int32_t &);
-
-	//void	MakeRomInfoText (char *);
-
-	//const char *	MapType();
-	//const char *	StaticRAMSize();
-	//const char *	Size();
-	//const char *	Revision();
-	//const char *	KartContents();
-	//const char *	Country();
-	//const char *	PublishingCompany();
+	bool match_na(const char *);
+	bool match_nn(const char *);
+	bool match_id(const char *);
+	void ApplyROMFixes();
 };
 
-struct SMulti
-{
-	int		cartType;
-	int32_t	cartSizeA, cartSizeB;
-	int32_t	sramSizeA, sramSizeB;
-	uint32_t	sramMaskA, sramMaskB;
-	uint32_t	cartOffsetA, cartOffsetB;
-	uint8_t	*sramA, *sramB;
-	char	fileNameA[PATH_MAX + 1], fileNameB[PATH_MAX + 1];
-};
-
-extern CMemory	Memory;
-extern SMulti	Multi;
-
-void S9xAutoSaveSRAM();
-bool LoadZip(const char *, int32_t *, int32_t *, uint8_t *);
+extern CMemory Memory;
 
 enum s9xwrap_t
 {

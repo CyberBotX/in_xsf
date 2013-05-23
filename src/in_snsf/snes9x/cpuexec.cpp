@@ -180,12 +180,6 @@
 #include "cpuops.h"
 #include "dma.h"
 #include "apu/apu.h"
-//#include "fxemu.h"
-//#include "snapshot.h"
-#ifdef DEBUGGER
-#include "debug.h"
-#include "missing.h"
-#endif
 
 static inline void S9xReschedule()
 {
@@ -193,33 +187,32 @@ static inline void S9xReschedule()
 	{
 		case HC_HBLANK_START_EVENT:
 			CPU.WhichEvent = HC_HDMA_START_EVENT;
-			CPU.NextEvent  = Timings.HDMAStart;
+			CPU.NextEvent = Timings.HDMAStart;
 			break;
 
 		case HC_HDMA_START_EVENT:
 			CPU.WhichEvent = HC_HCOUNTER_MAX_EVENT;
-			CPU.NextEvent  = Timings.H_Max;
+			CPU.NextEvent = Timings.H_Max;
 			break;
 
 		case HC_HCOUNTER_MAX_EVENT:
 			CPU.WhichEvent = HC_HDMA_INIT_EVENT;
-			CPU.NextEvent  = Timings.HDMAInit;
+			CPU.NextEvent = Timings.HDMAInit;
 			break;
 
 		case HC_HDMA_INIT_EVENT:
 			CPU.WhichEvent = HC_RENDER_EVENT;
-			CPU.NextEvent  = Timings.RenderPos;
+			CPU.NextEvent = Timings.RenderPos;
 			break;
 
 		case HC_RENDER_EVENT:
 			CPU.WhichEvent = HC_WRAM_REFRESH_EVENT;
-			CPU.NextEvent  = Timings.WRAMRefreshPos;
+			CPU.NextEvent = Timings.WRAMRefreshPos;
 			break;
 
 		case HC_WRAM_REFRESH_EVENT:
 			CPU.WhichEvent = HC_HBLANK_START_EVENT;
-			CPU.NextEvent  = Timings.HBlankStart;
-			break;
+			CPU.NextEvent = Timings.HBlankStart;
 	}
 }
 
@@ -236,23 +229,23 @@ void S9xMainLoop()
 				if (CPU.WaitingForInterrupt)
 				{
 					CPU.WaitingForInterrupt = false;
-					Registers.PCw++;
+					++Registers.PC.W.xPC;
 				}
 
 				S9xOpcode_NMI();
 			}
 		}
 
-		if (CPU.IRQTransition || CPU.IRQExternal)
+		if (CPU.IRQTransition)
 		{
 			if (CPU.IRQPending)
-				CPU.IRQPending--;
+				--CPU.IRQPending;
 			else
 			{
 				if (CPU.WaitingForInterrupt)
 				{
 					CPU.WaitingForInterrupt = false;
-					Registers.PCw++;
+					++Registers.PC.W.xPC;
 				}
 
 				CPU.IRQTransition = false;
@@ -263,45 +256,15 @@ void S9xMainLoop()
 			}
 		}
 
-	#ifdef DEBUGGER
-		if ((CPU.Flags & BREAK_FLAG) && !(CPU.Flags & SINGLE_STEP_FLAG))
-		{
-			for (int Break = 0; Break != 6; Break++)
-			{
-				if (S9xBreakpoint[Break].Enabled &&
-					S9xBreakpoint[Break].Bank == Registers.PB &&
-					S9xBreakpoint[Break].Address == Registers.PCw)
-				{
-					if (S9xBreakpoint[Break].Enabled == 2)
-						S9xBreakpoint[Break].Enabled = true;
-					else
-						CPU.Flags |= DEBUG_MODE_FLAG;
-				}
-			}
-		}
-
-		if (CPU.Flags & DEBUG_MODE_FLAG)
-			break;
-
-		if (CPU.Flags & TRACE_FLAG)
-			S9xTrace();
-
-		if (CPU.Flags & SINGLE_STEP_FLAG)
-		{
-			CPU.Flags &= ~SINGLE_STEP_FLAG;
-			CPU.Flags |= DEBUG_MODE_FLAG;
-		}
-	#endif
-
 		if (CPU.Flags & SCAN_KEYS_FLAG)
 			break;
 
-		register uint8_t				Op;
-		register struct	SOpcodes	*Opcodes;
+		register uint8_t Op;
+		register SOpcodes *Opcodes;
 
 		if (CPU.PCBase)
 		{
-			Op = CPU.PCBase[Registers.PCw];
+			Op = CPU.PCBase[Registers.PC.W.xPC];
 			CPU.PrevCycles = CPU.Cycles;
 			CPU.Cycles += CPU.MemSpeed;
 			S9xCheckInterrupts();
@@ -309,60 +272,32 @@ void S9xMainLoop()
 		}
 		else
 		{
-			Op = S9xGetByte(Registers.PBPC);
+			Op = S9xGetByte(Registers.PC.xPBPC);
 			OpenBus = Op;
 			Opcodes = S9xOpcodesSlow;
 		}
 
-		if ((Registers.PCw & MEMMAP_MASK) + ICPU.S9xOpLengths[Op] >= MEMMAP_BLOCK_SIZE)
+		if ((Registers.PC.W.xPC & MEMMAP_MASK) + ICPU.S9xOpLengths[Op] >= MEMMAP_BLOCK_SIZE)
 		{
-			uint8_t	*oldPCBase = CPU.PCBase;
+			uint8_t *oldPCBase = CPU.PCBase;
 
-			CPU.PCBase = S9xGetBasePointer(ICPU.ShiftedPB + ((uint16_t) (Registers.PCw + 4)));
-			if (oldPCBase != CPU.PCBase || (Registers.PCw & ~MEMMAP_MASK) == (0xffff & ~MEMMAP_MASK))
+			CPU.PCBase = S9xGetBasePointer(ICPU.ShiftedPB + (static_cast<uint16_t>(Registers.PC.W.xPC + 4)));
+			if (oldPCBase != CPU.PCBase || (Registers.PC.W.xPC & ~MEMMAP_MASK) == (0xffff & ~MEMMAP_MASK))
 				Opcodes = S9xOpcodesSlow;
 		}
 
-		Registers.PCw++;
+		++Registers.PC.W.xPC;
 		(*Opcodes[Op].S9xOpcode)();
-
-		/*if (Settings.SA1)
-			S9xSA1MainLoop();*/
 	}
 
 	S9xPackStatus();
 
 	if (CPU.Flags & SCAN_KEYS_FLAG)
-	{
-	/*#ifdef DEBUGGER
-		if (!(CPU.Flags & FRAME_ADVANCE_FLAG))
-	#endif
-		S9xSyncSpeed();*/
 		CPU.Flags &= ~SCAN_KEYS_FLAG;
-	}
 }
 
 void S9xDoHEventProcessing()
 {
-#ifdef DEBUGGER
-	static char	eventname[7][32] =
-	{
-		"",
-		"HC_HBLANK_START_EVENT",
-		"HC_HDMA_START_EVENT  ",
-		"HC_HCOUNTER_MAX_EVENT",
-		"HC_HDMA_INIT_EVENT   ",
-		"HC_RENDER_EVENT      ",
-		"HC_WRAM_REFRESH_EVENT"
-	};
-#endif
-
-#ifdef DEBUGGER
-	if (Settings.TraceHCEvent)
-		S9xTraceFormattedMessage("--- HC event processing  (%s)  expected HC:%04d  executed HC:%04d",
-			eventname[CPU.WhichEvent], CPU.NextEvent, CPU.Cycles);
-#endif
-
 	switch (CPU.WhichEvent)
 	{
 		case HC_HBLANK_START_EVENT:
@@ -373,23 +308,11 @@ void S9xDoHEventProcessing()
 			S9xReschedule();
 
 			if (PPU.HDMA && CPU.V_Counter <= PPU.ScreenHeight)
-			{
-			#ifdef DEBUGGER
-				S9xTraceFormattedMessage("*** HDMA Transfer HC:%04d, Channel:%02x", CPU.Cycles, PPU.HDMA);
-			#endif
 				PPU.HDMA = S9xDoHDMA(PPU.HDMA);
-			}
 
 			break;
 
 		case HC_HCOUNTER_MAX_EVENT:
-			/*if (Settings.SuperFX)
-			{
-				if (!SuperFX.oneLineDone)
-					S9xSuperFXExec();
-				SuperFX.oneLineDone = false;
-			}*/
-
 			S9xAPUEndScanline();
 			CPU.Cycles -= Timings.H_Max;
 			CPU.PrevCycles -= Timings.H_Max;
@@ -398,11 +321,11 @@ void S9xDoHEventProcessing()
 			if ((Timings.NMITriggerPos != 0xffff) && (Timings.NMITriggerPos >= Timings.H_Max))
 				Timings.NMITriggerPos -= Timings.H_Max;
 
-			CPU.V_Counter++;
-			if (CPU.V_Counter >= Timings.V_Max)	// V ranges from 0 to Timings.V_Max - 1
+			++CPU.V_Counter;
+			if (CPU.V_Counter >= Timings.V_Max) // V ranges from 0 to Timings.V_Max - 1
 			{
 				CPU.V_Counter = 0;
-				Timings.InterlaceField ^= 1;
+				Timings.InterlaceField = !Timings.InterlaceField;
 
 				// From byuu:
 				// [NTSC]
@@ -412,20 +335,17 @@ void S9xDoHEventProcessing()
 				// interlace mode has 625 scanlines: 313 on the even frame, and 312 on the odd.
 				// non-interlace mode has 624 scanlines: 312 scanlines on both even and odd frames.
 				if (IPPU.Interlace && !Timings.InterlaceField)
-					Timings.V_Max = Timings.V_Max_Master + 1;	// 263 (NTSC), 313?(PAL)
+					Timings.V_Max = Timings.V_Max_Master + 1; // 263 (NTSC), 313?(PAL)
 				else
-					Timings.V_Max = Timings.V_Max_Master;		// 262 (NTSC), 312?(PAL)
+					Timings.V_Max = Timings.V_Max_Master; // 262 (NTSC), 312?(PAL)
 
 				Memory.FillRAM[0x213F] ^= 0x80;
-				PPU.RangeTimeOver = 0;
 
 				// FIXME: reading $4210 will wait 2 cycles, then perform reading, then wait 4 more cycles.
 				Memory.FillRAM[0x4210] = Model->_5A22;
 				CPU.NMILine = false;
 				Timings.NMITriggerPos = 0xffff;
 
-				ICPU.Frame++;
-				PPU.HVBeamCounterLatched = 0;
 				CPU.Flags |= SCAN_KEYS_FLAG;
 			}
 
@@ -435,48 +355,40 @@ void S9xDoHEventProcessing()
 			// In interlace mode, there are always 341 dots per scanline. Even frames have 263 scanlines,
 			// and odd frames have 262 scanlines.
 			// Interlace mode scanline 240 on odd frames is not missing a dot.
-			if (CPU.V_Counter == 240 && !IPPU.Interlace && Timings.InterlaceField)	// V=240
-				Timings.H_Max = Timings.H_Max_Master - ONE_DOT_CYCLE;	// HC=1360
+			if (CPU.V_Counter == 240 && !IPPU.Interlace && Timings.InterlaceField) // V=240
+				Timings.H_Max = Timings.H_Max_Master - ONE_DOT_CYCLE; // HC=1360
 			else
-				Timings.H_Max = Timings.H_Max_Master;					// HC=1364
+				Timings.H_Max = Timings.H_Max_Master; // HC=1364
 
 			if (Model->_5A22 == 2)
 			{
 				if (CPU.V_Counter != 240 || IPPU.Interlace || !Timings.InterlaceField)	// V=240
 				{
-					if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE)	// HC=534
-						Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;					// HC=538
+					if (Timings.WRAMRefreshPos == SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE) // HC=534
+						Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2; // HC=538
 					else
-						Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE;	// HC=534
+						Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2 - ONE_DOT_CYCLE; // HC=534
 				}
 			}
 			else
 				Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v1;
 
-			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)	// VBlank starts from V=225(240).
+			if (CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE) // VBlank starts from V=225(240).
 			{
-				//S9xEndScreenRefresh();
 				PPU.HDMA = 0;
 				// Bits 7 and 6 of $4212 are computed when read in S9xGetPPU.
-			#ifdef DEBUGGER
-				missing.dma_this_frame = 0;
-			#endif
-				IPPU.MaxBrightness = PPU.Brightness;
-				PPU.ForcedBlanking = (Memory.FillRAM[0x2100] >> 7) & 1;
+				PPU.ForcedBlanking = !!((Memory.FillRAM[0x2100] >> 7) & 1);
 
 				if (!PPU.ForcedBlanking)
 				{
 					PPU.OAMAddr = PPU.SavedOAMAddr;
 
-					uint8_t	tmp = 0;
+					uint8_t tmp = 0;
 
 					if (PPU.OAMPriorityRotation)
 						tmp = (PPU.OAMAddr & 0xFE) >> 1;
 					if ((PPU.OAMFlip & 1) || PPU.FirstSprite != tmp)
-					{
 						PPU.FirstSprite = tmp;
-						IPPU.OBJChanged = true;
-					}
 
 					PPU.OAMFlip = 0;
 				}
@@ -490,17 +402,7 @@ void S9xDoHEventProcessing()
 					CPU.NMILine = true;
 					Timings.NMITriggerPos = 6 + 6;
 				}
-
 			}
-
-			/*if (CPU.V_Counter == PPU.ScreenHeight + 3)	// FIXME: not true
-			{
-				if (Memory.FillRAM[0x4200] & 1)
-					S9xDoAutoJoypad();
-			}*/
-
-			/*if (CPU.V_Counter == FIRST_VISIBLE_LINE)	// V=1
-				S9xStartScreenRefresh();*/
 
 			S9xReschedule();
 
@@ -509,41 +411,21 @@ void S9xDoHEventProcessing()
 		case HC_HDMA_INIT_EVENT:
 			S9xReschedule();
 
-			if (CPU.V_Counter == 0)
-			{
-			#ifdef DEBUGGER
-				S9xTraceFormattedMessage("*** HDMA Init     HC:%04d, Channel:%02x", CPU.Cycles, PPU.HDMA);
-			#endif
+			if (!CPU.V_Counter)
 				S9xStartHDMA();
-			}
 
 			break;
 
 		case HC_RENDER_EVENT:
-			/*if (CPU.V_Counter >= FIRST_VISIBLE_LINE && CPU.V_Counter <= PPU.ScreenHeight)
-				RenderLine((uint8_t) (CPU.V_Counter - FIRST_VISIBLE_LINE));*/
-
 			S9xReschedule();
 
 			break;
 
 		case HC_WRAM_REFRESH_EVENT:
-		#ifdef DEBUGGER
-			S9xTraceFormattedMessage("*** WRAM Refresh  HC:%04d", CPU.Cycles);
-		#endif
-
 			CPU.PrevCycles = CPU.Cycles;
 			CPU.Cycles += SNES_WRAM_REFRESH_CYCLES;
 			S9xCheckInterrupts();
 
 			S9xReschedule();
-
-			break;
 	}
-
-#ifdef DEBUGGER
-	if (Settings.TraceHCEvent)
-		S9xTraceFormattedMessage("--- HC event rescheduled (%s)  expected HC:%04d  current  HC:%04d",
-			eventname[CPU.WhichEvent], CPU.NextEvent, CPU.Cycles);
-#endif
 }

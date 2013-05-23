@@ -60,9 +60,6 @@
     <ClCompile Include="snes9x\apu\SNES_SPC_misc.cpp">
       <Filter>Source Files\snes9x\apu</Filter>
     </ClCompile>
-    <ClCompile Include="snes9x\apu\SNES_SPC_state.cpp">
-      <Filter>Source Files\snes9x\apu</Filter>
-    </ClCompile>
     <ClCompile Include="snes9x\apu\SPC_DSP.cpp">
       <Filter>Source Files\snes9x\apu</Filter>
     </ClCompile>
@@ -84,9 +81,6 @@
       <Filter>Header Files\snes9x\apu</Filter>
     </ClInclude>
     <ClInclude Include="snes9x\apu\blargg_endian.h">
-      <Filter>Header Files\snes9x\apu</Filter>
-    </ClInclude>
-    <ClInclude Include="snes9x\apu\blargg_source.h">
       <Filter>Header Files\snes9x\apu</Filter>
     </ClInclude>
     <ClInclude Include="snes9x\apu\hermite_resampler.h">

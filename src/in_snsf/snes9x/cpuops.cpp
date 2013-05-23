@@ -179,21 +179,7 @@
 #include "memmap.h"
 #include "apu/apu.h"
 
-// for "Magic WDM" features
-#ifdef DEBUGGER	
-#include "snapshot.h"
-#include "display.h"
-#include "debug.h"
-#include "missing.h"
-#endif
-
-#ifdef SA1_OPCODES
-//#define AddCycles(n)	{ SA1.Cycles += (n); }
-static inline void AddCycles(int32_t n) { SA1.Cycles += n; }
-#else
-//#define AddCycles(n)	{ CPU.PrevCycles = CPU.Cycles; CPU.Cycles += (n); S9xCheckInterrupts(); while (CPU.Cycles >= CPU.NextEvent) S9xDoHEventProcessing(); }
 static inline void AddCycles(int32_t n) { CPU.PrevCycles = CPU.Cycles; CPU.Cycles += n; S9xCheckInterrupts(); while (CPU.Cycles >= CPU.NextEvent) S9xDoHEventProcessing(); }
-#endif
 
 #include "cpuaddr.h"
 #include "cpuops.h"
@@ -201,847 +187,794 @@ static inline void AddCycles(int32_t n) { CPU.PrevCycles = CPU.Cycles; CPU.Cycle
 
 /* ADC ********************************************************************* */
 
+template<typename T> static inline void ADC(T Work)
+{
+}
+
+template<> static inline void ADC<uint16_t>(uint16_t Work16)
+{
+	ADC16(Work16);
+}
+
+template<> static inline void ADC<uint8_t>(uint8_t Work8)
+{
+	ADC8(Work8);
+}
+
+template<typename F> static inline void Op69Wrapper(F f)
+{
+	ADC(f(READ));
+}
+
 static void Op69M1()
 {
-	ADC(Immediate8(READ));
+	Op69Wrapper(Immediate8);
 }
 
 static void Op69M0()
 {
-	ADC(Immediate16(READ));
+	Op69Wrapper(Immediate16);
 }
 
 static void Op69Slow()
 {
 	if (CheckMemory())
-		ADC(Immediate8Slow(READ));
+		Op69Wrapper(Immediate8Slow);
 	else
-		ADC(Immediate16Slow(READ));
+		Op69Wrapper(Immediate16Slow);
 }
 
-rOP8 (65M1,     Direct,                           WRAP_BANK, ADC)
-rOP16(65M0,     Direct,                           WRAP_BANK, ADC)
-rOPM (65Slow,   DirectSlow,                       WRAP_BANK, ADC)
+static void Op65M1() { rOP8(Direct, ADC8); }
+static void Op65M0() { rOP16(Direct, ADC16, WRAP_BANK); }
+static void Op65Slow() { rOPM(DirectSlow, ADC8, ADC16, WRAP_BANK); }
 
-rOP8 (75E1,     DirectIndexedXE1,                 WRAP_BANK, ADC)
-rOP8 (75E0M1,   DirectIndexedXE0,                 WRAP_BANK, ADC)
-rOP16(75E0M0,   DirectIndexedXE0,                 WRAP_BANK, ADC)
-rOPM (75Slow,   DirectIndexedXSlow,               WRAP_BANK, ADC)
+static void Op75E1() { rOP8(DirectIndexedXE1, ADC8); }
+static void Op75E0M1() { rOP8(DirectIndexedXE0, ADC8); }
+static void Op75E0M0() { rOP16(DirectIndexedXE0, ADC16, WRAP_BANK); }
+static void Op75Slow() { rOPM(DirectIndexedXSlow, ADC8, ADC16, WRAP_BANK); }
 
-rOP8 (72E1,     DirectIndirectE1,                 WRAP_NONE, ADC)
-rOP8 (72E0M1,   DirectIndirectE0,                 WRAP_NONE, ADC)
-rOP16(72E0M0,   DirectIndirectE0,                 WRAP_NONE, ADC)
-rOPM (72Slow,   DirectIndirectSlow,               WRAP_NONE, ADC)
+static void Op72E1() { rOP8(DirectIndirectE1, ADC8); }
+static void Op72E0M1() { rOP8(DirectIndirectE0, ADC8); }
+static void Op72E0M0() { rOP16(DirectIndirectE0, ADC16); }
+static void Op72Slow() { rOPM(DirectIndirectSlow, ADC8, ADC16); }
 
-rOP8 (61E1,     DirectIndexedIndirectE1,          WRAP_NONE, ADC)
-rOP8 (61E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, ADC)
-rOP16(61E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, ADC)
-rOPM (61Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, ADC)
+static void Op61E1() { rOP8(DirectIndexedIndirectE1, ADC8); }
+static void Op61E0M1() { rOP8(DirectIndexedIndirectE0, ADC8); }
+static void Op61E0M0() { rOP16(DirectIndexedIndirectE0, ADC16); }
+static void Op61Slow() { rOPM(DirectIndexedIndirectSlow, ADC8, ADC16); }
 
-rOP8 (71E1,     DirectIndirectIndexedE1,          WRAP_NONE, ADC)
-rOP8 (71E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, ADC)
-rOP16(71E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, ADC)
-rOP8 (71E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, ADC)
-rOP16(71E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, ADC)
-rOPM (71Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, ADC)
+static void Op71E1() { rOP8(DirectIndirectIndexedE1, ADC8); }
+static void Op71E0M1X1() { rOP8(DirectIndirectIndexedE0X1, ADC8); }
+static void Op71E0M0X1() { rOP16(DirectIndirectIndexedE0X1, ADC16); }
+static void Op71E0M1X0() { rOP8(DirectIndirectIndexedE0X0, ADC8); }
+static void Op71E0M0X0() { rOP16(DirectIndirectIndexedE0X0, ADC16); }
+static void Op71Slow() { rOPM(DirectIndirectIndexedSlow, ADC8, ADC16); }
 
-rOP8 (67M1,     DirectIndirectLong,               WRAP_NONE, ADC)
-rOP16(67M0,     DirectIndirectLong,               WRAP_NONE, ADC)
-rOPM (67Slow,   DirectIndirectLongSlow,           WRAP_NONE, ADC)
+static void Op67M1() { rOP8(DirectIndirectLong, ADC8); }
+static void Op67M0() { rOP16(DirectIndirectLong, ADC16); }
+static void Op67Slow() { rOPM(DirectIndirectLongSlow, ADC8, ADC16); }
 
-rOP8 (77M1,     DirectIndirectIndexedLong,        WRAP_NONE, ADC)
-rOP16(77M0,     DirectIndirectIndexedLong,        WRAP_NONE, ADC)
-rOPM (77Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, ADC)
+static void Op77M1() { rOP8(DirectIndirectIndexedLong, ADC8); }
+static void Op77M0() { rOP16(DirectIndirectIndexedLong, ADC16); }
+static void Op77Slow() { rOPM(DirectIndirectIndexedLongSlow, ADC8, ADC16); }
 
-rOP8 (6DM1,     Absolute,                         WRAP_NONE, ADC)
-rOP16(6DM0,     Absolute,                         WRAP_NONE, ADC)
-rOPM (6DSlow,   AbsoluteSlow,                     WRAP_NONE, ADC)
+static void Op6DM1() { rOP8(Absolute, ADC8); }
+static void Op6DM0() { rOP16(Absolute, ADC16); }
+static void Op6DSlow() { rOPM(AbsoluteSlow, ADC8, ADC16); }
 
-rOP8 (7DM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, ADC)
-rOP16(7DM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, ADC)
-rOP8 (7DM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, ADC)
-rOP16(7DM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, ADC)
-rOPM (7DSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, ADC)
+static void Op7DM1X1() { rOP8(AbsoluteIndexedXX1, ADC8); }
+static void Op7DM0X1() { rOP16(AbsoluteIndexedXX1, ADC16); }
+static void Op7DM1X0() { rOP8(AbsoluteIndexedXX0, ADC8); }
+static void Op7DM0X0() { rOP16(AbsoluteIndexedXX0, ADC16); }
+static void Op7DSlow() { rOPM(AbsoluteIndexedXSlow, ADC8, ADC16); }
 
-rOP8 (79M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, ADC)
-rOP16(79M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, ADC)
-rOP8 (79M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, ADC)
-rOP16(79M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, ADC)
-rOPM (79Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, ADC)
+static void Op79M1X1() { rOP8(AbsoluteIndexedYX1, ADC8); }
+static void Op79M0X1() { rOP16(AbsoluteIndexedYX1, ADC16); }
+static void Op79M1X0() { rOP8(AbsoluteIndexedYX0, ADC8); }
+static void Op79M0X0() { rOP16(AbsoluteIndexedYX0, ADC16); }
+static void Op79Slow() { rOPM(AbsoluteIndexedYSlow, ADC8, ADC16); }
 
-rOP8 (6FM1,     AbsoluteLong,                     WRAP_NONE, ADC)
-rOP16(6FM0,     AbsoluteLong,                     WRAP_NONE, ADC)
-rOPM (6FSlow,   AbsoluteLongSlow,                 WRAP_NONE, ADC)
+static void Op6FM1() { rOP8(AbsoluteLong, ADC8); }
+static void Op6FM0() { rOP16(AbsoluteLong, ADC16); }
+static void Op6FSlow() { rOPM(AbsoluteLongSlow, ADC8, ADC16); }
 
-rOP8 (7FM1,     AbsoluteLongIndexedX,             WRAP_NONE, ADC)
-rOP16(7FM0,     AbsoluteLongIndexedX,             WRAP_NONE, ADC)
-rOPM (7FSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, ADC)
+static void Op7FM1() { rOP8(AbsoluteLongIndexedX, ADC8); }
+static void Op7FM0() { rOP16(AbsoluteLongIndexedX, ADC16); }
+static void Op7FSlow() { rOPM(AbsoluteLongIndexedXSlow, ADC8, ADC16); }
 
-rOP8 (63M1,     StackRelative,                    WRAP_NONE, ADC)
-rOP16(63M0,     StackRelative,                    WRAP_NONE, ADC)
-rOPM (63Slow,   StackRelativeSlow,                WRAP_NONE, ADC)
+static void Op63M1() { rOP8(StackRelative, ADC8); }
+static void Op63M0() { rOP16(StackRelative, ADC16); }
+static void Op63Slow() { rOPM(StackRelativeSlow, ADC8, ADC16); }
 
-rOP8 (73M1,     StackRelativeIndirectIndexed,     WRAP_NONE, ADC)
-rOP16(73M0,     StackRelativeIndirectIndexed,     WRAP_NONE, ADC)
-rOPM (73Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, ADC)
+static void Op73M1() { rOP8(StackRelativeIndirectIndexed, ADC8); }
+static void Op73M0() { rOP16(StackRelativeIndirectIndexed, ADC16); }
+static void Op73Slow() { rOPM(StackRelativeIndirectIndexedSlow, ADC8, ADC16); }
 
 /* AND ********************************************************************* */
 
+template<typename T, typename F> static inline void Op29Wrapper(T &reg, F f)
+{
+	reg &= f(READ);
+	SetZN(reg);
+}
+
 static void Op29M1()
 {
-	Registers.AL &= Immediate8(READ);
-	SetZN(Registers.AL);
+	Op29Wrapper(Registers.A.B.l, Immediate8);
 }
 
 static void Op29M0()
 {
-	Registers.A.W &= Immediate16(READ);
-	SetZN(Registers.A.W);
+	Op29Wrapper(Registers.A.W, Immediate16);
 }
 
 static void Op29Slow()
 {
 	if (CheckMemory())
-	{
-		Registers.AL &= Immediate8Slow(READ);
-		SetZN(Registers.AL);
-	}
+		Op29Wrapper(Registers.A.B.l, Immediate8Slow);
 	else
-	{
-		Registers.A.W &= Immediate16Slow(READ);
-		SetZN(Registers.A.W);
-	}
+		Op29Wrapper(Registers.A.W, Immediate16Slow);
 }
 
-rOP8 (25M1,     Direct,                           WRAP_BANK, AND)
-rOP16(25M0,     Direct,                           WRAP_BANK, AND)
-rOPM (25Slow,   DirectSlow,                       WRAP_BANK, AND)
+static void Op25M1() { rOP8(Direct, AND8); }
+static void Op25M0() { rOP16(Direct, AND16, WRAP_BANK); }
+static void Op25Slow() { rOPM(DirectSlow, AND8, AND16, WRAP_BANK); }
 
-rOP8 (35E1,     DirectIndexedXE1,                 WRAP_BANK, AND)
-rOP8 (35E0M1,   DirectIndexedXE0,                 WRAP_BANK, AND)
-rOP16(35E0M0,   DirectIndexedXE0,                 WRAP_BANK, AND)
-rOPM (35Slow,   DirectIndexedXSlow,               WRAP_BANK, AND)
+static void Op35E1() { rOP8(DirectIndexedXE1, AND8); }
+static void Op35E0M1() { rOP8(DirectIndexedXE0, AND8); }
+static void Op35E0M0() { rOP16(DirectIndexedXE0, AND16, WRAP_BANK); }
+static void Op35Slow() { rOPM(DirectIndexedXSlow, AND8, AND16, WRAP_BANK); }
 
-rOP8 (32E1,     DirectIndirectE1,                 WRAP_NONE, AND)
-rOP8 (32E0M1,   DirectIndirectE0,                 WRAP_NONE, AND)
-rOP16(32E0M0,   DirectIndirectE0,                 WRAP_NONE, AND)
-rOPM (32Slow,   DirectIndirectSlow,               WRAP_NONE, AND)
+static void Op32E1() { rOP8(DirectIndirectE1, AND8); }
+static void Op32E0M1() { rOP8(DirectIndirectE0, AND8); }
+static void Op32E0M0() { rOP16(DirectIndirectE0, AND16); }
+static void Op32Slow() { rOPM(DirectIndirectSlow, AND8, AND16); }
 
-rOP8 (21E1,     DirectIndexedIndirectE1,          WRAP_NONE, AND)
-rOP8 (21E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, AND)
-rOP16(21E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, AND)
-rOPM (21Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, AND)
+static void Op21E1() { rOP8(DirectIndexedIndirectE1, AND8); }
+static void Op21E0M1() { rOP8(DirectIndexedIndirectE0, AND8); }
+static void Op21E0M0() { rOP16(DirectIndexedIndirectE0, AND16); }
+static void Op21Slow() { rOPM(DirectIndexedIndirectSlow, AND8, AND16); }
 
-rOP8 (31E1,     DirectIndirectIndexedE1,          WRAP_NONE, AND)
-rOP8 (31E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, AND)
-rOP16(31E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, AND)
-rOP8 (31E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, AND)
-rOP16(31E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, AND)
-rOPM (31Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, AND)
+static void Op31E1() { rOP8(DirectIndirectIndexedE1, AND8); }
+static void Op31E0M1X1() { rOP8(DirectIndirectIndexedE0X1, AND8); }
+static void Op31E0M0X1() { rOP16(DirectIndirectIndexedE0X1, AND16); }
+static void Op31E0M1X0() { rOP8(DirectIndirectIndexedE0X0, AND8); }
+static void Op31E0M0X0() { rOP16(DirectIndirectIndexedE0X0, AND16); }
+static void Op31Slow() { rOPM(DirectIndirectIndexedSlow, AND8, AND16); }
 
-rOP8 (27M1,     DirectIndirectLong,               WRAP_NONE, AND)
-rOP16(27M0,     DirectIndirectLong,               WRAP_NONE, AND)
-rOPM (27Slow,   DirectIndirectLongSlow,           WRAP_NONE, AND)
+static void Op27M1() { rOP8(DirectIndirectLong, AND8); }
+static void Op27M0() { rOP16(DirectIndirectLong, AND16); }
+static void Op27Slow() { rOPM(DirectIndirectLongSlow, AND8, AND16); }
 
-rOP8 (37M1,     DirectIndirectIndexedLong,        WRAP_NONE, AND)
-rOP16(37M0,     DirectIndirectIndexedLong,        WRAP_NONE, AND)
-rOPM (37Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, AND)
+static void Op37M1() { rOP8(DirectIndirectIndexedLong, AND8); }
+static void Op37M0() { rOP16(DirectIndirectIndexedLong, AND16); }
+static void Op37Slow() { rOPM(DirectIndirectIndexedLongSlow, AND8, AND16); }
 
-rOP8 (2DM1,     Absolute,                         WRAP_NONE, AND)
-rOP16(2DM0,     Absolute,                         WRAP_NONE, AND)
-rOPM (2DSlow,   AbsoluteSlow,                     WRAP_NONE, AND)
+static void Op2DM1() { rOP8(Absolute, AND8); }
+static void Op2DM0() { rOP16(Absolute, AND16); }
+static void Op2DSlow() { rOPM(AbsoluteSlow, AND8, AND16); }
 
-rOP8 (3DM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, AND)
-rOP16(3DM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, AND)
-rOP8 (3DM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, AND)
-rOP16(3DM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, AND)
-rOPM (3DSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, AND)
+static void Op3DM1X1() { rOP8(AbsoluteIndexedXX1, AND8); }
+static void Op3DM0X1() { rOP16(AbsoluteIndexedXX1, AND16); }
+static void Op3DM1X0() { rOP8(AbsoluteIndexedXX0, AND8); }
+static void Op3DM0X0() { rOP16(AbsoluteIndexedXX0, AND16); }
+static void Op3DSlow() { rOPM(AbsoluteIndexedXSlow, AND8, AND16); }
 
-rOP8 (39M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, AND)
-rOP16(39M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, AND)
-rOP8 (39M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, AND)
-rOP16(39M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, AND)
-rOPM (39Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, AND)
+static void Op39M1X1() { rOP8(AbsoluteIndexedYX1, AND8); }
+static void Op39M0X1() { rOP16(AbsoluteIndexedYX1, AND16); }
+static void Op39M1X0() { rOP8(AbsoluteIndexedYX0, AND8); }
+static void Op39M0X0() { rOP16(AbsoluteIndexedYX0, AND16); }
+static void Op39Slow() { rOPM(AbsoluteIndexedYSlow, AND8, AND16); }
 
-rOP8 (2FM1,     AbsoluteLong,                     WRAP_NONE, AND)
-rOP16(2FM0,     AbsoluteLong,                     WRAP_NONE, AND)
-rOPM (2FSlow,   AbsoluteLongSlow,                 WRAP_NONE, AND)
+static void Op2FM1() { rOP8(AbsoluteLong, AND8); }
+static void Op2FM0() { rOP16(AbsoluteLong, AND16); }
+static void Op2FSlow() { rOPM(AbsoluteLongSlow, AND8, AND16); }
 
-rOP8 (3FM1,     AbsoluteLongIndexedX,             WRAP_NONE, AND)
-rOP16(3FM0,     AbsoluteLongIndexedX,             WRAP_NONE, AND)
-rOPM (3FSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, AND)
+static void Op3FM1() { rOP8(AbsoluteLongIndexedX, AND8); }
+static void Op3FM0() { rOP16(AbsoluteLongIndexedX, AND16); }
+static void Op3FSlow() { rOPM(AbsoluteLongIndexedXSlow, AND8, AND16); }
 
-rOP8 (23M1,     StackRelative,                    WRAP_NONE, AND)
-rOP16(23M0,     StackRelative,                    WRAP_NONE, AND)
-rOPM (23Slow,   StackRelativeSlow,                WRAP_NONE, AND)
+static void Op23M1() { rOP8(StackRelative, AND8); }
+static void Op23M0() { rOP16(StackRelative, AND16); }
+static void Op23Slow() { rOPM(StackRelativeSlow, AND8, AND16); }
 
-rOP8 (33M1,     StackRelativeIndirectIndexed,     WRAP_NONE, AND)
-rOP16(33M0,     StackRelativeIndirectIndexed,     WRAP_NONE, AND)
-rOPM (33Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, AND)
+static void Op33M1() { rOP8(StackRelativeIndirectIndexed, AND8); }
+static void Op33M0() { rOP16(StackRelativeIndirectIndexed, AND16); }
+static void Op33Slow() { rOPM(StackRelativeIndirectIndexedSlow, AND8, AND16); }
 
 /* ASL ********************************************************************* */
 
-static void Op0AM1()
+static inline void Op0AM1()
 {
 	AddCycles(ONE_CYCLE);
-	ICPU._Carry = (Registers.AL & 0x80) != 0;
-	Registers.AL <<= 1;
-	SetZN(Registers.AL);
+	ICPU._Carry = !!(Registers.A.B.l & 0x80);
+	Registers.A.B.l <<= 1;
+	SetZN(Registers.A.B.l);
 }
 
-static void Op0AM0()
+static inline void Op0AM0()
 {
 	AddCycles(ONE_CYCLE);
-	ICPU._Carry = (Registers.AH & 0x80) != 0;
+	ICPU._Carry = !!(Registers.A.B.h & 0x80);
 	Registers.A.W <<= 1;
 	SetZN(Registers.A.W);
 }
 
 static void Op0ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		ICPU._Carry = (Registers.AL & 0x80) != 0;
-		Registers.AL <<= 1;
-		SetZN(Registers.AL);
-	}
+		Op0AM1();
 	else
-	{
-		ICPU._Carry = (Registers.AH & 0x80) != 0;
-		Registers.A.W <<= 1;
-		SetZN(Registers.A.W);
-	}
+		Op0AM0();
 }
 
-mOP8 (06M1,     Direct,                           WRAP_BANK, ASL)
-mOP16(06M0,     Direct,                           WRAP_BANK, ASL)
-mOPM (06Slow,   DirectSlow,                       WRAP_BANK, ASL)
+static void Op06M1() { mOP8(Direct, ASL8); }
+static void Op06M0() { mOP16(Direct, ASL16, WRAP_BANK); }
+static void Op06Slow() { mOPM(DirectSlow, ASL8, ASL16, WRAP_BANK); }
 
-mOP8 (16E1,     DirectIndexedXE1,                 WRAP_BANK, ASL)
-mOP8 (16E0M1,   DirectIndexedXE0,                 WRAP_BANK, ASL)
-mOP16(16E0M0,   DirectIndexedXE0,                 WRAP_BANK, ASL)
-mOPM (16Slow,   DirectIndexedXSlow,               WRAP_BANK, ASL)
+static void Op16E1() { mOP8(DirectIndexedXE1, ASL8); }
+static void Op16E0M1() { mOP8(DirectIndexedXE0, ASL8); }
+static void Op16E0M0() { mOP16(DirectIndexedXE0, ASL16, WRAP_BANK); }
+static void Op16Slow() { mOPM(DirectIndexedXSlow, ASL8, ASL16, WRAP_BANK); }
 
-mOP8 (0EM1,     Absolute,                         WRAP_NONE, ASL)
-mOP16(0EM0,     Absolute,                         WRAP_NONE, ASL)
-mOPM (0ESlow,   AbsoluteSlow,                     WRAP_NONE, ASL)
+static void Op0EM1() { mOP8(Absolute, ASL8); }
+static void Op0EM0() { mOP16(Absolute, ASL16); }
+static void Op0ESlow() { mOPM(AbsoluteSlow, ASL8, ASL16); }
 
-mOP8 (1EM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, ASL)
-mOP16(1EM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, ASL)
-mOP8 (1EM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, ASL)
-mOP16(1EM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, ASL)
-mOPM (1ESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, ASL)
+static void Op1EM1X1() { mOP8(AbsoluteIndexedXX1, ASL8); }
+static void Op1EM0X1() { mOP16(AbsoluteIndexedXX1, ASL16); }
+static void Op1EM1X0() { mOP8(AbsoluteIndexedXX0, ASL8); }
+static void Op1EM0X0() { mOP16(AbsoluteIndexedXX0, ASL16); }
+static void Op1ESlow() { mOPM(AbsoluteIndexedXSlow, ASL8, ASL16); }
 
 /* BIT ********************************************************************* */
 
+template<typename T, typename F> static inline void Op89Wrapper(const T &reg, F f)
+{
+	ICPU._Zero = !!(reg & f(READ));
+}
+
 static void Op89M1()
 {
-	ICPU._Zero = Registers.AL & Immediate8(READ);
+	Op89Wrapper(Registers.A.B.l, Immediate8);
 }
 
 static void Op89M0()
 {
-	ICPU._Zero = (Registers.A.W & Immediate16(READ)) != 0;
+	Op89Wrapper(Registers.A.W, Immediate16);
 }
 
 static void Op89Slow()
 {
 	if (CheckMemory())
-		ICPU._Zero = Registers.AL & Immediate8Slow(READ);
+		Op89Wrapper(Registers.A.B.l, Immediate8Slow);
 	else
-		ICPU._Zero = (Registers.A.W & Immediate16Slow(READ)) != 0;
+		Op89Wrapper(Registers.A.W, Immediate16Slow);
 }
 
-rOP8 (24M1,     Direct,                           WRAP_BANK, BIT)
-rOP16(24M0,     Direct,                           WRAP_BANK, BIT)
-rOPM (24Slow,   DirectSlow,                       WRAP_BANK, BIT)
+static void Op24M1() { rOP8(Direct, BIT8); }
+static void Op24M0() { rOP16(Direct, BIT16, WRAP_BANK); }
+static void Op24Slow() { rOPM(DirectSlow, BIT8, BIT16, WRAP_BANK); }
 
-rOP8 (34E1,     DirectIndexedXE1,                 WRAP_BANK, BIT)
-rOP8 (34E0M1,   DirectIndexedXE0,                 WRAP_BANK, BIT)
-rOP16(34E0M0,   DirectIndexedXE0,                 WRAP_BANK, BIT)
-rOPM (34Slow,   DirectIndexedXSlow,               WRAP_BANK, BIT)
+static void Op34E1() { rOP8(DirectIndexedXE1, BIT8); }
+static void Op34E0M1() { rOP8(DirectIndexedXE0, BIT8); }
+static void Op34E0M0() { rOP16(DirectIndexedXE0, BIT16, WRAP_BANK); }
+static void Op34Slow() { rOPM(DirectIndexedXSlow, BIT8, BIT16, WRAP_BANK); }
 
-rOP8 (2CM1,     Absolute,                         WRAP_NONE, BIT)
-rOP16(2CM0,     Absolute,                         WRAP_NONE, BIT)
-rOPM (2CSlow,   AbsoluteSlow,                     WRAP_NONE, BIT)
+static void Op2CM1() { rOP8(Absolute, BIT8); }
+static void Op2CM0() { rOP16(Absolute, BIT16); }
+static void Op2CSlow() { rOPM(AbsoluteSlow, BIT8, BIT16); }
 
-rOP8 (3CM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, BIT)
-rOP16(3CM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, BIT)
-rOP8 (3CM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, BIT)
-rOP16(3CM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, BIT)
-rOPM (3CSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, BIT)
+static void Op3CM1X1() { rOP8(AbsoluteIndexedXX1, BIT8); }
+static void Op3CM0X1() { rOP16(AbsoluteIndexedXX1, BIT16); }
+static void Op3CM1X0() { rOP8(AbsoluteIndexedXX0, BIT8); }
+static void Op3CM0X0() { rOP16(AbsoluteIndexedXX0, BIT16); }
+static void Op3CSlow() { rOPM(AbsoluteIndexedXSlow, BIT8, BIT16); }
 
 /* CMP ********************************************************************* */
 
+template<typename Tint, typename Treg, typename F> static inline void CxPxWrapper(const Treg &reg, F f)
+{
+	Tint intVal = static_cast<Tint>(reg) - static_cast<Tint>(f(READ));
+	ICPU._Carry = intVal >= 0;
+	SetZN(static_cast<Treg>(intVal));
+}
+
 static void OpC9M1()
 {
-	int16_t	Int16 = (int16_t) Registers.AL - (int16_t) Immediate8(READ);
-	ICPU._Carry = Int16 >= 0;
-	SetZN((uint8_t) Int16);
+	CxPxWrapper<int16_t>(Registers.A.B.l, Immediate8);
 }
 
 static void OpC9M0()
 {
-	int32_t	Int32 = (int32_t) Registers.A.W - (int32_t) Immediate16(READ);
-	ICPU._Carry = Int32 >= 0;
-	SetZN((uint16_t) Int32);
+	CxPxWrapper<int32_t>(Registers.A.W, Immediate16);
 }
 
 static void OpC9Slow()
 {
 	if (CheckMemory())
-	{
-		int16_t	Int16 = (int16_t) Registers.AL - (int16_t) Immediate8Slow(READ);
-		ICPU._Carry = Int16 >= 0;
-		SetZN((uint8_t) Int16);
-	}
+		CxPxWrapper<int16_t>(Registers.A.B.l, Immediate8Slow);
 	else
-	{
-		int32_t	Int32 = (int32_t) Registers.A.W - (int32_t) Immediate16Slow(READ);
-		ICPU._Carry = Int32 >= 0;
-		SetZN((uint16_t) Int32);
-	}
+		CxPxWrapper<int32_t>(Registers.A.W, Immediate16Slow);
 }
 
-rOP8 (C5M1,     Direct,                           WRAP_BANK, CMP)
-rOP16(C5M0,     Direct,                           WRAP_BANK, CMP)
-rOPM (C5Slow,   DirectSlow,                       WRAP_BANK, CMP)
+static void OpC5M1() { rOP8(Direct, CMP8); }
+static void OpC5M0() { rOP16(Direct, CMP16, WRAP_BANK); }
+static void OpC5Slow() { rOPM(DirectSlow, CMP8, CMP16, WRAP_BANK); }
 
-rOP8 (D5E1,     DirectIndexedXE1,                 WRAP_BANK, CMP)
-rOP8 (D5E0M1,   DirectIndexedXE0,                 WRAP_BANK, CMP)
-rOP16(D5E0M0,   DirectIndexedXE0,                 WRAP_BANK, CMP)
-rOPM (D5Slow,   DirectIndexedXSlow,               WRAP_BANK, CMP)
+static void OpD5E1() { rOP8(DirectIndexedXE1, CMP8); }
+static void OpD5E0M1() { rOP8(DirectIndexedXE0, CMP8); }
+static void OpD5E0M0() { rOP16(DirectIndexedXE0, CMP16, WRAP_BANK); }
+static void OpD5Slow() { rOPM(DirectIndexedXSlow, CMP8, CMP16, WRAP_BANK); }
 
-rOP8 (D2E1,     DirectIndirectE1,                 WRAP_NONE, CMP)
-rOP8 (D2E0M1,   DirectIndirectE0,                 WRAP_NONE, CMP)
-rOP16(D2E0M0,   DirectIndirectE0,                 WRAP_NONE, CMP)
-rOPM (D2Slow,   DirectIndirectSlow,               WRAP_NONE, CMP)
+static void OpD2E1() { rOP8(DirectIndirectE1, CMP8); }
+static void OpD2E0M1() { rOP8(DirectIndirectE0, CMP8); }
+static void OpD2E0M0() { rOP16(DirectIndirectE0, CMP16); }
+static void OpD2Slow() { rOPM(DirectIndirectSlow, CMP8, CMP16); }
 
-rOP8 (C1E1,     DirectIndexedIndirectE1,          WRAP_NONE, CMP)
-rOP8 (C1E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, CMP)
-rOP16(C1E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, CMP)
-rOPM (C1Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, CMP)
+static void OpC1E1() { rOP8(DirectIndexedIndirectE1, CMP8); }
+static void OpC1E0M1() { rOP8(DirectIndexedIndirectE0, CMP8); }
+static void OpC1E0M0() { rOP16(DirectIndexedIndirectE0, CMP16); }
+static void OpC1Slow() { rOPM(DirectIndexedIndirectSlow, CMP8, CMP16); }
 
-rOP8 (D1E1,     DirectIndirectIndexedE1,          WRAP_NONE, CMP)
-rOP8 (D1E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, CMP)
-rOP16(D1E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, CMP)
-rOP8 (D1E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, CMP)
-rOP16(D1E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, CMP)
-rOPM (D1Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, CMP)
+static void OpD1E1() { rOP8(DirectIndirectIndexedE1, CMP8); }
+static void OpD1E0M1X1() { rOP8(DirectIndirectIndexedE0X1, CMP8); }
+static void OpD1E0M0X1() { rOP16(DirectIndirectIndexedE0X1, CMP16); }
+static void OpD1E0M1X0() { rOP8(DirectIndirectIndexedE0X0, CMP8); }
+static void OpD1E0M0X0() { rOP16(DirectIndirectIndexedE0X0, CMP16); }
+static void OpD1Slow() { rOPM(DirectIndirectIndexedSlow, CMP8, CMP16); }
 
-rOP8 (C7M1,     DirectIndirectLong,               WRAP_NONE, CMP)
-rOP16(C7M0,     DirectIndirectLong,               WRAP_NONE, CMP)
-rOPM (C7Slow,   DirectIndirectLongSlow,           WRAP_NONE, CMP)
+static void OpC7M1() { rOP8(DirectIndirectLong, CMP8); }
+static void OpC7M0() { rOP16(DirectIndirectLong, CMP16); }
+static void OpC7Slow() { rOPM(DirectIndirectLongSlow, CMP8, CMP16); }
 
-rOP8 (D7M1,     DirectIndirectIndexedLong,        WRAP_NONE, CMP)
-rOP16(D7M0,     DirectIndirectIndexedLong,        WRAP_NONE, CMP)
-rOPM (D7Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, CMP)
+static void OpD7M1() { rOP8(DirectIndirectIndexedLong, CMP8); }
+static void OpD7M0() { rOP16(DirectIndirectIndexedLong, CMP16); }
+static void OpD7Slow() { rOPM(DirectIndirectIndexedLongSlow, CMP8, CMP16); }
 
-rOP8 (CDM1,     Absolute,                         WRAP_NONE, CMP)
-rOP16(CDM0,     Absolute,                         WRAP_NONE, CMP)
-rOPM (CDSlow,   AbsoluteSlow,                     WRAP_NONE, CMP)
+static void OpCDM1() { rOP8(Absolute, CMP8); }
+static void OpCDM0() { rOP16(Absolute, CMP16); }
+static void OpCDSlow() { rOPM(AbsoluteSlow, CMP8, CMP16); }
 
-rOP8 (DDM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, CMP)
-rOP16(DDM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, CMP)
-rOP8 (DDM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, CMP)
-rOP16(DDM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, CMP)
-rOPM (DDSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, CMP)
+static void OpDDM1X1() { rOP8(AbsoluteIndexedXX1, CMP8); }
+static void OpDDM0X1() { rOP16(AbsoluteIndexedXX1, CMP16); }
+static void OpDDM1X0() { rOP8(AbsoluteIndexedXX0, CMP8); }
+static void OpDDM0X0() { rOP16(AbsoluteIndexedXX0, CMP16); }
+static void OpDDSlow() { rOPM(AbsoluteIndexedXSlow, CMP8, CMP16); }
 
-rOP8 (D9M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, CMP)
-rOP16(D9M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, CMP)
-rOP8 (D9M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, CMP)
-rOP16(D9M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, CMP)
-rOPM (D9Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, CMP)
+static void OpD9M1X1() { rOP8(AbsoluteIndexedYX1, CMP8); }
+static void OpD9M0X1() { rOP16(AbsoluteIndexedYX1, CMP16); }
+static void OpD9M1X0() { rOP8(AbsoluteIndexedYX0, CMP8); }
+static void OpD9M0X0() { rOP16(AbsoluteIndexedYX0, CMP16); }
+static void OpD9Slow() { rOPM(AbsoluteIndexedYSlow, CMP8, CMP16); }
 
-rOP8 (CFM1,     AbsoluteLong,                     WRAP_NONE, CMP)
-rOP16(CFM0,     AbsoluteLong,                     WRAP_NONE, CMP)
-rOPM (CFSlow,   AbsoluteLongSlow,                 WRAP_NONE, CMP)
+static void OpCFM1() { rOP8(AbsoluteLong, CMP8); }
+static void OpCFM0() { rOP16(AbsoluteLong, CMP16); }
+static void OpCFSlow() { rOPM(AbsoluteLongSlow, CMP8, CMP16); }
 
-rOP8 (DFM1,     AbsoluteLongIndexedX,             WRAP_NONE, CMP)
-rOP16(DFM0,     AbsoluteLongIndexedX,             WRAP_NONE, CMP)
-rOPM (DFSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, CMP)
+static void OpDFM1() { rOP8(AbsoluteLongIndexedX, CMP8); }
+static void OpDFM0() { rOP16(AbsoluteLongIndexedX, CMP16); }
+static void OpDFSlow() { rOPM(AbsoluteLongIndexedXSlow, CMP8, CMP16); }
 
-rOP8 (C3M1,     StackRelative,                    WRAP_NONE, CMP)
-rOP16(C3M0,     StackRelative,                    WRAP_NONE, CMP)
-rOPM (C3Slow,   StackRelativeSlow,                WRAP_NONE, CMP)
+static void OpC3M1() { rOP8(StackRelative, CMP8); }
+static void OpC3M0() { rOP16(StackRelative, CMP16); }
+static void OpC3Slow() { rOPM(StackRelativeSlow, CMP8, CMP16); }
 
-rOP8 (D3M1,     StackRelativeIndirectIndexed,     WRAP_NONE, CMP)
-rOP16(D3M0,     StackRelativeIndirectIndexed,     WRAP_NONE, CMP)
-rOPM (D3Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, CMP)
+static void OpD3M1() { rOP8(StackRelativeIndirectIndexed, CMP8); }
+static void OpD3M0() { rOP16(StackRelativeIndirectIndexed, CMP16); }
+static void OpD3Slow() { rOPM(StackRelativeIndirectIndexedSlow, CMP8, CMP16); }
 
 /* CPX ********************************************************************* */
 
 static void OpE0X1()
 {
-	int16_t	Int16 = (int16_t) Registers.XL - (int16_t) Immediate8(READ);
-	ICPU._Carry = Int16 >= 0;
-	SetZN((uint8_t) Int16);
+	CxPxWrapper<int16_t>(Registers.X.B.l, Immediate8);
 }
 
 static void OpE0X0()
 {
-	int32_t	Int32 = (int32_t) Registers.X.W - (int32_t) Immediate16(READ);
-	ICPU._Carry = Int32 >= 0;
-	SetZN((uint16_t) Int32);
+	CxPxWrapper<int32_t>(Registers.X.W, Immediate16);
 }
 
 static void OpE0Slow()
 {
 	if (CheckIndex())
-	{
-		int16_t	Int16 = (int16_t) Registers.XL - (int16_t) Immediate8Slow(READ);
-		ICPU._Carry = Int16 >= 0;
-		SetZN((uint8_t) Int16);
-	}
+		CxPxWrapper<int16_t>(Registers.X.B.l, Immediate8Slow);
 	else
-	{
-		int32_t	Int32 = (int32_t) Registers.X.W - (int32_t) Immediate16Slow(READ);
-		ICPU._Carry = Int32 >= 0;
-		SetZN((uint16_t) Int32);
-	}
+		CxPxWrapper<int32_t>(Registers.X.W, Immediate16Slow);
 }
 
-rOP8 (E4X1,     Direct,                           WRAP_BANK, CPX)
-rOP16(E4X0,     Direct,                           WRAP_BANK, CPX)
-rOPX (E4Slow,   DirectSlow,                       WRAP_BANK, CPX)
+static void OpE4X1() { rOP8(Direct, CPX8); }
+static void OpE4X0() { rOP16(Direct, CPX16, WRAP_BANK); }
+static void OpE4Slow() { rOPX(DirectSlow, CPX8, CPX16, WRAP_BANK); }
 
-rOP8 (ECX1,     Absolute,                         WRAP_NONE, CPX)
-rOP16(ECX0,     Absolute,                         WRAP_NONE, CPX)
-rOPX (ECSlow,   AbsoluteSlow,                     WRAP_NONE, CPX)
+static void OpECX1() { rOP8(Absolute, CPX8); }
+static void OpECX0() { rOP16(Absolute, CPX16); }
+static void OpECSlow() { rOPX(AbsoluteSlow, CPX8, CPX16); }
 
 /* CPY ********************************************************************* */
 
 static void OpC0X1()
 {
-	int16_t	Int16 = (int16_t) Registers.YL - (int16_t) Immediate8(READ);
-	ICPU._Carry = Int16 >= 0;
-	SetZN((uint8_t) Int16);
+	CxPxWrapper<int16_t>(Registers.Y.B.l, Immediate8);
 }
 
 static void OpC0X0()
 {
-	int32_t	Int32 = (int32_t) Registers.Y.W - (int32_t) Immediate16(READ);
-	ICPU._Carry = Int32 >= 0;
-	SetZN((uint16_t) Int32);
+	CxPxWrapper<int32_t>(Registers.Y.W, Immediate16);
 }
 
 static void OpC0Slow()
 {
 	if (CheckIndex())
-	{
-		int16_t	Int16 = (int16_t) Registers.YL - (int16_t) Immediate8Slow(READ);
-		ICPU._Carry = Int16 >= 0;
-		SetZN((uint8_t) Int16);
-	}
+		CxPxWrapper<int16_t>(Registers.Y.B.l, Immediate8Slow);
 	else
-	{
-		int32_t	Int32 = (int32_t) Registers.Y.W - (int32_t) Immediate16Slow(READ);
-		ICPU._Carry = Int32 >= 0;
-		SetZN((uint16_t) Int32);
-	}
+		CxPxWrapper<int32_t>(Registers.Y.W, Immediate16Slow);
 }
 
-rOP8 (C4X1,     Direct,                           WRAP_BANK, CPY)
-rOP16(C4X0,     Direct,                           WRAP_BANK, CPY)
-rOPX (C4Slow,   DirectSlow,                       WRAP_BANK, CPY)
+static void OpC4X1() { rOP8(Direct, CPY8); }
+static void OpC4X0() { rOP16(Direct, CPY16, WRAP_BANK); }
+static void OpC4Slow() { rOPX(DirectSlow, CPY8, CPY16, WRAP_BANK); }
 
-rOP8 (CCX1,     Absolute,                         WRAP_NONE, CPY)
-rOP16(CCX0,     Absolute,                         WRAP_NONE, CPY)
-rOPX (CCSlow,   AbsoluteSlow,                     WRAP_NONE, CPY)
+static void OpCCX1() { rOP8(Absolute, CPY8); }
+static void OpCCX0() { rOP16(Absolute, CPY16); }
+static void OpCCSlow() { rOPX(AbsoluteSlow, CPY8, CPY16); }
 
 /* DEC ********************************************************************* */
 
-static void Op3AM1()
+static inline void Op3AM1()
 {
 	AddCycles(ONE_CYCLE);
-	Registers.AL--;
-	SetZN(Registers.AL);
+	--Registers.A.B.l;
+	SetZN(Registers.A.B.l);
 }
 
-static void Op3AM0()
+static inline void Op3AM0()
 {
 	AddCycles(ONE_CYCLE);
-	Registers.A.W--;
+	--Registers.A.W;
 	SetZN(Registers.A.W);
 }
 
 static void Op3ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		Registers.AL--;
-		SetZN(Registers.AL);
-	}
+		Op3AM1();
 	else
-	{
-		Registers.A.W--;
-		SetZN(Registers.A.W);
-	}
+		Op3AM0();
 }
 
-mOP8 (C6M1,     Direct,                           WRAP_BANK, DEC)
-mOP16(C6M0,     Direct,                           WRAP_BANK, DEC)
-mOPM (C6Slow,   DirectSlow,                       WRAP_BANK, DEC)
+static void OpC6M1() { mOP8(Direct, DEC8); }
+static void OpC6M0() { mOP16(Direct, DEC16, WRAP_BANK); }
+static void OpC6Slow() { mOPM(DirectSlow, DEC8, DEC16, WRAP_BANK); }
 
-mOP8 (D6E1,     DirectIndexedXE1,                 WRAP_BANK, DEC)
-mOP8 (D6E0M1,   DirectIndexedXE0,                 WRAP_BANK, DEC)
-mOP16(D6E0M0,   DirectIndexedXE0,                 WRAP_BANK, DEC)
-mOPM (D6Slow,   DirectIndexedXSlow,               WRAP_BANK, DEC)
+static void OpD6E1() { mOP8(DirectIndexedXE1, DEC8); }
+static void OpD6E0M1() { mOP8(DirectIndexedXE0, DEC8); }
+static void OpD6E0M0() { mOP16(DirectIndexedXE0, DEC16, WRAP_BANK); }
+static void OpD6Slow() { mOPM(DirectIndexedXSlow, DEC8, DEC16, WRAP_BANK); }
 
-mOP8 (CEM1,     Absolute,                         WRAP_NONE, DEC)
-mOP16(CEM0,     Absolute,                         WRAP_NONE, DEC)
-mOPM (CESlow,   AbsoluteSlow,                     WRAP_NONE, DEC)
+static void OpCEM1() { mOP8(Absolute, DEC8); }
+static void OpCEM0() { mOP16(Absolute, DEC16); }
+static void OpCESlow() { mOPM(AbsoluteSlow, DEC8, DEC16); }
 
-mOP8 (DEM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, DEC)
-mOP16(DEM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, DEC)
-mOP8 (DEM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, DEC)
-mOP16(DEM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, DEC)
-mOPM (DESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, DEC)
+static void OpDEM1X1() { mOP8(AbsoluteIndexedXX1, DEC8); }
+static void OpDEM0X1() { mOP16(AbsoluteIndexedXX1, DEC16); }
+static void OpDEM1X0() { mOP8(AbsoluteIndexedXX0, DEC8); }
+static void OpDEM0X0() { mOP16(AbsoluteIndexedXX0, DEC16); }
+static void OpDESlow() { mOPM(AbsoluteIndexedXSlow, DEC8, DEC16); }
 
 /* EOR ********************************************************************* */
 
+template<typename T, typename F> static inline void Op49Wrapper(T &reg, F f)
+{
+	reg ^= f(READ);
+	SetZN(reg);
+}
+
 static void Op49M1()
 {
-	Registers.AL ^= Immediate8(READ);
-	SetZN(Registers.AL);
+	Op49Wrapper(Registers.A.B.l, Immediate8);
 }
 
 static void Op49M0()
 {
-	Registers.A.W ^= Immediate16(READ);
-	SetZN(Registers.A.W);
+	Op49Wrapper(Registers.A.W, Immediate16);
 }
 
 static void Op49Slow()
 {
 	if (CheckMemory())
-	{
-		Registers.AL ^= Immediate8Slow(READ);
-		SetZN(Registers.AL);
-	}
+		Op49Wrapper(Registers.A.B.l, Immediate8Slow);
 	else
-	{
-		Registers.A.W ^= Immediate16Slow(READ);
-		SetZN(Registers.A.W);
-	}
+		Op49Wrapper(Registers.A.W, Immediate16Slow);
 }
 
-rOP8 (45M1,     Direct,                           WRAP_BANK, EOR)
-rOP16(45M0,     Direct,                           WRAP_BANK, EOR)
-rOPM (45Slow,   DirectSlow,                       WRAP_BANK, EOR)
+static void Op45M1() { rOP8(Direct, EOR8); }
+static void Op45M0() { rOP16(Direct, EOR16, WRAP_BANK); }
+static void Op45Slow() { rOPM(DirectSlow, EOR8, EOR16, WRAP_BANK); }
 
-rOP8 (55E1,     DirectIndexedXE1,                 WRAP_BANK, EOR)
-rOP8 (55E0M1,   DirectIndexedXE0,                 WRAP_BANK, EOR)
-rOP16(55E0M0,   DirectIndexedXE0,                 WRAP_BANK, EOR)
-rOPM (55Slow,   DirectIndexedXSlow,               WRAP_BANK, EOR)
+static void Op55E1() { rOP8(DirectIndexedXE1, EOR8); }
+static void Op55E0M1() { rOP8(DirectIndexedXE0, EOR8); }
+static void Op55E0M0() { rOP16(DirectIndexedXE0, EOR16, WRAP_BANK); }
+static void Op55Slow() { rOPM(DirectIndexedXSlow, EOR8, EOR16, WRAP_BANK); }
 
-rOP8 (52E1,     DirectIndirectE1,                 WRAP_NONE, EOR)
-rOP8 (52E0M1,   DirectIndirectE0,                 WRAP_NONE, EOR)
-rOP16(52E0M0,   DirectIndirectE0,                 WRAP_NONE, EOR)
-rOPM (52Slow,   DirectIndirectSlow,               WRAP_NONE, EOR)
+static void Op52E1() { rOP8(DirectIndirectE1, EOR8); }
+static void Op52E0M1() { rOP8(DirectIndirectE0, EOR8); }
+static void Op52E0M0() { rOP16(DirectIndirectE0, EOR16); }
+static void Op52Slow() { rOPM(DirectIndirectSlow, EOR8, EOR16); }
 
-rOP8 (41E1,     DirectIndexedIndirectE1,          WRAP_NONE, EOR)
-rOP8 (41E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, EOR)
-rOP16(41E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, EOR)
-rOPM (41Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, EOR)
+static void Op41E1() { rOP8(DirectIndexedIndirectE1, EOR8); }
+static void Op41E0M1() { rOP8(DirectIndexedIndirectE0, EOR8); }
+static void Op41E0M0() { rOP16(DirectIndexedIndirectE0, EOR16); }
+static void Op41Slow() { rOPM(DirectIndexedIndirectSlow, EOR8, EOR16); }
 
-rOP8 (51E1,     DirectIndirectIndexedE1,          WRAP_NONE, EOR)
-rOP8 (51E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, EOR)
-rOP16(51E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, EOR)
-rOP8 (51E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, EOR)
-rOP16(51E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, EOR)
-rOPM (51Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, EOR)
+static void Op51E1() { rOP8(DirectIndirectIndexedE1, EOR8); }
+static void Op51E0M1X1() { rOP8(DirectIndirectIndexedE0X1, EOR8); }
+static void Op51E0M0X1() { rOP16(DirectIndirectIndexedE0X1, EOR16); }
+static void Op51E0M1X0() { rOP8(DirectIndirectIndexedE0X0, EOR8); }
+static void Op51E0M0X0() { rOP16(DirectIndirectIndexedE0X0, EOR16); }
+static void Op51Slow() { rOPM(DirectIndirectIndexedSlow, EOR8, EOR16); }
 
-rOP8 (47M1,     DirectIndirectLong,               WRAP_NONE, EOR)
-rOP16(47M0,     DirectIndirectLong,               WRAP_NONE, EOR)
-rOPM (47Slow,   DirectIndirectLongSlow,           WRAP_NONE, EOR)
+static void Op47M1() { rOP8(DirectIndirectLong, EOR8); }
+static void Op47M0() { rOP16(DirectIndirectLong, EOR16); }
+static void Op47Slow() { rOPM(DirectIndirectLongSlow, EOR8, EOR16); }
 
-rOP8 (57M1,     DirectIndirectIndexedLong,        WRAP_NONE, EOR)
-rOP16(57M0,     DirectIndirectIndexedLong,        WRAP_NONE, EOR)
-rOPM (57Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, EOR)
+static void Op57M1() { rOP8(DirectIndirectIndexedLong, EOR8); }
+static void Op57M0() { rOP16(DirectIndirectIndexedLong, EOR16); }
+static void Op57Slow() { rOPM(DirectIndirectIndexedLongSlow, EOR8, EOR16); }
 
-rOP8 (4DM1,     Absolute,                         WRAP_NONE, EOR)
-rOP16(4DM0,     Absolute,                         WRAP_NONE, EOR)
-rOPM (4DSlow,   AbsoluteSlow,                     WRAP_NONE, EOR)
+static void Op4DM1() { rOP8(Absolute, EOR8); }
+static void Op4DM0() { rOP16(Absolute, EOR16); }
+static void Op4DSlow() { rOPM(AbsoluteSlow, EOR8, EOR16); }
 
-rOP8 (5DM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, EOR)
-rOP16(5DM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, EOR)
-rOP8 (5DM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, EOR)
-rOP16(5DM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, EOR)
-rOPM (5DSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, EOR)
+static void Op5DM1X1() { rOP8(AbsoluteIndexedXX1, EOR8); }
+static void Op5DM0X1() { rOP16(AbsoluteIndexedXX1, EOR16); }
+static void Op5DM1X0() { rOP8(AbsoluteIndexedXX0, EOR8); }
+static void Op5DM0X0() { rOP16(AbsoluteIndexedXX0, EOR16); }
+static void Op5DSlow() { rOPM(AbsoluteIndexedXSlow, EOR8, EOR16); }
 
-rOP8 (59M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, EOR)
-rOP16(59M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, EOR)
-rOP8 (59M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, EOR)
-rOP16(59M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, EOR)
-rOPM (59Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, EOR)
+static void Op59M1X1() { rOP8(AbsoluteIndexedYX1, EOR8); }
+static void Op59M0X1() { rOP16(AbsoluteIndexedYX1, EOR16); }
+static void Op59M1X0() { rOP8(AbsoluteIndexedYX0, EOR8); }
+static void Op59M0X0() { rOP16(AbsoluteIndexedYX0, EOR16); }
+static void Op59Slow() { rOPM(AbsoluteIndexedYSlow, EOR8, EOR16); }
 
-rOP8 (4FM1,     AbsoluteLong,                     WRAP_NONE, EOR)
-rOP16(4FM0,     AbsoluteLong,                     WRAP_NONE, EOR)
-rOPM (4FSlow,   AbsoluteLongSlow,                 WRAP_NONE, EOR)
+static void Op4FM1() { rOP8(AbsoluteLong, EOR8); }
+static void Op4FM0() { rOP16(AbsoluteLong, EOR16); }
+static void Op4FSlow() { rOPM(AbsoluteLongSlow, EOR8, EOR16); }
 
-rOP8 (5FM1,     AbsoluteLongIndexedX,             WRAP_NONE, EOR)
-rOP16(5FM0,     AbsoluteLongIndexedX,             WRAP_NONE, EOR)
-rOPM (5FSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, EOR)
+static void Op5FM1() { rOP8(AbsoluteLongIndexedX, EOR8); }
+static void Op5FM0() { rOP16(AbsoluteLongIndexedX, EOR16); }
+static void Op5FSlow() { rOPM(AbsoluteLongIndexedXSlow, EOR8, EOR16); }
 
-rOP8 (43M1,     StackRelative,                    WRAP_NONE, EOR)
-rOP16(43M0,     StackRelative,                    WRAP_NONE, EOR)
-rOPM (43Slow,   StackRelativeSlow,                WRAP_NONE, EOR)
+static void Op43M1() { rOP8(StackRelative, EOR8); }
+static void Op43M0() { rOP16(StackRelative, EOR16); }
+static void Op43Slow() { rOPM(StackRelativeSlow, EOR8, EOR16); }
 
-rOP8 (53M1,     StackRelativeIndirectIndexed,     WRAP_NONE, EOR)
-rOP16(53M0,     StackRelativeIndirectIndexed,     WRAP_NONE, EOR)
-rOPM (53Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, EOR)
+static void Op53M1() { rOP8(StackRelativeIndirectIndexed, EOR8); }
+static void Op53M0() { rOP16(StackRelativeIndirectIndexed, EOR16); }
+static void Op53Slow() { rOPM(StackRelativeIndirectIndexedSlow, EOR8, EOR16); }
 
 /* INC ********************************************************************* */
 
-static void Op1AM1()
+static inline void Op1AM1()
 {
 	AddCycles(ONE_CYCLE);
-	Registers.AL++;
-	SetZN(Registers.AL);
+	++Registers.A.B.l;
+	SetZN(Registers.A.B.l);
 }
 
-static void Op1AM0()
+static inline void Op1AM0()
 {
 	AddCycles(ONE_CYCLE);
-	Registers.A.W++;
+	++Registers.A.W;
 	SetZN(Registers.A.W);
 }
 
 static void Op1ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		Registers.AL++;
-		SetZN(Registers.AL);
-	}
+		Op1AM1();
 	else
-	{
-		Registers.A.W++;
-		SetZN(Registers.A.W);
-	}
+		Op1AM0();
 }
 
-mOP8 (E6M1,     Direct,                           WRAP_BANK, INC)
-mOP16(E6M0,     Direct,                           WRAP_BANK, INC)
-mOPM (E6Slow,   DirectSlow,                       WRAP_BANK, INC)
+static void OpE6M1() { mOP8(Direct, INC8); }
+static void OpE6M0() { mOP16(Direct, INC16, WRAP_BANK); }
+static void OpE6Slow() { mOPM(DirectSlow, INC8, INC16, WRAP_BANK); }
 
-mOP8 (F6E1,     DirectIndexedXE1,                 WRAP_BANK, INC)
-mOP8 (F6E0M1,   DirectIndexedXE0,                 WRAP_BANK, INC)
-mOP16(F6E0M0,   DirectIndexedXE0,                 WRAP_BANK, INC)
-mOPM (F6Slow,   DirectIndexedXSlow,               WRAP_BANK, INC)
+static void OpF6E1() { mOP8(DirectIndexedXE1, INC8); }
+static void OpF6E0M1() { mOP8(DirectIndexedXE0, INC8); }
+static void OpF6E0M0() { mOP16(DirectIndexedXE0, INC16, WRAP_BANK); }
+static void OpF6Slow() { mOPM(DirectIndexedXSlow, INC8, INC16, WRAP_BANK); }
 
-mOP8 (EEM1,     Absolute,                         WRAP_NONE, INC)
-mOP16(EEM0,     Absolute,                         WRAP_NONE, INC)
-mOPM (EESlow,   AbsoluteSlow,                     WRAP_NONE, INC)
+static void OpEEM1() { mOP8(Absolute, INC8); }
+static void OpEEM0() { mOP16(Absolute, INC16); }
+static void OpEESlow() { mOPM(AbsoluteSlow, INC8, INC16); }
 
-mOP8 (FEM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, INC)
-mOP16(FEM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, INC)
-mOP8 (FEM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, INC)
-mOP16(FEM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, INC)
-mOPM (FESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, INC)
+static void OpFEM1X1() { mOP8(AbsoluteIndexedXX1, INC8); }
+static void OpFEM0X1() { mOP16(AbsoluteIndexedXX1, INC16); }
+static void OpFEM1X0() { mOP8(AbsoluteIndexedXX0, INC8); }
+static void OpFEM0X0() { mOP16(AbsoluteIndexedXX0, INC16); }
+static void OpFESlow() { mOPM(AbsoluteIndexedXSlow, INC8, INC16); }
 
 /* LDA ********************************************************************* */
 
+template<typename T, typename F> static inline void LDWrapper(T &reg, F f)
+{
+	reg = f(READ);
+	SetZN(reg);
+}
+
 static void OpA9M1()
 {
-	Registers.AL = Immediate8(READ);
-	SetZN(Registers.AL);
+	LDWrapper(Registers.A.B.l, Immediate8);
 }
 
 static void OpA9M0()
 {
-	Registers.A.W = Immediate16(READ);
-	SetZN(Registers.A.W);
+	LDWrapper(Registers.A.W, Immediate16);
 }
 
 static void OpA9Slow()
 {
 	if (CheckMemory())
-	{
-		Registers.AL = Immediate8Slow(READ);
-		SetZN(Registers.AL);
-	}
+		LDWrapper(Registers.A.B.l, Immediate8Slow);
 	else
-	{
-		Registers.A.W = Immediate16Slow(READ);
-		SetZN(Registers.A.W);
-	}
+		LDWrapper(Registers.A.W, Immediate16Slow);
 }
 
-rOP8 (A5M1,     Direct,                           WRAP_BANK, LDA)
-rOP16(A5M0,     Direct,                           WRAP_BANK, LDA)
-rOPM (A5Slow,   DirectSlow,                       WRAP_BANK, LDA)
+static void OpA5M1() { rOP8(Direct, LDA8); }
+static void OpA5M0() { rOP16(Direct, LDA16, WRAP_BANK); }
+static void OpA5Slow() { rOPM(DirectSlow, LDA8, LDA16, WRAP_BANK); }
 
-rOP8 (B5E1,     DirectIndexedXE1,                 WRAP_BANK, LDA)
-rOP8 (B5E0M1,   DirectIndexedXE0,                 WRAP_BANK, LDA)
-rOP16(B5E0M0,   DirectIndexedXE0,                 WRAP_BANK, LDA)
-rOPM (B5Slow,   DirectIndexedXSlow,               WRAP_BANK, LDA)
+static void OpB5E1() { rOP8(DirectIndexedXE1, LDA8); }
+static void OpB5E0M1() { rOP8(DirectIndexedXE0, LDA8); }
+static void OpB5E0M0() { rOP16(DirectIndexedXE0, LDA16, WRAP_BANK); }
+static void OpB5Slow() { rOPM(DirectIndexedXSlow, LDA8, LDA16, WRAP_BANK); }
 
-rOP8 (B2E1,     DirectIndirectE1,                 WRAP_NONE, LDA)
-rOP8 (B2E0M1,   DirectIndirectE0,                 WRAP_NONE, LDA)
-rOP16(B2E0M0,   DirectIndirectE0,                 WRAP_NONE, LDA)
-rOPM (B2Slow,   DirectIndirectSlow,               WRAP_NONE, LDA)
+static void OpB2E1() { rOP8(DirectIndirectE1, LDA8); }
+static void OpB2E0M1() { rOP8(DirectIndirectE0, LDA8); }
+static void OpB2E0M0() { rOP16(DirectIndirectE0, LDA16); }
+static void OpB2Slow() { rOPM(DirectIndirectSlow, LDA8, LDA16); }
 
-rOP8 (A1E1,     DirectIndexedIndirectE1,          WRAP_NONE, LDA)
-rOP8 (A1E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, LDA)
-rOP16(A1E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, LDA)
-rOPM (A1Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, LDA)
+static void OpA1E1() { rOP8(DirectIndexedIndirectE1, LDA8); }
+static void OpA1E0M1() { rOP8(DirectIndexedIndirectE0, LDA8); }
+static void OpA1E0M0() { rOP16(DirectIndexedIndirectE0, LDA16); }
+static void OpA1Slow() { rOPM(DirectIndexedIndirectSlow, LDA8, LDA16); }
 
-rOP8 (B1E1,     DirectIndirectIndexedE1,          WRAP_NONE, LDA)
-rOP8 (B1E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, LDA)
-rOP16(B1E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, LDA)
-rOP8 (B1E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, LDA)
-rOP16(B1E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, LDA)
-rOPM (B1Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, LDA)
+static void OpB1E1() { rOP8(DirectIndirectIndexedE1, LDA8); }
+static void OpB1E0M1X1() { rOP8(DirectIndirectIndexedE0X1, LDA8); }
+static void OpB1E0M0X1() { rOP16(DirectIndirectIndexedE0X1, LDA16); }
+static void OpB1E0M1X0() { rOP8(DirectIndirectIndexedE0X0, LDA8); }
+static void OpB1E0M0X0() { rOP16(DirectIndirectIndexedE0X0, LDA16); }
+static void OpB1Slow() { rOPM(DirectIndirectIndexedSlow, LDA8, LDA16); }
 
-rOP8 (A7M1,     DirectIndirectLong,               WRAP_NONE, LDA)
-rOP16(A7M0,     DirectIndirectLong,               WRAP_NONE, LDA)
-rOPM (A7Slow,   DirectIndirectLongSlow,           WRAP_NONE, LDA)
+static void OpA7M1() { rOP8(DirectIndirectLong, LDA8); }
+static void OpA7M0() { rOP16(DirectIndirectLong, LDA16); }
+static void OpA7Slow() { rOPM(DirectIndirectLongSlow, LDA8, LDA16); }
 
-rOP8 (B7M1,     DirectIndirectIndexedLong,        WRAP_NONE, LDA)
-rOP16(B7M0,     DirectIndirectIndexedLong,        WRAP_NONE, LDA)
-rOPM (B7Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, LDA)
+static void OpB7M1() { rOP8(DirectIndirectIndexedLong, LDA8); }
+static void OpB7M0() { rOP16(DirectIndirectIndexedLong, LDA16); }
+static void OpB7Slow() { rOPM(DirectIndirectIndexedLongSlow, LDA8, LDA16); }
 
-rOP8 (ADM1,     Absolute,                         WRAP_NONE, LDA)
-rOP16(ADM0,     Absolute,                         WRAP_NONE, LDA)
-rOPM (ADSlow,   AbsoluteSlow,                     WRAP_NONE, LDA)
+static void OpADM1() { rOP8(Absolute, LDA8); }
+static void OpADM0() { rOP16(Absolute, LDA16); }
+static void OpADSlow() { rOPM(AbsoluteSlow, LDA8, LDA16); }
 
-rOP8 (BDM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, LDA)
-rOP16(BDM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, LDA)
-rOP8 (BDM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, LDA)
-rOP16(BDM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, LDA)
-rOPM (BDSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, LDA)
+static void OpBDM1X1() { rOP8(AbsoluteIndexedXX1, LDA8); }
+static void OpBDM0X1() { rOP16(AbsoluteIndexedXX1, LDA16); }
+static void OpBDM1X0() { rOP8(AbsoluteIndexedXX0, LDA8); }
+static void OpBDM0X0() { rOP16(AbsoluteIndexedXX0, LDA16); }
+static void OpBDSlow() { rOPM(AbsoluteIndexedXSlow, LDA8, LDA16); }
 
-rOP8 (B9M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, LDA)
-rOP16(B9M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, LDA)
-rOP8 (B9M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, LDA)
-rOP16(B9M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, LDA)
-rOPM (B9Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, LDA)
+static void OpB9M1X1() { rOP8(AbsoluteIndexedYX1, LDA8); }
+static void OpB9M0X1() { rOP16(AbsoluteIndexedYX1, LDA16); }
+static void OpB9M1X0() { rOP8(AbsoluteIndexedYX0, LDA8); }
+static void OpB9M0X0() { rOP16(AbsoluteIndexedYX0, LDA16); }
+static void OpB9Slow() { rOPM(AbsoluteIndexedYSlow, LDA8, LDA16); }
 
-rOP8 (AFM1,     AbsoluteLong,                     WRAP_NONE, LDA)
-rOP16(AFM0,     AbsoluteLong,                     WRAP_NONE, LDA)
-rOPM (AFSlow,   AbsoluteLongSlow,                 WRAP_NONE, LDA)
+static void OpAFM1() { rOP8(AbsoluteLong, LDA8); }
+static void OpAFM0() { rOP16(AbsoluteLong, LDA16); }
+static void OpAFSlow() { rOPM(AbsoluteLongSlow, LDA8, LDA16); }
 
-rOP8 (BFM1,     AbsoluteLongIndexedX,             WRAP_NONE, LDA)
-rOP16(BFM0,     AbsoluteLongIndexedX,             WRAP_NONE, LDA)
-rOPM (BFSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, LDA)
+static void OpBFM1() { rOP8(AbsoluteLongIndexedX, LDA8); }
+static void OpBFM0() { rOP16(AbsoluteLongIndexedX, LDA16); }
+static void OpBFSlow() { rOPM(AbsoluteLongIndexedXSlow, LDA8, LDA16); }
 
-rOP8 (A3M1,     StackRelative,                    WRAP_NONE, LDA)
-rOP16(A3M0,     StackRelative,                    WRAP_NONE, LDA)
-rOPM (A3Slow,   StackRelativeSlow,                WRAP_NONE, LDA)
+static void OpA3M1() { rOP8(StackRelative, LDA8); }
+static void OpA3M0() { rOP16(StackRelative, LDA16); }
+static void OpA3Slow() { rOPM(StackRelativeSlow, LDA8, LDA16); }
 
-rOP8 (B3M1,     StackRelativeIndirectIndexed,     WRAP_NONE, LDA)
-rOP16(B3M0,     StackRelativeIndirectIndexed,     WRAP_NONE, LDA)
-rOPM (B3Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, LDA)
+static void OpB3M1() { rOP8(StackRelativeIndirectIndexed, LDA8); }
+static void OpB3M0() { rOP16(StackRelativeIndirectIndexed, LDA16); }
+static void OpB3Slow() { rOPM(StackRelativeIndirectIndexedSlow, LDA8, LDA16); }
 
 /* LDX ********************************************************************* */
 
 static void OpA2X1()
 {
-	Registers.XL = Immediate8(READ);
-	SetZN(Registers.XL);
+	LDWrapper(Registers.X.B.l, Immediate8);
 }
 
 static void OpA2X0()
 {
-	Registers.X.W = Immediate16(READ);
-	SetZN(Registers.X.W);
+	LDWrapper(Registers.X.W, Immediate16);
 }
 
 static void OpA2Slow()
 {
 	if (CheckIndex())
-	{
-		Registers.XL = Immediate8Slow(READ);
-		SetZN(Registers.XL);
-	}
+		LDWrapper(Registers.X.B.l, Immediate8Slow);
 	else
-	{
-		Registers.X.W = Immediate16Slow(READ);
-		SetZN(Registers.X.W);
-	}
+		LDWrapper(Registers.X.W, Immediate16Slow);
 }
 
-rOP8 (A6X1,     Direct,                           WRAP_BANK, LDX)
-rOP16(A6X0,     Direct,                           WRAP_BANK, LDX)
-rOPX (A6Slow,   DirectSlow,                       WRAP_BANK, LDX)
+static void OpA6X1() { rOP8(Direct, LDX8); }
+static void OpA6X0() { rOP16(Direct, LDX16, WRAP_BANK); }
+static void OpA6Slow() { rOPX(DirectSlow, LDX8, LDX16, WRAP_BANK); }
 
-rOP8 (B6E1,     DirectIndexedYE1,                 WRAP_BANK, LDX)
-rOP8 (B6E0X1,   DirectIndexedYE0,                 WRAP_BANK, LDX)
-rOP16(B6E0X0,   DirectIndexedYE0,                 WRAP_BANK, LDX)
-rOPX (B6Slow,   DirectIndexedYSlow,               WRAP_BANK, LDX)
+static void OpB6E1() { rOP8(DirectIndexedYE1, LDX8); }
+static void OpB6E0X1() { rOP8(DirectIndexedYE0, LDX8); }
+static void OpB6E0X0() { rOP16(DirectIndexedYE0, LDX16, WRAP_BANK); }
+static void OpB6Slow() { rOPX(DirectIndexedYSlow, LDX8, LDX16, WRAP_BANK); }
 
-rOP8 (AEX1,     Absolute,                         WRAP_BANK, LDX)
-rOP16(AEX0,     Absolute,                         WRAP_BANK, LDX)
-rOPX (AESlow,   AbsoluteSlow,                     WRAP_BANK, LDX)
+static void OpAEX1() { rOP8(Absolute, LDX8); }
+static void OpAEX0() { rOP16(Absolute, LDX16, WRAP_BANK); }
+static void OpAESlow() { rOPX(AbsoluteSlow, LDX8, LDX16, WRAP_BANK); }
 
-rOP8 (BEX1,     AbsoluteIndexedYX1,               WRAP_BANK, LDX)
-rOP16(BEX0,     AbsoluteIndexedYX0,               WRAP_BANK, LDX)
-rOPX (BESlow,   AbsoluteIndexedYSlow,             WRAP_BANK, LDX)
+static void OpBEX1() { rOP8(AbsoluteIndexedYX1, LDX8); }
+static void OpBEX0() { rOP16(AbsoluteIndexedYX0, LDX16, WRAP_BANK); }
+static void OpBESlow() { rOPX(AbsoluteIndexedYSlow, LDX8, LDX16, WRAP_BANK); }
 
 /* LDY ********************************************************************* */
 
 static void OpA0X1()
 {
-	Registers.YL = Immediate8(READ);
-	SetZN(Registers.YL);
+	LDWrapper(Registers.Y.B.l, Immediate8);
 }
 
 static void OpA0X0()
 {
-	Registers.Y.W = Immediate16(READ);
-	SetZN(Registers.Y.W);
+	LDWrapper(Registers.Y.W, Immediate16);
 }
 
 static void OpA0Slow()
 {
 	if (CheckIndex())
-	{
-		Registers.YL = Immediate8Slow(READ);
-		SetZN(Registers.YL);
-	}
+		LDWrapper(Registers.Y.B.l, Immediate8Slow);
 	else
-	{
-		Registers.Y.W = Immediate16Slow(READ);
-		SetZN(Registers.Y.W);
-	}
+		LDWrapper(Registers.Y.W, Immediate16Slow);
 }
 
-rOP8 (A4X1,     Direct,                           WRAP_BANK, LDY)
-rOP16(A4X0,     Direct,                           WRAP_BANK, LDY)
-rOPX (A4Slow,   DirectSlow,                       WRAP_BANK, LDY)
+static void OpA4X1() { rOP8(Direct, LDY8); }
+static void OpA4X0() { rOP16(Direct, LDY16, WRAP_BANK); }
+static void OpA4Slow() { rOPX(DirectSlow, LDY8, LDY16, WRAP_BANK); }
 
-rOP8 (B4E1,     DirectIndexedXE1,                 WRAP_BANK, LDY)
-rOP8 (B4E0X1,   DirectIndexedXE0,                 WRAP_BANK, LDY)
-rOP16(B4E0X0,   DirectIndexedXE0,                 WRAP_BANK, LDY)
-rOPX (B4Slow,   DirectIndexedXSlow,               WRAP_BANK, LDY)
+static void OpB4E1() { rOP8(DirectIndexedXE1, LDY8); }
+static void OpB4E0X1() { rOP8(DirectIndexedXE0, LDY8); }
+static void OpB4E0X0() { rOP16(DirectIndexedXE0, LDY16, WRAP_BANK); }
+static void OpB4Slow() { rOPX(DirectIndexedXSlow, LDY8, LDY16, WRAP_BANK); }
 
-rOP8 (ACX1,     Absolute,                         WRAP_BANK, LDY)
-rOP16(ACX0,     Absolute,                         WRAP_BANK, LDY)
-rOPX (ACSlow,   AbsoluteSlow,                     WRAP_BANK, LDY)
+static void OpACX1() { rOP8(Absolute, LDY8); }
+static void OpACX0() { rOP16(Absolute, LDY16, WRAP_BANK); }
+static void OpACSlow() { rOPX(AbsoluteSlow, LDY8, LDY16, WRAP_BANK); }
 
-rOP8 (BCX1,     AbsoluteIndexedXX1,               WRAP_BANK, LDY)
-rOP16(BCX0,     AbsoluteIndexedXX0,               WRAP_BANK, LDY)
-rOPX (BCSlow,   AbsoluteIndexedXSlow,             WRAP_BANK, LDY)
+static void OpBCX1() { rOP8(AbsoluteIndexedXX1, LDY8); }
+static void OpBCX0() { rOP16(AbsoluteIndexedXX0, LDY16, WRAP_BANK); }
+static void OpBCSlow() { rOPX(AbsoluteIndexedXSlow, LDY8, LDY16, WRAP_BANK); }
 
 /* LSR ********************************************************************* */
 
-static void Op4AM1()
+static inline void Op4AM1()
 {
 	AddCycles(ONE_CYCLE);
-	ICPU._Carry = Registers.AL & 1;
-	Registers.AL >>= 1;
-	SetZN(Registers.AL);
+	ICPU._Carry = Registers.A.B.l & 1;
+	Registers.A.B.l >>= 1;
+	SetZN(Registers.A.B.l);
 }
 
-static void Op4AM0()
+static inline void Op4AM0()
 {
 	AddCycles(ONE_CYCLE);
 	ICPU._Carry = Registers.A.W & 1;
@@ -1051,538 +984,524 @@ static void Op4AM0()
 
 static void Op4ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		ICPU._Carry = Registers.AL & 1;
-		Registers.AL >>= 1;
-		SetZN(Registers.AL);
-	}
+		Op4AM1();
 	else
-	{
-		ICPU._Carry = Registers.A.W & 1;
-		Registers.A.W >>= 1;
-		SetZN(Registers.A.W);
-	}
+		Op4AM0();
 }
 
-mOP8 (46M1,     Direct,                           WRAP_BANK, LSR)
-mOP16(46M0,     Direct,                           WRAP_BANK, LSR)
-mOPM (46Slow,   DirectSlow,                       WRAP_BANK, LSR)
+static void Op46M1() { mOP8(Direct, LSR8); }
+static void Op46M0() { mOP16(Direct, LSR16, WRAP_BANK); }
+static void Op46Slow() { mOPM(DirectSlow, LSR8, LSR16, WRAP_BANK); }
 
-mOP8 (56E1,     DirectIndexedXE1,                 WRAP_BANK, LSR)
-mOP8 (56E0M1,   DirectIndexedXE0,                 WRAP_BANK, LSR)
-mOP16(56E0M0,   DirectIndexedXE0,                 WRAP_BANK, LSR)
-mOPM (56Slow,   DirectIndexedXSlow,               WRAP_BANK, LSR)
+static void Op56E1() { mOP8(DirectIndexedXE1, LSR8); }
+static void Op56E0M1() { mOP8(DirectIndexedXE0, LSR8); }
+static void Op56E0M0() { mOP16(DirectIndexedXE0, LSR16, WRAP_BANK); }
+static void Op56Slow() { mOPM(DirectIndexedXSlow, LSR8, LSR16, WRAP_BANK); }
 
-mOP8 (4EM1,     Absolute,                         WRAP_NONE, LSR)
-mOP16(4EM0,     Absolute,                         WRAP_NONE, LSR)
-mOPM (4ESlow,   AbsoluteSlow,                     WRAP_NONE, LSR)
+static void Op4EM1() { mOP8(Absolute, LSR8); }
+static void Op4EM0() { mOP16(Absolute, LSR16); }
+static void Op4ESlow() { mOPM(AbsoluteSlow, LSR8, LSR16); }
 
-mOP8 (5EM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, LSR)
-mOP16(5EM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, LSR)
-mOP8 (5EM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, LSR)
-mOP16(5EM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, LSR)
-mOPM (5ESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, LSR)
+static void Op5EM1X1() { mOP8(AbsoluteIndexedXX1, LSR8); }
+static void Op5EM0X1() { mOP16(AbsoluteIndexedXX1, LSR16); }
+static void Op5EM1X0() { mOP8(AbsoluteIndexedXX0, LSR8); }
+static void Op5EM0X0() { mOP16(AbsoluteIndexedXX0, LSR16); }
+static void Op5ESlow() { mOPM(AbsoluteIndexedXSlow, LSR8, LSR16); }
 
 /* ORA ********************************************************************* */
 
+template<typename T, typename F> static inline void Op09Wrapper(T &reg, F f)
+{
+	reg |= f(READ);
+	SetZN(reg);
+}
+
 static void Op09M1()
 {
-	Registers.AL |= Immediate8(READ);
-	SetZN(Registers.AL);
+	Op09Wrapper(Registers.A.B.l, Immediate8);
 }
 
 static void Op09M0()
 {
-	Registers.A.W |= Immediate16(READ);
-	SetZN(Registers.A.W);
+	Op09Wrapper(Registers.A.W, Immediate16);
 }
 
 static void Op09Slow()
 {
 	if (CheckMemory())
-	{
-		Registers.AL |= Immediate8Slow(READ);
-		SetZN(Registers.AL);
-	}
+		Op09Wrapper(Registers.A.B.l, Immediate8Slow);
 	else
-	{
-		Registers.A.W |= Immediate16Slow(READ);
-		SetZN(Registers.A.W);
-	}
+		Op09Wrapper(Registers.A.W, Immediate16Slow);
 }
 
-rOP8 (05M1,     Direct,                           WRAP_BANK, ORA)
-rOP16(05M0,     Direct,                           WRAP_BANK, ORA)
-rOPM (05Slow,   DirectSlow,                       WRAP_BANK, ORA)
+static void Op05M1() { rOP8(Direct, ORA8); }
+static void Op05M0() { rOP16(Direct, ORA16, WRAP_BANK); }
+static void Op05Slow() { rOPM(DirectSlow, ORA8, ORA16, WRAP_BANK); }
 
-rOP8 (15E1,     DirectIndexedXE1,                 WRAP_BANK, ORA)
-rOP8 (15E0M1,   DirectIndexedXE0,                 WRAP_BANK, ORA)
-rOP16(15E0M0,   DirectIndexedXE0,                 WRAP_BANK, ORA)
-rOPM (15Slow,   DirectIndexedXSlow,               WRAP_BANK, ORA)
+static void Op15E1() { rOP8(DirectIndexedXE1, ORA8); }
+static void Op15E0M1() { rOP8(DirectIndexedXE0, ORA8); }
+static void Op15E0M0() { rOP16(DirectIndexedXE0, ORA16, WRAP_BANK); }
+static void Op15Slow() { rOPM(DirectIndexedXSlow, ORA8, ORA16, WRAP_BANK); }
 
-rOP8 (12E1,     DirectIndirectE1,                 WRAP_NONE, ORA)
-rOP8 (12E0M1,   DirectIndirectE0,                 WRAP_NONE, ORA)
-rOP16(12E0M0,   DirectIndirectE0,                 WRAP_NONE, ORA)
-rOPM (12Slow,   DirectIndirectSlow,               WRAP_NONE, ORA)
+static void Op12E1() { rOP8(DirectIndirectE1, ORA8); }
+static void Op12E0M1() { rOP8(DirectIndirectE0, ORA8); }
+static void Op12E0M0() { rOP16(DirectIndirectE0, ORA16); }
+static void Op12Slow() { rOPM(DirectIndirectSlow, ORA8, ORA16); }
 
-rOP8 (01E1,     DirectIndexedIndirectE1,          WRAP_NONE, ORA)
-rOP8 (01E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, ORA)
-rOP16(01E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, ORA)
-rOPM (01Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, ORA)
+static void Op01E1() { rOP8(DirectIndexedIndirectE1, ORA8); }
+static void Op01E0M1() { rOP8(DirectIndexedIndirectE0, ORA8); }
+static void Op01E0M0() { rOP16(DirectIndexedIndirectE0, ORA16); }
+static void Op01Slow() { rOPM(DirectIndexedIndirectSlow, ORA8, ORA16); }
 
-rOP8 (11E1,     DirectIndirectIndexedE1,          WRAP_NONE, ORA)
-rOP8 (11E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, ORA)
-rOP16(11E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, ORA)
-rOP8 (11E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, ORA)
-rOP16(11E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, ORA)
-rOPM (11Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, ORA)
+static void Op11E1() { rOP8(DirectIndirectIndexedE1, ORA8); }
+static void Op11E0M1X1() { rOP8(DirectIndirectIndexedE0X1, ORA8); }
+static void Op11E0M0X1() { rOP16(DirectIndirectIndexedE0X1, ORA16); }
+static void Op11E0M1X0() { rOP8(DirectIndirectIndexedE0X0, ORA8); }
+static void Op11E0M0X0() { rOP16(DirectIndirectIndexedE0X0, ORA16); }
+static void Op11Slow() { rOPM(DirectIndirectIndexedSlow, ORA8, ORA16); }
 
-rOP8 (07M1,     DirectIndirectLong,               WRAP_NONE, ORA)
-rOP16(07M0,     DirectIndirectLong,               WRAP_NONE, ORA)
-rOPM (07Slow,   DirectIndirectLongSlow,           WRAP_NONE, ORA)
+static void Op07M1() { rOP8(DirectIndirectLong, ORA8); }
+static void Op07M0() { rOP16(DirectIndirectLong, ORA16); }
+static void Op07Slow() { rOPM(DirectIndirectLongSlow, ORA8, ORA16); }
 
-rOP8 (17M1,     DirectIndirectIndexedLong,        WRAP_NONE, ORA)
-rOP16(17M0,     DirectIndirectIndexedLong,        WRAP_NONE, ORA)
-rOPM (17Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, ORA)
+static void Op17M1() { rOP8(DirectIndirectIndexedLong, ORA8); }
+static void Op17M0() { rOP16(DirectIndirectIndexedLong, ORA16); }
+static void Op17Slow() { rOPM(DirectIndirectIndexedLongSlow, ORA8, ORA16); }
 
-rOP8 (0DM1,     Absolute,                         WRAP_NONE, ORA)
-rOP16(0DM0,     Absolute,                         WRAP_NONE, ORA)
-rOPM (0DSlow,   AbsoluteSlow,                     WRAP_NONE, ORA)
+static void Op0DM1() { rOP8(Absolute, ORA8); }
+static void Op0DM0() { rOP16(Absolute, ORA16); }
+static void Op0DSlow() { rOPM(AbsoluteSlow, ORA8, ORA16); }
 
-rOP8 (1DM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, ORA)
-rOP16(1DM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, ORA)
-rOP8 (1DM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, ORA)
-rOP16(1DM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, ORA)
-rOPM (1DSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, ORA)
+static void Op1DM1X1() { rOP8(AbsoluteIndexedXX1, ORA8); }
+static void Op1DM0X1() { rOP16(AbsoluteIndexedXX1, ORA16); }
+static void Op1DM1X0() { rOP8(AbsoluteIndexedXX0, ORA8); }
+static void Op1DM0X0() { rOP16(AbsoluteIndexedXX0, ORA16); }
+static void Op1DSlow() { rOPM(AbsoluteIndexedXSlow, ORA8, ORA16); }
 
-rOP8 (19M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, ORA)
-rOP16(19M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, ORA)
-rOP8 (19M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, ORA)
-rOP16(19M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, ORA)
-rOPM (19Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, ORA)
+static void Op19M1X1() { rOP8(AbsoluteIndexedYX1, ORA8); }
+static void Op19M0X1() { rOP16(AbsoluteIndexedYX1, ORA16); }
+static void Op19M1X0() { rOP8(AbsoluteIndexedYX0, ORA8); }
+static void Op19M0X0() { rOP16(AbsoluteIndexedYX0, ORA16); }
+static void Op19Slow() { rOPM(AbsoluteIndexedYSlow, ORA8, ORA16); }
 
-rOP8 (0FM1,     AbsoluteLong,                     WRAP_NONE, ORA)
-rOP16(0FM0,     AbsoluteLong,                     WRAP_NONE, ORA)
-rOPM (0FSlow,   AbsoluteLongSlow,                 WRAP_NONE, ORA)
+static void Op0FM1() { rOP8(AbsoluteLong, ORA8); }
+static void Op0FM0() { rOP16(AbsoluteLong, ORA16); }
+static void Op0FSlow() { rOPM(AbsoluteLongSlow, ORA8, ORA16); }
 
-rOP8 (1FM1,     AbsoluteLongIndexedX,             WRAP_NONE, ORA)
-rOP16(1FM0,     AbsoluteLongIndexedX,             WRAP_NONE, ORA)
-rOPM (1FSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, ORA)
+static void Op1FM1() { rOP8(AbsoluteLongIndexedX, ORA8); }
+static void Op1FM0() { rOP16(AbsoluteLongIndexedX, ORA16); }
+static void Op1FSlow() { rOPM(AbsoluteLongIndexedXSlow, ORA8, ORA16); }
 
-rOP8 (03M1,     StackRelative,                    WRAP_NONE, ORA)
-rOP16(03M0,     StackRelative,                    WRAP_NONE, ORA)
-rOPM (03Slow,   StackRelativeSlow,                WRAP_NONE, ORA)
+static void Op03M1() { rOP8(StackRelative, ORA8); }
+static void Op03M0() { rOP16(StackRelative, ORA16); }
+static void Op03Slow() { rOPM(StackRelativeSlow, ORA8, ORA16); }
 
-rOP8 (13M1,     StackRelativeIndirectIndexed,     WRAP_NONE, ORA)
-rOP16(13M0,     StackRelativeIndirectIndexed,     WRAP_NONE, ORA)
-rOPM (13Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, ORA)
+static void Op13M1() { rOP8(StackRelativeIndirectIndexed, ORA8); }
+static void Op13M0() { rOP16(StackRelativeIndirectIndexed, ORA16); }
+static void Op13Slow() { rOPM(StackRelativeIndirectIndexedSlow, ORA8, ORA16); }
 
 /* ROL ********************************************************************* */
 
-static void Op2AM1()
+static inline void Op2AM1()
 {
 	AddCycles(ONE_CYCLE);
-	uint16_t	w = (((uint16_t) Registers.AL) << 1) | CheckCarry();
+	uint16_t w = (static_cast<uint16_t>(Registers.A.B.l) << 1) | static_cast<uint16_t>(CheckCarry());
 	ICPU._Carry = w >= 0x100;
-	Registers.AL = (uint8_t) w;
-	SetZN(Registers.AL);
+	Registers.A.B.l = static_cast<uint8_t>(w);
+	SetZN(Registers.A.B.l);
 }
 
-static void Op2AM0()
+static inline void Op2AM0()
 {
 	AddCycles(ONE_CYCLE);
-	uint32_t	w = (((uint32_t) Registers.A.W) << 1) | CheckCarry();
+	uint32_t w = (static_cast<uint32_t>(Registers.A.W) << 1) | static_cast<uint32_t>(CheckCarry());
 	ICPU._Carry = w >= 0x10000;
-	Registers.A.W = (uint16_t) w;
+	Registers.A.W = static_cast<uint16_t>(w);
 	SetZN(Registers.A.W);
 }
 
 static void Op2ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		uint16_t	w = (((uint16_t) Registers.AL) << 1) | CheckCarry();
-		ICPU._Carry = w >= 0x100;
-		Registers.AL = (uint8_t) w;
-		SetZN(Registers.AL);
-	}
+		Op2AM1();
 	else
-	{
-		uint32_t	w = (((uint32_t) Registers.A.W) << 1) | CheckCarry();
-		ICPU._Carry = w >= 0x10000;
-		Registers.A.W = (uint16_t) w;
-		SetZN(Registers.A.W);
-	}
+		Op2AM0();
 }
 
-mOP8 (26M1,     Direct,                           WRAP_BANK, ROL)
-mOP16(26M0,     Direct,                           WRAP_BANK, ROL)
-mOPM (26Slow,   DirectSlow,                       WRAP_BANK, ROL)
+static void Op26M1() { mOP8(Direct, ROL8); }
+static void Op26M0() { mOP16(Direct, ROL16, WRAP_BANK); }
+static void Op26Slow() { mOPM(DirectSlow, ROL8, ROL16, WRAP_BANK); }
 
-mOP8 (36E1,     DirectIndexedXE1,                 WRAP_BANK, ROL)
-mOP8 (36E0M1,   DirectIndexedXE0,                 WRAP_BANK, ROL)
-mOP16(36E0M0,   DirectIndexedXE0,                 WRAP_BANK, ROL)
-mOPM (36Slow,   DirectIndexedXSlow,               WRAP_BANK, ROL)
+static void Op36E1() { mOP8(DirectIndexedXE1, ROL8); }
+static void Op36E0M1() { mOP8(DirectIndexedXE0, ROL8); }
+static void Op36E0M0() { mOP16(DirectIndexedXE0, ROL16, WRAP_BANK); }
+static void Op36Slow() { mOPM(DirectIndexedXSlow, ROL8, ROL16, WRAP_BANK); }
 
-mOP8 (2EM1,     Absolute,                         WRAP_NONE, ROL)
-mOP16(2EM0,     Absolute,                         WRAP_NONE, ROL)
-mOPM (2ESlow,   AbsoluteSlow,                     WRAP_NONE, ROL)
+static void Op2EM1() { mOP8(Absolute, ROL8); }
+static void Op2EM0() { mOP16(Absolute, ROL16); }
+static void Op2ESlow() { mOPM(AbsoluteSlow, ROL8, ROL16); }
 
-mOP8 (3EM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, ROL)
-mOP16(3EM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, ROL)
-mOP8 (3EM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, ROL)
-mOP16(3EM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, ROL)
-mOPM (3ESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, ROL)
+static void Op3EM1X1() { mOP8(AbsoluteIndexedXX1, ROL8); }
+static void Op3EM0X1() { mOP16(AbsoluteIndexedXX1, ROL16); }
+static void Op3EM1X0() { mOP8(AbsoluteIndexedXX0, ROL8); }
+static void Op3EM0X0() { mOP16(AbsoluteIndexedXX0, ROL16); }
+static void Op3ESlow() { mOPM(AbsoluteIndexedXSlow, ROL8, ROL16); }
 
 /* ROR ********************************************************************* */
 
-static void Op6AM1()
+static inline void Op6AM1()
 {
 	AddCycles(ONE_CYCLE);
-	uint16_t	w = ((uint16_t) Registers.AL) | (((uint16_t) CheckCarry()) << 8);
+	uint16_t w = static_cast<uint16_t>(Registers.A.B.l) | (static_cast<uint16_t>(CheckCarry()) << 8);
 	ICPU._Carry = w & 1;
 	w >>= 1;
-	Registers.AL = (uint8_t) w;
-	SetZN(Registers.AL);
+	Registers.A.B.l = static_cast<uint8_t>(w);
+	SetZN(Registers.A.B.l);
 }
 
-static void Op6AM0()
+static inline void Op6AM0()
 {
 	AddCycles(ONE_CYCLE);
-	uint32_t	w = ((uint32_t) Registers.A.W) | (((uint32_t) CheckCarry()) << 16);
+	uint32_t w = static_cast<uint32_t>(Registers.A.W) | (static_cast<uint32_t>(CheckCarry()) << 16);
 	ICPU._Carry = w & 1;
 	w >>= 1;
-	Registers.A.W = (uint16_t) w;
+	Registers.A.W = static_cast<uint16_t>(w);
 	SetZN(Registers.A.W);
 }
 
 static void Op6ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		uint16_t	w = ((uint16_t) Registers.AL) | (((uint16_t) CheckCarry()) << 8);
-		ICPU._Carry = w & 1;
-		w >>= 1;
-		Registers.AL = (uint8_t) w;
-		SetZN(Registers.AL);
-	}
+		Op6AM1();
 	else
-	{
-		uint32_t	w = ((uint32_t) Registers.A.W) | (((uint32_t) CheckCarry()) << 16);
-		ICPU._Carry = w & 1;
-		w >>= 1;
-		Registers.A.W = (uint16_t) w;
-		SetZN(Registers.A.W);
-	}
+		Op6AM0();
 }
 
-mOP8 (66M1,     Direct,                           WRAP_BANK, ROR)
-mOP16(66M0,     Direct,                           WRAP_BANK, ROR)
-mOPM (66Slow,   DirectSlow,                       WRAP_BANK, ROR)
+static void Op66M1() { mOP8(Direct, ROR8); }
+static void Op66M0() { mOP16(Direct, ROR16, WRAP_BANK); }
+static void Op66Slow() { mOPM(DirectSlow, ROR8, ROR16, WRAP_BANK); }
 
-mOP8 (76E1,     DirectIndexedXE1,                 WRAP_BANK, ROR)
-mOP8 (76E0M1,   DirectIndexedXE0,                 WRAP_BANK, ROR)
-mOP16(76E0M0,   DirectIndexedXE0,                 WRAP_BANK, ROR)
-mOPM (76Slow,   DirectIndexedXSlow,               WRAP_BANK, ROR)
+static void Op76E1() { mOP8(DirectIndexedXE1, ROR8); }
+static void Op76E0M1() { mOP8(DirectIndexedXE0, ROR8); }
+static void Op76E0M0() { mOP16(DirectIndexedXE0, ROR16, WRAP_BANK); }
+static void Op76Slow() { mOPM(DirectIndexedXSlow, ROR8, ROR16, WRAP_BANK); }
 
-mOP8 (6EM1,     Absolute,                         WRAP_NONE, ROR)
-mOP16(6EM0,     Absolute,                         WRAP_NONE, ROR)
-mOPM (6ESlow,   AbsoluteSlow,                     WRAP_NONE, ROR)
+static void Op6EM1() { mOP8(Absolute, ROR8); }
+static void Op6EM0() { mOP16(Absolute, ROR16); }
+static void Op6ESlow() { mOPM(AbsoluteSlow, ROR8, ROR16); }
 
-mOP8 (7EM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, ROR)
-mOP16(7EM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, ROR)
-mOP8 (7EM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, ROR)
-mOP16(7EM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, ROR)
-mOPM (7ESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, ROR)
+static void Op7EM1X1() { mOP8(AbsoluteIndexedXX1, ROR8); }
+static void Op7EM0X1() { mOP16(AbsoluteIndexedXX1, ROR16); }
+static void Op7EM1X0() { mOP8(AbsoluteIndexedXX0, ROR8); }
+static void Op7EM0X0() { mOP16(AbsoluteIndexedXX0, ROR16); }
+static void Op7ESlow() { mOPM(AbsoluteIndexedXSlow, ROR8, ROR16); }
 
 /* SBC ********************************************************************* */
 
+template<typename T> static inline void SBC(T Work)
+{
+}
+
+template<> static inline void SBC<uint16_t>(uint16_t Work16)
+{
+	SBC16(Work16);
+}
+
+template<> static inline void SBC<uint8_t>(uint8_t Work8)
+{
+	SBC8(Work8);
+}
+
+template<typename F> static inline void OpE9Wrapper(F f)
+{
+	SBC(f(READ));
+}
+
 static void OpE9M1()
 {
-	SBC(Immediate8(READ));
+	OpE9Wrapper(Immediate8);
 }
 
 static void OpE9M0()
 {
-	SBC(Immediate16(READ));
+	OpE9Wrapper(Immediate16);
 }
 
 static void OpE9Slow()
 {
 	if (CheckMemory())
-		SBC(Immediate8Slow(READ));
+		OpE9Wrapper(Immediate8Slow);
 	else
-		SBC(Immediate16Slow(READ));
+		OpE9Wrapper(Immediate16Slow);
 }
 
-rOP8 (E5M1,     Direct,                           WRAP_BANK, SBC)
-rOP16(E5M0,     Direct,                           WRAP_BANK, SBC)
-rOPM (E5Slow,   DirectSlow,                       WRAP_BANK, SBC)
+static void OpE5M1() { rOP8(Direct, SBC8); }
+static void OpE5M0() { rOP16(Direct, SBC16, WRAP_BANK); }
+static void OpE5Slow() { rOPM(DirectSlow, SBC8, SBC16, WRAP_BANK); }
 
-rOP8 (F5E1,     DirectIndexedXE1,                 WRAP_BANK, SBC)
-rOP8 (F5E0M1,   DirectIndexedXE0,                 WRAP_BANK, SBC)
-rOP16(F5E0M0,   DirectIndexedXE0,                 WRAP_BANK, SBC)
-rOPM (F5Slow,   DirectIndexedXSlow,               WRAP_BANK, SBC)
+static void OpF5E1() { rOP8(DirectIndexedXE1, SBC8); }
+static void OpF5E0M1() { rOP8(DirectIndexedXE0, SBC8); }
+static void OpF5E0M0() { rOP16(DirectIndexedXE0, SBC16, WRAP_BANK); }
+static void OpF5Slow() { rOPM(DirectIndexedXSlow, SBC8, SBC16, WRAP_BANK); }
 
-rOP8 (F2E1,     DirectIndirectE1,                 WRAP_NONE, SBC)
-rOP8 (F2E0M1,   DirectIndirectE0,                 WRAP_NONE, SBC)
-rOP16(F2E0M0,   DirectIndirectE0,                 WRAP_NONE, SBC)
-rOPM (F2Slow,   DirectIndirectSlow,               WRAP_NONE, SBC)
+static void OpF2E1() { rOP8(DirectIndirectE1, SBC8); }
+static void OpF2E0M1() { rOP8(DirectIndirectE0, SBC8); }
+static void OpF2E0M0() { rOP16(DirectIndirectE0, SBC16); }
+static void OpF2Slow() { rOPM(DirectIndirectSlow, SBC8, SBC16); }
 
-rOP8 (E1E1,     DirectIndexedIndirectE1,          WRAP_NONE, SBC)
-rOP8 (E1E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, SBC)
-rOP16(E1E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, SBC)
-rOPM (E1Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, SBC)
+static void OpE1E1() { rOP8(DirectIndexedIndirectE1, SBC8); }
+static void OpE1E0M1() { rOP8(DirectIndexedIndirectE0, SBC8); }
+static void OpE1E0M0() { rOP16(DirectIndexedIndirectE0, SBC16); }
+static void OpE1Slow() { rOPM(DirectIndexedIndirectSlow, SBC8, SBC16); }
 
-rOP8 (F1E1,     DirectIndirectIndexedE1,          WRAP_NONE, SBC)
-rOP8 (F1E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, SBC)
-rOP16(F1E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, SBC)
-rOP8 (F1E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, SBC)
-rOP16(F1E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, SBC)
-rOPM (F1Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, SBC)
+static void OpF1E1() { rOP8(DirectIndirectIndexedE1, SBC8); }
+static void OpF1E0M1X1() { rOP8(DirectIndirectIndexedE0X1, SBC8); }
+static void OpF1E0M0X1() { rOP16(DirectIndirectIndexedE0X1, SBC16); }
+static void OpF1E0M1X0() { rOP8(DirectIndirectIndexedE0X0, SBC8); }
+static void OpF1E0M0X0() { rOP16(DirectIndirectIndexedE0X0, SBC16); }
+static void OpF1Slow() { rOPM(DirectIndirectIndexedSlow, SBC8, SBC16); }
 
-rOP8 (E7M1,     DirectIndirectLong,               WRAP_NONE, SBC)
-rOP16(E7M0,     DirectIndirectLong,               WRAP_NONE, SBC)
-rOPM (E7Slow,   DirectIndirectLongSlow,           WRAP_NONE, SBC)
+static void OpE7M1() { rOP8(DirectIndirectLong, SBC8); }
+static void OpE7M0() { rOP16(DirectIndirectLong, SBC16); }
+static void OpE7Slow() { rOPM(DirectIndirectLongSlow, SBC8, SBC16); }
 
-rOP8 (F7M1,     DirectIndirectIndexedLong,        WRAP_NONE, SBC)
-rOP16(F7M0,     DirectIndirectIndexedLong,        WRAP_NONE, SBC)
-rOPM (F7Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, SBC)
+static void OpF7M1() { rOP8(DirectIndirectIndexedLong, SBC8); }
+static void OpF7M0() { rOP16(DirectIndirectIndexedLong, SBC16); }
+static void OpF7Slow() { rOPM(DirectIndirectIndexedLongSlow, SBC8, SBC16); }
 
-rOP8 (EDM1,     Absolute,                         WRAP_NONE, SBC)
-rOP16(EDM0,     Absolute,                         WRAP_NONE, SBC)
-rOPM (EDSlow,   AbsoluteSlow,                     WRAP_NONE, SBC)
+static void OpEDM1() { rOP8(Absolute, SBC8); }
+static void OpEDM0() { rOP16(Absolute, SBC16); }
+static void OpEDSlow() { rOPM(AbsoluteSlow, SBC8, SBC16); }
 
-rOP8 (FDM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, SBC)
-rOP16(FDM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, SBC)
-rOP8 (FDM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, SBC)
-rOP16(FDM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, SBC)
-rOPM (FDSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, SBC)
+static void OpFDM1X1() { rOP8(AbsoluteIndexedXX1, SBC8); }
+static void OpFDM0X1() { rOP16(AbsoluteIndexedXX1, SBC16); }
+static void OpFDM1X0() { rOP8(AbsoluteIndexedXX0, SBC8); }
+static void OpFDM0X0() { rOP16(AbsoluteIndexedXX0, SBC16); }
+static void OpFDSlow() { rOPM(AbsoluteIndexedXSlow, SBC8, SBC16); }
 
-rOP8 (F9M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, SBC)
-rOP16(F9M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, SBC)
-rOP8 (F9M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, SBC)
-rOP16(F9M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, SBC)
-rOPM (F9Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, SBC)
+static void OpF9M1X1() { rOP8(AbsoluteIndexedYX1, SBC8); }
+static void OpF9M0X1() { rOP16(AbsoluteIndexedYX1, SBC16); }
+static void OpF9M1X0() { rOP8(AbsoluteIndexedYX0, SBC8); }
+static void OpF9M0X0() { rOP16(AbsoluteIndexedYX0, SBC16); }
+static void OpF9Slow() { rOPM(AbsoluteIndexedYSlow, SBC8, SBC16); }
 
-rOP8 (EFM1,     AbsoluteLong,                     WRAP_NONE, SBC)
-rOP16(EFM0,     AbsoluteLong,                     WRAP_NONE, SBC)
-rOPM (EFSlow,   AbsoluteLongSlow,                 WRAP_NONE, SBC)
+static void OpEFM1() { rOP8(AbsoluteLong, SBC8); }
+static void OpEFM0() { rOP16(AbsoluteLong, SBC16); }
+static void OpEFSlow() { rOPM(AbsoluteLongSlow, SBC8, SBC16); }
 
-rOP8 (FFM1,     AbsoluteLongIndexedX,             WRAP_NONE, SBC)
-rOP16(FFM0,     AbsoluteLongIndexedX,             WRAP_NONE, SBC)
-rOPM (FFSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, SBC)
+static void OpFFM1() { rOP8(AbsoluteLongIndexedX, SBC8); }
+static void OpFFM0() { rOP16(AbsoluteLongIndexedX, SBC16); }
+static void OpFFSlow() { rOPM(AbsoluteLongIndexedXSlow, SBC8, SBC16); }
 
-rOP8 (E3M1,     StackRelative,                    WRAP_NONE, SBC)
-rOP16(E3M0,     StackRelative,                    WRAP_NONE, SBC)
-rOPM (E3Slow,   StackRelativeSlow,                WRAP_NONE, SBC)
+static void OpE3M1() { rOP8(StackRelative, SBC8); }
+static void OpE3M0() { rOP16(StackRelative, SBC16); }
+static void OpE3Slow() { rOPM(StackRelativeSlow, SBC8, SBC16); }
 
-rOP8 (F3M1,     StackRelativeIndirectIndexed,     WRAP_NONE, SBC)
-rOP16(F3M0,     StackRelativeIndirectIndexed,     WRAP_NONE, SBC)
-rOPM (F3Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, SBC)
+static void OpF3M1() { rOP8(StackRelativeIndirectIndexed, SBC8); }
+static void OpF3M0() { rOP16(StackRelativeIndirectIndexed, SBC16); }
+static void OpF3Slow() { rOPM(StackRelativeIndirectIndexedSlow, SBC8, SBC16); }
 
 /* STA ********************************************************************* */
 
-wOP8 (85M1,     Direct,                           WRAP_BANK, STA)
-wOP16(85M0,     Direct,                           WRAP_BANK, STA)
-wOPM (85Slow,   DirectSlow,                       WRAP_BANK, STA)
+static void Op85M1() { wOP8(Direct, STA8); }
+static void Op85M0() { wOP16(Direct, STA16, WRAP_BANK); }
+static void Op85Slow() { wOPM(DirectSlow, STA8, STA16, WRAP_BANK); }
 
-wOP8 (95E1,     DirectIndexedXE1,                 WRAP_BANK, STA)
-wOP8 (95E0M1,   DirectIndexedXE0,                 WRAP_BANK, STA)
-wOP16(95E0M0,   DirectIndexedXE0,                 WRAP_BANK, STA)
-wOPM (95Slow,   DirectIndexedXSlow,               WRAP_BANK, STA)
+static void Op95E1() { wOP8(DirectIndexedXE1, STA8); }
+static void Op95E0M1() { wOP8(DirectIndexedXE0, STA8); }
+static void Op95E0M0() { wOP16(DirectIndexedXE0, STA16, WRAP_BANK); }
+static void Op95Slow() { wOPM(DirectIndexedXSlow, STA8, STA16, WRAP_BANK); }
 
-wOP8 (92E1,     DirectIndirectE1,                 WRAP_NONE, STA)
-wOP8 (92E0M1,   DirectIndirectE0,                 WRAP_NONE, STA)
-wOP16(92E0M0,   DirectIndirectE0,                 WRAP_NONE, STA)
-wOPM (92Slow,   DirectIndirectSlow,               WRAP_NONE, STA)
+static void Op92E1() { wOP8(DirectIndirectE1, STA8); }
+static void Op92E0M1() { wOP8(DirectIndirectE0, STA8); }
+static void Op92E0M0() { wOP16(DirectIndirectE0, STA16); }
+static void Op92Slow() { wOPM(DirectIndirectSlow, STA8, STA16); }
 
-wOP8 (81E1,     DirectIndexedIndirectE1,          WRAP_NONE, STA)
-wOP8 (81E0M1,   DirectIndexedIndirectE0,          WRAP_NONE, STA)
-wOP16(81E0M0,   DirectIndexedIndirectE0,          WRAP_NONE, STA)
-wOPM (81Slow,   DirectIndexedIndirectSlow,        WRAP_NONE, STA)
+static void Op81E1() { wOP8(DirectIndexedIndirectE1, STA8); }
+static void Op81E0M1() { wOP8(DirectIndexedIndirectE0, STA8); }
+static void Op81E0M0() { wOP16(DirectIndexedIndirectE0, STA16); }
+static void Op81Slow() { wOPM(DirectIndexedIndirectSlow, STA8, STA16); }
 
-wOP8 (91E1,     DirectIndirectIndexedE1,          WRAP_NONE, STA)
-wOP8 (91E0M1X1, DirectIndirectIndexedE0X1,        WRAP_NONE, STA)
-wOP16(91E0M0X1, DirectIndirectIndexedE0X1,        WRAP_NONE, STA)
-wOP8 (91E0M1X0, DirectIndirectIndexedE0X0,        WRAP_NONE, STA)
-wOP16(91E0M0X0, DirectIndirectIndexedE0X0,        WRAP_NONE, STA)
-wOPM (91Slow,   DirectIndirectIndexedSlow,        WRAP_NONE, STA)
+static void Op91E1() { wOP8(DirectIndirectIndexedE1, STA8); }
+static void Op91E0M1X1() { wOP8(DirectIndirectIndexedE0X1, STA8); }
+static void Op91E0M0X1() { wOP16(DirectIndirectIndexedE0X1, STA16); }
+static void Op91E0M1X0() { wOP8(DirectIndirectIndexedE0X0, STA8); }
+static void Op91E0M0X0() { wOP16(DirectIndirectIndexedE0X0, STA16); }
+static void Op91Slow() { wOPM(DirectIndirectIndexedSlow, STA8, STA16); }
 
-wOP8 (87M1,     DirectIndirectLong,               WRAP_NONE, STA)
-wOP16(87M0,     DirectIndirectLong,               WRAP_NONE, STA)
-wOPM (87Slow,   DirectIndirectLongSlow,           WRAP_NONE, STA)
+static void Op87M1() { wOP8(DirectIndirectLong, STA8); }
+static void Op87M0() { wOP16(DirectIndirectLong, STA16); }
+static void Op87Slow() { wOPM(DirectIndirectLongSlow, STA8, STA16); }
 
-wOP8 (97M1,     DirectIndirectIndexedLong,        WRAP_NONE, STA)
-wOP16(97M0,     DirectIndirectIndexedLong,        WRAP_NONE, STA)
-wOPM (97Slow,   DirectIndirectIndexedLongSlow,    WRAP_NONE, STA)
+static void Op97M1() { wOP8(DirectIndirectIndexedLong, STA8); }
+static void Op97M0() { wOP16(DirectIndirectIndexedLong, STA16); }
+static void Op97Slow() { wOPM(DirectIndirectIndexedLongSlow, STA8, STA16); }
 
-wOP8 (8DM1,     Absolute,                         WRAP_NONE, STA)
-wOP16(8DM0,     Absolute,                         WRAP_NONE, STA)
-wOPM (8DSlow,   AbsoluteSlow,                     WRAP_NONE, STA)
+static void Op8DM1() { wOP8(Absolute, STA8); }
+static void Op8DM0() { wOP16(Absolute, STA16); }
+static void Op8DSlow() { wOPM(AbsoluteSlow, STA8, STA16); }
 
-wOP8 (9DM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, STA)
-wOP16(9DM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, STA)
-wOP8 (9DM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, STA)
-wOP16(9DM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, STA)
-wOPM (9DSlow,   AbsoluteIndexedXSlow,             WRAP_NONE, STA)
+static void Op9DM1X1() { wOP8(AbsoluteIndexedXX1, STA8); }
+static void Op9DM0X1() { wOP16(AbsoluteIndexedXX1, STA16); }
+static void Op9DM1X0() { wOP8(AbsoluteIndexedXX0, STA8); }
+static void Op9DM0X0() { wOP16(AbsoluteIndexedXX0, STA16); }
+static void Op9DSlow() { wOPM(AbsoluteIndexedXSlow, STA8, STA16); }
 
-wOP8 (99M1X1,   AbsoluteIndexedYX1,               WRAP_NONE, STA)
-wOP16(99M0X1,   AbsoluteIndexedYX1,               WRAP_NONE, STA)
-wOP8 (99M1X0,   AbsoluteIndexedYX0,               WRAP_NONE, STA)
-wOP16(99M0X0,   AbsoluteIndexedYX0,               WRAP_NONE, STA)
-wOPM (99Slow,   AbsoluteIndexedYSlow,             WRAP_NONE, STA)
+static void Op99M1X1() { wOP8(AbsoluteIndexedYX1, STA8); }
+static void Op99M0X1() { wOP16(AbsoluteIndexedYX1, STA16); }
+static void Op99M1X0() { wOP8(AbsoluteIndexedYX0, STA8); }
+static void Op99M0X0() { wOP16(AbsoluteIndexedYX0, STA16); }
+static void Op99Slow() { wOPM(AbsoluteIndexedYSlow, STA8, STA16); }
 
-wOP8 (8FM1,     AbsoluteLong,                     WRAP_NONE, STA)
-wOP16(8FM0,     AbsoluteLong,                     WRAP_NONE, STA)
-wOPM (8FSlow,   AbsoluteLongSlow,                 WRAP_NONE, STA)
+static void Op8FM1() { wOP8(AbsoluteLong, STA8); }
+static void Op8FM0() { wOP16(AbsoluteLong, STA16); }
+static void Op8FSlow() { wOPM(AbsoluteLongSlow, STA8, STA16); }
 
-wOP8 (9FM1,     AbsoluteLongIndexedX,             WRAP_NONE, STA)
-wOP16(9FM0,     AbsoluteLongIndexedX,             WRAP_NONE, STA)
-wOPM (9FSlow,   AbsoluteLongIndexedXSlow,         WRAP_NONE, STA)
+static void Op9FM1() { wOP8(AbsoluteLongIndexedX, STA8); }
+static void Op9FM0() { wOP16(AbsoluteLongIndexedX, STA16); }
+static void Op9FSlow() { wOPM(AbsoluteLongIndexedXSlow, STA8, STA16); }
 
-wOP8 (83M1,     StackRelative,                    WRAP_NONE, STA)
-wOP16(83M0,     StackRelative,                    WRAP_NONE, STA)
-wOPM (83Slow,   StackRelativeSlow,                WRAP_NONE, STA)
+static void Op83M1() { wOP8(StackRelative, STA8); }
+static void Op83M0() { wOP16(StackRelative, STA16); }
+static void Op83Slow() { wOPM(StackRelativeSlow, STA8, STA16); }
 
-wOP8 (93M1,     StackRelativeIndirectIndexed,     WRAP_NONE, STA)
-wOP16(93M0,     StackRelativeIndirectIndexed,     WRAP_NONE, STA)
-wOPM (93Slow,   StackRelativeIndirectIndexedSlow, WRAP_NONE, STA)
+static void Op93M1() { wOP8(StackRelativeIndirectIndexed, STA8); }
+static void Op93M0() { wOP16(StackRelativeIndirectIndexed, STA16); }
+static void Op93Slow() { wOPM(StackRelativeIndirectIndexedSlow, STA8, STA16); }
 
 /* STX ********************************************************************* */
 
-wOP8 (86X1,     Direct,                           WRAP_BANK, STX)
-wOP16(86X0,     Direct,                           WRAP_BANK, STX)
-wOPX (86Slow,   DirectSlow,                       WRAP_BANK, STX)
+static void Op86X1() { wOP8(Direct, STX8); }
+static void Op86X0() { wOP16(Direct, STX16, WRAP_BANK); }
+static void Op86Slow() { wOPX(DirectSlow, STX8, STX16, WRAP_BANK); }
 
-wOP8 (96E1,     DirectIndexedYE1,                 WRAP_BANK, STX)
-wOP8 (96E0X1,   DirectIndexedYE0,                 WRAP_BANK, STX)
-wOP16(96E0X0,   DirectIndexedYE0,                 WRAP_BANK, STX)
-wOPX (96Slow,   DirectIndexedYSlow,               WRAP_BANK, STX)
+static void Op96E1() { wOP8(DirectIndexedYE1, STX8); }
+static void Op96E0X1() { wOP8(DirectIndexedYE0, STX8); }
+static void Op96E0X0() { wOP16(DirectIndexedYE0, STX16, WRAP_BANK); }
+static void Op96Slow() { wOPX(DirectIndexedYSlow, STX8, STX16, WRAP_BANK); }
 
-wOP8 (8EX1,     Absolute,                         WRAP_BANK, STX)
-wOP16(8EX0,     Absolute,                         WRAP_BANK, STX)
-wOPX (8ESlow,   AbsoluteSlow,                     WRAP_BANK, STX)
+static void Op8EX1() { wOP8(Absolute, STX8); }
+static void Op8EX0() { wOP16(Absolute, STX16, WRAP_BANK); }
+static void Op8ESlow() { wOPX(AbsoluteSlow, STX8, STX16, WRAP_BANK); }
 
 /* STY ********************************************************************* */
 
-wOP8 (84X1,     Direct,                           WRAP_BANK, STY)
-wOP16(84X0,     Direct,                           WRAP_BANK, STY)
-wOPX (84Slow,   DirectSlow,                       WRAP_BANK, STY)
+static void Op84X1() { wOP8(Direct, STY8); }
+static void Op84X0() { wOP16(Direct, STY16, WRAP_BANK); }
+static void Op84Slow() { wOPX(DirectSlow, STY8, STY16, WRAP_BANK); }
 
-wOP8 (94E1,     DirectIndexedXE1,                 WRAP_BANK, STY)
-wOP8 (94E0X1,   DirectIndexedXE0,                 WRAP_BANK, STY)
-wOP16(94E0X0,   DirectIndexedXE0,                 WRAP_BANK, STY)
-wOPX (94Slow,   DirectIndexedXSlow,               WRAP_BANK, STY)
+static void Op94E1() { wOP8(DirectIndexedXE1, STY8); }
+static void Op94E0X1() { wOP8(DirectIndexedXE0, STY8); }
+static void Op94E0X0() { wOP16(DirectIndexedXE0, STY16, WRAP_BANK); }
+static void Op94Slow() { wOPX(DirectIndexedXSlow, STY8, STY16, WRAP_BANK); }
 
-wOP8 (8CX1,     Absolute,                         WRAP_BANK, STY)
-wOP16(8CX0,     Absolute,                         WRAP_BANK, STY)
-wOPX (8CSlow,   AbsoluteSlow,                     WRAP_BANK, STY)
+static void Op8CX1() { wOP8(Absolute, STY8); }
+static void Op8CX0() { wOP16(Absolute, STY16, WRAP_BANK); }
+static void Op8CSlow() { wOPX(AbsoluteSlow, STY8, STY16, WRAP_BANK); }
 
 /* STZ ********************************************************************* */
 
-wOP8 (64M1,     Direct,                           WRAP_BANK, STZ)
-wOP16(64M0,     Direct,                           WRAP_BANK, STZ)
-wOPM (64Slow,   DirectSlow,                       WRAP_BANK, STZ)
+static void Op64M1() { wOP8(Direct, STZ8); }
+static void Op64M0() { wOP16(Direct, STZ16, WRAP_BANK); }
+static void Op64Slow() { wOPM(DirectSlow, STZ8, STZ16, WRAP_BANK); }
 
-wOP8 (74E1,     DirectIndexedXE1,                 WRAP_BANK, STZ)
-wOP8 (74E0M1,   DirectIndexedXE0,                 WRAP_BANK, STZ)
-wOP16(74E0M0,   DirectIndexedXE0,                 WRAP_BANK, STZ)
-wOPM (74Slow,   DirectIndexedXSlow,               WRAP_BANK, STZ)
+static void Op74E1() { wOP8(DirectIndexedXE1, STZ8); }
+static void Op74E0M1() { wOP8(DirectIndexedXE0, STZ8); }
+static void Op74E0M0() { wOP16(DirectIndexedXE0, STZ16, WRAP_BANK); }
+static void Op74Slow() { wOPM(DirectIndexedXSlow, STZ8, STZ16, WRAP_BANK); }
 
-wOP8 (9CM1,     Absolute,                         WRAP_NONE, STZ)
-wOP16(9CM0,     Absolute,                         WRAP_NONE, STZ)
-wOPM (9CSlow,   AbsoluteSlow,                     WRAP_NONE, STZ)
+static void Op9CM1() { wOP8(Absolute, STZ8); }
+static void Op9CM0() { wOP16(Absolute, STZ16); }
+static void Op9CSlow() { wOPM(AbsoluteSlow, STZ8, STZ16); }
 
-wOP8 (9EM1X1,   AbsoluteIndexedXX1,               WRAP_NONE, STZ)
-wOP16(9EM0X1,   AbsoluteIndexedXX1,               WRAP_NONE, STZ)
-wOP8 (9EM1X0,   AbsoluteIndexedXX0,               WRAP_NONE, STZ)
-wOP16(9EM0X0,   AbsoluteIndexedXX0,               WRAP_NONE, STZ)
-wOPM (9ESlow,   AbsoluteIndexedXSlow,             WRAP_NONE, STZ)
+static void Op9EM1X1() { wOP8(AbsoluteIndexedXX1, STZ8); }
+static void Op9EM0X1() { wOP16(AbsoluteIndexedXX1, STZ16); }
+static void Op9EM1X0() { wOP8(AbsoluteIndexedXX0, STZ8); }
+static void Op9EM0X0() { wOP16(AbsoluteIndexedXX0, STZ16); }
+static void Op9ESlow() { wOPM(AbsoluteIndexedXSlow, STZ8, STZ16); }
 
 /* TRB ********************************************************************* */
 
-mOP8 (14M1,     Direct,                           WRAP_BANK, TRB)
-mOP16(14M0,     Direct,                           WRAP_BANK, TRB)
-mOPM (14Slow,   DirectSlow,                       WRAP_BANK, TRB)
+static void Op14M1() { mOP8(Direct, TRB8); }
+static void Op14M0() { mOP16(Direct, TRB16, WRAP_BANK); }
+static void Op14Slow() { mOPM(DirectSlow, TRB8, TRB16, WRAP_BANK); }
 
-mOP8 (1CM1,     Absolute,                         WRAP_BANK, TRB)
-mOP16(1CM0,     Absolute,                         WRAP_BANK, TRB)
-mOPM (1CSlow,   AbsoluteSlow,                     WRAP_BANK, TRB)
+static void Op1CM1() { mOP8(Absolute, TRB8); }
+static void Op1CM0() { mOP16(Absolute, TRB16, WRAP_BANK); }
+static void Op1CSlow() { mOPM(AbsoluteSlow, TRB8, TRB16, WRAP_BANK); }
 
 /* TSB ********************************************************************* */
 
-mOP8 (04M1,     Direct,                           WRAP_BANK, TSB)
-mOP16(04M0,     Direct,                           WRAP_BANK, TSB)
-mOPM (04Slow,   DirectSlow,                       WRAP_BANK, TSB)
+static void Op04M1() { mOP8(Direct, TSB8); }
+static void Op04M0() { mOP16(Direct, TSB16, WRAP_BANK); }
+static void Op04Slow() { mOPM(DirectSlow, TSB8, TSB16, WRAP_BANK); }
 
-mOP8 (0CM1,     Absolute,                         WRAP_BANK, TSB)
-mOP16(0CM0,     Absolute,                         WRAP_BANK, TSB)
-mOPM (0CSlow,   AbsoluteSlow,                     WRAP_BANK, TSB)
+static void Op0CM1() { mOP8(Absolute, TSB8); }
+static void Op0CM0() { mOP16(Absolute, TSB16, WRAP_BANK); }
+static void Op0CSlow() { mOPM(AbsoluteSlow, TSB8, TSB16, WRAP_BANK); }
 
 /* Branch Instructions ***************************************************** */
 
 // BCC
-bOP(90E0,   Relative,     !CheckCarry(),    0, 0)
-bOP(90E1,   Relative,     !CheckCarry(),    0, 1)
-bOP(90Slow, RelativeSlow, !CheckCarry(),    0, CheckEmulation())
+static void Op90E0() { bOP(Relative, !CheckCarry(), false); }
+static void Op90E1() { bOP(Relative, !CheckCarry(), true); }
+static void Op90Slow() { bOP(RelativeSlow, !CheckCarry(), CheckEmulation()); }
 
 // BCS
-bOP(B0E0,   Relative,      CheckCarry(),    0, 0)
-bOP(B0E1,   Relative,      CheckCarry(),    0, 1)
-bOP(B0Slow, RelativeSlow,  CheckCarry(),    0, CheckEmulation())
+static void OpB0E0() { bOP(Relative, CheckCarry(), false); }
+static void OpB0E1() { bOP(Relative, CheckCarry(), true); }
+static void OpB0Slow() { bOP(RelativeSlow, CheckCarry(), CheckEmulation()); }
 
 // BEQ
-bOP(F0E0,   Relative,      CheckZero(),     2, 0)
-bOP(F0E1,   Relative,      CheckZero(),     2, 1)
-bOP(F0Slow, RelativeSlow,  CheckZero(),     2, CheckEmulation())
+static void OpF0E0() { bOP(Relative, CheckZero(), false); }
+static void OpF0E1() { bOP(Relative, CheckZero(), true); }
+static void OpF0Slow() { bOP(RelativeSlow, CheckZero(), CheckEmulation()); }
 
 // BMI
-bOP(30E0,   Relative,      CheckNegative(), 1, 0)
-bOP(30E1,   Relative,      CheckNegative(), 1, 1)
-bOP(30Slow, RelativeSlow,  CheckNegative(), 1, CheckEmulation())
+static void Op30E0() { bOP(Relative, CheckNegative(), false); }
+static void Op30E1() { bOP(Relative, CheckNegative(), true); }
+static void Op30Slow() { bOP(RelativeSlow, CheckNegative(), CheckEmulation()); }
 
 // BNE
-bOP(D0E0,   Relative,     !CheckZero(),     1, 0)
-bOP(D0E1,   Relative,     !CheckZero(),     1, 1)
-bOP(D0Slow, RelativeSlow, !CheckZero(),     1, CheckEmulation())
+static void OpD0E0() { bOP(Relative, !CheckZero(), false); }
+static void OpD0E1() { bOP(Relative, !CheckZero(), true); }
+static void OpD0Slow() { bOP(RelativeSlow, !CheckZero(), CheckEmulation()); }
 
 // BPL
-bOP(10E0,   Relative,     !CheckNegative(), 1, 0)
-bOP(10E1,   Relative,     !CheckNegative(), 1, 1)
-bOP(10Slow, RelativeSlow, !CheckNegative(), 1, CheckEmulation())
+static void Op10E0() { bOP(Relative, !CheckNegative(), false); }
+static void Op10E1() { bOP(Relative, !CheckNegative(), true); }
+static void Op10Slow() { bOP(RelativeSlow, !CheckNegative(), CheckEmulation()); }
 
 // BRA
-bOP(80E0,   Relative,     1,                X, 0)
-bOP(80E1,   Relative,     1,                X, 1)
-bOP(80Slow, RelativeSlow, 1,                X, CheckEmulation())
+static void Op80E0() { bOP(Relative, true, false); }
+static void Op80E1() { bOP(Relative, true, true); }
+static void Op80Slow() { bOP(RelativeSlow, true, CheckEmulation()); }
 
 // BVC
-bOP(50E0,   Relative,     !CheckOverflow(), 0, 0)
-bOP(50E1,   Relative,     !CheckOverflow(), 0, 1)
-bOP(50Slow, RelativeSlow, !CheckOverflow(), 0, CheckEmulation())
+static void Op50E0() { bOP(Relative, !CheckOverflow(), false); }
+static void Op50E1() { bOP(Relative, !CheckOverflow(), true); }
+static void Op50Slow() { bOP(RelativeSlow, !CheckOverflow(), CheckEmulation()); }
 
 // BVS
-bOP(70E0,   Relative,      CheckOverflow(), 0, 0)
-bOP(70E1,   Relative,      CheckOverflow(), 0, 1)
-bOP(70Slow, RelativeSlow,  CheckOverflow(), 0, CheckEmulation())
+static void Op70E0() { bOP(Relative, CheckOverflow(), false); }
+static void Op70E1() { bOP(Relative, CheckOverflow(), true); }
+static void Op70Slow() { bOP(RelativeSlow, CheckOverflow(), CheckEmulation()); }
 
 // BRL
+template<typename F> static inline void Op82Wrapper(F f)
+{
+	S9xSetPCBase(ICPU.ShiftedPB + f(JUMP));
+}
+
 static void Op82()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + RelativeLong(JUMP));
+	Op82Wrapper(RelativeLong);
 }
 
 static void Op82Slow()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + RelativeLongSlow(JUMP));
+	Op82Wrapper(RelativeLongSlow);
 }
 
 /* Flag Instructions ******************************************************* */
@@ -1613,9 +1532,6 @@ static void OpF8()
 {
 	SetDecimal();
 	AddCycles(ONE_CYCLE);
-#ifdef DEBUGGER
-	missing.decimal_mode = 1;
-#endif
 }
 
 // CLI
@@ -1623,7 +1539,6 @@ static void Op58()
 {
 	ClearIRQ();
 	AddCycles(ONE_CYCLE);
-	CHECK_FOR_IRQ();
 }
 
 // SEI
@@ -1642,126 +1557,92 @@ static void OpB8()
 
 /* DEX/DEY ***************************************************************** */
 
-static void OpCAX1()
+template<typename T> static inline void DEWrapper(T &reg)
 {
 	AddCycles(ONE_CYCLE);
-	Registers.XL--;
-	SetZN(Registers.XL);
+	--reg;
+	SetZN(reg);
 }
 
-static void OpCAX0()
+static inline void OpCAX1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.X.W--;
-	SetZN(Registers.X.W);
+	DEWrapper(Registers.X.B.l);
+}
+
+static inline void OpCAX0()
+{
+	DEWrapper(Registers.X.W);
 }
 
 static void OpCASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.XL--;
-		SetZN(Registers.XL);
-	}
+		OpCAX1();
 	else
-	{
-		Registers.X.W--;
-		SetZN(Registers.X.W);
-	}
+		OpCAX0();
 }
 
-static void Op88X1()
+static inline void Op88X1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.YL--;
-	SetZN(Registers.YL);
+	DEWrapper(Registers.Y.B.l);
 }
 
-static void Op88X0()
+static inline void Op88X0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.Y.W--;
-	SetZN(Registers.Y.W);
+	DEWrapper(Registers.Y.W);
 }
 
 static void Op88Slow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.YL--;
-		SetZN(Registers.YL);
-	}
+		Op88X1();
 	else
-	{
-		Registers.Y.W--;
-		SetZN(Registers.Y.W);
-	}
+		Op88X0();
 }
 
 /* INX/INY ***************************************************************** */
 
-static void OpE8X1()
+template<typename T> static inline void INWrapper(T &reg)
 {
 	AddCycles(ONE_CYCLE);
-	Registers.XL++;
-	SetZN(Registers.XL);
+	++reg;
+	SetZN(reg);
 }
 
-static void OpE8X0()
+static inline void OpE8X1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.X.W++;
-	SetZN(Registers.X.W);
+	INWrapper(Registers.X.B.l);
+}
+
+static inline void OpE8X0()
+{
+	INWrapper(Registers.X.W);
 }
 
 static void OpE8Slow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.XL++;
-		SetZN(Registers.XL);
-	}
+		OpE8X1();
 	else
-	{
-		Registers.X.W++;
-		SetZN(Registers.X.W);
-	}
+		OpE8X0();
 }
 
-static void OpC8X1()
+static inline void OpC8X1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.YL++;
-	SetZN(Registers.YL);
+	INWrapper(Registers.Y.B.l);
 }
 
-static void OpC8X0()
+static inline void OpC8X0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.Y.W++;
-	SetZN(Registers.Y.W);
+	INWrapper(Registers.Y.W);
 }
 
 static void OpC8Slow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.YL--;
-		SetZN(Registers.YL);
-	}
+		OpC8X1();
 	else
-	{
-		Registers.Y.W--;
-		SetZN(Registers.Y.W);
-	}
+		OpC8X0();
 }
 
 /* NOP ********************************************************************* */
@@ -1773,517 +1654,395 @@ static void OpEA()
 
 /* PUSH Instructions ******************************************************* */
 
-#define PushW(w) \
-	S9xSetWord(w, Registers.S.W - 1, WRAP_BANK, WRITE_10); \
+static inline void PushW(uint16_t w)
+{
+	S9xSetWord(w, Registers.S.W - 1, WRAP_BANK, WRITE_10);
 	Registers.S.W -= 2;
+}
 
-#define PushWE(w) \
-	Registers.SL--; \
-	S9xSetWord(w, Registers.S.W, WRAP_PAGE, WRITE_10); \
-	Registers.SL--;
+static inline void PushWE(uint16_t w)
+{
+	--Registers.S.B.l;
+	S9xSetWord(w, Registers.S.W, WRAP_PAGE, WRITE_10);
+	--Registers.S.B.l;
+}
 
-#define PushB(b) \
+static inline void PushB(uint8_t b)
+{
 	S9xSetByte(b, Registers.S.W--);
+}
 
-#define PushBE(b) \
-	S9xSetByte(b, Registers.S.W); \
-	Registers.SL--;
+static inline void PushBE(uint8_t b)
+{
+	S9xSetByte(b, Registers.S.W);
+	--Registers.S.B.l;
+}
+
+template<typename F> static inline void PEWrapper(F f, bool cond)
+{
+	uint16_t val = static_cast<uint16_t>(f(NONE));
+	PushW(val);
+	OpenBus = val & 0xff;
+	if (cond)
+		Registers.S.B.h = 1;
+}
 
 // PEA
 static void OpF4E0()
 {
-	uint16_t	val = (uint16_t) Absolute(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
+	PEWrapper(Absolute, false);
 }
 
 static void OpF4E1()
 {
 	// Note: PEA is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	uint16_t	val = (uint16_t) Absolute(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
-	Registers.SH = 1;
+	PEWrapper(Absolute, true);
 }
 
 static void OpF4Slow()
 {
-	uint16_t	val = (uint16_t) AbsoluteSlow(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
-	if (CheckEmulation())
-		Registers.SH = 1;
+	PEWrapper(AbsoluteSlow, CheckEmulation());
 }
 
 // PEI
 static void OpD4E0()
 {
-	uint16_t	val = (uint16_t) DirectIndirectE0(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
+	PEWrapper(DirectIndirectE0, false);
 }
 
 static void OpD4E1()
 {
 	// Note: PEI is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	uint16_t	val = (uint16_t) DirectIndirectE1(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
-	Registers.SH = 1;
+	PEWrapper(DirectIndirectE1, true);
 }
 
 static void OpD4Slow()
 {
-	uint16_t	val = (uint16_t) DirectIndirectSlow(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
-	if (CheckEmulation())
-		Registers.SH = 1;
+	PEWrapper(DirectIndirectSlow, CheckEmulation());
 }
 
 // PER
 static void Op62E0()
 {
-	uint16_t	val = (uint16_t) RelativeLong(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
+	PEWrapper(RelativeLong, false);
 }
 
 static void Op62E1()
 {
 	// Note: PER is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	uint16_t	val = (uint16_t) RelativeLong(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
-	Registers.SH = 1;
+	PEWrapper(RelativeLong, true);
 }
 
 static void Op62Slow()
 {
-	uint16_t	val = (uint16_t) RelativeLongSlow(NONE);
-	PushW(val);
-	OpenBus = val & 0xff;
-	if (CheckEmulation())
-		Registers.SH = 1;
+	PEWrapper(RelativeLongSlow, CheckEmulation());
+}
+
+template<typename Treg, typename Tob, typename F> static inline void PHWrapper(const Treg &pushReg, const Tob &obReg, F f, bool cond)
+{
+	AddCycles(ONE_CYCLE);
+	f(pushReg);
+	OpenBus = obReg;
+	if (cond)
+		Registers.S.B.h = 1;
 }
 
 // PHA
-static void Op48E1()
+static inline void Op48E1()
 {
-	AddCycles(ONE_CYCLE);
-	PushBE(Registers.AL);
-	OpenBus = Registers.AL;
+	PHWrapper(Registers.A.B.l, Registers.A.B.l, PushBE, false);
 }
 
-static void Op48E0M1()
+static inline void Op48E0M1()
 {
-	AddCycles(ONE_CYCLE);
-	PushB(Registers.AL);
-	OpenBus = Registers.AL;
+	PHWrapper(Registers.A.B.l, Registers.A.B.l, PushB, false);
 }
 
-static void Op48E0M0()
+static inline void Op48E0M0()
 {
-	AddCycles(ONE_CYCLE);
-	PushW(Registers.A.W);
-	OpenBus = Registers.AL;
+	PHWrapper(Registers.A.W, Registers.A.B.l, PushW, false);
 }
 
 static void Op48Slow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckEmulation())
-	{
-		PushBE(Registers.AL);
-	}
+		Op48E1();
+	else if (CheckMemory())
+		Op48E0M1();
 	else
-	if (CheckMemory())
-	{
-		PushB(Registers.AL);
-	}
-	else
-	{
-		PushW(Registers.A.W);
-	}
-
-	OpenBus = Registers.AL;
+		Op48E0M0();
 }
 
 // PHB
-static void Op8BE1()
+static inline void Op8BE1()
 {
-	AddCycles(ONE_CYCLE);
-	PushBE(Registers.DB);
-	OpenBus = Registers.DB;
+	PHWrapper(Registers.DB, Registers.DB, PushBE, false);
 }
 
-static void Op8BE0()
+static inline void Op8BE0()
 {
-	AddCycles(ONE_CYCLE);
-	PushB(Registers.DB);
-	OpenBus = Registers.DB;
+	PHWrapper(Registers.DB, Registers.DB, PushB, false);
 }
 
 static void Op8BSlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckEmulation())
-	{
-		PushBE(Registers.DB);
-	}
+		Op8BE1();
 	else
-	{
-		PushB(Registers.DB);
-	}
-
-	OpenBus = Registers.DB;
+		Op8BE0();
 }
 
 // PHD
 static void Op0BE0()
 {
-	AddCycles(ONE_CYCLE);
-	PushW(Registers.D.W);
-	OpenBus = Registers.DL;
+	PHWrapper(Registers.D.W, Registers.D.B.l, PushW, false);
 }
 
 static void Op0BE1()
 {
 	// Note: PHD is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	AddCycles(ONE_CYCLE);
-	PushW(Registers.D.W);
-	OpenBus = Registers.DL;
-	Registers.SH = 1;
+	PHWrapper(Registers.D.W, Registers.D.B.l, PushW, true);
 }
 
 static void Op0BSlow()
 {
-	AddCycles(ONE_CYCLE);
-	PushW(Registers.D.W);
-	OpenBus = Registers.DL;
-	if (CheckEmulation())
-		Registers.SH = 1;
+	PHWrapper(Registers.D.W, Registers.D.B.l, PushW, CheckEmulation());
 }
 
 // PHK
-static void Op4BE1()
+static inline void Op4BE1()
 {
-	AddCycles(ONE_CYCLE);
-	PushBE(Registers.PB);
-	OpenBus = Registers.PB;
+	PHWrapper(Registers.PC.B.xPB, Registers.PC.B.xPB, PushBE, false);
 }
 
-static void Op4BE0()
+static inline void Op4BE0()
 {
-	AddCycles(ONE_CYCLE);
-	PushB(Registers.PB);
-	OpenBus = Registers.PB;
+	PHWrapper(Registers.PC.B.xPB, Registers.PC.B.xPB, PushB, false);
 }
 
 static void Op4BSlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckEmulation())
-	{
-		PushBE(Registers.PB);
-	}
+		Op4BE1();
 	else
-	{
-		PushB(Registers.PB);
-	}
-
-	OpenBus = Registers.PB;
+		Op4BE0();
 }
 
 // PHP
-static void Op08E0()
+static inline void Op08E1()
 {
 	S9xPackStatus();
-	AddCycles(ONE_CYCLE);
-	PushB(Registers.PL);
-	OpenBus = Registers.PL;
+	PHWrapper(Registers.P.B.l, Registers.P.B.l, PushBE, false);
 }
 
-static void Op08E1()
+static inline void Op08E0()
 {
 	S9xPackStatus();
-	AddCycles(ONE_CYCLE);
-	PushBE(Registers.PL);
-	OpenBus = Registers.PL;
+	PHWrapper(Registers.P.B.l, Registers.P.B.l, PushB, false);
 }
 
 static void Op08Slow()
 {
-	S9xPackStatus();
-	AddCycles(ONE_CYCLE);
-
 	if (CheckEmulation())
-	{
-		PushBE(Registers.PL);
-	}
+		Op08E1();
 	else
-	{
-		PushB(Registers.PL);
-	}
-
-	OpenBus = Registers.PL;
+		Op08E0();
 }
 
 // PHX
-static void OpDAE1()
+static inline void OpDAE1()
 {
-	AddCycles(ONE_CYCLE);
-	PushBE(Registers.XL);
-	OpenBus = Registers.XL;
+	PHWrapper(Registers.X.B.l, Registers.X.B.l, PushBE, false);
 }
 
-static void OpDAE0X1()
+static inline void OpDAE0X1()
 {
-	AddCycles(ONE_CYCLE);
-	PushB(Registers.XL);
-	OpenBus = Registers.XL;
+	PHWrapper(Registers.X.B.l, Registers.X.B.l, PushB, false);
 }
 
-static void OpDAE0X0()
+static inline void OpDAE0X0()
 {
-	AddCycles(ONE_CYCLE);
-	PushW(Registers.X.W);
-	OpenBus = Registers.XL;
+	PHWrapper(Registers.X.W, Registers.X.B.l, PushW, false);
 }
 
 static void OpDASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckEmulation())
-	{
-		PushBE(Registers.XL);
-	}
+		OpDAE1();
+	else if (CheckIndex())
+		OpDAE0X1();
 	else
-	if (CheckIndex())
-	{
-		PushB(Registers.XL);
-	}
-	else
-	{
-		PushW(Registers.X.W);
-	}
-
-	OpenBus = Registers.XL;
+		OpDAE0X0();
 }
 
 // PHY
-static void Op5AE1()
+static inline void Op5AE1()
 {
-	AddCycles(ONE_CYCLE);
-	PushBE(Registers.YL);
-	OpenBus = Registers.YL;
+	PHWrapper(Registers.Y.B.l, Registers.Y.B.l, PushBE, false);
 }
 
-static void Op5AE0X1()
+static inline void Op5AE0X1()
 {
-	AddCycles(ONE_CYCLE);
-	PushB(Registers.YL);
-	OpenBus = Registers.YL;
+	PHWrapper(Registers.Y.B.l, Registers.Y.B.l, PushB, false);
 }
 
-static void Op5AE0X0()
+static inline void Op5AE0X0()
 {
-	AddCycles(ONE_CYCLE);
-	PushW(Registers.Y.W);
-	OpenBus = Registers.YL;
+	PHWrapper(Registers.Y.W, Registers.Y.B.l, PushW, false);
 }
 
 static void Op5ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckEmulation())
-	{
-		PushBE(Registers.YL);
-	}
+		Op5AE1();
+	else if (CheckIndex())
+		Op5AE0X1();
 	else
-	if (CheckIndex())
-	{
-		PushB(Registers.YL);
-	}
-	else
-	{
-		PushW(Registers.Y.W);
-	}
-
-	OpenBus = Registers.YL;
+		Op5AE0X0();
 }
 
 /* PULL Instructions ******************************************************* */
 
-#define PullW(w) \
-	w = S9xGetWord(Registers.S.W + 1, WRAP_BANK); \
+static inline void PullW(uint16_t &w)
+{
+	w = S9xGetWord(Registers.S.W + 1, WRAP_BANK);
 	Registers.S.W += 2;
+}
 
-#define PullWE(w) \
-	Registers.SL++; \
-	w = S9xGetWord(Registers.S.W, WRAP_PAGE); \
-	Registers.SL++;
+static inline void PullWE(uint16_t &w)
+{
+	++Registers.S.B.l;
+	w = S9xGetWord(Registers.S.W, WRAP_PAGE);
+	++Registers.S.B.l;
+}
 
-#define PullB(b) \
+static inline void PullB(uint8_t &b)
+{
 	b = S9xGetByte(++Registers.S.W);
+}
 
-#define PullBE(b) \
-	Registers.SL++; \
+static inline void PullBE(uint8_t &b)
+{
+	++Registers.S.B.l;
 	b = S9xGetByte(Registers.S.W);
+}
 
 // PLA
-static void Op68E1()
+template<typename Treg, typename Tob, typename F> static inline void Op68Wrapper(Treg &pullReg, const Tob &obReg, F f)
 {
 	AddCycles(TWO_CYCLES);
-	PullBE(Registers.AL);
-	SetZN(Registers.AL);
-	OpenBus = Registers.AL;
+	f(pullReg);
+	SetZN(pullReg);
+	OpenBus = obReg;
 }
 
-static void Op68E0M1()
+static inline void Op68E1()
 {
-	AddCycles(TWO_CYCLES);
-	PullB(Registers.AL);
-	SetZN(Registers.AL);
-	OpenBus = Registers.AL;
+	Op68Wrapper(Registers.A.B.l, Registers.A.B.l, PullBE);
 }
 
-static void Op68E0M0()
+static inline void Op68E0M1()
 {
-	AddCycles(TWO_CYCLES);
-	PullW(Registers.A.W);
-	SetZN(Registers.A.W);
-	OpenBus = Registers.AH;
+	Op68Wrapper(Registers.A.B.l, Registers.A.B.l, PullB);
+}
+
+static inline void Op68E0M0()
+{
+	Op68Wrapper(Registers.A.W, Registers.A.B.h, PullW);
 }
 
 static void Op68Slow()
 {
-	AddCycles(TWO_CYCLES);
-
 	if (CheckEmulation())
-	{
-		PullBE(Registers.AL);
-		SetZN(Registers.AL);
-		OpenBus = Registers.AL;
-	}
+		Op68E1();
+	else if (CheckMemory())
+		Op68E0M1();
 	else
-	if (CheckMemory())
-	{
-		PullB(Registers.AL);
-		SetZN(Registers.AL);
-		OpenBus = Registers.AL;
-	}
-	else
-	{
-		PullW(Registers.A.W);
-		SetZN(Registers.A.W);
-		OpenBus = Registers.AH;
-	}
+		Op68E0M0();
 }
 
 // PLB
-static void OpABE1()
+template<typename F> static inline void OpABWrapper(F f)
 {
 	AddCycles(TWO_CYCLES);
-	PullBE(Registers.DB);
+	f(Registers.DB);
 	SetZN(Registers.DB);
 	ICPU.ShiftedDB = Registers.DB << 16;
 	OpenBus = Registers.DB;
 }
 
-static void OpABE0()
+static inline void OpABE1()
 {
-	AddCycles(TWO_CYCLES);
-	PullB(Registers.DB);
-	SetZN(Registers.DB);
-	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = Registers.DB;
+	OpABWrapper(PullBE);
+}
+
+static inline void OpABE0()
+{
+	OpABWrapper(PullB);
 }
 
 static void OpABSlow()
 {
-	AddCycles(TWO_CYCLES);
-
 	if (CheckEmulation())
-	{
-		PullBE(Registers.DB);
-	}
+		OpABE1();
 	else
-	{
-		PullB(Registers.DB);
-	}
-
-	SetZN(Registers.DB);
-	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = Registers.DB;
+		OpABE0();
 }
 
 // PLD
-static void Op2BE0()
+static inline void Op2BWrapper(bool cond)
 {
 	AddCycles(TWO_CYCLES);
 	PullW(Registers.D.W);
 	SetZN(Registers.D.W);
-	OpenBus = Registers.DH;
+	OpenBus = Registers.D.B.h;
+	if (cond)
+		Registers.S.B.h = 1;
+}
+
+static void Op2BE0()
+{
+	Op2BWrapper(false);
 }
 
 static void Op2BE1()
 {
 	// Note: PLD is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	AddCycles(TWO_CYCLES);
-	PullW(Registers.D.W);
-	SetZN(Registers.D.W);
-	OpenBus = Registers.DH;
-	Registers.SH = 1;
+	Op2BWrapper(true);
 }
 
 static void Op2BSlow()
 {
-	AddCycles(TWO_CYCLES);
-	PullW(Registers.D.W);
-	SetZN(Registers.D.W);
-	OpenBus = Registers.DH;
-	if (CheckEmulation())
-		Registers.SH = 1;
+	Op2BWrapper(CheckEmulation());
 }
 
 // PLP
 static void Op28E1()
 {
 	AddCycles(TWO_CYCLES);
-	PullBE(Registers.PL);
-	OpenBus = Registers.PL;
+	PullBE(Registers.P.B.l);
+	OpenBus = Registers.P.B.l;
 	SetFlags(MemoryFlag | IndexFlag);
 	S9xUnpackStatus();
 	S9xFixCycles();
-	CHECK_FOR_IRQ();
 }
 
 static void Op28E0()
 {
 	AddCycles(TWO_CYCLES);
-	PullB(Registers.PL);
-	OpenBus = Registers.PL;
+	PullB(Registers.P.B.l);
+	OpenBus = Registers.P.B.l;
 	S9xUnpackStatus();
 
 	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
+		Registers.X.B.h = Registers.Y.B.h = 0;
 
 	S9xFixCycles();
-	CHECK_FOR_IRQ();
 }
 
 static void Op28Slow()
@@ -2292,198 +2051,145 @@ static void Op28Slow()
 
 	if (CheckEmulation())
 	{
-		PullBE(Registers.PL);
-		OpenBus = Registers.PL;
+		PullBE(Registers.P.B.l);
+		OpenBus = Registers.P.B.l;
 		SetFlags(MemoryFlag | IndexFlag);
 	}
 	else
 	{
-		PullB(Registers.PL);
-		OpenBus = Registers.PL;
+		PullB(Registers.P.B.l);
+		OpenBus = Registers.P.B.l;
 	}
 
 	S9xUnpackStatus();
 
 	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
+		Registers.X.B.h = Registers.Y.B.h = 0;
 
 	S9xFixCycles();
-	CHECK_FOR_IRQ();
 }
 
 // PLX
-static void OpFAE1()
+static inline void OpFAE1()
 {
 	AddCycles(TWO_CYCLES);
-	PullBE(Registers.XL);
-	SetZN(Registers.XL);
-	OpenBus = Registers.XL;
+	PullBE(Registers.X.B.l);
+	SetZN(Registers.X.B.l);
+	OpenBus = Registers.X.B.l;
 }
 
-static void OpFAE0X1()
+static inline void OpFAE0X1()
 {
 	AddCycles(TWO_CYCLES);
-	PullB(Registers.XL);
-	SetZN(Registers.XL);
-	OpenBus = Registers.XL;
+	PullB(Registers.X.B.l);
+	SetZN(Registers.X.B.l);
+	OpenBus = Registers.X.B.l;
 }
 
-static void OpFAE0X0()
+static inline void OpFAE0X0()
 {
 	AddCycles(TWO_CYCLES);
 	PullW(Registers.X.W);
 	SetZN(Registers.X.W);
-	OpenBus = Registers.XH;
+	OpenBus = Registers.X.B.h;
 }
 
 static void OpFASlow()
 {
-	AddCycles(TWO_CYCLES);
-
 	if (CheckEmulation())
-	{
-		PullBE(Registers.XL);
-		SetZN(Registers.XL);
-		OpenBus = Registers.XL;
-	}
+		OpFAE1();
+	else if (CheckIndex())
+		OpFAE0X1();
 	else
-	if (CheckIndex())
-	{
-		PullB(Registers.XL);
-		SetZN(Registers.XL);
-		OpenBus = Registers.XL;
-	}
-	else
-	{
-		PullW(Registers.X.W);
-		SetZN(Registers.X.W);
-		OpenBus = Registers.XH;
-	}
+		OpFAE0X0();
 }
 
 // PLY
-static void Op7AE1()
+static inline void Op7AE1()
 {
 	AddCycles(TWO_CYCLES);
-	PullBE(Registers.YL);
-	SetZN(Registers.YL);
-	OpenBus = Registers.YL;
+	PullBE(Registers.Y.B.l);
+	SetZN(Registers.Y.B.l);
+	OpenBus = Registers.Y.B.l;
 }
 
-static void Op7AE0X1()
+static inline void Op7AE0X1()
 {
 	AddCycles(TWO_CYCLES);
-	PullB(Registers.YL);
-	SetZN(Registers.YL);
-	OpenBus = Registers.YL;
+	PullB(Registers.Y.B.l);
+	SetZN(Registers.Y.B.l);
+	OpenBus = Registers.Y.B.l;
 }
 
-static void Op7AE0X0()
+static inline void Op7AE0X0()
 {
 	AddCycles(TWO_CYCLES);
 	PullW(Registers.Y.W);
 	SetZN(Registers.Y.W);
-	OpenBus = Registers.YH;
+	OpenBus = Registers.Y.B.h;
 }
 
 static void Op7ASlow()
 {
-	AddCycles(TWO_CYCLES);
-
 	if (CheckEmulation())
-	{
-		PullBE(Registers.YL);
-		SetZN(Registers.YL);
-		OpenBus = Registers.YL;
-	}
+		Op7AE1();
+	else if (CheckIndex())
+		Op7AE0X1();
 	else
-	if (CheckIndex())
-	{
-		PullB(Registers.YL);
-		SetZN(Registers.YL);
-		OpenBus = Registers.YL;
-	}
-	else
-	{
-		PullW(Registers.Y.W);
-		SetZN(Registers.Y.W);
-		OpenBus = Registers.YH;
-	}
+		Op7AE0X0();
 }
 
 /* Transfer Instructions *************************************************** */
 
-// TAX
-static void OpAAX1()
+template<typename T> static inline void TransferWrapper(T &reg1, const T &reg2)
 {
 	AddCycles(ONE_CYCLE);
-	Registers.XL = Registers.AL;
-	SetZN(Registers.XL);
+	reg1 = reg2;
+	SetZN(reg1);
 }
 
-static void OpAAX0()
+// TAX
+static inline void OpAAX1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.X.W = Registers.A.W;
-	SetZN(Registers.X.W);
+	TransferWrapper(Registers.X.B.l, Registers.A.B.l);
+}
+
+static inline void OpAAX0()
+{
+	TransferWrapper(Registers.X.W, Registers.A.W);
 }
 
 static void OpAASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.XL = Registers.AL;
-		SetZN(Registers.XL);
-	}
+		OpAAX1();
 	else
-	{
-		Registers.X.W = Registers.A.W;
-		SetZN(Registers.X.W);
-	}
+		OpAAX0();
 }
 
 // TAY
-static void OpA8X1()
+static inline void OpA8X1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.YL = Registers.AL;
-	SetZN(Registers.YL);
+	TransferWrapper(Registers.Y.B.l, Registers.A.B.l);
 }
 
-static void OpA8X0()
+static inline void OpA8X0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.Y.W = Registers.A.W;
-	SetZN(Registers.Y.W);
+	TransferWrapper(Registers.Y.W, Registers.A.W);
 }
 
 static void OpA8Slow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.YL = Registers.AL;
-		SetZN(Registers.YL);
-	}
+		OpA8X1();
 	else
-	{
-		Registers.Y.W = Registers.A.W;
-		SetZN(Registers.Y.W);
-	}
+		OpA8X0();
 }
 
 // TCD
 static void Op5B()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.D.W = Registers.A.W;
-	SetZN(Registers.D.W);
+	TransferWrapper(Registers.D.W, Registers.A.W);
 }
 
 // TCS
@@ -2492,85 +2198,57 @@ static void Op1B()
 	AddCycles(ONE_CYCLE);
 	Registers.S.W = Registers.A.W;
 	if (CheckEmulation())
-		Registers.SH = 1;
+		Registers.S.B.h = 1;
 }
 
 // TDC
 static void Op7B()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.A.W = Registers.D.W;
-	SetZN(Registers.A.W);
+	TransferWrapper(Registers.A.W, Registers.D.W);
 }
 
 // TSC
 static void Op3B()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.A.W = Registers.S.W;
-	SetZN(Registers.A.W);
+	TransferWrapper(Registers.A.W, Registers.S.W);
 }
 
 // TSX
-static void OpBAX1()
+static inline void OpBAX1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.XL = Registers.SL;
-	SetZN(Registers.XL);
+	TransferWrapper(Registers.X.B.l, Registers.S.B.l);
 }
 
-static void OpBAX0()
+static inline void OpBAX0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.X.W = Registers.S.W;
-	SetZN(Registers.X.W);
+	TransferWrapper(Registers.X.W, Registers.S.W);
 }
 
 static void OpBASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.XL = Registers.SL;
-		SetZN(Registers.XL);
-	}
+		OpBAX1();
 	else
-	{
-		Registers.X.W = Registers.S.W;
-		SetZN(Registers.X.W);
-	}
+		OpBAX0();
 }
 
 // TXA
-static void Op8AM1()
+static inline void Op8AM1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.AL = Registers.XL;
-	SetZN(Registers.AL);
+	TransferWrapper(Registers.A.B.l, Registers.X.B.l);
 }
 
-static void Op8AM0()
+static inline void Op8AM0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.A.W = Registers.X.W;
-	SetZN(Registers.A.W);
+	TransferWrapper(Registers.A.W, Registers.X.W);
 }
 
 static void Op8ASlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		Registers.AL = Registers.XL;
-		SetZN(Registers.AL);
-	}
+		Op8AM1();
 	else
-	{
-		Registers.A.W = Registers.X.W;
-		SetZN(Registers.A.W);
-	}
+		Op8AM0();
 }
 
 // TXS
@@ -2579,100 +2257,64 @@ static void Op9A()
 	AddCycles(ONE_CYCLE);
 	Registers.S.W = Registers.X.W;
 	if (CheckEmulation())
-		Registers.SH = 1;
+		Registers.S.B.h = 1;
 }
 
 // TXY
-static void Op9BX1()
+static inline void Op9BX1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.YL = Registers.XL;
-	SetZN(Registers.YL);
+	TransferWrapper(Registers.Y.B.l, Registers.X.B.l);
 }
 
-static void Op9BX0()
+static inline void Op9BX0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.Y.W = Registers.X.W;
-	SetZN(Registers.Y.W);
+	TransferWrapper(Registers.Y.W, Registers.X.W);
 }
 
 static void Op9BSlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.YL = Registers.XL;
-		SetZN(Registers.YL);
-	}
+		Op9BX1();
 	else
-	{
-		Registers.Y.W = Registers.X.W;
-		SetZN(Registers.Y.W);
-	}
+		Op9BX0();
 }
 
 // TYA
-static void Op98M1()
+static inline void Op98M1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.AL = Registers.YL;
-	SetZN(Registers.AL);
+	TransferWrapper(Registers.A.B.l, Registers.Y.B.l);
 }
 
-static void Op98M0()
+static inline void Op98M0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.A.W = Registers.Y.W;
-	SetZN(Registers.A.W);
+	TransferWrapper(Registers.A.W, Registers.Y.W);
 }
 
 static void Op98Slow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckMemory())
-	{
-		Registers.AL = Registers.YL;
-		SetZN(Registers.AL);
-	}
+		Op98M1();
 	else
-	{
-		Registers.A.W = Registers.Y.W;
-		SetZN(Registers.A.W);
-	}
+		Op98M0();
 }
 
 // TYX
-static void OpBBX1()
+static inline void OpBBX1()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.XL = Registers.YL;
-	SetZN(Registers.XL);
+	TransferWrapper(Registers.X.B.l, Registers.Y.B.l);
 }
 
-static void OpBBX0()
+static inline void OpBBX0()
 {
-	AddCycles(ONE_CYCLE);
-	Registers.X.W = Registers.Y.W;
-	SetZN(Registers.X.W);
+	TransferWrapper(Registers.X.W, Registers.Y.W);
 }
 
 static void OpBBSlow()
 {
-	AddCycles(ONE_CYCLE);
-
 	if (CheckIndex())
-	{
-		Registers.XL = Registers.YL;
-		SetZN(Registers.XL);
-	}
+		OpBBX1();
 	else
-	{
-		Registers.X.W = Registers.Y.W;
-		SetZN(Registers.X.W);
-	}
+		OpBBX0();
 }
 
 /* XCE ********************************************************************* */
@@ -2681,26 +2323,20 @@ static void OpFB()
 {
 	AddCycles(ONE_CYCLE);
 
-	uint8_t	A1 = ICPU._Carry;
-	uint8_t	A2 = Registers.PH;
+	uint8_t A1 = ICPU._Carry;
+	uint8_t A2 = Registers.P.B.h;
 
 	ICPU._Carry = A2 & 1;
-	Registers.PH = A1;
+	Registers.P.B.h = A1;
 
 	if (CheckEmulation())
 	{
 		SetFlags(MemoryFlag | IndexFlag);
-		Registers.SH = 1;
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
+		Registers.S.B.h = 1;
 	}
 
 	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
+		Registers.X.B.h = Registers.Y.B.h = 0;
 
 	S9xFixCycles();
 }
@@ -2709,38 +2345,26 @@ static void OpFB()
 
 static void Op00()
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-		S9xTraceMessage("*** BRK");
-#endif
-
 	AddCycles(CPU.MemSpeed);
-
-	uint16_t	addr;
 
 	if (!CheckEmulation())
 	{
-		PushB(Registers.PB);
-		PushW(Registers.PCw + 1);
+		PushB(Registers.PC.B.xPB);
+		PushW(Registers.PC.W.xPC + 1);
 		S9xPackStatus();
-		PushB(Registers.PL);
-		OpenBus = Registers.PL;
-		ClearDecimal();
-		SetIRQ();
-
-		addr = S9xGetWord(0xFFE6);
+		PushB(Registers.P.B.l);
 	}
 	else
 	{
-		PushWE(Registers.PCw + 1);
+		PushWE(Registers.PC.W.xPC + 1);
 		S9xPackStatus();
-		PushBE(Registers.PL);
-		OpenBus = Registers.PL;
-		ClearDecimal();
-		SetIRQ();
-
-		addr = S9xGetWord(0xFFFE);
+		PushBE(Registers.P.B.l);
 	}
+	OpenBus = Registers.P.B.l;
+	ClearDecimal();
+	SetIRQ();
+
+	uint16_t addr = S9xGetWord(0xFFFE);
 
 	S9xSetPCBase(addr);
 	OpenBus = addr >> 8;
@@ -2750,188 +2374,96 @@ static void Op00()
 
 void S9xOpcode_IRQ()
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-	#ifdef SA1_OPCODES
-		S9xTraceMessage("*** SA1 IRQ");
-	#else
-		S9xTraceMessage("*** IRQ");
-	#endif
-#endif
-
 	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
 
+	uint16_t addr;
 	if (!CheckEmulation())
 	{
-		PushB(Registers.PB);
-		PushW(Registers.PCw);
+		PushB(Registers.PC.B.xPB);
+		PushW(Registers.PC.W.xPC);
 		S9xPackStatus();
-		PushB(Registers.PL);
-		OpenBus = Registers.PL;
+		PushB(Registers.P.B.l);
+		OpenBus = Registers.P.B.l;
 		ClearDecimal();
 		SetIRQ();
 
-	#ifdef SA1_OPCODES
-		OpenBus = Memory.FillRAM[0x2208];
-		AddCycles(2 * SLOW_ONE_CYCLE);
-		S9xSA1SetPCBase(Memory.FillRAM[0x2207] | (Memory.FillRAM[0x2208] << 8));
-	#else
-		if (Settings.SA1 && (Memory.FillRAM[0x2209] & 0x40))
-		{
-			OpenBus = Memory.FillRAM[0x220f];
-			AddCycles(2 * SLOW_ONE_CYCLE);
-			S9xSetPCBase(Memory.FillRAM[0x220e] | (Memory.FillRAM[0x220f] << 8));
-		}
-		else
-		{
-			uint16_t	addr = S9xGetWord(0xFFEE);
-			OpenBus = addr >> 8;
-			S9xSetPCBase(addr);
-		}
-	#endif
+		addr = S9xGetWord(0xFFEE);
 	}
 	else
 	{
-		PushWE(Registers.PCw);
+		PushWE(Registers.PC.W.xPC);
 		S9xPackStatus();
-		PushBE(Registers.PL);
-		OpenBus = Registers.PL;
+		PushBE(Registers.P.B.l);
+		OpenBus = Registers.P.B.l;
 		ClearDecimal();
 		SetIRQ();
 
-	#ifdef SA1_OPCODES
-		OpenBus = Memory.FillRAM[0x2208];
-		AddCycles(2 * SLOW_ONE_CYCLE);
-		S9xSA1SetPCBase(Memory.FillRAM[0x2207] | (Memory.FillRAM[0x2208] << 8));
-	#else
-		if (Settings.SA1 && (Memory.FillRAM[0x2209] & 0x40))
-		{
-			OpenBus = Memory.FillRAM[0x220f];
-			AddCycles(2 * SLOW_ONE_CYCLE);
-			S9xSetPCBase(Memory.FillRAM[0x220e] | (Memory.FillRAM[0x220f] << 8));
-		}
-		else
-		{
-			uint16_t	addr = S9xGetWord(0xFFFE);
-			OpenBus = addr >> 8;
-			S9xSetPCBase(addr);
-		}
-	#endif
+		addr = S9xGetWord(0xFFFE);
 	}
+	OpenBus = addr >> 8;
+	S9xSetPCBase(addr);
 }
 
 /* NMI ********************************************************************* */
 
 void S9xOpcode_NMI()
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-	#ifdef SA1_OPCODES
-		S9xTraceMessage("*** SA1 NMI");
-	#else
-		S9xTraceMessage("*** NMI");
-	#endif
-#endif
-
 	// IRQ and NMI do an opcode fetch as their first "IO" cycle.
 	AddCycles(CPU.MemSpeed + ONE_CYCLE);
 
+	uint16_t addr;
 	if (!CheckEmulation())
 	{
-		PushB(Registers.PB);
-		PushW(Registers.PCw);
+		PushB(Registers.PC.B.xPB);
+		PushW(Registers.PC.W.xPC);
 		S9xPackStatus();
-		PushB(Registers.PL);
-		OpenBus = Registers.PL;
+		PushB(Registers.P.B.l);
+		OpenBus = Registers.P.B.l;
 		ClearDecimal();
 		SetIRQ();
 
-	#ifdef SA1_OPCODES
-		OpenBus = Memory.FillRAM[0x2206];
-		AddCycles(2 * SLOW_ONE_CYCLE);
-		S9xSA1SetPCBase(Memory.FillRAM[0x2205] | (Memory.FillRAM[0x2206] << 8));
-	#else
-		if (Settings.SA1 && (Memory.FillRAM[0x2209] & 0x10))
-		{
-			OpenBus = Memory.FillRAM[0x220d];
-			AddCycles(2 * SLOW_ONE_CYCLE);
-			S9xSetPCBase(Memory.FillRAM[0x220c] | (Memory.FillRAM[0x220d] << 8));
-		}
-		else
-		{
-			uint16_t	addr = S9xGetWord(0xFFEA);
-			OpenBus = addr >> 8;
-			S9xSetPCBase(addr);
-		}
-	#endif
+		addr = S9xGetWord(0xFFEA);
 	}
 	else
 	{
-		PushWE(Registers.PCw);
+		PushWE(Registers.PC.W.xPC);
 		S9xPackStatus();
-		PushBE(Registers.PL);
-		OpenBus = Registers.PL;
+		PushBE(Registers.P.B.l);
+		OpenBus = Registers.P.B.l;
 		ClearDecimal();
 		SetIRQ();
 
-	#ifdef SA1_OPCODES
-		OpenBus = Memory.FillRAM[0x2206];
-		AddCycles(2 * SLOW_ONE_CYCLE);
-		S9xSA1SetPCBase(Memory.FillRAM[0x2205] | (Memory.FillRAM[0x2206] << 8));
-	#else
-		if (Settings.SA1 && (Memory.FillRAM[0x2209] & 0x10))
-		{
-			OpenBus = Memory.FillRAM[0x220d];
-			AddCycles(2 * SLOW_ONE_CYCLE);
-			S9xSetPCBase(Memory.FillRAM[0x220c] | (Memory.FillRAM[0x220d] << 8));
-		}
-		else
-		{
-			uint16_t	addr = S9xGetWord(0xFFFA);
-			OpenBus = addr >> 8;
-			S9xSetPCBase(addr);
-		}
-	#endif
+		addr = S9xGetWord(0xFFFA);
 	}
+	OpenBus = addr >> 8;
+	S9xSetPCBase(addr);
 }
 
 /* COP ********************************************************************* */
 
 static void Op02()
 {
-#ifdef DEBUGGER
-	if (CPU.Flags & TRACE_FLAG)
-		S9xTraceMessage("*** COP");
-#endif
-
 	AddCycles(CPU.MemSpeed);
-
-	uint16_t	addr;
 
 	if (!CheckEmulation())
 	{
-		PushB(Registers.PB);
-		PushW(Registers.PCw + 1);
+		PushB(Registers.PC.B.xPB);
+		PushW(Registers.PC.W.xPC + 1);
 		S9xPackStatus();
-		PushB(Registers.PL);
-		OpenBus = Registers.PL;
-		ClearDecimal();
-		SetIRQ();
-
-		addr = S9xGetWord(0xFFE4);
+		PushB(Registers.P.B.l);
 	}
 	else
 	{
-		PushWE(Registers.PCw + 1);
+		PushWE(Registers.PC.W.xPC + 1);
 		S9xPackStatus();
-		PushBE(Registers.PL);
-		OpenBus = Registers.PL;
-		ClearDecimal();
-		SetIRQ();
-
-		addr = S9xGetWord(0xFFF4);
+		PushBE(Registers.P.B.l);
 	}
+	OpenBus = Registers.P.B.l;
+	ClearDecimal();
+	SetIRQ();
+
+	uint16_t addr = S9xGetWord(0xFFF4);
 
 	S9xSetPCBase(addr);
 	OpenBus = addr >> 8;
@@ -2939,479 +2471,337 @@ static void Op02()
 
 /* JML ********************************************************************* */
 
+template<typename F> static inline void JMLWrapper(F f)
+{
+	S9xSetPCBase(f(JUMP));
+}
+
 static void OpDC()
 {
-	S9xSetPCBase(AbsoluteIndirectLong(JUMP));
+	JMLWrapper(AbsoluteIndirectLong);
 }
 
 static void OpDCSlow()
 {
-	S9xSetPCBase(AbsoluteIndirectLongSlow(JUMP));
+	JMLWrapper(AbsoluteIndirectLongSlow);
 }
 
 static void Op5C()
 {
-	S9xSetPCBase(AbsoluteLong(JUMP));
+	JMLWrapper(AbsoluteLong);
 }
 
 static void Op5CSlow()
 {
-	S9xSetPCBase(AbsoluteLongSlow(JUMP));
+	JMLWrapper(AbsoluteLongSlow);
 }
 
 /* JMP ********************************************************************* */
 
+template<typename F> static inline void JMPWrapper(F f)
+{
+	S9xSetPCBase(ICPU.ShiftedPB + static_cast<uint16_t>(f(JUMP)));
+}
+
 static void Op4C()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) Absolute(JUMP)));
+	JMPWrapper(Absolute);
 }
 
 static void Op4CSlow()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteSlow(JUMP)));
+	JMPWrapper(AbsoluteSlow);
 }
 
 static void Op6C()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndirect(JUMP)));
+	JMPWrapper(AbsoluteIndirect);
 }
 
 static void Op6CSlow()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndirectSlow(JUMP)));
+	JMPWrapper(AbsoluteIndirectSlow);
 }
 
 static void Op7C()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndexedIndirect(JUMP)));
+	JMPWrapper(AbsoluteIndexedIndirect);
 }
 
 static void Op7CSlow()
 {
-	S9xSetPCBase(ICPU.ShiftedPB + ((uint16_t) AbsoluteIndexedIndirectSlow(JUMP)));
+	JMPWrapper(AbsoluteIndexedIndirectSlow);
 }
 
 /* JSL/RTL ***************************************************************** */
 
-static void Op22E1()
+template<typename F> static inline void Op22Wrapper(F f, bool cond)
 {
-	// Note: JSL is a new instruction,
-	// and so doesn't respect the emu-mode stack bounds.
-	uint32_t	addr = AbsoluteLong(JSR);
-	PushB(Registers.PB);
-	PushW(Registers.PCw - 1);
-	Registers.SH = 1;
+	uint32_t addr = f(JSR);
+	PushB(Registers.PC.B.xPB);
+	PushW(Registers.PC.W.xPC - 1);
+	if (cond)
+		Registers.S.B.h = 1;
 	S9xSetPCBase(addr);
 }
 
 static void Op22E0()
 {
-	uint32_t	addr = AbsoluteLong(JSR);
-	PushB(Registers.PB);
-	PushW(Registers.PCw - 1);
-	S9xSetPCBase(addr);
+	Op22Wrapper(AbsoluteLong, false);
+}
+
+static void Op22E1()
+{
+	// Note: JSL is a new instruction,
+	// and so doesn't respect the emu-mode stack bounds.
+	Op22Wrapper(AbsoluteLong, true);
 }
 
 static void Op22Slow()
 {
-	uint32_t	addr = AbsoluteLongSlow(JSR);
-	PushB(Registers.PB);
-	PushW(Registers.PCw - 1);
-	if (CheckEmulation())
-		Registers.SH = 1;
-	S9xSetPCBase(addr);
+	Op22Wrapper(AbsoluteLongSlow, CheckEmulation());
+}
+
+static inline void Op6BWrapper(bool cond)
+{
+	AddCycles(TWO_CYCLES);
+	PullW(Registers.PC.W.xPC);
+	PullB(Registers.PC.B.xPB);
+	if (cond)
+		Registers.S.B.h = 1;
+	++Registers.PC.W.xPC;
+	S9xSetPCBase(Registers.PC.xPBPC);
+}
+
+static void Op6BE0()
+{
+	Op6BWrapper(false);
 }
 
 static void Op6BE1()
 {
 	// Note: RTL is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	AddCycles(TWO_CYCLES);
-	PullW(Registers.PCw);
-	PullB(Registers.PB);
-	Registers.SH = 1;
-	Registers.PCw++;
-	S9xSetPCBase(Registers.PBPC);
-}
-
-static void Op6BE0()
-{
-	AddCycles(TWO_CYCLES);
-	PullW(Registers.PCw);
-	PullB(Registers.PB);
-	Registers.PCw++;
-	S9xSetPCBase(Registers.PBPC);
+	Op6BWrapper(true);
 }
 
 static void Op6BSlow()
 {
-	AddCycles(TWO_CYCLES);
-	PullW(Registers.PCw);
-	PullB(Registers.PB);
-	if (CheckEmulation())
-		Registers.SH = 1;
-	Registers.PCw++;
-	S9xSetPCBase(Registers.PBPC);
+	Op6BWrapper(CheckEmulation());
 }
 
 /* JSR/RTS ***************************************************************** */
 
-static void Op20E1()
+template<typename F> static inline void Op20Wrapper(F f)
 {
-	uint16_t	addr = Absolute(JSR);
+	uint16_t addr = Absolute(JSR);
 	AddCycles(ONE_CYCLE);
-	PushWE(Registers.PCw - 1);
+	f(Registers.PC.W.xPC - 1);
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
+}
+
+static inline void Op20E1()
+{
+	Op20Wrapper(PushWE);
 }
 
 static void Op20E0()
 {
-	uint16_t	addr = Absolute(JSR);
-	AddCycles(ONE_CYCLE);
-	PushW(Registers.PCw - 1);
+	Op20Wrapper(PushW);
+}
+
+static inline void Op20Slow()
+{
+	if (CheckEmulation())
+		Op20E1();
+	else
+		Op20E0();
+}
+
+template<typename F> static inline void OpFCWrapper(F f, bool cond)
+{
+	uint16_t addr = f(JSR);
+	PushW(Registers.PC.W.xPC - 1);
+	if (cond)
+		Registers.S.B.h = 1;
 	S9xSetPCBase(ICPU.ShiftedPB + addr);
 }
 
-static void Op20Slow()
+static void OpFCE0()
 {
-	uint16_t	addr = AbsoluteSlow(JSR);
-
-	AddCycles(ONE_CYCLE);
-
-	if (CheckEmulation())
-	{
-		PushWE(Registers.PCw - 1);
-	}
-	else
-	{
-		PushW(Registers.PCw - 1);
-	}
-
-	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	OpFCWrapper(AbsoluteIndexedIndirect, false);
 }
 
 static void OpFCE1()
 {
 	// Note: JSR (a,X) is a new instruction,
 	// and so doesn't respect the emu-mode stack bounds.
-	uint16_t	addr = AbsoluteIndexedIndirect(JSR);
-	PushW(Registers.PCw - 1);
-	Registers.SH = 1;
-	S9xSetPCBase(ICPU.ShiftedPB + addr);
-}
-
-static void OpFCE0()
-{
-	uint16_t	addr = AbsoluteIndexedIndirect(JSR);
-	PushW(Registers.PCw - 1);
-	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	OpFCWrapper(AbsoluteIndexedIndirect, true);
 }
 
 static void OpFCSlow()
 {
-	uint16_t	addr = AbsoluteIndexedIndirectSlow(JSR);
-	PushW(Registers.PCw - 1);
-	if (CheckEmulation())
-		Registers.SH = 1;
-	S9xSetPCBase(ICPU.ShiftedPB + addr);
+	OpFCWrapper(AbsoluteIndexedIndirectSlow, CheckEmulation());
 }
 
-static void Op60E1()
+template<typename F> static inline void Op60Wrapper(F f)
 {
 	AddCycles(TWO_CYCLES);
-	PullWE(Registers.PCw);
+	f(Registers.PC.W.xPC);
 	AddCycles(ONE_CYCLE);
-	Registers.PCw++;
-	S9xSetPCBase(Registers.PBPC);
+	++Registers.PC.W.xPC;
+	S9xSetPCBase(Registers.PC.xPBPC);
 }
 
-static void Op60E0()
+static inline void Op60E1()
 {
-	AddCycles(TWO_CYCLES);
-	PullW(Registers.PCw);
-	AddCycles(ONE_CYCLE);
-	Registers.PCw++;
-	S9xSetPCBase(Registers.PBPC);
+	Op60Wrapper(PullWE);
+}
+
+static inline void Op60E0()
+{
+	Op60Wrapper(PullW);
 }
 
 static void Op60Slow()
 {
-	AddCycles(TWO_CYCLES);
-
 	if (CheckEmulation())
-	{
-		PullWE(Registers.PCw);
-	}
+		Op60E1();
 	else
-	{
-		PullW(Registers.PCw);
-	}
-
-	AddCycles(ONE_CYCLE);
-	Registers.PCw++;
-	S9xSetPCBase(Registers.PBPC);
+		Op60E0();
 }
 
 /* MVN/MVP ***************************************************************** */
 
-static void Op54X1()
+template<typename F> static inline void MVWrapper(F f, bool cond, int inc, bool setOpenBusOnFirstF = false)
 {
-	uint32_t	SrcBank;
+	uint32_t SrcBank;
 
-	Registers.DB = Immediate8(NONE);
+	Registers.DB = f(NONE);
+	if (setOpenBusOnFirstF)
+		OpenBus = Registers.DB;
 	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = SrcBank = Immediate8(NONE);
+	OpenBus = SrcBank = f(NONE);
 
 	S9xSetByte(OpenBus = S9xGetByte((SrcBank << 16) + Registers.X.W), ICPU.ShiftedDB + Registers.Y.W);
 
-	Registers.XL++;
-	Registers.YL++;
-	Registers.A.W--;
+	if (cond)
+	{
+		Registers.X.B.l += inc;
+		Registers.Y.B.l += inc;
+	}
+	else
+	{
+		Registers.X.W += inc;
+		Registers.Y.W += inc;
+	}
+
+	--Registers.A.W;
 	if (Registers.A.W != 0xffff)
-		Registers.PCw -= 3;
+		Registers.PC.W.xPC -= 3;
 
 	AddCycles(TWO_CYCLES);
+}
+
+static void Op54X1()
+{
+	MVWrapper(Immediate8, true, 1);
 }
 
 static void Op54X0()
 {
-	uint32_t	SrcBank;
-
-	Registers.DB = Immediate8(NONE);
-	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = SrcBank = Immediate8(NONE);
-
-	S9xSetByte(OpenBus = S9xGetByte((SrcBank << 16) + Registers.X.W), ICPU.ShiftedDB + Registers.Y.W);
-
-	Registers.X.W++;
-	Registers.Y.W++;
-	Registers.A.W--;
-	if (Registers.A.W != 0xffff)
-		Registers.PCw -= 3;
-
-	AddCycles(TWO_CYCLES);
+	MVWrapper(Immediate8, false, 1);
 }
 
 static void Op54Slow()
 {
-	uint32_t	SrcBank;
-
-	OpenBus = Registers.DB = Immediate8Slow(NONE);
-	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = SrcBank = Immediate8Slow(NONE);
-
-	S9xSetByte(OpenBus = S9xGetByte((SrcBank << 16) + Registers.X.W), ICPU.ShiftedDB + Registers.Y.W);
-
-	if (CheckIndex())
-	{
-		Registers.XL++;
-		Registers.YL++;
-	}
-	else
-	{
-		Registers.X.W++;
-		Registers.Y.W++;
-	}
-
-	Registers.A.W--;
-	if (Registers.A.W != 0xffff)
-		Registers.PCw -= 3;
-
-	AddCycles(TWO_CYCLES);
+	MVWrapper(Immediate8Slow, CheckIndex(), 1, true);
 }
 
 static void Op44X1()
 {
-	uint32_t	SrcBank;
-
-	Registers.DB = Immediate8(NONE);
-	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = SrcBank = Immediate8(NONE);
-
-	S9xSetByte(OpenBus = S9xGetByte((SrcBank << 16) + Registers.X.W), ICPU.ShiftedDB + Registers.Y.W);
-
-	Registers.XL--;
-	Registers.YL--;
-	Registers.A.W--;
-	if (Registers.A.W != 0xffff)
-		Registers.PCw -= 3;
-
-	AddCycles(TWO_CYCLES);
+	MVWrapper(Immediate8, true, -1);
 }
 
 static void Op44X0()
 {
-	uint32_t	SrcBank;
-
-	Registers.DB = Immediate8(NONE);
-	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = SrcBank = Immediate8(NONE);
-
-	S9xSetByte(OpenBus = S9xGetByte((SrcBank << 16) + Registers.X.W), ICPU.ShiftedDB + Registers.Y.W);
-
-	Registers.X.W--;
-	Registers.Y.W--;
-	Registers.A.W--;
-	if (Registers.A.W != 0xffff)
-		Registers.PCw -= 3;
-
-	AddCycles(TWO_CYCLES);
+	MVWrapper(Immediate8, false, -1);
 }
 
 static void Op44Slow()
 {
-	uint32_t	SrcBank;
-
-	OpenBus = Registers.DB = Immediate8Slow(NONE);
-	ICPU.ShiftedDB = Registers.DB << 16;
-	OpenBus = SrcBank = Immediate8Slow(NONE);
-
-	S9xSetByte(OpenBus = S9xGetByte((SrcBank << 16) + Registers.X.W), ICPU.ShiftedDB + Registers.Y.W);
-
-	if (CheckIndex())
-	{
-		Registers.XL--;
-		Registers.YL--;
-	}
-	else
-	{
-		Registers.X.W--;
-		Registers.Y.W--;
-	}
-
-	Registers.A.W--;
-	if (Registers.A.W != 0xffff)
-		Registers.PCw -= 3;
-
-	AddCycles(TWO_CYCLES);
+	MVWrapper(Immediate8Slow, CheckIndex(), -1, true);
 }
 
 /* REP/SEP ***************************************************************** */
 
-static void OpC2()
+template<typename F> static inline void OpC2Wrapper(F f)
 {
-	uint8_t	Work8 = ~Immediate8(READ);
-	Registers.PL &= Work8;
+	uint8_t Work8 = ~f(READ);
+	Registers.P.B.l &= Work8;
 	ICPU._Carry &= Work8;
-	ICPU._Overflow &= (Work8 >> 6);
+	ICPU._Overflow &= Work8 >> 6;
 	ICPU._Negative &= Work8;
 	ICPU._Zero |= ~Work8 & Zero;
 
 	AddCycles(ONE_CYCLE);
 
 	if (CheckEmulation())
-	{
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
-	}
 
 	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
+		Registers.X.B.h = Registers.Y.B.h = 0;
 
 	S9xFixCycles();
-	CHECK_FOR_IRQ();
+}
+
+static void OpC2()
+{
+	OpC2Wrapper(Immediate8);
 }
 
 static void OpC2Slow()
 {
-	uint8_t	Work8 = ~Immediate8Slow(READ);
-	Registers.PL &= Work8;
-	ICPU._Carry &= Work8;
-	ICPU._Overflow &= (Work8 >> 6);
-	ICPU._Negative &= Work8;
-	ICPU._Zero |= ~Work8 & Zero;
+	OpC2Wrapper(Immediate8Slow);
+}
+
+template<typename F> static inline void OpE2Wrapper(F f)
+{
+	uint8_t Work8 = f(READ);
+	Registers.P.B.l |= Work8;
+	ICPU._Carry |= Work8 & 1;
+	ICPU._Overflow |= (Work8 >> 6) & 1;
+	ICPU._Negative |= Work8;
+	if (Work8 & Zero)
+		ICPU._Zero = 0;
 
 	AddCycles(ONE_CYCLE);
 
 	if (CheckEmulation())
-	{
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
-	}
 
 	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
+		Registers.X.B.h = Registers.Y.B.h = 0;
 
 	S9xFixCycles();
-	CHECK_FOR_IRQ();
 }
 
 static void OpE2()
 {
-	uint8_t	Work8 = Immediate8(READ);
-	Registers.PL |= Work8;
-	ICPU._Carry |= Work8 & 1;
-	ICPU._Overflow |= (Work8 >> 6) & 1;
-	ICPU._Negative |= Work8;
-	if (Work8 & Zero)
-		ICPU._Zero = 0;
-
-	AddCycles(ONE_CYCLE);
-
-	if (CheckEmulation())
-	{
-		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
-	}
-
-	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
-
-	S9xFixCycles();
+	OpE2Wrapper(Immediate8);
 }
 
 static void OpE2Slow()
 {
-	uint8_t	Work8 = Immediate8Slow(READ);
-	Registers.PL |= Work8;
-	ICPU._Carry |= Work8 & 1;
-	ICPU._Overflow |= (Work8 >> 6) & 1;
-	ICPU._Negative |= Work8;
-	if (Work8 & Zero)
-		ICPU._Zero = 0;
-
-	AddCycles(ONE_CYCLE);
-
-	if (CheckEmulation())
-	{
-		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
-	}
-
-	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
-
-	S9xFixCycles();
+	OpE2Wrapper(Immediate8Slow);
 }
 
 /* XBA ********************************************************************* */
 
 static void OpEB()
 {
-	uint8_t	Work8 = Registers.AL;
-	Registers.AL = Registers.AH;
-	Registers.AH = Work8;
-	SetZN(Registers.AL);
+	std::swap(Registers.A.B.l, Registers.A.B.h);
+	SetZN(Registers.A.B.l);
 	AddCycles(TWO_CYCLES);
 }
 
@@ -3423,35 +2813,28 @@ static void Op40Slow()
 
 	if (!CheckEmulation())
 	{
-		PullB(Registers.PL);
+		PullB(Registers.P.B.l);
 		S9xUnpackStatus();
-		PullW(Registers.PCw);
-		PullB(Registers.PB);
-		OpenBus = Registers.PB;
-		ICPU.ShiftedPB = Registers.PB << 16;
+		PullW(Registers.PC.W.xPC);
+		PullB(Registers.PC.B.xPB);
+		OpenBus = Registers.PC.B.xPB;
+		ICPU.ShiftedPB = Registers.PC.B.xPB << 16;
 	}
 	else
 	{
-		PullBE(Registers.PL);
+		PullBE(Registers.P.B.l);
 		S9xUnpackStatus();
-		PullWE(Registers.PCw);
-		OpenBus = Registers.PCh;
+		PullWE(Registers.PC.W.xPC);
+		OpenBus = Registers.PC.B.xPCh;
 		SetFlags(MemoryFlag | IndexFlag);
-	#ifdef DEBUGGER
-		missing.emulate6502 = 1;
-	#endif
 	}
 
-	S9xSetPCBase(Registers.PBPC);
+	S9xSetPCBase(Registers.PC.xPBPC);
 
 	if (CheckIndex())
-	{
-		Registers.XH = 0;
-		Registers.YH = 0;
-	}
+		Registers.X.B.h = Registers.Y.B.h = 0;
 
 	S9xFixCycles();
-	CHECK_FOR_IRQ();
 }
 
 /* STP/WAI ***************************************************************** */
@@ -3459,92 +2842,24 @@ static void Op40Slow()
 // WAI
 static void OpCB()
 {
-#ifdef SA1_OPCODES
-	SA1.WaitingForInterrupt = true;
-	Registers.PCw--;
-	AddCycles(TWO_CYCLES);
-#else
 	CPU.WaitingForInterrupt = true;
-	Registers.PCw--;
+	--Registers.PC.W.xPC;
 	AddCycles(TWO_CYCLES);
-#endif
 }
 
 // STP
 static void OpDB()
 {
-	Registers.PCw--;
+	--Registers.PC.W.xPC;
 	CPU.Flags |= DEBUG_MODE_FLAG | HALTED_FLAG;
 }
 
 /* WDM (Reserved S9xOpcode) ************************************************ */
 
-#ifdef DEBUGGER
-extern FILE	*trace, *trace2;
-#endif
-
 static void Op42()
 {
-#ifdef DEBUGGER
-	uint8_t	byte = (uint8_t) S9xGetWord(Registers.PBPC);
-#else
-	S9xGetWord(Registers.PBPC);
-#endif
-	Registers.PCw++;
-
-#ifdef DEBUGGER
-	// Hey, let's use this to trigger debug modes.
-	switch (byte)
-	{
-		case 0xdb: // "STP" = Enter debug mode
-			CPU.Flags |= DEBUG_MODE_FLAG;
-			break;
-
-	#ifndef SA1_OPCODES
-		case 0xe2: // "SEP" = Trace on
-			if (!(CPU.Flags & TRACE_FLAG))
-			{
-				char	buf[25];
-				CPU.Flags |= TRACE_FLAG;
-				snprintf(buf, 25, "WDM trace on at $%02X:%04X", Registers.PB, Registers.PCw);
-				S9xMessage(S9X_DEBUG, S9X_DEBUG_OUTPUT, buf);
-				if (trace != NULL)
-					fclose(trace);
-				ENSURE_TRACE_OPEN(trace, "WDMtrace.log", "ab")
-			}
-
-			break;
-
-		case 0xc2: // "REP" = Trace off
-			if (CPU.Flags & TRACE_FLAG)
-			{
-				char	buf[26];
-				CPU.Flags &= ~TRACE_FLAG;
-				snprintf(buf, 26, "WDM trace off at $%02X:%04X", Registers.PB, Registers.PCw);
-				S9xMessage(S9X_DEBUG, S9X_DEBUG_OUTPUT, buf);
-				if (trace != NULL)
-					fclose(trace);
-				trace = NULL;
-			}
-
-			break;
-	#endif
-
-		case 0x42: // "WDM" = Snapshot
-			char	filename[PATH_MAX + 1], drive[_MAX_DRIVE + 1], dir[_MAX_DIR + 1], def[PATH_MAX + 1], ext[_MAX_EXT + 1];
-
-			_splitpath(Memory.ROMFilename, drive, dir, def, ext);
-			snprintf(filename, PATH_MAX, "%s%s%s-%06X.wdm", S9xGetDirectory(SNAPSHOT_DIR), SLASH_STR, def, Registers.PBPC & 0xffffff);
-			sprintf(def, "WDM Snapshot at $%02X:%04X: %s", Registers.PB, Registers.PCw, filename);
-			S9xMessage(S9X_DEBUG, S9X_DEBUG_OUTPUT, def);
-			S9xFreezeGame(filename);
-
-			break;
-
-		default:
-			break;
-	}
-#endif
+	S9xGetWord(Registers.PC.xPBPC);
+	++Registers.PC.W.xPC;
 }
 
 /* CPU-S9xOpcodes Definitions ************************************************/

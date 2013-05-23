@@ -175,38 +175,34 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #ifndef _DMA_H_
 #define _DMA_H_
 
 struct SDMA
 {
-	bool	ReverseTransfer;
-	bool	HDMAIndirectAddressing;
-	bool	UnusedBit43x0;
-	bool	AAddressFixed;
-	bool	AAddressDecrement;
-	uint8_t	TransferMode;
-	uint8_t	BAddress;
-	uint16_t	AAddress;
-	uint8_t	ABank;
-	uint16_t	DMACount_Or_HDMAIndirectAddress;
-	uint8_t	IndirectBank;
-	uint16_t	Address;
-	uint8_t	Repeat;
-	uint8_t	LineCount;
-	uint8_t	UnknownByte;
-	uint8_t	DoTransfer;
+	bool ReverseTransfer;
+	bool HDMAIndirectAddressing;
+	bool UnusedBit43x0;
+	bool AAddressFixed;
+	bool AAddressDecrement;
+	uint8_t TransferMode;
+	uint8_t BAddress;
+	uint16_t AAddress;
+	uint8_t ABank;
+	uint16_t DMACount_Or_HDMAIndirectAddress;
+	uint8_t IndirectBank;
+	uint16_t Address;
+	bool Repeat;
+	uint8_t LineCount;
+	uint8_t UnknownByte;
+	bool DoTransfer;
 };
 
-#define TransferBytes	DMACount_Or_HDMAIndirectAddress
-#define IndirectAddress	DMACount_Or_HDMAIndirectAddress
+extern SDMA DMA[8];
 
-extern struct SDMA	DMA[8];
-
-bool S9xDoDMA (uint8_t);
+bool S9xDoDMA(uint8_t);
 void S9xStartHDMA();
-uint8_t S9xDoHDMA (uint8_t);
+uint8_t S9xDoHDMA(uint8_t);
 void S9xResetDMA();
 
 #endif

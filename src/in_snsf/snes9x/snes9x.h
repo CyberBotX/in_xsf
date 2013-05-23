@@ -175,295 +175,137 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #ifndef _SNES9X_H_
 #define _SNES9X_H_
 
 #ifndef VERSION
-#define VERSION	"1.53"
+#define VERSION "1.53"
 #endif
 
 #include "port.h"
-#include "65c816.h"
-//#include "messages.h"
 
-#ifdef ZLIB
-#include <zlib.h>
-#define STREAM					gzFile
-#define READ_STREAM(p, l, s)	gzread(s, p, l)
-#define WRITE_STREAM(p, l, s)	gzwrite(s, p, l)
-#define GETS_STREAM(p, l, s)	gzgets(s, p, l)
-#define GETC_STREAM(s)			gzgetc(s)
-#define OPEN_STREAM(f, m)		gzopen(f, m)
-#define REOPEN_STREAM(f, m)		gzdopen(f, m)
-#define FIND_STREAM(f)			gztell(f)
-#define REVERT_STREAM(f, o, s)	gzseek(f, o, s)
-#define CLOSE_STREAM(s)			gzclose(s)
-#else
-#define STREAM					FILE *
-#define READ_STREAM(p, l, s)	fread(p, 1, l, s)
-#define WRITE_STREAM(p, l, s)	fwrite(p, 1, l, s)
-#define GETS_STREAM(p, l, s)	fgets(p, l, s)
-#define GETC_STREAM(s)			fgetc(s)
-#define OPEN_STREAM(f, m)		fopen(f, m)
-#define REOPEN_STREAM(f, m)		fdopen(f, m)
-#define FIND_STREAM(f)			ftell(f)
-#define REVERT_STREAM(f, o, s)	fseek(f, o, s)
-#define CLOSE_STREAM(s)			fclose(s)
-#endif
+const int SNES_WIDTH = 256;
+const int SNES_HEIGHT = 224;
+const uint16_t SNES_HEIGHT_EXTENDED = 239;
 
-#define SNES_WIDTH					256
-#define SNES_HEIGHT					224
-#define SNES_HEIGHT_EXTENDED		239
-#define MAX_SNES_WIDTH				(SNES_WIDTH * 2)
-#define MAX_SNES_HEIGHT				(SNES_HEIGHT_EXTENDED * 2)
-#define IMAGE_WIDTH					(Settings.SupportHiRes ? MAX_SNES_WIDTH : SNES_WIDTH)
-#define IMAGE_HEIGHT				(Settings.SupportHiRes ? MAX_SNES_HEIGHT : SNES_HEIGHT_EXTENDED)
+const int32_t SNES_MAX_NTSC_VCOUNTER = 262;
+const int32_t SNES_MAX_PAL_VCOUNTER = 312;
+const int32_t SNES_HCOUNTER_MAX = 341;
 
-#define	NTSC_MASTER_CLOCK			21477272.0
-#define	PAL_MASTER_CLOCK			21281370.0
+const int32_t ONE_CYCLE = 6;
+const int32_t SLOW_ONE_CYCLE = 8;
+const int32_t TWO_CYCLES = 12;
+const int32_t ONE_DOT_CYCLE = 4;
 
-#define SNES_MAX_NTSC_VCOUNTER		262
-#define SNES_MAX_PAL_VCOUNTER		312
-#define SNES_HCOUNTER_MAX			341
+const int32_t SNES_CYCLES_PER_SCANLINE = SNES_HCOUNTER_MAX * ONE_DOT_CYCLE;
 
-#define ONE_CYCLE					6
-#define SLOW_ONE_CYCLE				8
-#define TWO_CYCLES					12
-#define	ONE_DOT_CYCLE				4
+const int32_t SNES_WRAM_REFRESH_HC_v1 = 530;
+const int32_t SNES_WRAM_REFRESH_HC_v2 = 538;
+const int32_t SNES_WRAM_REFRESH_CYCLES = 40;
 
-#define SNES_CYCLES_PER_SCANLINE	(SNES_HCOUNTER_MAX * ONE_DOT_CYCLE)
-#define SNES_SCANLINE_TIME			(SNES_CYCLES_PER_SCANLINE / NTSC_MASTER_CLOCK)
+const int32_t SNES_HBLANK_START_HC = 1096; // H=274
+const int32_t SNES_HDMA_START_HC = 1106; // FIXME: not true
+const int32_t SNES_HBLANK_END_HC = 4; // H=1
+const int32_t SNES_HDMA_INIT_HC = 20; // FIXME: not true
+const int32_t SNES_RENDER_START_HC = 48 * ONE_DOT_CYCLE; // FIXME: Snes9x renders a line at a time.
 
-#define SNES_WRAM_REFRESH_HC_v1		530
-#define SNES_WRAM_REFRESH_HC_v2		538
-#define SNES_WRAM_REFRESH_CYCLES	40
+const uint32_t DEBUG_MODE_FLAG = 1; // debugger
+const uint32_t TRACE_FLAG = 1 << 1; // debugger
+const uint32_t SCAN_KEYS_FLAG = 1 << 4; // CPU
+const uint32_t HALTED_FLAG = 1 << 12; // APU
 
-#define SNES_HBLANK_START_HC		1096					// H=274
-#define	SNES_HDMA_START_HC			1106					// FIXME: not true
-#define	SNES_HBLANK_END_HC			4						// H=1
-#define	SNES_HDMA_INIT_HC			20						// FIXME: not true
-#define	SNES_RENDER_START_HC		(48 * ONE_DOT_CYCLE)	// FIXME: Snes9x renders a line at a time.
-
-#define SNES_TR_MASK		(1 <<  4)
-#define SNES_TL_MASK		(1 <<  5)
-#define SNES_X_MASK			(1 <<  6)
-#define SNES_A_MASK			(1 <<  7)
-#define SNES_RIGHT_MASK		(1 <<  8)
-#define SNES_LEFT_MASK		(1 <<  9)
-#define SNES_DOWN_MASK		(1 << 10)
-#define SNES_UP_MASK		(1 << 11)
-#define SNES_START_MASK		(1 << 12)
-#define SNES_SELECT_MASK	(1 << 13)
-#define SNES_Y_MASK			(1 << 14)
-#define SNES_B_MASK			(1 << 15)
-
-#define DEBUG_MODE_FLAG		(1 <<  0)	// debugger
-#define TRACE_FLAG			(1 <<  1)	// debugger
-#define SINGLE_STEP_FLAG	(1 <<  2)	// debugger
-#define BREAK_FLAG			(1 <<  3)	// debugger
-#define SCAN_KEYS_FLAG		(1 <<  4)	// CPU
-#define HALTED_FLAG			(1 << 12)	// APU
-#define FRAME_ADVANCE_FLAG	(1 <<  9)
-
-#define ROM_NAME_LEN	23
-#define AUTO_FRAMERATE	200
+const size_t ROM_NAME_LEN = 23;
 
 struct SCPUState
 {
-	uint32_t	Flags;
-	int32_t	Cycles;
-	int32_t	PrevCycles;
-	int32_t	V_Counter;
-	uint8_t	*PCBase;
-	bool	NMILine;
-	bool	IRQLine;
-	bool	IRQTransition;
-	bool	IRQLastState;
-	bool	IRQExternal;
-	int32_t	IRQPending;
-	int32_t	MemSpeed;
-	int32_t	MemSpeedx2;
-	int32_t	FastROMSpeed;
-	bool	InDMA;
-	bool	InHDMA;
-	bool	InDMAorHDMA;
-	bool	InWRAMDMAorHDMA;
-	uint8_t	HDMARanInDMA;
-	int32_t	CurrentDMAorHDMAChannel;
-	uint8_t	WhichEvent;
-	int32_t	NextEvent;
-	bool	WaitingForInterrupt;
-	uint32_t	AutoSaveTimer;
-	bool	SRAMModified;
+	uint32_t Flags;
+	int32_t Cycles;
+	int32_t PrevCycles;
+	int32_t V_Counter;
+	uint8_t *PCBase;
+	bool NMILine;
+	bool IRQLine;
+	bool IRQTransition;
+	bool IRQLastState;
+	int32_t IRQPending;
+	int32_t MemSpeed;
+	int32_t MemSpeedx2;
+	int32_t FastROMSpeed;
+	bool InDMA;
+	bool InHDMA;
+	bool InDMAorHDMA;
+	bool InWRAMDMAorHDMA;
+	uint8_t HDMARanInDMA;
+	int32_t CurrentDMAorHDMAChannel;
+	uint8_t WhichEvent;
+	int32_t NextEvent;
+	bool WaitingForInterrupt;
 };
 
 enum
 {
 	HC_HBLANK_START_EVENT = 1,
-	HC_HDMA_START_EVENT   = 2,
+	HC_HDMA_START_EVENT = 2,
 	HC_HCOUNTER_MAX_EVENT = 3,
-	HC_HDMA_INIT_EVENT    = 4,
-	HC_RENDER_EVENT       = 5,
+	HC_HDMA_INIT_EVENT = 4,
+	HC_RENDER_EVENT = 5,
 	HC_WRAM_REFRESH_EVENT = 6
 };
 
 struct STimings
 {
-	int32_t	H_Max_Master;
-	int32_t	H_Max;
-	int32_t	V_Max_Master;
-	int32_t	V_Max;
-	int32_t	HBlankStart;
-	int32_t	HBlankEnd;
-	int32_t	HDMAInit;
-	int32_t	HDMAStart;
-	int32_t	NMITriggerPos;
-	int32_t	IRQTriggerCycles;
-	int32_t	WRAMRefreshPos;
-	int32_t	RenderPos;
-	bool	InterlaceField;
-	int32_t	DMACPUSync;		// The cycles to synchronize DMA and CPU. Snes9x cannot emulate correctly.
-	int32_t	NMIDMADelay;	// The delay of NMI trigger after DMA transfers. Snes9x cannot emulate correctly.
-	int32_t	IRQPendCount;	// This value is just a hack.
-	int32_t	APUSpeedup;
-	bool	APUAllowTimeOverflow;
+	int32_t H_Max_Master;
+	int32_t H_Max;
+	int32_t V_Max_Master;
+	int32_t V_Max;
+	int32_t HBlankStart;
+	int32_t HBlankEnd;
+	int32_t HDMAInit;
+	int32_t HDMAStart;
+	int32_t NMITriggerPos;
+	int32_t IRQTriggerCycles;
+	int32_t WRAMRefreshPos;
+	int32_t RenderPos;
+	bool InterlaceField;
+	int32_t DMACPUSync; // The cycles to synchronize DMA and CPU. Snes9x cannot emulate correctly.
+	int32_t NMIDMADelay; // The delay of NMI trigger after DMA transfers. Snes9x cannot emulate correctly.
+	int32_t IRQPendCount; // This value is just a hack.
+	int32_t APUSpeedup;
+	bool APUAllowTimeOverflow;
 };
 
 struct SSettings
 {
-	bool	TraceDMA;
-	bool	TraceHDMA;
-	bool	TraceVRAM;
-	bool	TraceUnknownRegisters;
-	bool	TraceDSP;
-	bool	TraceHCEvent;
+	bool SDD1;
 
-	bool	SuperFX;
-	uint8_t	DSP;
-	bool	SA1;
-	bool	C4;
-	bool	SDD1;
-	bool	SPC7110;
-	bool	SPC7110RTC;
-	bool	OBC1;
-	uint8_t	SETA;
-	bool	SRTC;
-	bool	BS;
-	bool	BSXItself;
-	bool	BSXBootup;
-	bool	MouseMaster;
-	bool	SuperScopeMaster;
-	bool	JustifierMaster;
-	bool	MultiPlayer5Master;
+	bool ForceNotInterleaved;
+	bool PAL;
 
-	bool	ForceLoROM;
-	bool	ForceHiROM;
-	bool	ForceHeader;
-	bool	ForceNoHeader;
-	bool	ForceInterleaved;
-	bool	ForceInterleaved2;
-	bool	ForceInterleaveGD24;
-	bool	ForceNotInterleaved;
-	bool	ForcePAL;
-	bool	ForceNTSC;
-	bool	PAL;
-	uint32_t	FrameTimePAL;
-	uint32_t	FrameTimeNTSC;
-	uint32_t	FrameTime;
+	bool SoundSync;
+	bool SixteenBitSound;
+	uint32_t SoundPlaybackRate;
+	uint32_t SoundInputRate;
+	bool Stereo;
+	bool ReverseStereo;
+	bool Mute;
 
-	bool	SoundSync;
-	bool	SixteenBitSound;
-	uint32_t	SoundPlaybackRate;
-	uint32_t	SoundInputRate;
-	bool	Stereo;
-	bool	ReverseStereo;
-	bool	Mute;
+	bool DisableGameSpecificHacks;
+	bool BlockInvalidVRAMAccessMaster;
+	bool BlockInvalidVRAMAccess;
+	int32_t HDMATimingHack;
 
-	bool	SupportHiRes;
-	bool	Transparency;
-	uint8_t	BG_Forced;
-	bool	DisableGraphicWindows;
-
-	bool	DisplayFrameRate;
-	bool	DisplayWatchedAddresses;
-	bool	DisplayPressedKeys;
-	bool	DisplayMovieFrame;
-	bool	AutoDisplayMessages;
-	uint32_t	InitialInfoStringTimeout;
-	uint16_t	DisplayColor;
-
-	bool	Multi;
-	char	CartAName[PATH_MAX + 1];
-	char	CartBName[PATH_MAX + 1];
-
-	bool	DisableGameSpecificHacks;
-	bool	BlockInvalidVRAMAccessMaster;
-	bool	BlockInvalidVRAMAccess;
-	int32_t	HDMATimingHack;
-
-	bool	ForcedPause;
-	bool	Paused;
-	bool	StopEmulation;
-
-	uint32_t	SkipFrames;
-	uint32_t	TurboSkipFrames;
-	uint32_t	AutoMaxSkipFrames;
-	bool	TurboMode;
-	uint32_t	HighSpeedSeek;
-	bool	FrameAdvance;
-
-	bool	NetPlay;
-	bool	NetPlayServer;
-	char	ServerName[128];
-	int		Port;
-
-	bool	MovieTruncate;
-	bool	MovieNotifyIgnored;
-	bool	WrongMovieStateProtection;
-	bool	DumpStreams;
-	int		DumpStreamsMaxFrames;
-
-	bool	TakeScreenshot;
-	int8_t	StretchScreenshots;
-	bool	SnapshotScreenshots;
-
-	bool	ApplyCheats;
-	bool	NoPatch;
-	int32_t	AutoSaveDelay;
-	bool	DontSaveOopsSnapshot;
-	bool	UpAndDown;
-
-	bool	OpenGLEnable;
+	bool TurboMode;
 };
 
 struct SSNESGameFixes
 {
-	uint8_t	SRAMInitialValue;
-	uint8_t	Uniracers;
+	uint8_t SRAMInitialValue;
+	bool Uniracers;
 };
 
-enum
-{
-	PAUSE_NETPLAY_CONNECT		= (1 << 0),
-	PAUSE_TOGGLE_FULL_SCREEN	= (1 << 1),
-	PAUSE_EXIT					= (1 << 2),
-	PAUSE_MENU					= (1 << 3),
-	PAUSE_INACTIVE_WINDOW		= (1 << 4),
-	PAUSE_WINDOW_ICONISED		= (1 << 5),
-	PAUSE_RESTORE_GUI			= (1 << 6),
-	PAUSE_FREEZE_FILE			= (1 << 7)
-};
-
-void S9xSetPause(uint32_t);
-void S9xClearPause(uint32_t);
-void S9xExi();
-void S9xMessage(int, int, const char *);
-
-extern struct SSettings			Settings;
-extern struct SCPUState			CPU;
-extern struct STimings			Timings;
-extern struct SSNESGameFixes	SNESGameFixes;
-//extern char						String[513];
+extern SSettings Settings;
+extern SCPUState CPU;
+extern STimings Timings;
+extern SSNESGameFixes SNESGameFixes;
 
 #endif

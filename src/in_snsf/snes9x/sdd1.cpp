@@ -175,15 +175,15 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
+#include <algorithm>
 #include "snes9x.h"
 #include "memmap.h"
 #include "sdd1.h"
-//#include "display.h"
 
 void S9xSetSDD1MemoryMap(uint32_t bank, uint32_t value)
 {
 	bank = 0xc00 + bank * 0x100;
-	value = value * 1024 * 1024;
+	value *= 1024 * 1024;
 
 	for (int c = 0; c < 0x100; c += 16)
 	{
@@ -195,16 +195,10 @@ void S9xSetSDD1MemoryMap(uint32_t bank, uint32_t value)
 
 void S9xResetSDD1()
 {
-	memset(&Memory.FillRAM[0x4800], 0, 4);
+	std::fill(&Memory.FillRAM[0x4800], &Memory.FillRAM[0x4804], 0);
 	for (int i = 0; i < 4; ++i)
 	{
 		Memory.FillRAM[0x4804 + i] = i;
 		S9xSetSDD1MemoryMap(i, i);
 	}
 }
-
-/*void S9xSDD1PostLoadState()
-{
-	for (int i = 0; i < 4; ++i)
-		S9xSetSDD1MemoryMap(i, Memory.FillRAM[0x4804 + i]);
-}*/

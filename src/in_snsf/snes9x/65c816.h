@@ -175,103 +175,75 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
 #ifndef _65C816_H_
 #define _65C816_H_
 
-#define Carry		1
-#define Zero		2
-#define IRQ			4
-#define Decimal		8
-#define IndexFlag	16
-#define MemoryFlag	32
-#define Overflow	64
-#define Negative	128
-#define Emulation	256
+const uint16_t Carry = 1;
+const uint16_t Zero = 2;
+const uint16_t IRQ = 4;
+const uint16_t Decimal = 8;
+const uint16_t IndexFlag = 16;
+const uint16_t MemoryFlag = 32;
+const uint16_t Overflow = 64;
+const uint16_t Negative = 128;
+const uint16_t Emulation = 256;
 
-#define SetCarry()			(ICPU._Carry = 1)
-#define ClearCarry()		(ICPU._Carry = 0)
-#define SetZero()			(ICPU._Zero = 0)
-#define ClearZero()			(ICPU._Zero = 1)
-#define SetIRQ()			(Registers.PL |= IRQ)
-#define ClearIRQ()			(Registers.PL &= ~IRQ)
-#define SetDecimal()		(Registers.PL |= Decimal)
-#define ClearDecimal()		(Registers.PL &= ~Decimal)
-#define SetIndex()			(Registers.PL |= IndexFlag)
-#define ClearIndex()		(Registers.PL &= ~IndexFlag)
-#define SetMemory()			(Registers.PL |= MemoryFlag)
-#define ClearMemory()		(Registers.PL &= ~MemoryFlag)
-#define SetOverflow()		(ICPU._Overflow = 1)
-#define ClearOverflow()		(ICPU._Overflow = 0)
-#define SetNegative()		(ICPU._Negative = 0x80)
-#define ClearNegative()		(ICPU._Negative = 0)
-
-#define CheckCarry()		(ICPU._Carry)
-#define CheckZero()			(ICPU._Zero == 0)
-#define CheckIRQ()			(Registers.PL & IRQ)
-#define CheckDecimal()		(Registers.PL & Decimal)
-#define CheckIndex()		(Registers.PL & IndexFlag)
-#define CheckMemory()		(Registers.PL & MemoryFlag)
-#define CheckOverflow()		(ICPU._Overflow)
-#define CheckNegative()		(ICPU._Negative & 0x80)
-#define CheckEmulation()	(Registers.P.W & Emulation)
-
-#define SetFlags(f)			(Registers.P.W |= (f))
-#define ClearFlags(f)		(Registers.P.W &= ~(f))
-#define CheckFlag(f)		(Registers.PL & (f))
-
-typedef union
+union pair
 {
 #ifdef LSB_FIRST
-	struct { uint8_t	l, h; } B;
+	struct { uint8_t l, h; } B;
 #else
-	struct { uint8_t	h, l; } B;
+	struct { uint8_t h, l; } B;
 #endif
-	uint16_t	W;
-}	pair;
+	uint16_t W;
+};
 
-typedef union
+union PC_t
 {
 #ifdef LSB_FIRST
-	struct { uint8_t	xPCl, xPCh, xPB, z; } B;
-	struct { uint16_t	xPC, d; } W;
+	struct { uint8_t xPCl, xPCh, xPB, z; } B;
+	struct { uint16_t xPC, d; } W;
 #else
-	struct { uint8_t	z, xPB, xPCh, xPCl; } B;
-	struct { uint16_t	d, xPC; } W;
+	struct { uint8_t z, xPB, xPCh, xPCl; } B;
+	struct { uint16_t d, xPC; } W;
 #endif
-    uint32_t	xPBPC;
-}	PC_t;
+	uint32_t xPBPC;
+};
 
 struct SRegisters
 {
-	uint8_t	DB;
-	pair	P;
-	pair	A;
-	pair	D;
-	pair	S;
-	pair	X;
-	pair	Y;
-	PC_t	PC;
+	uint8_t DB;
+	pair P;
+	pair A;
+	pair D;
+	pair S;
+	pair X;
+	pair Y;
+	PC_t PC;
 };
 
-#define AL		A.B.l
-#define AH		A.B.h
-#define XL		X.B.l
-#define XH		X.B.h
-#define YL		Y.B.l
-#define YH		Y.B.h
-#define SL		S.B.l
-#define SH		S.B.h
-#define DL		D.B.l
-#define DH		D.B.h
-#define PL		P.B.l
-#define PH		P.B.h
-#define PBPC	PC.xPBPC
-#define PCw		PC.W.xPC
-#define PCh		PC.B.xPCh
-#define PCl		PC.B.xPCl
-#define PB		PC.B.xPB
+extern SRegisters Registers;
 
-extern struct SRegisters	Registers;
+inline void SetCarry() { ICPU._Carry = 1; }
+inline void ClearCarry() { ICPU._Carry = 0; }
+inline void SetIRQ() { Registers.P.B.l |= IRQ; }
+inline void ClearIRQ() { Registers.P.B.l &= ~IRQ; }
+inline void SetDecimal() { Registers.P.B.l |= Decimal; }
+inline void ClearDecimal() { Registers.P.B.l &= ~Decimal; }
+inline void SetOverflow() { ICPU._Overflow = 1; }
+inline void ClearOverflow() { ICPU._Overflow = 0; }
+
+inline bool CheckCarry() { return !!ICPU._Carry; }
+inline bool CheckZero() { return !ICPU._Zero; }
+inline bool CheckDecimal() { return !!(Registers.P.B.l & Decimal); }
+inline bool CheckIndex() { return !!(Registers.P.B.l & IndexFlag); }
+inline bool CheckMemory() { return !!(Registers.P.B.l & MemoryFlag); }
+inline bool CheckOverflow() { return !!(ICPU._Overflow); }
+inline bool CheckNegative() { return !!(ICPU._Negative & 0x80); }
+inline bool CheckEmulation() { return !!(Registers.P.W & Emulation); }
+
+inline void SetFlags(uint16_t f) { Registers.P.W |= f; }
+inline void ClearFlags(uint16_t f) { Registers.P.W &= ~f; }
+inline bool CheckFlag(uint16_t f) { return !!(Registers.P.W & f); }
 
 #endif

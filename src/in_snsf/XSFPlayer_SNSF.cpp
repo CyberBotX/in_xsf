@@ -93,7 +93,7 @@ public:
 			return;
 		if (bytes > bleft)
 			bytes = bleft;
-		memset(&this->buf[this->fil], 0, bytes);
+		std::fill(&this->buf[this->fil], &this->buf[this->fil + bytes], 0);
 		S9xMixSamples(&this->buf[this->fil], bytes >> 1);
 		this->fil += bytes;
 	}
@@ -122,7 +122,7 @@ static void Map2SFSection(const std::vector<uint8_t> &section, int level)
 		data.resize(finalSize, 0);
 	else if (data.size() < size + offset)
 		data.resize(offset + finalSize);
-	memcpy(&data[offset], &section[8], size);
+	std::copy(&section[8], &section[8 + size], &data[offset]);
 }
 
 static bool Map2SF(XSFFile *xSF, int level)
@@ -148,7 +148,7 @@ static bool Map2SF(XSFFile *xSF, int level)
 				if (size > 4 && loaderwork.sram.size() > offset)
 				{
 					auto len = std::min(size - 4, loaderwork.sram.size() - offset);
-					memcpy(&loaderwork.sram[offset], &reservedSection[reservedPosition + 12], len);
+					std::copy(&reservedSection[reservedPosition + 12], &reservedSection[reservedPosition + 12 + len], &loaderwork.sram[offset]);
 				}
 			}
 			reservedPosition += size + 8;
@@ -276,7 +276,7 @@ void XSFPlayer_SNSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset,
 		unsigned len = remain;
 		if (len > bytes)
 			len = bytes;
-		memcpy(&buf[offset], &buffer.buf[buffer.cur], len);
+		std::copy(&buffer.buf[buffer.cur], &buffer.buf[buffer.cur + len], &buf[offset]);
 		bytes -= len;
 		offset += len;
 		buffer.cur += len;
