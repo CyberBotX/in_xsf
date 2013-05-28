@@ -19,9 +19,7 @@ public:
 	{
 		this->buffer_size = buffer_size;
 		this->buffer = new unsigned char[this->buffer_size];
-		std::fill(&this->buffer[0], &this->buffer[this->buffer_size], 0);
-
-		this->size = this->start = 0;
+		this->clear();
 	}
 
 	~ring_buffer()
@@ -37,7 +35,7 @@ public:
 		int end = (this->start + this->size) % this->buffer_size;
 		int first_write_size = std::min(bytes, this->buffer_size - end);
 
-		std::copy(&src[0], &src[first_write_size], &this->buffer[end]);
+		std::copy_n(&src[0], first_write_size, &this->buffer[end]);
 
 		if (bytes > first_write_size)
 			std::copy(&src[first_write_size], &src[bytes], &this->buffer[0]);
@@ -60,7 +58,7 @@ public:
 	void clear()
 	{
 		this->start = this->size = 0;
-		std::fill(&this->buffer[0], &this->buffer[this->buffer_size], 0);
+		std::fill_n(&this->buffer[0], this->buffer_size, 0);
 	}
 
 	void resize(int size)
@@ -68,9 +66,7 @@ public:
 		delete[] this->buffer;
 		this->buffer_size = size;
 		this->buffer = new unsigned char[this->buffer_size];
-		std::fill(&this->buffer[0], &this->buffer[this->buffer_size], 0);
-
-		this->size = this->start = 0;
+		this->clear();
 	}
 };
 

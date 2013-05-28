@@ -70,7 +70,7 @@ void SNES_SPC::init()
 
 void SNES_SPC::init_rom(const uint8_t in[rom_size])
 {
-	std::copy(&in[0], &in[rom_size], &this->m.rom[0]);
+	std::copy_n(&in[0], static_cast<int>(rom_size), &this->m.rom[0]);
 }
 
 void SNES_SPC::set_tempo(int t)
@@ -100,7 +100,7 @@ void SNES_SPC::set_tempo(int t)
 // reset timer prescalers or dividers.
 void SNES_SPC::timers_loaded()
 {
-	for (int  i = 0; i < timer_count; ++i)
+	for (int i = 0; i < timer_count; ++i)
 	{
 		auto &t = this->m.timers[i];
 		t.period = IF_0_THEN_256(this->m.smp_regs[0][r_t0target + i]);
@@ -114,8 +114,8 @@ void SNES_SPC::timers_loaded()
 // Loads registers from unified 16-byte format
 void SNES_SPC::load_regs(const uint8_t in[reg_count])
 {
-	std::copy(&in[0], &in[reg_count], &this->m.smp_regs[0][0]);
-	std::copy(&this->m.smp_regs[0][0], &this->m.smp_regs[0][reg_count], &this->m.smp_regs[1][0]);
+	std::copy_n(&in[0], static_cast<int>(reg_count), &this->m.smp_regs[0][0]);
+	std::copy_n(&this->m.smp_regs[0][0], static_cast<int>(reg_count), &this->m.smp_regs[1][0]);
 
 	// These always read back as 0
 	this->m.smp_regs[1][r_test] = this->m.smp_regs[1][r_control] = this->m.smp_regs[1][r_t0target] = this->m.smp_regs[1][r_t1target] = this->m.smp_regs[1][r_t2target] = 0;
@@ -145,12 +145,11 @@ void SNES_SPC::reset_time_regs()
 	this->m.spc_time = 0;
 	this->m.dsp_time = 0;
 
-	for (int i = 0; i < timer_count; ++i)
+	std::for_each(&this->m.timers[0], &this->m.timers[timer_count], [](Timer &t)
 	{
-		auto &t = this->m.timers[i];
 		t.next_time = 1;
 		t.divider = 0;
-	}
+	});
 
 	this->regs_loaded();
 
@@ -160,8 +159,7 @@ void SNES_SPC::reset_time_regs()
 
 void SNES_SPC::reset_common(int timer_counter_init)
 {
-	for (int i = 0; i < timer_count; ++i)
-		this->m.smp_regs[1][r_t0out + i] = timer_counter_init;
+	std::fill_n(&this->m.smp_regs[1][r_t0out], static_cast<int>(timer_count), timer_counter_init);
 
 	// Run IPL ROM
 	memset(&this->m.cpu_regs, 0, sizeof(this->m.cpu_regs));
@@ -169,7 +167,7 @@ void SNES_SPC::reset_common(int timer_counter_init)
 
 	this->m.smp_regs[0][r_test] = 0x0A;
 	this->m.smp_regs[0][r_control] = 0xB0; // ROM enabled, clear ports
-	std::fill(&this->m.smp_regs[1][r_cpuio0], &this->m.smp_regs[1][r_cpuio0 + port_count], 0);
+	std::fill_n(&this->m.smp_regs[1][r_cpuio0], static_cast<int>(port_count), 0);
 
 	this->reset_time_regs();
 }
@@ -186,7 +184,7 @@ void SNES_SPC::reset()
 	this->m.cpu_regs.a = this->m.cpu_regs.x = this->m.cpu_regs.y = 0x00;
 	this->m.cpu_regs.psw = 0x02;
 	this->m.cpu_regs.sp = 0xEF;
-	std::fill(&this->m.ram.ram[0], &this->m.ram.ram[0x10000], 0);
+	std::fill_n(&this->m.ram.ram[0], 0x10000, 0);
 	this->ram_loaded();
 	this->reset_common(0x0F);
 	this->dsp.reset();

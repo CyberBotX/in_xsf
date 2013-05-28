@@ -63,9 +63,9 @@ void SNES_SPC::enable_rom(bool enable)
 	{
 		this->m.rom_enabled = this->dsp.rom_enabled = enable;
 		if (enable)
-			std::copy(&this->m.ram.ram[rom_addr], &this->m.ram.ram[rom_addr + rom_size], &this->m.hi_ram[0]);
+			std::copy_n(&this->m.ram.ram[rom_addr], static_cast<int>(rom_size), &this->m.hi_ram[0]);
 		auto data = enable ? &this->m.rom[0] : &this->m.hi_ram[0];
-		std::copy(&data[0], &data[rom_size], &this->m.ram.ram[rom_addr]);
+		std::copy_n(&data[0], static_cast<int>(rom_size), &this->m.ram.ram[rom_addr]);
 		// TODO: ROM can still get overwritten when DSP writes to echo buffer
 	}
 }
@@ -173,10 +173,7 @@ void SNES_SPC::cpu_write_smp_reg_(int data, rel_time_t time, int addr)
 					t = this->run_timer(t, time);
 					t->enabled = enabled;
 					if (enabled)
-					{
-						t->divider = 0;
-						t->counter = 0;
-					}
+						t->divider = t->counter = 0;
 				}
 			}
 			this->enable_rom(!!(data & 0x80));
@@ -295,28 +292,6 @@ int SNES_SPC::cpu_read(int addr, rel_time_t time)
 }
 
 //// Run
-
-// Prefix and suffix for CPU emulator function
-#define SPC_CPU_RUN_FUNC \
-uint8_t *SNES_SPC::run_until_(time_t end_time) \
-{ \
-	rel_time_t rel_time = this->m.spc_time - end_time; \
-	/*assert( rel_time <= 0 );*/ \
-	this->m.spc_time = end_time; \
-	this->m.dsp_time += rel_time; \
-	this->m.timers[0].next_time += rel_time; \
-	this->m.timers[1].next_time += rel_time; \
-	this->m.timers[2].next_time += rel_time;
-
-#define SPC_CPU_RUN_FUNC_END \
-	this->m.spc_time += rel_time; \
-	this->m.dsp_time -= rel_time; \
-	this->m.timers[0].next_time -= rel_time; \
-	this->m.timers[1].next_time -= rel_time; \
-	this->m.timers[2].next_time -= rel_time; \
-	/*assert( m.spc_time >= end_time );*/ \
-	return &this->m.smp_regs[0][r_cpuio0]; \
-}
 
 static const int cpu_lag_max = 12 - 1; // DIV YA,X takes 12 clocks
 

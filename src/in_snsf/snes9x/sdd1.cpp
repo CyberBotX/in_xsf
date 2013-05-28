@@ -178,7 +178,6 @@
 #include <algorithm>
 #include "snes9x.h"
 #include "memmap.h"
-#include "sdd1.h"
 
 void S9xSetSDD1MemoryMap(uint32_t bank, uint32_t value)
 {
@@ -188,17 +187,13 @@ void S9xSetSDD1MemoryMap(uint32_t bank, uint32_t value)
 	for (int c = 0; c < 0x100; c += 16)
 	{
 		uint8_t *block = &Memory.ROM[value + (c << 12)];
-		for (int i = c; i < c + 16; ++i)
-			Memory.Map[i + bank] = block;
+		std::fill_n(&Memory.Map[bank + c], 16, block);
 	}
 }
 
 void S9xResetSDD1()
 {
-	std::fill(&Memory.FillRAM[0x4800], &Memory.FillRAM[0x4804], 0);
-	for (int i = 0; i < 4; ++i)
-	{
-		Memory.FillRAM[0x4804 + i] = i;
-		S9xSetSDD1MemoryMap(i, i);
-	}
+	std::fill_n(&Memory.FillRAM[0x4800], 4, 0);
+	int i = 0;
+	std::generate_n(&Memory.FillRAM[0x4804], 4, [&]() -> int { S9xSetSDD1MemoryMap(i, i); return i++; });
 }

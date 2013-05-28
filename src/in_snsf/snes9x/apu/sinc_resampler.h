@@ -81,8 +81,8 @@ public:
 	{
 		ring_buffer::clear();
 		this->r_frac = 1.0;
-		std::fill(&this->r_left[0], &this->r_left[SINC_WIDTH * 2], 0);
-		std::fill(&this->r_right[0], &this->r_right[SINC_WIDTH * 2], 0);
+		std::fill_n(&this->r_left[0], SINC_WIDTH * 2, 0);
+		std::fill_n(&this->r_right[0], SINC_WIDTH * 2, 0);
 	}
 
 	void read(short *data, int num_samples)
@@ -125,10 +125,10 @@ public:
 
 			if (this->r_frac > 1.0)
 			{
-				std::copy(&this->r_left[1], &this->r_left[SINC_WIDTH * 2], &this->r_left[0]);
+				std::copy_n(&this->r_left[1], SINC_WIDTH * 2 - 1, &this->r_left[0]);
 				this->r_left[SINC_WIDTH * 2 - 1] = s_left;
 
-				std::copy(&this->r_right[1], &this->r_right[SINC_WIDTH * 2], &this->r_right[0]);
+				std::copy_n(&this->r_right[1], SINC_WIDTH * 2 - 1, &this->r_right[0]);
 				this->r_right[SINC_WIDTH * 2 - 1] = s_right;
 
 				this->r_frac -= 1.0;

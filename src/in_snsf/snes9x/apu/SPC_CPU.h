@@ -38,8 +38,16 @@ const int c01 = 0x01; // c
 
 const int nz_neg_mask = 0x880; // either bit set indicates N flag set
 
-SPC_CPU_RUN_FUNC
+uint8_t *SNES_SPC::run_until_(time_t end_time)
 {
+	rel_time_t rel_time = this->m.spc_time - end_time;
+	/*assert( rel_time <= 0 );*/
+	this->m.spc_time = end_time;
+	this->m.dsp_time += rel_time;
+	this->m.timers[0].next_time += rel_time;
+	this->m.timers[1].next_time += rel_time;
+	this->m.timers[2].next_time += rel_time;
+
 	auto ram = this->m.ram.ram;
 	int a = this->m.cpu_regs.a;
 	int x = this->m.cpu_regs.x;
@@ -155,7 +163,6 @@ cbranch_taken_loop:
 inc_pc_loop:
 	++pc;
 loop:
-{
 	unsigned data;
 
 	unsigned opcode = *pc;
@@ -167,20 +174,6 @@ loop:
 #ifdef SPC_CPU_OPCODE_HOOK
 	SPC_CPU_OPCODE_HOOK(GET_PC(), opcode);
 #endif
-	/*
-	//SUB_CASE_COUNTER( 1 );
-	#define PROFILE_TIMER_LOOP( op, addr, len )\
-	if ( opcode == op )\
-	{\
-		int cond = (unsigned) ((addr) - 0xFD) < 3 &&\
-				pc [len] == 0xF0 && pc [len+1] == 0xFE - len;\
-		SUB_CASE_COUNTER( op && cond );\
-	}
-	
-	PROFILE_TIMER_LOOP( 0xEC, get_le16( pc + 1 ), 3 );
-	PROFILE_TIMER_LOOP( 0xEB, pc [1], 2 );
-	PROFILE_TIMER_LOOP( 0xE4, pc [1], 2 );
-	*/
 
 	// TODO: if PC is at end of memory, this will get wrong operand (very obscure)
 	data = *++pc;
@@ -268,7 +261,7 @@ loop:
 			++pc;
 			{
 				int i = dp + data;
-				ram [i] = static_cast<uint8_t>(a);
+				ram[i] = static_cast<uint8_t>(a);
 				i -= 0xF0;
 				if (static_cast<unsigned>(i) < 0x10) // 39%
 				{
@@ -411,23 +404,19 @@ loop:
 		// 3. 8-BIT DATA TRANSMISSIN COMMANDS, GROUP 3.
 
 		case 0x7D: // MOV A,X
-			a  = x;
-			nz = x;
+			a = nz = x;
 			goto loop;
 
 		case 0xDD: // MOV A,Y
-			a  = y;
-			nz = y;
+			a = nz = y;
 			goto loop;
 
 		case 0x5D: // MOV X,A
-			x  = a;
-			nz = a;
+			x = nz = a;
 			goto loop;
 
 		case 0xFD: // MOV Y,A
-			y  = a;
-			nz = a;
+			y = nz = a;
 			goto loop;
 
 		case 0x9D: // MOV X,SP
@@ -1157,7 +1146,7 @@ loop:
 	} // switch
 
 	assert(0); // catch any unhandled instructions
-}
+
 out_of_time:
 	rel_time -= this->m.cycle_table[*pc]; // undo partial execution of opcode
 stop:
@@ -1168,10 +1157,15 @@ stop:
 	m.cpu_regs.a = static_cast<uint8_t>(a);
 	m.cpu_regs.x = static_cast<uint8_t>(x);
 	m.cpu_regs.y = static_cast<uint8_t>(y);
-	{
-		int temp;
-		GET_PSW(temp);
-		m.cpu_regs.psw = static_cast<uint8_t>(temp);
-	}
+	int temp;
+	GET_PSW(temp);
+	m.cpu_regs.psw = static_cast<uint8_t>(temp);
+
+	this->m.spc_time += rel_time;
+	this->m.dsp_time -= rel_time;
+	this->m.timers[0].next_time -= rel_time;
+	this->m.timers[1].next_time -= rel_time;
+	this->m.timers[2].next_time -= rel_time;
+	/*assert( m.spc_time >= end_time );*/
+	return &this->m.smp_regs[0][r_cpuio0];
 }
-SPC_CPU_RUN_FUNC_END

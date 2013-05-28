@@ -235,11 +235,10 @@ namespace spc
 
 static void EightBitize(uint8_t *buffer, int sample_count)
 {
-	uint8_t *buf8 = buffer;
 	int16_t *buf16 = reinterpret_cast<int16_t *>(buffer);
 
 	for (int i = 0; i < sample_count; ++i)
-		buf8[i] = static_cast<uint8_t>((buf16[i] / 256) + 128);
+		buffer[i] = static_cast<uint8_t>((buf16[i] / 256) + 128);
 }
 
 static void DeStereo(uint8_t *buffer, int sample_count)
@@ -287,7 +286,7 @@ bool S9xMixSamples(uint8_t *buffer, int sample_count)
 
 	if (Settings.Mute)
 	{
-		std::fill(&dest[0], &dest[sample_count << 1], 0);
+		std::fill_n(&dest[0], sample_count << 1, 0);
 		spc::resampler->clear();
 
 		return false;
@@ -302,7 +301,7 @@ bool S9xMixSamples(uint8_t *buffer, int sample_count)
 		}
 		else
 		{
-			std::fill(&buffer[0], &buffer[(sample_count << (Settings.SixteenBitSound ? 1 : 0)) >> (Settings.Stereo ? 0 : 1)], Settings.SixteenBitSound ? 0 : 128);
+			std::fill_n(&buffer[0], (sample_count << (Settings.SixteenBitSound ? 1 : 0)) >> (Settings.Stereo ? 0 : 1), Settings.SixteenBitSound ? 0 : 128);
 			if (!spc::lag)
 				spc::lag = spc::lag_master;
 
@@ -324,7 +323,7 @@ bool S9xMixSamples(uint8_t *buffer, int sample_count)
 		if (!Settings.SixteenBitSound)
 			EightBitize(dest, sample_count);
 
-		std::copy(&dest[0], &dest[sample_count << (Settings.SixteenBitSound ? 1 : 0)], &buffer[0]);
+		std::copy_n(&dest[0], sample_count << (Settings.SixteenBitSound ? 1 : 0), &buffer[0]);
 	}
 
 	return true;
@@ -349,12 +348,7 @@ void S9xFinalizeSamples()
 		}
 	}
 
-	if (!Settings.SoundSync || Settings.TurboMode || Settings.Mute)
-		spc::sound_in_sync = true;
-	else if (spc::resampler->space_empty() >= spc::resampler->space_filled())
-		spc::sound_in_sync = true;
-	else
-		spc::sound_in_sync = false;
+	spc::sound_in_sync = !Settings.SoundSync || Settings.TurboMode || Settings.Mute || spc::resampler->space_empty() >= spc::resampler->space_filled();
 
 	spc_core->set_output(reinterpret_cast<SNES_SPC::sample_t *>(spc::landing_buffer.get()), spc::buffer_size >> 1);
 }

@@ -218,10 +218,7 @@ static void S9xSoftResetCPU()
 	Timings.H_Max = Timings.H_Max_Master;
 	Timings.V_Max = Timings.V_Max_Master;
 	Timings.NMITriggerPos = 0xffff;
-	if (Model->_5A22 == 2)
-		Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v2;
-	else
-		Timings.WRAMRefreshPos = SNES_WRAM_REFRESH_HC_v1;
+	Timings.WRAMRefreshPos = Model->_5A22 == 2 ? SNES_WRAM_REFRESH_HC_v2 : SNES_WRAM_REFRESH_HC_v1;
 
 	S9xSetPCBase(Registers.PC.xPBPC);
 
@@ -242,9 +239,9 @@ static void S9xResetCPU()
 
 void S9xReset()
 {
-	std::fill(&Memory.RAM[0], &Memory.RAM[0x20000], 0x55);
-	std::fill(&Memory.VRAM[0], &Memory.VRAM[0x10000], 0);
-	std::fill(&Memory.FillRAM[0], &Memory.FillRAM[0x8000], 0);
+	std::fill_n(&Memory.RAM[0], 0x20000, 0x55);
+	std::fill_n(&Memory.VRAM[0], 0x10000, 0);
+	std::fill_n(&Memory.FillRAM[0], 0x8000, 0);
 
 	S9xResetCPU();
 	S9xResetPPU();

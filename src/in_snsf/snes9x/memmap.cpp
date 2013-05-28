@@ -270,10 +270,10 @@ bool CMemory::Init()
 		return false;
 	}
 
-	std::fill(&this->RAM[0], &this->RAM[0x20000], 0);
-	std::fill(&this->SRAM[0], &this->SRAM[0x20000], 0);
-	std::fill(&this->VRAM[0], &this->VRAM[0x10000], 0);
-	std::fill(&this->RealROM[0], &this->RealROM[MAX_ROM_SIZE + 0x200 + 0x8000], 0);
+	std::fill_n(&this->RAM[0], 0x20000, 0);
+	std::fill_n(&this->SRAM[0], 0x20000, 0);
+	std::fill_n(&this->VRAM[0], 0x10000, 0);
+	std::fill_n(&this->RealROM[0], MAX_ROM_SIZE + 0x200 + 0x8000, 0);
 
 	// FillRAM uses first 32K of ROM image area, otherwise space just
 	// wasted. Might be read by the SuperFX code.
@@ -409,7 +409,7 @@ bool CMemory::LoadROMSNSF(const uint8_t *lrombuf, int32_t lromsize, const uint8_
 {
 	int retry_count = 0;
 
-	std::fill(&this->ROM[0], &this->ROM[MAX_ROM_SIZE], 0);
+	std::fill_n(&this->ROM[0], static_cast<int>(MAX_ROM_SIZE), 0);
 
 again:
 	this->CalculatedSize = 0;
@@ -418,18 +418,17 @@ again:
 	int32_t totalFileSize = std::min<int32_t>(MAX_ROM_SIZE, lromsize);
 	if (!totalFileSize)
 		return false;
-	std::copy(&lrombuf[0], &lrombuf[totalFileSize], &this->ROM[0]);
-	SNESGameFixes.SRAMInitialValue = 0xff;
-	std::fill(&this->SRAM[0], &this->SRAM[0x20000], SNESGameFixes.SRAMInitialValue);
+	std::copy_n(&lrombuf[0], totalFileSize, &this->ROM[0]);
+	std::fill_n(&this->SRAM[0], 0x20000, 0xff);
 	if (srambuf && sramsize)
-		std::copy(&srambuf[0], &srambuf[sramsize], &this->SRAM[0]);
+		std::copy_n(&srambuf[0], sramsize, &this->SRAM[0]);
 
 	int hi_score = this->ScoreHiROM(false);
 	int lo_score = this->ScoreLoROM(false);
 
 	if (((hi_score > lo_score && this->ScoreHiROM(true) > hi_score) || (hi_score <= lo_score && this->ScoreLoROM(true) > lo_score)))
 	{
-		memmove(&this->ROM[0], &this->ROM[512], totalFileSize - 512);
+		std::copy_n(&this->ROM[512], totalFileSize - 512, &this->ROM[0]);
 		totalFileSize -= 512;
 		// modifying ROM, so we need to rescore
 		hi_score = this->ScoreHiROM(false);
@@ -486,7 +485,6 @@ again:
 
 		// ignore map type byte if not 0x2x or 0x3x
 		if ((RomHeader[0x7fd5] & 0xf0) == 0x20 || (RomHeader[0x7fd5] & 0xf0) == 0x30)
-		{
 			switch (RomHeader[0x7fd5] & 0xf)
 			{
 				case 1:
@@ -494,11 +492,8 @@ again:
 					break;
 
 				case 5:
-					interleaved = true;
-					tales = true;
-					break;
+					interleaved = tales = true;
 			}
-		}
 	}
 	else
 	{
@@ -506,24 +501,19 @@ again:
 		this->HiROM = true;
 
 		if ((RomHeader[0xffd5] & 0xf0) == 0x20 || (RomHeader[0xffd5] & 0xf0) == 0x30)
-		{
 			switch (RomHeader[0xffd5] & 0xf)
 			{
 				case 0:
 				case 3:
 					interleaved = true;
-					break;
 			}
-		}
 	}
 
 	// this two games fail to be detected
 	if (!strncmp(reinterpret_cast<char *>(&this->ROM[0x7fc0]), "YUYU NO QUIZ DE GO!GO!", 22) || !strncmp(reinterpret_cast<char *>(&this->ROM[0xffc0]), "BATMAN--REVENGE JOKER",  21))
 	{
 		this->LoROM = true;
-		this->HiROM = false;
-		interleaved = false;
-		tales = false;
+		this->HiROM = interleaved = tales = false;
 	}
 
 	if (!Settings.ForceNotInterleaved && interleaved)
@@ -567,13 +557,12 @@ again:
 	if (tales)
 	{
 		auto tmp = std::vector<uint8_t>(this->CalculatedSize - 0x400000);
-		memmove(&tmp[0], &this->ROM[0], this->CalculatedSize - 0x400000);
-		memmove(&this->ROM[0], &this->ROM[this->CalculatedSize - 0x400000], 0x400000);
-		memmove(&this->ROM[0x400000], &tmp[0], this->CalculatedSize - 0x400000);
+		std::copy_n(&this->ROM[0], this->CalculatedSize - 0x400000, &tmp[0]);
+		std::copy_n(&this->ROM[this->CalculatedSize - 0x400000], 0x400000, &this->ROM[0]);
+		std::copy_n(&tmp[0], this->CalculatedSize - 0x400000, &this->ROM[0x400000]);
 	}
 
 	memset(&SNESGameFixes, 0, sizeof(SNESGameFixes));
-	SNESGameFixes.SRAMInitialValue = 0x60;
 
 	this->InitROM();
 
@@ -626,14 +615,14 @@ void CMemory::ParseSNESHeader(uint8_t *RomHeader)
 	this->ROMType = RomHeader[0x26];
 	this->ROMRegion = RomHeader[0x29];
 
-	std::copy(&RomHeader[0x02], &RomHeader[0x06], &this->ROMId[0]);
+	std::copy_n(&RomHeader[0x02], 4, &this->ROMId[0]);
 }
 
 void CMemory::InitROM()
 {
 	//// Parse ROM header and read ROM informatoin
 
-	std::fill(&this->ROMId[0], &this->ROMId[5], 0);
+	std::fill_n(&this->ROMId[0], 5, 0);
 
 	uint8_t *RomHeader = &this->ROM[0x7FB0];
 	if (this->ExtendedFormat == BIGFIRST)
@@ -817,7 +806,6 @@ void CMemory::map_space(uint32_t bank_s, uint32_t bank_e, uint32_t addr_s, uint3
 
 void CMemory::map_index(uint32_t bank_s, uint32_t bank_e, uint32_t addr_s, uint32_t addr_e, int index, int type)
 {
-	bool isROM = !(type == MAP_TYPE_I_O || type == MAP_TYPE_RAM);
 	bool isRAM = type != MAP_TYPE_I_O;
 
 	for (uint32_t c = bank_s; c <= bank_e; ++c)
@@ -825,7 +813,7 @@ void CMemory::map_index(uint32_t bank_s, uint32_t bank_e, uint32_t addr_s, uint3
 		{
 			uint32_t p = (c << 4) | (i >> 12);
 			this->Map[p] = reinterpret_cast<uint8_t *>(index);
-			this->BlockIsROM[p] = isROM;
+			this->BlockIsROM[p] = false;
 			this->BlockIsRAM[p] = isRAM;
 		}
 }
@@ -862,7 +850,7 @@ void CMemory::map_HiROMSRAM()
 
 void CMemory::map_WriteProtectROM()
 {
-	std::copy(&this->Map[0], &this->Map[0x1000], &this->WriteMap[0]);
+	std::copy_n(&this->Map[0], 0x1000, &this->WriteMap[0]);
 
 	for (int c = 0; c < 0x1000; ++c)
 		if (this->BlockIsROM[c])
@@ -1118,17 +1106,6 @@ void CMemory::ApplyROMFixes()
 			SRAMSize = 1;
 			SRAMMask = ((1 << (SRAMSize + 3)) * 128) - 1;
 		}
-
-		// SRAM value fixes
-		if (this->match_na("SUPER DRIFT OUT") || // Super Drift Out
-			this->match_na("SATAN IS OUR FATHER!") ||
-			this->match_na("goemon 4")) // Ganbare Goemon Kirakira Douchuu
-			SNESGameFixes.SRAMInitialValue = 0x00;
-
-		// Additional game fixes by sanmaiwashi ...
-		// XXX: unnecessary?
-		if (this->match_na("SFX \xC5\xB2\xC4\xB6\xDE\xDD\xC0\xDE\xD1\xD3\xC9\xB6\xDE\xC0\xD8 1")) // SD Gundam Gaiden - Knight Gundam Monogatari
-			SNESGameFixes.SRAMInitialValue = 0x6b;
 
 		// others: BS and ST-01x games are 0x00.
 

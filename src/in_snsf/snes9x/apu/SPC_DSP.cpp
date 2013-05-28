@@ -317,7 +317,8 @@ void SPC_DSP::misc_28()
 }
 void SPC_DSP::misc_29()
 {
-	if ((this->m.every_other_sample = !this->m.every_other_sample))
+	this->m.every_other_sample = !this->m.every_other_sample;
+	if (this->m.every_other_sample)
 		this->m.new_kon &= ~this->m.kon; // clears KON 63 clocks after it was last read
 }
 void SPC_DSP::misc_30()
@@ -697,38 +698,38 @@ V(V9_V6_V3,2) -> V(V9,2) V(V6,3) V(V3,4) */
 
 // Voice      0      1      2      3      4      5      6      7
 #define GEN_DSP_TIMING \
-PHASE( 0)  V(V5,0)V(V2,1)\
-PHASE( 1)  V(V6,0)V(V3,1)\
-PHASE( 2)  V(V7_V4_V1,0)\
-PHASE( 3)  V(V8_V5_V2,0)\
-PHASE( 4)  V(V9_V6_V3,0)\
-PHASE( 5)         V(V7_V4_V1,1)\
-PHASE( 6)         V(V8_V5_V2,1)\
-PHASE( 7)         V(V9_V6_V3,1)\
-PHASE( 8)                V(V7_V4_V1,2)\
-PHASE( 9)                V(V8_V5_V2,2)\
-PHASE(10)                V(V9_V6_V3,2)\
-PHASE(11)                       V(V7_V4_V1,3)\
-PHASE(12)                       V(V8_V5_V2,3)\
-PHASE(13)                       V(V9_V6_V3,3)\
-PHASE(14)                              V(V7_V4_V1,4)\
-PHASE(15)                              V(V8_V5_V2,4)\
-PHASE(16)                              V(V9_V6_V3,4)\
-PHASE(17)  V(V1,0)                            V(V7,5)V(V4,6)\
-PHASE(18)                                     V(V8_V5_V2,5)\
-PHASE(19)                                     V(V9_V6_V3,5)\
-PHASE(20)         V(V1,1)                            V(V7,6)V(V4,7)\
-PHASE(21)                                            V(V8,6)V(V5,7)  V(V2,0)  /* t_brr_next_addr order dependency */\
-PHASE(22)  V(V3a,0)                                  V(V9,6)V(V6,7)  echo_22();\
-PHASE(23)                                                   V(V7,7)  echo_23();\
-PHASE(24)                                                   V(V8,7)  echo_24();\
-PHASE(25)  V(V3b,0)                                         V(V9,7)  echo_25();\
-PHASE(26)                                                            echo_26();\
-PHASE(27) misc_27();                                                 echo_27();\
-PHASE(28) misc_28();                                                 echo_28();\
-PHASE(29) misc_29();                                                 echo_29();\
-PHASE(30) misc_30();V(V3c,0)                                         echo_30();\
-PHASE(31)  V(V4,0)       V(V1,2)\
+PHASE(0) V(V5, 0) V(V2, 1) \
+PHASE(1) V(V6, 0) V(V3, 1) \
+PHASE(2) V(V7_V4_V1, 0) \
+PHASE(3) V(V8_V5_V2, 0) \
+PHASE(4) V(V9_V6_V3, 0) \
+PHASE(5) V(V7_V4_V1, 1) \
+PHASE(6) V(V8_V5_V2, 1) \
+PHASE(7) V(V9_V6_V3, 1) \
+PHASE(8) V(V7_V4_V1, 2) \
+PHASE(9) V(V8_V5_V2, 2) \
+PHASE(10) V(V9_V6_V3, 2) \
+PHASE(11) V(V7_V4_V1, 3) \
+PHASE(12) V(V8_V5_V2, 3) \
+PHASE(13) V(V9_V6_V3, 3) \
+PHASE(14) V(V7_V4_V1, 4) \
+PHASE(15) V(V8_V5_V2, 4) \
+PHASE(16) V(V9_V6_V3, 4) \
+PHASE(17) V(V1, 0) V(V7, 5) V(V4, 6) \
+PHASE(18) V(V8_V5_V2, 5) \
+PHASE(19) V(V9_V6_V3, 5) \
+PHASE(20) V(V1, 1) V(V7, 6) V(V4, 7) \
+PHASE(21) V(V8, 6) V(V5, 7) V(V2, 0) /* t_brr_next_addr order dependency */ \
+PHASE(22) V(V3a, 0) V(V9, 6) V(V6, 7) echo_22(); \
+PHASE(23) V(V7, 7) echo_23(); \
+PHASE(24) V(V8, 7) echo_24(); \
+PHASE(25) V(V3b, 0) V(V9, 7) echo_25(); \
+PHASE(26) echo_26(); \
+PHASE(27) misc_27(); echo_27(); \
+PHASE(28) misc_28(); echo_28(); \
+PHASE(29) misc_29(); echo_29(); \
+PHASE(30) misc_30(); V(V3c, 0) echo_30(); \
+PHASE(31) V(V4, 0) V(V1, 2)
 
 #if !SPC_DSP_CUSTOM_RUN
 void SPC_DSP::run(int clocks_remain)
@@ -748,7 +749,6 @@ void SPC_DSP::run(int clocks_remain)
 			goto loop;
 	}
 }
-
 #endif
 
 //// Setup
@@ -807,7 +807,7 @@ void SPC_DSP::soft_reset()
 
 void SPC_DSP::load(const uint8_t regs[register_count])
 {
-	std::copy(&regs[0], &regs[register_count], &this->m.regs[0]);
+	std::copy_n(&regs[0], static_cast<int>(register_count), &this->m.regs[0]);
 	memset(&this->m.regs[register_count], 0, offsetof(state_t, ram) - register_count);
 
 	// Internal state

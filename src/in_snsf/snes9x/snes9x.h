@@ -299,7 +299,6 @@ struct SSettings
 
 struct SSNESGameFixes
 {
-	uint8_t SRAMInitialValue;
 	bool Uniracers;
 };
 

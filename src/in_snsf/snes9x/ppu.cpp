@@ -229,15 +229,11 @@ void S9xSetPPU(uint8_t Byte, uint16_t Address)
 		// write_port will run the APU until given clock before writing value
 		S9xAPUWritePort(Address & 3, Byte);
 	else if (Address <= 0x2183)
-	{
 		switch (Address)
 		{
 			case 0x2100: // INIDISP
-				if (Byte != Memory.FillRAM[0x2100])
-				{
-					if ((Memory.FillRAM[0x2100] & 0x80) != (Byte & 0x80))
-						PPU.ForcedBlanking = !!((Byte >> 7) & 1);
-				}
+				if (Byte != Memory.FillRAM[0x2100] && (Memory.FillRAM[0x2100] & 0x80) != (Byte & 0x80))
+					PPU.ForcedBlanking = !!((Byte >> 7) & 1);
 
 				if ((Memory.FillRAM[0x2100] & 0x80) && CPU.V_Counter == PPU.ScreenHeight + FIRST_VISIBLE_LINE)
 				{
@@ -434,10 +430,7 @@ void S9xSetPPU(uint8_t Byte, uint16_t Address)
 					PPU.WRAM |= Byte << 16;
 					PPU.WRAM &= 0x1ffff;
 				}
-
-				break;
 		}
-	}
 
 	Memory.FillRAM[Address] = Byte;
 }
@@ -658,7 +651,7 @@ void S9xSetCPU(uint8_t Byte, uint16_t Address)
 				DMA[d].UnusedBit43x0 = !!(Byte & 0x20);
 				DMA[d].AAddressDecrement = !!(Byte & 0x10);
 				DMA[d].AAddressFixed = !!(Byte & 0x08);
-				DMA[d].TransferMode = (Byte & 7);
+				DMA[d].TransferMode = Byte & 7;
 				return;
 
 			case 0x1: // 0x43x1: BBADx
@@ -775,9 +768,9 @@ void S9xSetCPU(uint8_t Byte, uint16_t Address)
 				uint16_t div = Byte ? a / Byte : 0xffff;
 				uint16_t rem = Byte ? a % Byte : a;
 				// FIXME: The update occurs 16 machine cycles after $4206 is set.
-				Memory.FillRAM[0x4214] = static_cast<uint8_t>(div);
+				Memory.FillRAM[0x4214] = div & 0xff;
 				Memory.FillRAM[0x4215] = div >> 8;
-				Memory.FillRAM[0x4216] = static_cast<uint8_t>(rem);
+				Memory.FillRAM[0x4216] = rem & 0xff;
 				Memory.FillRAM[0x4217] = rem >> 8;
 				break;
 			}
@@ -844,12 +837,7 @@ void S9xSetCPU(uint8_t Byte, uint16_t Address)
 
 			case 0x420d: // MEMSEL
 				if ((Byte & 1) != (Memory.FillRAM[0x420d] & 1))
-				{
-					if (Byte & 1)
-						CPU.FastROMSpeed = ONE_CYCLE;
-					else
-						CPU.FastROMSpeed = SLOW_ONE_CYCLE;
-				}
+					CPU.FastROMSpeed = Byte & 1 ? ONE_CYCLE : SLOW_ONE_CYCLE;
 
 				break;
 
@@ -948,8 +936,7 @@ uint8_t S9xGetCPU(uint16_t Address)
 
 			case 0x4211: // TIMEUP
 				byte = CPU.IRQLine ? 0x80 : 0;
-				CPU.IRQLine = false;
-				CPU.IRQTransition = false;
+				CPU.IRQLine = CPU.IRQTransition = false;
 				return byte | (OpenBus & 0x7f);
 
 			case 0x4212: // HVBJOY
@@ -1011,7 +998,7 @@ void S9xSoftResetPPU()
 	PPU.OAMPriorityRotation = false;
 	PPU.OAMFlip = 0;
 	PPU.OAMWriteRegister = 0;
-	std::fill(&PPU.OAMData[0], &PPU.OAMData[512 + 32], 0);
+	std::fill_n(&PPU.OAMData[0], sizeof(PPU.OAMData), 0);
 
 	PPU.FirstSprite = 0;
 
@@ -1038,12 +1025,12 @@ void S9xSoftResetPPU()
 	IPPU.Interlace = false;
 
 	for (int c = 0; c < 0x8000; c += 0x100)
-		std::fill(&Memory.FillRAM[c], &Memory.FillRAM[c + 0x100], c >> 8);
-	std::fill(&Memory.FillRAM[0x2100], &Memory.FillRAM[0x2200], 0);
-	std::fill(&Memory.FillRAM[0x4200], &Memory.FillRAM[0x4300], 0);
-	std::fill(&Memory.FillRAM[0x4000], &Memory.FillRAM[0x4100], 0);
+		std::fill_n(&Memory.FillRAM[c], 0x100, c >> 8);
+	std::fill_n(&Memory.FillRAM[0x2100], 0x0100, 0);
+	std::fill_n(&Memory.FillRAM[0x4200], 0x0100, 0);
+	std::fill_n(&Memory.FillRAM[0x4000], 0x0100, 0);
 	// For BS Suttehakkun 2...
-	std::fill(&Memory.FillRAM[0x1000], &Memory.FillRAM[0x2000], 0);
+	std::fill_n(&Memory.FillRAM[0x1000], 0x1000, 0);
 
 	Memory.FillRAM[0x4201] = Memory.FillRAM[0x4213] = 0xff;
 }

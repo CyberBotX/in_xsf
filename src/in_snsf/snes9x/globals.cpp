@@ -178,7 +178,6 @@
 #include "snes9x.h"
 #include "memmap.h"
 #include "dma.h"
-#include "apu/apu.h"
 
 SCPUState CPU;
 SICPU ICPU;

@@ -209,8 +209,7 @@ static inline bool addCyclesInDMA(uint8_t dma_channel)
 
 bool S9xDoDMA(uint8_t Channel)
 {
-	CPU.InDMA = true;
-	CPU.InDMAorHDMA = true;
+	CPU.InDMA = CPU.InDMAorHDMA = true;
 	CPU.CurrentDMAorHDMAChannel = Channel;
 
 	SDMA *d = &DMA[Channel];
@@ -325,9 +324,7 @@ bool S9xDoDMA(uint8_t Channel)
 			p += inc;
 			if (!addCyclesInDMA(Channel))
 			{
-				CPU.InDMA = false;
-				CPU.InDMAorHDMA = false;
-				CPU.InWRAMDMAorHDMA = false;
+				CPU.InDMA = CPU.InDMAorHDMA = CPU.InWRAMDMAorHDMA = false;
 				CPU.CurrentDMAorHDMAChannel = -1;
 				return false;
 			}
@@ -836,9 +833,7 @@ bool S9xDoDMA(uint8_t Channel)
 			d->AAddress += inc;
 			if (!addCyclesInDMA(Channel))
 			{
-				CPU.InDMA = false;
-				CPU.InDMAorHDMA = false;
-				CPU.InWRAMDMAorHDMA = false;
+				CPU.InDMA = CPU.InDMAorHDMA = CPU.InWRAMDMAorHDMA = false;
 				CPU.CurrentDMAorHDMAChannel = -1;
 				return false;
 			}
@@ -1148,8 +1143,7 @@ void S9xStartHDMA()
 
 	PPU.HDMAEnded = 0;
 
-	CPU.InHDMA = true;
-	CPU.InDMAorHDMA = true;
+	CPU.InHDMA = CPU.InDMAorHDMA = true;
 	int32_t tmpch = CPU.CurrentDMAorHDMAChannel;
 
 	// XXX: Not quite right...
@@ -1186,8 +1180,7 @@ uint8_t S9xDoHDMA(uint8_t byte)
 
 	int d = 0;
 
-	CPU.InHDMA = true;
-	CPU.InDMAorHDMA = true;
+	CPU.InHDMA = CPU.InDMAorHDMA = true;
 	CPU.HDMARanInDMA = CPU.InDMA ? byte : 0;
 	bool temp = CPU.InWRAMDMAorHDMA;
 	int32_t tmpch = CPU.CurrentDMAorHDMAChannel;
