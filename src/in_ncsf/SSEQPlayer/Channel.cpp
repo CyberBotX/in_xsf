@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-05-07
+ * Last modification on 2014-06-17
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -66,7 +66,7 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 			this->cosine_lut[i] = (1.0 - std::cos((static_cast<double>(i) / COSINE_RESOLUTION) * M_PI)) * 0.5;
 		double dx = static_cast<double>(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
 		for (unsigned i = 0; i <= SINC_SAMPLES; ++i, x += dx)
-			this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * (0.5 * (1.0 + std::cos((M_PI * x) / SINC_WIDTH))) : 0.0;
+			this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * sinc(x / SINC_WIDTH) : 0.0;
 		this->initializedLUTs = true;
 	}
 }
