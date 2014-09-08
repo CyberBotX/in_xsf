@@ -8,7 +8,6 @@
 #include "../common/SoundDriver.h"
 
 extern SoundDriver *systemSoundInit();
-bool soundDeclicking = true;
 
 static const uint32_t NR52 = 0x84;
 
@@ -20,12 +19,12 @@ static uint16_t soundFinalWave[6400];
 static long soundSampleRate = 44100;
 bool soundInterpolation = true;
 static bool soundPaused = true;
-static float soundFiltering = 0.5f; // 0.0 = none, 1.0 = max
+static float soundFiltering = 1.0f;
 int SOUND_CLOCK_TICKS = SOUND_CLOCK_TICKS_;
 int soundTicks = SOUND_CLOCK_TICKS_;
 
 static float soundVolume = 1.0f;
-static int soundEnableFlag = 0x30f; // emulator channels enabled
+static int soundEnableFlag = 0x3ff; // emulator channels enabled
 static float soundFiltering_ = -1;
 static float soundVolume_ = -1;
 
@@ -85,11 +84,11 @@ inline void Gba_Pcm::init()
 
 void Gba_Pcm::apply_control(int idx)
 {
-	this->shift = (~ioMem[SGCNT0_H] >> (2 + idx)) & 1;
+	this->shift = ~ioMem[SGCNT0_H] >> (2 + idx) & 1;
 
 	int ch = 0;
-	if (((soundEnableFlag >> idx) & 0x100) && (ioMem[NR52] & 0x80))
-		ch = (ioMem[SGCNT0_H + 1] >> (idx * 4)) & 3;
+	if ((soundEnableFlag >> idx & 0x100) && (ioMem[NR52] & 0x80))
+		ch = ioMem[SGCNT0_H + 1] >> (idx * 4) & 3;
 
 	Blip_Buffer *out = nullptr;
 	switch (ch)
@@ -108,7 +107,7 @@ void Gba_Pcm::apply_control(int idx)
 	{
 		if (this->output)
 		{
-			blip_time_t time = blip_time();
+			auto time = blip_time();
 
 			this->output->set_modified();
 
@@ -147,7 +146,7 @@ void Gba_Pcm::update(int dac)
 {
 	if (this->output)
 	{
-		blip_time_t time = blip_time();
+		auto time = blip_time();
 
 		dac = static_cast<int8_t>(dac) >> this->shift;
 		int delta = dac - this->last_amp;
@@ -179,15 +178,19 @@ void Gba_Pcm_Fifo::timer_overflowed(int which_timer)
 {
 	if (which_timer == this->timer && this->enabled)
 	{
-		if (this->count <= 16)
+		/* Mother 3 fix, refined to not break Metroid Fusion */
+		if (this->count == 16 || !this->count)
 		{
 			// Need to fill FIFO
+			int saved_count = this->count;
 			CPUCheckDMA(3, this->which ? 4 : 2);
-			if (this->count <= 16)
+			if (!saved_count && this->count == 16)
+				CPUCheckDMA(3, this->which ? 4 : 2);
+			if (!this->count)
 			{
 				// Not filled by DMA, so fill with 16 bytes of silence
 				int reg = this->which ? FIFOB_L : FIFOA_L;
-				for (int n = 4; n--; )
+				for (int n = 8; n--; )
 				{
 					soundEvent(reg, static_cast<uint16_t>(0));
 					soundEvent(reg + 2, static_cast<uint16_t>(0));
@@ -412,7 +415,7 @@ static void apply_muting()
 	if (gb_apu)
 		// APU
 		for (int i = 0; i < 4; ++i)
-			if ((soundEnableFlag >> i) & 1)
+			if (soundEnableFlag >> i & 1)
 				gb_apu->set_output(stereo_buffer->center(), stereo_buffer->left(), stereo_buffer->right(), i);
 			else
 				gb_apu->set_output(nullptr, nullptr, nullptr, i);
@@ -420,7 +423,7 @@ static void apply_muting()
 
 static void reset_apu()
 {
-	gb_apu->reduce_clicks(soundDeclicking);
+	gb_apu->reduce_clicks(true);
 	gb_apu->reset(gb_apu->mode_agb, true);
 
 	if (stereo_buffer)

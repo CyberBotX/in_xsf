@@ -1,10 +1,9 @@
 // Blip_Buffer 0.4.1. http://www.slack.net/~ant/
 
+#include <limits>
 #include <numeric>
-#include <cassert>
 #include <cmath>
 #include <cstring>
-#include <cstdlib>
 #include "Blip_Buffer.h"
 
 /* Copyright (C) 2003-2007 Shay Green. This module is free software; you
@@ -22,7 +21,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 Blip_Buffer::Blip_Buffer()
 {
-	this->factor_ = static_cast<uint32_t>(LONG_MAX);
+	this->factor_ = static_cast<uint32_t>(std::numeric_limits<long>::max());
 	this->buffer_.clear();
 	this->buffer_size_ = 0;
 	this->sample_rate_ = 0;
@@ -71,7 +70,7 @@ void Blip_Buffer::set_sample_rate(long new_rate, int msec)
 		if (s < new_size)
 			new_size = s;
 		else
-			assert(0); // fails if requested buffer length exceeds limit
+			assert(false); // fails if requested buffer length exceeds limit
 	}
 
 	if (this->buffer_size_ != new_size)
@@ -131,7 +130,7 @@ blip_time_t Blip_Buffer::count_clocks(long count) const
 {
 	if (!this->factor_)
 	{
-		assert(0); // sample rate and clock rates must be set first
+		assert(false); // sample rate and clock rates must be set first
 		return 0;
 	}
 
@@ -149,8 +148,8 @@ void Blip_Buffer::remove_samples(long count)
 
 		// copy remaining samples to beginning and clear old samples
 		long remain = this->samples_avail() + blip_buffer_extra_;
-		memmove(&this->buffer_[0], &this->buffer_[count], remain * sizeof(this->buffer_[0]));
-		memset(&this->buffer_[remain], 0, count * sizeof(this->buffer_[0]));
+		memmove(&this->buffer_[0], &this->buffer_[count], remain * sizeof(buf_t_));
+		memset(&this->buffer_[remain], 0, count * sizeof(buf_t_));
 	}
 }
 
@@ -159,8 +158,7 @@ void Blip_Buffer::remove_samples(long count)
 Blip_Synth_Fast_::Blip_Synth_Fast_()
 {
 	this->buf = nullptr;
-	this->last_amp = 0;
-	this->delta_factor = 0;
+	this->last_amp = this->delta_factor = 0;
 }
 
 void Blip_Synth_Fast_::volume_unit(double new_unit)
@@ -175,8 +173,7 @@ Blip_Synth_::Blip_Synth_(short *p, int w) : impulses(p), width(w)
 	this->volume_unit_ = 0.0;
 	this->kernel_unit = 0;
 	this->buf = nullptr;
-	this->last_amp = 0;
-	this->delta_factor = 0;
+	this->last_amp = this->delta_factor = 0;
 }
 
 #ifndef M_PI
@@ -193,10 +190,10 @@ static void gen_sinc(float *out, int count, double oversample, double treble, do
 	if (treble > 5.0)
 		treble = 5.0;
 
-	double const maxh = 4096.0;
-	double const rolloff = std::pow(10.0, 1.0 / (maxh * 20.0) * treble / (1.0 - cutoff));
-	double const pow_a_n = std::pow(rolloff, maxh - maxh * cutoff);
-	double const to_angle = M_PI / 2 / maxh / oversample;
+	static const double maxh = 4096.0;
+	double rolloff = std::pow(10.0, 1.0 / (maxh * 20.0) * treble / (1.0 - cutoff));
+	double pow_a_n = std::pow(rolloff, maxh - maxh * cutoff);
+	double to_angle = M_PI / 2 / maxh / oversample;
 	for (int i = 0; i < count; ++i)
 	{
 		double angle = ((i - count) * 2 + 1) * to_angle;
@@ -226,10 +223,10 @@ void blip_eq_t::generate(float *out, int count) const
 
 	gen_sinc(out, count, blip_res * oversample, this->treble, cutoff);
 
-	// apply (half of) hann window
+	// apply (half of) hamming window
 	double to_fraction = M_PI / (count - 1);
 	for (int i = count; i--; )
-		out[i] *= 0.5f * (1.0f - static_cast<float>(std::cos(i * to_fraction)));
+		out[i] *= 0.54f - 0.46f * static_cast<float>(std::cos(i * to_fraction));
 }
 
 void Blip_Synth_::adjust_impulse()
@@ -245,7 +242,7 @@ void Blip_Synth_::adjust_impulse()
 		if (p == p2)
 			error /= 2; // phase = 0.5 impulse uses same half for both sides
 		this->impulses[size - blip_res + p] += static_cast<short>(error);
-		//printf("error: %ld\n", error);
+		//printf( "error: %ld\n", error );
 	}
 
 	//for (int i = blip_res; i--; printf("\n"))
@@ -336,7 +333,7 @@ void Blip_Synth_::volume_unit(double new_unit)
 			}
 		}
 		this->delta_factor = static_cast<int>(std::floor(factor + 0.5));
-		//printf("delta_factor: %d, kernel_unit: %d\n", this->delta_factor, this->kernel_unit);
+		//printf( "delta_factor: %d, kernel_unit: %d\n", delta_factor, kernel_unit );
 	}
 }
 #endif
@@ -349,10 +346,10 @@ long Blip_Buffer::read_samples(blip_sample_t *out_, long max_samples, bool stere
 
 	if (count)
 	{
-		int bass = BLIP_READER_BASS(*this);
+		int bass = BLIP_READER_BASS(this);
 		BLIP_READER_BEGIN(reader, *this);
 		BLIP_READER_ADJ_(reader, count);
-		auto out = out_ + count;
+		auto out = &out_[count];
 		int32_t offset = static_cast<int32_t>(-count);
 
 		do

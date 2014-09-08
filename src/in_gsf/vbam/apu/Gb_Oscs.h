@@ -1,8 +1,7 @@
 // Private oscillators used by Gb_Apu
 
 // Gb_Snd_Emu 0.2.0
-#ifndef GB_OSCS_H
-#define GB_OSCS_H
+#pragma once
 
 #include "blargg_common.h"
 #include "Blip_Buffer.h"
@@ -170,7 +169,7 @@ private:
 
 	void corrupt_wave();
 
-	uint8_t *wave_bank() const { return &this->wave_ram[((~this->regs[0] & bank40_mask) >> 2) & agb_mask]; }
+	uint8_t *wave_bank() const { return &this->wave_ram[(~this->regs[0] & bank40_mask) >> 2 & this->agb_mask]; }
 
 	// Wave index that would be accessed, or -1 if no access would occur
 	int access(unsigned addr) const;
@@ -188,5 +187,3 @@ inline void Gb_Wave::write(unsigned addr, int data)
 	if (index >= 0)
 		this->wave_bank()[index] = data;
 }
-
-#endif

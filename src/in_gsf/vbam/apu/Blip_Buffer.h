@@ -1,8 +1,7 @@
 // Band-limited sound synthesis buffer
 
 // Blip_Buffer 0.4.1
-#ifndef BLIP_BUFFER_H
-#define BLIP_BUFFER_H
+#pragma once
 
 #include <vector>
 #include <cstdint>
@@ -11,7 +10,7 @@
 typedef int32_t blip_time_t;
 
 // Output samples are 16-bit signed, with a range of -32768 to 32767
-typedef short blip_sample_t;
+typedef int16_t blip_sample_t;
 enum { blip_sample_max = 32767 };
 
 class Blip_Buffer
@@ -20,7 +19,7 @@ public:
 	// Sets output sample rate and buffer length in milliseconds (1/1000 sec, defaults
 	// to 1/4 second) and clears buffer. If there isn't enough memory, leaves buffer
 	// untouched and returns "Out of memory", otherwise returns NULL.
-	void set_sample_rate(long samples_per_sec, int msec_length = 1000 / 4);
+	void set_sample_rate(long samples_per_sec, int msec_length = 250);
 
 	// Sets number of source time units per second
 	void clock_rate(long clocks_per_sec);
@@ -89,11 +88,9 @@ public:
 	blip_resampled_time_t resampled_duration(int t) const { return t * this->factor_; }
 	blip_resampled_time_t resampled_time(blip_time_t t) const { return t * this->factor_ + this->offset_; }
 	blip_resampled_time_t clock_rate_factor(long clock_rate) const;
+
 	Blip_Buffer();
 	virtual ~Blip_Buffer();
-
-	// Deprecated
-	typedef blip_resampled_time_t resampled_time_t;
 private:
 	// noncopyable
 	Blip_Buffer(const Blip_Buffer &);
@@ -116,22 +113,28 @@ private:
 
 // Number of bits in resample ratio fraction. Higher values give a more accurate ratio
 // but reduce maximum buffer size.
-const int BLIP_BUFFER_ACCURACY = 16;
+enum { BLIP_BUFFER_ACCURACY = 16 };
 
 // Number bits in phase offset. Fewer than 6 bits (64 phase offsets) results in
 // noticeable broadband noise when synthesizing high frequency square waves.
 // Affects size of Blip_Synth objects since they store the waveform directly.
+enum
+{
 #if BLIP_BUFFER_FAST
-const int BLIP_PHASE_BITS = 8;
+	BLIP_PHASE_BITS = 8
 #else
-const int BLIP_PHASE_BITS = 6;
+	BLIP_PHASE_BITS = 6
 #endif
+};
 
 // Internal
 typedef uint32_t blip_resampled_time_t;
-const int blip_widest_impulse_ = 16;
-const int blip_buffer_extra_ = blip_widest_impulse_ + 2;
-const int blip_res = 1 << BLIP_PHASE_BITS;
+enum
+{
+	blip_widest_impulse_ = 16,
+	blip_buffer_extra_ = blip_widest_impulse_ + 2,
+	blip_res = 1 << BLIP_PHASE_BITS
+};
 class blip_eq_t;
 
 class Blip_Synth_Fast_
@@ -166,9 +169,12 @@ private:
 };
 
 // Quality level, better = slower. In general, use blip_good_quality.
-const int blip_med_quality  = 8;
-const int blip_good_quality = 12;
-const int blip_high_quality = 16;
+enum
+{
+	blip_med_quality = 8,
+	blip_good_quality = 12,
+	blip_high_quality = 16
+};
 
 // Range specifies the greatest expected change in amplitude. Calculate it
 // by finding the difference between the maximum and minimum expected
@@ -216,7 +222,7 @@ private:
 	Blip_Synth_Fast_ impl;
 #else
 	Blip_Synth_ impl;
-	typedef short imp_t;
+	typedef int16_t imp_t;
 	imp_t impulses[blip_res * (quality / 2) + 1];
 public:
 	Blip_Synth() : impl(impulses, quality) { }
@@ -243,21 +249,21 @@ private:
 	friend class Blip_Synth_;
 };
 
-const int blip_sample_bits = 30;
+enum { blip_sample_bits = 30 };
 
 // Optimized reading from Blip_Buffer, for use in custom sample output
 
 // Begins reading from buffer. Name should be unique to the current block.
 #define BLIP_READER_BEGIN(name, blip_buffer) \
-	auto name##_reader_buf = &(blip_buffer).buffer_[0]; \
+	const Blip_Buffer::buf_t_ *name##_reader_buf = &(blip_buffer).buffer_[0]; \
 	int32_t name##_reader_accum = (blip_buffer).reader_accum_
 
 // Gets value to pass to BLIP_READER_NEXT()
-inline int BLIP_READER_BASS(const Blip_Buffer &blip_buffer) { return blip_buffer.bass_shift_; }
+inline int BLIP_READER_BASS(const Blip_Buffer *blip_buffer) { return blip_buffer->bass_shift_; }
 
 // Constant value to use instead of BLIP_READER_BASS(), for slightly more optimal
 // code at the cost of having no bass control
-const int blip_reader_default_bass = 9;
+enum { blip_reader_default_bass = 9 };
 
 // Current sample
 #define BLIP_READER_READ(name) (name##_reader_accum >> (blip_sample_bits - 16))
@@ -283,12 +289,6 @@ const int blip_reader_default_bass = 9;
 	name##_reader_accum += name##_reader_buf[(idx)]; \
 }
 
-#define BLIP_READER_NEXT_RAW_IDX_(name, bass, idx) \
-{ \
-	name##_reader_accum -= name##_reader_accum >> (bass); \
-	name##_reader_accum += *reinterpret_cast<const Blip_Buffer::buf_t_ *>(reinterpret_cast<const char *>(name##_reader_buf) + (idx)); \
-}
-
 #if defined(_M_IX86) || defined(_M_IA64) || defined(__i486__) || defined(__x86_64__) || defined(__ia64__) || defined(__i386__)
 template<typename T> inline bool BLIP_CLAMP_(const T &in) { return in < -0x8000 || 0x7FFF < in; }
 #else
@@ -304,9 +304,7 @@ template<typename T1, typename T2> inline void BLIP_CLAMP(const T1 &sample, T2 &
 
 // End of public interface
 
-#ifndef assert
-# include <cassert>
-#endif
+#include <cassert>
 
 template<int quality, int range> inline void Blip_Synth<quality, range>::offset_resampled(blip_resampled_time_t time, int delta, Blip_Buffer *blip_buf) const
 {
@@ -316,7 +314,7 @@ template<int quality, int range> inline void Blip_Synth<quality, range>::offset_
 
 	delta *= this->impl.delta_factor;
 	auto buf = &blip_buf->buffer_[time >> BLIP_BUFFER_ACCURACY];
-	int phase = static_cast<int>((time >> (BLIP_BUFFER_ACCURACY - BLIP_PHASE_BITS)) & (blip_res - 1));
+	int phase = static_cast<int>(time >> (BLIP_BUFFER_ACCURACY - BLIP_PHASE_BITS) & (blip_res - 1));
 
 #if BLIP_BUFFER_FAST
 	int32_t left = buf[0] + delta;
@@ -335,12 +333,12 @@ template<int quality, int range> inline void Blip_Synth<quality, range>::offset_
 	int rev = fwd + quality - 2;
 	int mid = quality / 2 - 1;
 
-	auto imp = this->impulses + blip_res - phase;
+	auto imp = &this->impulses[blip_res - phase];
 
 # if defined(_M_IX86) || defined(_M_IA64) || defined(__i486__) || defined(__x86_64__) || defined(__ia64__) || defined(__i386__)
 	// this straight forward version gave in better code on GCC for x86
 
-	auto ADD_IMP = [&](int out, int in) { buf[out] += static_cast<int32_t>(imp[blip_res * in] * delta); };
+	auto ADD_IMP = [&](int out, int in) { buf[out] += static_cast<int32_t>(imp[blip_res * in]) * delta; };
 
 	auto BLIP_FWD = [&](int i) { ADD_IMP(fwd + i, i); ADD_IMP(fwd + 1 + i, i + 1); };
 	auto BLIP_REV = [&](int r) { ADD_IMP(rev - r, r + 1); ADD_IMP(rev + 1 - r, r); };
@@ -352,7 +350,7 @@ template<int quality, int range> inline void Blip_Synth<quality, range>::offset_
 		BLIP_FWD(4);
 	ADD_IMP(fwd + mid - 1, mid - 1);
 	ADD_IMP(fwd + mid, mid);
-	imp = this->impulses + phase;
+	imp = &this->impulses[phase];
 	if (quality > 12)
 		BLIP_REV(6);
 	if (quality > 8)
@@ -390,7 +388,7 @@ template<int quality, int range> inline void Blip_Synth<quality, range>::offset_
 		BLIP_FWD(4);
 	int32_t t0 = i0 * delta + buf[fwd + mid - 1];
 	int32_t t1 = imp[blip_res * mid] * delta + buf[fwd + mid];
-	imp = this->impulses + phase;
+	imp = &this->impulses[phase];
 	i0 = imp[blip_res * mid];
 	buf[fwd + mid - 1] = t0;
 	buf[fwd + mid] = t1;
@@ -442,7 +440,8 @@ inline uint32_t Blip_Buffer::unsettled() const
 	return this->reader_accum_ >> (blip_sample_bits - 16);
 }
 
-const int blip_max_length = 0;
-const int blip_default_length = 250; // 1/4 second
-
-#endif
+enum
+{
+	blip_max_length = 0,
+	blip_default_length = 250 // 1/4 second
+};

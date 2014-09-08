@@ -2,18 +2,12 @@
 // To change configuration options, modify blargg_config.h, not this file.
 
 // Gb_Snd_Emu 0.2.0
-#ifndef BLARGG_COMMON_H
-#define BLARGG_COMMON_H
+#pragma once
 
 #include <cstdlib>
 #include <cassert>
 #include <cstdint>
-
-#undef BLARGG_COMMON_H
-// allow blargg_config.h to #include blargg_common.h
 #include "blargg_config.h"
-#ifndef BLARGG_COMMON_H
-#define BLARGG_COMMON_H
 
 // BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1,
 // compiler is assumed to support bool. If undefined, availability is determined.
@@ -37,7 +31,4 @@
 typedef int bool;
 const bool true = 1;
 const bool false = 0;
-#endif
-
-#endif
 #endif

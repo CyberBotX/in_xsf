@@ -1,8 +1,7 @@
 // Nintendo Game Boy sound hardware emulator with save state support
 
 // Gb_Snd_Emu 0.2.0
-#ifndef GB_APU_H
-#define GB_APU_H
+#pragma once
 
 #include "Gb_Oscs.h"
 
@@ -64,7 +63,7 @@ public:
 	// Treble and bass values for various hardware.
 	enum
 	{
-		speaker_treble =  -47, // speaker on system
+		speaker_treble = -47, // speaker on system
 		speaker_bass = 2000,
 		dmg_treble = 0, // headphones on each system
 		dmg_bass = 30,
@@ -114,10 +113,7 @@ private:
 	void run_until(blip_time_t);
 	void silence_osc(Gb_Osc &);
 	void write_osc(int index, int reg, int old_data, int data);
-	friend class Gb_Apu_Tester;
 
 public:
 	int read_status();
 };
-
-#endif

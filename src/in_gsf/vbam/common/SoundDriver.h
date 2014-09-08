@@ -15,8 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#ifndef __VBA_SOUND_DRIVER_H__
-#define __VBA_SOUND_DRIVER_H__
+#pragma once
 
 #include <cstdint>
 
@@ -60,5 +59,3 @@ public:
 
 	virtual void setThrottle(unsigned short throttle) { }
 };
-
-#endif // __VBA_SOUND_DRIVER_H__

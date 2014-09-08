@@ -1,8 +1,7 @@
 // Multi-channel sound buffer interface, and basic mono and stereo buffers
 
 // Blip_Buffer 0.4.1
-#ifndef MULTI_BUFFER_H
-#define MULTI_BUFFER_H
+#pragma once
 
 #include "blargg_common.h"
 #include "Blip_Buffer.h"
@@ -19,7 +18,7 @@ public:
 	// (type information used by Effects_Buffer)
 	enum { type_index_mask = 0xFF };
 	enum { wave_type = 0x100, noise_type = 0x200, mixed_type = wave_type | noise_type };
-	virtual void set_channel_count(int, const int* types = nullptr);
+	virtual void set_channel_count(int, const int *types = nullptr);
 	int channel_count() const { return this->channel_count_; }
 
 	// Gets indexed channel, from 0 to channel count - 1
@@ -152,5 +151,3 @@ inline void Multi_Buffer::set_channel_count(int n, const int *types)
 	this->channel_count_ = n;
 	this->channel_types_ = types;
 }
-
-#endif

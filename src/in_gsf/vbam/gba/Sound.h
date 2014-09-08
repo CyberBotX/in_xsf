@@ -1,5 +1,4 @@
-#ifndef SOUND_H
-#define SOUND_H
+#pragma once
 
 // Sound emulation setup/options and GBA sound emulation
 
@@ -37,11 +36,14 @@ extern bool soundInterpolation; // 1 if PCM should have low-pass filtering
 //// GBA sound emulation
 
 // GBA sound registers
-const uint32_t SGCNT0_H = 0x82;
-const uint32_t FIFOA_L = 0xa0;
-const uint32_t FIFOA_H = 0xa2;
-const uint32_t FIFOB_L = 0xa4;
-const uint32_t FIFOB_H = 0xa6;
+enum
+{
+	SGCNT0_H = 0x82,
+	FIFOA_L = 0xa0,
+	FIFOA_H = 0xa2,
+	FIFOB_L = 0xa4,
+	FIFOB_H = 0xa6
+};
 
 // Resets emulated sound hardware
 void soundReset();
@@ -61,5 +63,3 @@ extern int soundTicks; // Number of 16.8 MHz clocks until soundTick() will be ca
 class Multi_Buffer;
 
 void flush_samples(Multi_Buffer *buffer);
-
-#endif // SOUND_H

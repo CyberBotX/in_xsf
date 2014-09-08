@@ -14,10 +14,6 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-#ifdef BLARGG_ENABLE_OPTIMIZER
-# include BLARGG_ENABLE_OPTIMIZER
-#endif
-
 Multi_Buffer::Multi_Buffer(int spf) : samples_per_frame_(spf)
 {
 	this->length_ = 0;
@@ -177,7 +173,7 @@ void Stereo_Mixer::read_pairs(blip_sample_t *out, int count)
 
 void Stereo_Mixer::mix_mono(blip_sample_t *out_, int count)
 {
-	int bass = BLIP_READER_BASS(*this->bufs[2]);
+	int bass = BLIP_READER_BASS(this->bufs[2]);
 	BLIP_READER_BEGIN(center, *this->bufs[2]);
 	BLIP_READER_ADJ_(center, this->samples_read);
 
@@ -198,16 +194,16 @@ void Stereo_Mixer::mix_mono(blip_sample_t *out_, int count)
 
 void Stereo_Mixer::mix_stereo(blip_sample_t *out_, int count)
 {
-	auto out = out_ + count * stereo;
+	auto out = &out_[count * stereo];
 
 	// do left + center and right + center separately to reduce register load
 	auto buf = &this->bufs[2];
-	while (1) // loop runs twice
+	while (true) // loop runs twice
 	{
 		--buf;
 		--out;
 
-		int bass = BLIP_READER_BASS(*this->bufs[2]);
+		int bass = BLIP_READER_BASS(this->bufs[2]);
 		BLIP_READER_BEGIN(side, **buf);
 		BLIP_READER_BEGIN(center, *this->bufs[2]);
 

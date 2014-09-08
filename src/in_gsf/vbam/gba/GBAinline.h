@@ -1,5 +1,4 @@
-#ifndef GBAINLINE_H
-#define GBAINLINE_H
+#pragma once
 
 #include "../common/Port.h"
 #include "Sound.h"
@@ -8,8 +7,9 @@ extern const uint32_t objTilesAddress[3];
 
 extern bool stopState;
 extern bool holdState;
-extern int holdType;
 extern int cpuNextEvent;
+extern bool cpuDmaHack;
+extern uint32_t cpuDmaLast;
 extern bool timer0On;
 extern int timer0Ticks;
 extern int timer0ClockReload;
@@ -23,6 +23,8 @@ extern bool timer3On;
 extern int timer3Ticks;
 extern int timer3ClockReload;
 extern int cpuTotalTicks;
+
+inline uint8_t CPUReadByteQuick(uint32_t addr) { return map[addr >> 24].address[addr & map[addr >> 24].mask]; }
 
 inline uint16_t CPUReadHalfWordQuick(uint32_t addr) { return READ16LE(&map[addr >> 24].address[addr & map[addr >> 24].mask]); }
 
@@ -42,7 +44,7 @@ inline uint32_t CPUReadMemory(uint32_t address)
 			if (reg[15].I >> 24)
 			{
 				if (address < 0x4000)
-					value = READ32LE(&biosProtected);
+					value = READ32LE(&biosProtected[0]);
 				else
 					goto unreadable;
 			}
@@ -92,44 +94,31 @@ inline uint32_t CPUReadMemory(uint32_t address)
 			break;
 		case 13:
 		case 14:
-			return 0;
+		case 15:
+			value = 0;
+			break;
 		// default
 		default:
 		unreadable:
-			if (armState)
-				return CPUReadMemoryQuick(reg[15].I);
+			if (cpuDmaHack)
+				value = cpuDmaLast;
 			else
-				return CPUReadHalfWordQuick(reg[15].I) | (CPUReadHalfWordQuick(reg[15].I) << 16);
+			{
+				if (armState)
+					return CPUReadMemoryQuick(reg[15].I);
+				else
+					return CPUReadHalfWordQuick(reg[15].I) | CPUReadHalfWordQuick(reg[15].I) << 16;
+			}
 	}
 
 	if (oldAddress & 3)
 	{
-#ifdef C_CORE
 		int shift = (oldAddress & 3) << 3;
 		value = (value >> shift) | (value << (32 - shift));
-#else
-# ifdef __GNUC__
-		asm("and $3, %%ecx;"
-			"shl $3 ,%%ecx;"
-			"ror %%cl, %0"
-			: "=r" (value)
-			: "r" (value), "c" (oldAddress));
-# else
-		__asm
-		{
-			mov ecx, oldAddress;
-			and ecx, 3;
-			shl ecx, 3;
-			ror [dword ptr value], cl;
-		}
-# endif
-#endif
 	}
 
 	return value;
 }
-
-extern uint32_t myROM[];
 
 inline uint32_t CPUReadHalfWord(uint32_t address)
 {
@@ -174,6 +163,8 @@ inline uint32_t CPUReadHalfWord(uint32_t address)
 						value = 0xFFFF - ((timer3Ticks - cpuTotalTicks) >> timer3ClockReload);
 				}
 			}
+			else if (address < 0x4000400 && ioReadable[address & 0x3fc])
+				value = 0;
 			else
 				goto unreadable;
 			break;
@@ -204,12 +195,24 @@ inline uint32_t CPUReadHalfWord(uint32_t address)
 			else
 				value = READ16LE(&rom[address & 0x1FFFFFE]);
 			break;
+		case 13:
+		case 14:
+		case 15:
+			value = 0;
+			break;
+		// default
 		default:
 		unreadable:
-			if (armState)
-				return CPUReadMemoryQuick(reg[15].I);
+			if (cpuDmaHack)
+				value = cpuDmaLast & 0xFFFF;
 			else
-				return CPUReadHalfWordQuick(reg[15].I) | (CPUReadHalfWordQuick(reg[15].I) << 16);
+			{
+				if (armState)
+					value = CPUReadHalfWordQuick(reg[15].I + (address & 2));
+				else
+					value = CPUReadHalfWordQuick(reg[15].I);
+			}
+			return value;
 	}
 
 	if (oldAddress & 1)
@@ -220,13 +223,7 @@ inline uint32_t CPUReadHalfWord(uint32_t address)
 
 inline int16_t CPUReadHalfWordSigned(uint32_t address)
 {
-	uint32_t oldAddress = address;
-	if (address & 1)
-		address &= ~0x01;
-	int16_t value = static_cast<int16_t>(CPUReadHalfWord(address));
-	if (oldAddress & 1)
-		value = static_cast<int8_t>(value);
-	return value;
+	return static_cast<int16_t>(CPUReadHalfWord(address));
 }
 
 inline uint8_t CPUReadByte(uint32_t address)
@@ -239,7 +236,7 @@ inline uint8_t CPUReadByte(uint32_t address)
 				if (address < 0x4000)
 					return biosProtected[address & 3];
 				else
-					goto unreadable;
+					break;
 			}
 			return bios[address & 0x3FFF];
 		case 2:
@@ -250,7 +247,7 @@ inline uint8_t CPUReadByte(uint32_t address)
 			if (address < 0x4000400 && ioReadable[address & 0x3ff])
 				return ioMem[address & 0x3ff];
 			else
-				goto unreadable;
+				break;
 		case 5:
 			return paletteRAM[address & 0x3ff];
 		case 6:
@@ -268,12 +265,19 @@ inline uint8_t CPUReadByte(uint32_t address)
 		case 11:
 		case 12:
 			return rom[address & 0x1FFFFFF];
-		default:
-		unreadable:
-			if (armState)
-				return CPUReadMemoryQuick(reg[15].I);
-			else
-				return CPUReadHalfWordQuick(reg[15].I) | (CPUReadHalfWordQuick(reg[15].I) << 16);
+		case 13:
+		case 14:
+		case 15:
+			return 0;
+	}
+	if (cpuDmaHack)
+		return cpuDmaLast & 0xFF;
+	else
+	{
+		if (armState)
+			return CPUReadByteQuick(reg[15].I + (address & 3));
+		else
+			return CPUReadByteQuick(reg[15].I + (address & 1));
 	}
 }
 
@@ -305,6 +309,7 @@ inline void CPUWriteMemory(uint32_t address, uint32_t value)
 				return;
 			if ((address & 0x18000) == 0x18000)
 				address &= 0x17fff;
+
 			WRITE32LE(&vram[address], value);
 			break;
 		case 0x07:
@@ -405,7 +410,6 @@ inline void CPUWriteByte(uint32_t address, uint8_t b)
 						if (b == 0x80)
 							stopState = true;
 						holdState = true;
-						holdType = -1;
 						cpuNextEvent = cpuTotalTicks;
 						break;
 					default: // every other register
@@ -415,7 +419,6 @@ inline void CPUWriteByte(uint32_t address, uint8_t b)
 						else
 							CPUUpdateRegister(lowerBits, (READ16LE(&ioMem[lowerBits]) & 0xFF00) | b);
 				}
-				break;
 			}
 			break;
 		case 5:
@@ -441,5 +444,3 @@ inline void CPUWriteByte(uint32_t address, uint8_t b)
 			break;
 	}
 }
-
-#endif // GBAINLINE_H

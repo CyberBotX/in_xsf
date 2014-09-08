@@ -1,10 +1,9 @@
-#ifndef GBACPU_H
-#define GBACPU_H
+#pragma once
 
 #include "GBAinline.h"
 
-extern int armExecute();
-extern int thumbExecute();
+int armExecute();
+int thumbExecute();
 
 #ifdef __GNUC__
 # ifndef __APPLE__
@@ -12,8 +11,8 @@ extern int thumbExecute();
 # else
 #  define INSN_REGPARM /*nothing*/
 # endif
-# define LIKELY(x) __builtin_expect(!!(x),1)
-# define UNLIKELY(x) __builtin_expect(!!(x),0)
+# define LIKELY(x) __builtin_expect(!!(x), 1)
+# define UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
 # define INSN_REGPARM /*nothing*/
 # define LIKELY(x) (x)
@@ -49,11 +48,12 @@ extern uint8_t memoryWait32[16];
 extern uint8_t memoryWaitSeq[16];
 extern uint8_t memoryWaitSeq32[16];
 extern uint8_t cpuBitsSet[256];
-extern void CPUSwitchMode(int mode, bool saveState, bool breakLoop = true);
-extern void CPUUpdateCPSR();
-extern void CPUUpdateFlags(bool breakLoop = true);
-extern void CPUUndefinedException();
-extern void CPUSoftwareInterrupt(int comment);
+
+void CPUSwitchMode(int mode, bool saveState, bool breakLoop = true);
+void CPUUpdateCPSR();
+void CPUUpdateFlags(bool breakLoop = true);
+void CPUUndefinedException();
+void CPUSoftwareInterrupt(int comment);
 
 // Waitstates when accessing data
 inline int dataTicksAccess16(uint32_t address) // DATA 8/16bits NON SEQ
@@ -81,27 +81,6 @@ inline int dataTicksAccess32(uint32_t address) // DATA 32bits NON SEQ
 {
 	int addr = (address >> 24) & 15;
 	int value = memoryWait32[addr];
-
-	if (addr >= 0x08 || addr < 0x02)
-	{
-		busPrefetchCount = 0;
-		busPrefetch = false;
-	}
-	else if (busPrefetch)
-	{
-		int waitState = value;
-		if (!waitState)
-			waitState = 1;
-		busPrefetchCount = ((busPrefetchCount + 1) << waitState) - 1;
-	}
-
-	return value;
-}
-
-inline int dataTicksAccessSeq16(uint32_t address) // DATA 8/16bits SEQ
-{
-	int addr = (address >> 24) & 15;
-	int value = memoryWaitSeq[addr];
 
 	if (addr >= 0x08 || addr < 0x02)
 	{
@@ -252,5 +231,3 @@ inline int codeTicksAccessSeq32(uint32_t address) // ARM SEQ
 	else
 		return memoryWaitSeq32[addr];
 }
-
-#endif // GBACPU_H

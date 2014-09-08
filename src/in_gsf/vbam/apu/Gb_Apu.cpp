@@ -30,7 +30,7 @@ void Gb_Apu::treble_eq(const blip_eq_t &eq)
 int Gb_Apu::calc_output(int osc) const
 {
 	int bits = this->regs[stereo_reg - start_addr] >> osc;
-	return ((bits >> 3) & 2) | (bits & 1);
+	return (bits >> 3 & 2) | (bits & 1);
 }
 
 void Gb_Apu::set_output(Blip_Buffer *center, Blip_Buffer *left, Blip_Buffer *right, int osc)
@@ -65,7 +65,7 @@ void Gb_Apu::apply_volume()
 	// TODO: Doesn't handle differing left and right volumes (panning).
 	// Not worth the complexity.
 	int data = this->regs[vol_reg - start_addr];
-	int left = (data >> 4) & 7;
+	int left = data >> 4 & 7;
 	int right = data & 7;
 	//if ( data & 0x88 ) dprintf( "Vin: %02X\n", data & 0x88 );
 	//if ( left != right ) dprintf( "l: %d r: %d\n", left, right );
@@ -83,8 +83,7 @@ void Gb_Apu::volume(double v)
 
 void Gb_Apu::reset_regs()
 {
-	for (int i = 0; i < 0x20; ++i)
-		this->regs[i] = 0;
+	std::fill(&this->regs[0], &this->regs[0x20], 0);
 
 	this->square1.reset();
 	this->square2.reset();
@@ -173,11 +172,7 @@ Gb_Apu::Gb_Apu()
 	{
 		auto &o = *this->oscs[i];
 		o.regs = &this->regs[i * 5];
-		o.output = nullptr;
-		o.outputs[0] = nullptr;
-		o.outputs[1] = nullptr;
-		o.outputs[2] = nullptr;
-		o.outputs[3] = nullptr;
+		o.output = o.outputs[0] = o.outputs[1] = o.outputs[2] = o.outputs[3] = nullptr;
 		o.good_synth = &this->good_synth;
 		o.med_synth = &this->med_synth;
 	}
@@ -190,7 +185,7 @@ Gb_Apu::Gb_Apu()
 
 void Gb_Apu::run_until_(blip_time_t end_time)
 {
-	while (1)
+	while (true)
 	{
 		// run oscillators
 		blip_time_t time = end_time;

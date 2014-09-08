@@ -62,31 +62,25 @@ void BIOS_ArcTan2()
 	uint32_t res = 0;
 	if (!y)
 		res = (x >> 16) & 0x8000;
+	else if (!x)
+		res = ((y >> 16) & 0x8000) + 0x4000;
+	else if (std::abs(x) > std::abs(y) || (std::abs(x) == std::abs(y) && !(x < 0 && y < 0)))
+	{
+		reg[1].I = x;
+		reg[0].I = y << 14;
+		BIOS_Div();
+		BIOS_ArcTan();
+		if (x < 0)
+			res = 0x8000 + reg[0].I;
+		else
+			res = (((y >> 16) & 0x8000) << 1) + reg[0].I;
+	}
 	else
 	{
-		if (!x)
-			res = ((y >> 16) & 0x8000) + 0x4000;
-		else
-		{
-			if (std::abs(x) > std::abs(y) || (std::abs(x) == std::abs(y) && !(x < 0 && y < 0)))
-			{
-				reg[1].I = x;
-				reg[0].I = y << 14;
-				BIOS_Div();
-				BIOS_ArcTan();
-				if (x < 0)
-					res = 0x8000 + reg[0].I;
-				else
-					res = (((y >> 16) & 0x8000) << 1) + reg[0].I;
-			}
-			else
-			{
-				reg[0].I = x << 14;
-				BIOS_Div();
-				BIOS_ArcTan();
-				res = (0x4000 + ((y >> 16) & 0x8000)) - reg[0].I;
-			}
-		}
+		reg[0].I = x << 14;
+		BIOS_Div();
+		BIOS_ArcTan();
+		res = (0x4000 + ((y >> 16) & 0x8000)) - reg[0].I;
 	}
 	reg[0].I = res;
 }
@@ -118,8 +112,7 @@ void BIOS_BitUnPack()
 		if (len < 0)
 			break;
 		int mask = 0xff >> revbits;
-		uint8_t b = CPUReadByte(source);
-		++source;
+		uint8_t b = CPUReadByte(source++);
 		int bitcount = 0;
 		while (1)
 		{
@@ -629,6 +622,7 @@ void BIOS_LZ77UnCompVram()
 					writeValue |= CPUReadByte(source++) << byteShift;
 					byteShift += 8;
 					++byteCount;
+
 					if (byteCount == 2)
 					{
 						CPUWriteHalfWord(dest, writeValue);
@@ -990,7 +984,7 @@ void BIOS_Sqrt()
 void BIOS_MidiKey2Freq()
 {
 	int freq = CPUReadMemory(reg[0].I + 4);
-	double tmp = (180 - reg[1].I) - (reg[2].I / 256.0);
+	double tmp = (180.0 - reg[1].I) - (reg[2].I / 256.0);
 	tmp = std::pow(2.0, tmp / 12.0);
 	reg[0].I = static_cast<int>(freq / tmp);
 }

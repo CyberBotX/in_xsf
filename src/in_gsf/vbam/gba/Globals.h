@@ -1,5 +1,4 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#pragma once
 
 #include <cstdint>
 #include "GBA.h"
@@ -104,5 +103,3 @@ extern uint16_t P1;
 extern uint16_t IE;
 extern uint16_t IF;
 extern uint16_t IME;
-
-#endif // GLOBALS_H

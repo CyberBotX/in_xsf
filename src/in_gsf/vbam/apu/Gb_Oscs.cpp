@@ -22,8 +22,7 @@ static const int length_enabled = 0x40;
 void Gb_Osc::reset()
 {
 	this->output = nullptr;
-	this->last_amp = 0;
-	this->delay = 0;
+	this->last_amp = this->delay = 0;
 	this->phase = 0;
 	this->enabled = false;
 }
@@ -90,7 +89,7 @@ void Gb_Sweep_Square::calc_sweep(bool update)
 		this->sweep_freq = freq;
 
 		this->regs[3] = freq & 0xFF;
-		this->regs[4] = (this->regs[4] & ~0x07) | ((freq >> 8) & 0x07);
+		this->regs[4] = (this->regs[4] & ~0x07) | (freq >> 8 & 0x07);
 	}
 }
 
@@ -441,7 +440,7 @@ static unsigned run_lfsr(unsigned s, unsigned mask, int count)
 	{
 		// won't fully replace upper 8 bits, so have to do the unoptimized way
 		while (--count >= 0)
-			s = ((s >> 1) | mask) ^ (mask & (0 - ((s - 1) & 2)));
+			s = (s >> 1 | mask) ^ (mask & (0 - ((s - 1) & 2)));
 	}
 	else
 	{
@@ -453,7 +452,7 @@ static unsigned run_lfsr(unsigned s, unsigned mask, int count)
 		}
 
 		// Need to keep one extra bit of history
-		s = (s << 1) & 0xFF;
+		s = s << 1 & 0xFF;
 
 		// Convert from Fibonacci to Galois configuration,
 		// shifted left 2 bits
@@ -471,7 +470,7 @@ static unsigned run_lfsr(unsigned s, unsigned mask, int count)
 
 		// Convert back to Fibonacci configuration and
 		// repeat last 8 bits above significant 7
-		s = ((s << 7) & 0x7F80) | ((s >> 1) & 0x7F);
+		s = (s << 7 & 0x7F80) | (s >> 1 & 0x7F);
 	}
 
 	return s;
@@ -514,15 +513,13 @@ void Gb_Noise::run(blip_time_t time, blip_time_t end_time)
 	// Run timer and calculate time of next LFSR clock
 	static const uint8_t period1s[] = { 1, 2, 4, 6, 8, 10, 12, 14 };
 	int period1 = period1s[this->regs[3] & 7] * clk_mul;
-	{
-		int extra = (end_time - time) - this->delay;
-		int per2 = this->period2();
-		time += this->delay + ((this->divider ^ (per2 >> 1)) & (per2 - 1)) * period1;
+	int extra = (end_time - time) - this->delay;
+	int per2 = this->period2();
+	time += this->delay + ((this->divider ^ (per2 >> 1)) & (per2 - 1)) * period1;
 
-		int count = extra < 0 ? 0 : (extra + period1 - 1) / period1;
-		this->divider = (this->divider - count) & period2_mask;
-		this->delay = count * period1 - extra;
-	}
+	int count = extra < 0 ? 0 : (extra + period1 - 1) / period1;
+	this->divider = (this->divider - count) & period2_mask;
+	this->delay = count * period1 - extra;
 
 	// Generate wave
 	if (time < end_time)
@@ -547,7 +544,7 @@ void Gb_Noise::run(blip_time_t time, blip_time_t end_time)
 			do
 			{
 				unsigned changed = bits + 1;
-				bits = (bits >> 1) & mask;
+				bits = bits >> 1 & mask;
 				if (changed & 2)
 				{
 					bits |= ~mask;
@@ -569,11 +566,11 @@ void Gb_Wave::run(blip_time_t time, blip_time_t end_time)
 	// Calc volume
 	static const uint8_t volumes[] = { 0, 4, 2, 1, 3, 3, 3, 3 };
 	static const int volume_shift = 2;
-	int volume_idx = (this->regs[2] >> 5) & (this->agb_mask | 3); // 2 bits on DMG/CGB, 3 on AGB
+	int volume_idx = this->regs[2] >> 5 & (this->agb_mask | 3); // 2 bits on DMG/CGB, 3 on AGB
 	int volume_mul = volumes[volume_idx];
 
 	// Determine what will be generated
-	int playing = false;
+	int playing = 0;
 	auto out = this->output;
 	if (out)
 	{
@@ -587,9 +584,9 @@ void Gb_Wave::run(blip_time_t time, blip_time_t end_time)
 			if (this->frequency() <= 0x7FB || this->delay > 15 * clk_mul)
 			{
 				if (volume_mul)
-					playing = this->enabled;
+					playing = static_cast<int>(this->enabled);
 
-				amp = (this->sample_buf << ((this->phase << 2) & 4) & 0xF0) * playing;
+				amp = (this->sample_buf << (this->phase << 2 & 4) & 0xF0) * playing;
 			}
 
 			amp = ((amp * volume_mul) >> (volume_shift + 4)) - dac_bias;
@@ -632,7 +629,7 @@ void Gb_Wave::run(blip_time_t time, blip_time_t end_time)
 			do
 			{
 				// Extract nybble
-				int nybble = (wave[ph >> 1] << ((ph << 2) & 4)) & 0xF0;
+				int nybble = wave[ph >> 1] << (ph << 2 & 4) & 0xF0;
 				ph = (ph + 1) & wave_mask;
 
 				// Scale by volume

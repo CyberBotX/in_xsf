@@ -49,7 +49,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;IN_GSF_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINAMP_PLUGIN;NO_DEBUGGER;FINAL_VERSION;C_CORE;_DEBUG;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;IN_GSF_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINAMP_PLUGIN;_DEBUG;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>G:\Code\my_xsf\src;$(zlibRootDir)\include;$(WinampSDKDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4100;4127;4189;4244;4291;4310;4512;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -66,7 +66,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;IN_GSF_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINAMP_PLUGIN;NO_DEBUGGER;FINAL_VERSION;C_CORE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;IN_GSF_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINAMP_PLUGIN;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>G:\Code\my_xsf\src;$(zlibRootDir)\include;$(WinampSDKDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4100;4127;4189;4244;4291;4310;4512;4800;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
