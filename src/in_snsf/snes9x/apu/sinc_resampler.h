@@ -65,7 +65,7 @@ public:
 		{
 			double dx = static_cast<double>(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
 			for (unsigned i = 0; i <= SINC_SAMPLES; ++i, x += dx)
-				this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * (0.5 * (1.0 + std::cos((M_PI * x) / SINC_WIDTH))) : 0.0;
+				this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * sinc(x / SINC_WIDTH) : 0.0;
 			this->initializedLUTs = true;
 		}
 		this->clear();
