@@ -24,8 +24,7 @@ THE SOFTWARE.
 
 // don't use emufile for files bigger than 2GB! you have been warned! some day this will be fixed.
 
-#ifndef EMUFILE_H
-#define EMUFILE_H
+#pragma once
 
 #include <vector>
 #include <algorithm>
@@ -208,5 +207,3 @@ public:
 		return len;
 	}
 };
-
-#endif

@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CONFIG_H
-#define _ASMJIT_CONFIG_H
+#pragma once
 
 // This file is designed to be modifyable. Platform specific changes should
 // be applied to this file so it's guaranteed that never versions of AsmJit
@@ -60,6 +58,3 @@
 
 // Setup custom assertion code.
 // #define ASMJIT_ASSERT(exp) do { if (!(exp)) ::AsmJit::assertionFailure(__FILE__, __LINE__, #exp); } while(0)
-
-// [Guard]
-#endif // _ASMJIT_CONFIG_H

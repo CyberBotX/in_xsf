@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _MEMMAP_H_
-#define _MEMMAP_H_
+#pragma once
 
 #include <memory>
 #include <cstdint>
@@ -296,5 +295,3 @@ enum s9xwriteorder_t
 };
 
 #include "getset.h"
-
-#endif

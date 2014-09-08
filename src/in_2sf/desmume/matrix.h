@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MATRIX_H
-#define MATRIX_H
+#pragma once
 
 #include <cmath>
 #include <cstring>
@@ -62,5 +61,3 @@ inline int32_t s32floor(double d)
 {
 	return s32floor(static_cast<float>(d));
 }
-
-#endif

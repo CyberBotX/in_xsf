@@ -39,8 +39,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FIRFilter_H
-#define FIRFilter_H
+#pragma once
 
 #include <memory>
 #include "STTypes.h"
@@ -127,5 +126,3 @@ public:
 #endif // SOUNDTOUCH_ALLOW_SSE
 
 }
-
-#endif  // FIRFilter_H

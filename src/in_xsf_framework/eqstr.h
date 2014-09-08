@@ -1,14 +1,13 @@
 /*
  * Case-insensitive string equality
- * Last modification on 2013-03-30
+ * Last modification on 2014-09-08
  *
  * Based on "How to do case-insensitive string comparison"
  * By Matt Austern
  * http://lafstern.org/matt/col2_new.pdf
  */
 
-#ifndef EQSTR_H
-#define EQSTR_H
+#pragma once
 
 #include <functional>
 #include <locale>
@@ -39,5 +38,3 @@ struct eq_str : std::binary_function<std::string, std::string, bool>
 		return x.length() == y.length() && std::equal(x.begin(), x.end(), y.begin(), eq_char(this->tab));
 	}
 };
-
-#endif

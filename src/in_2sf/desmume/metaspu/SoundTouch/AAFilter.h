@@ -41,8 +41,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef AAFilter_H
-#define AAFilter_H
+#pragma once
 
 #include "FIRFilter.h"
 
@@ -83,5 +82,3 @@ public:
 };
 
 }
-
-#endif

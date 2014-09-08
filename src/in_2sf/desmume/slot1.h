@@ -15,8 +15,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __SLOT1_H__
-#define __SLOT1_H__
+#pragma once
 
 #include "types.h"
 
@@ -58,5 +57,3 @@ enum NDS_SLOT1_TYPE
 	NDS_SLOT1_RETAIL,
 	NDS_SLOT1_COUNT // use for counter addons - MUST TO BE LAST!!!
 };
-
-#endif // __ADDONS_H__

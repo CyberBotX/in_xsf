@@ -15,8 +15,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _FIRMWARE_H_
-#define _FIRMWARE_H_
+#pragma once
 
 #include <memory>
 #include "types.h"
@@ -80,5 +79,3 @@ public:
 
 int copy_firmware_user_data(uint8_t *dest_buffer, const uint8_t *fw_data);
 void NDS_FillDefaultFirmwareConfigData(struct NDS_fw_config_data *fw_config);
-
-#endif

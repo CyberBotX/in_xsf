@@ -36,8 +36,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef STTypes_H
-#define STTypes_H
+#pragma once
 
 #include <cstdint>
 
@@ -130,5 +129,3 @@ inline uintptr_t SOUNDTOUCH_ALIGN_POINTER_16(SAMPLETYPE *x) { return (reinterpre
 //#define SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER 1
 
 }
-
-#endif

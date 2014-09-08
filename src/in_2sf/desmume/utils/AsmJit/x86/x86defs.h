@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_X86_X86DEFS_H
-#define _ASMJIT_X86_X86DEFS_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/assert.h"
@@ -2198,6 +2196,3 @@ ASMJIT_VAR const X86VarInfo x86VarInfo[];
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_X86_X86DEFS_H

@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef NDSSYSTEM_H
-#define NDSSYSTEM_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -331,5 +330,3 @@ extern struct TCommonSettings
 	bool spu_captureMuted;
 	bool spu_advanced;
 } CommonSettings;
-
-#endif

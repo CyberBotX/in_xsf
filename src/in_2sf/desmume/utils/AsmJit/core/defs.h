@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_DEFS_H
-#define _ASMJIT_CORE_DEFS_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/build.h"
@@ -594,6 +592,3 @@ ASMJIT_API const char *getErrorString(uint32_t error);
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_DEFS_H

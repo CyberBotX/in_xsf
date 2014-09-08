@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ARM_JIT
-#define ARM_JIT
+#pragma once
 
 #include "types.h"
 
@@ -61,7 +60,4 @@ inline uintptr_r &JIT_COMPILED_FUNC(uint32_t adr, uint32_t PROCNUM) { compiled_f
 inline uintptr_t &JIT_COMPILED_FUNC_PREMASKED(uint32_t adr, uint32_t PROCNUM, uint32_t ofs) { return JIT_COMPILED_FUNC(adr, PROCNUM); }
 #define JIT_COMPILED_FUNC_KNOWNBANK(adr, bank, mask, ofs) JIT_COMPILED_FUNC(adr, PROCNUM)
 inline bool JIT_MAPPED(uint32_t adr, uint32_t PROCNUM) { return true; }
-#endif
-
-
 #endif

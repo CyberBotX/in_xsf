@@ -17,8 +17,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FIFO_H
-#define FIFO_H
+#pragma once
 
 #include "types.h"
 
@@ -37,5 +36,3 @@ extern void IPC_FIFOinit(uint8_t proc);
 extern void IPC_FIFOsend(uint8_t proc, uint32_t val);
 extern uint32_t IPC_FIFOrecv(uint8_t proc);
 extern void IPC_FIFOcnt(uint8_t proc, uint16_t val);
-
-#endif

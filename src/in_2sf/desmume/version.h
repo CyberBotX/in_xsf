@@ -15,10 +15,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef VERSION_H
-#define VERSION_H
+#pragma once
 
 const char *EMU_DESMUME_VERSION_STRING();
 const char *EMU_DESMUME_NAME_AND_VERSION();
-
-#endif

@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef REGISTERS_H
-#define REGISTERS_H
+#pragma once
 
 #define REG_REGION_MASK                         0x0FFFEF80
 #define REG_BASE_DISPx                          0x04000000
@@ -427,5 +426,3 @@
 #define EXMEMCNT_MASK_SLOT2_ROM_1ST_TIME (3<<2)
 #define EXMEMCNT_MASK_SLOT2_ROM_2ND_TIME (1<<4)
 #define EXMEMCNT_MASK_SLOT2_CLOCKRATE (3<<5)
-
-#endif

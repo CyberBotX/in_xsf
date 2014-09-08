@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_BUFFER_H
-#define _ASMJIT_CORE_BUFFER_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/assert.h"
@@ -334,5 +332,3 @@ struct Buffer
 
 // [Api-End]
 #include "../core/apiend.h"
-
-#endif // _ASMJIT_CORE_BUFFER_H

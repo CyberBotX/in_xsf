@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _GETSET_H_
-#define _GETSET_H_
+#pragma once
 
 #include "cpuexec.h"
 
@@ -641,5 +640,3 @@ inline uint8_t *S9xGetMemPointer(uint32_t Address)
 			return nullptr;
 	}
 }
-
-#endif

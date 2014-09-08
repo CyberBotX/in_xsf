@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_X86_X86FUNC_H
-#define _ASMJIT_X86_X86FUNC_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/defs.h"
@@ -236,6 +234,3 @@ struct X86FuncDecl : public FuncDecl
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_X86_X86FUNC_H

@@ -1,13 +1,12 @@
 /*
  * xSF - File structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  */
 
-#ifndef XSFFILE_H
-#define XSFFILE_H
+#pragma once
 
 #include <cstdint>
 #include "TagList.h"
@@ -74,5 +73,3 @@ public:
 	String GetFilenameWithoutPath() const;
 	void SaveFile() const;
 };
-
-#endif

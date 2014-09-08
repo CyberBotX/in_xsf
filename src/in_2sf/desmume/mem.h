@@ -17,8 +17,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEM_H
-#define MEM_H
+#pragma once
 
 #include <cstdlib>
 #include <cassert>
@@ -129,5 +128,3 @@ inline void T1WriteQuad(uint8_t *const mem, uint32_t addr, uint64_t val)
 	*reinterpret_cast<uint64_t *>(mem + addr) = val;
 #endif
 }
-
-#endif

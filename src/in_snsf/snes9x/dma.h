@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _DMA_H_
-#define _DMA_H_
+#pragma once
 
 struct SDMA
 {
@@ -204,5 +203,3 @@ bool S9xDoDMA(uint8_t);
 void S9xStartHDMA();
 uint8_t S9xDoHDMA(uint8_t);
 void S9xResetDMA();
-
-#endif

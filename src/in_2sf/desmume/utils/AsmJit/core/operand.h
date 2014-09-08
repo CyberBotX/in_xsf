@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_OPERAND_H
-#define _ASMJIT_CORE_OPERAND_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/defs.h"
@@ -521,6 +519,3 @@ struct Label : public Operand
 //! @}
 
 } // AsmJit namespace
-
-// [Guard]
-#endif // _ASMJIT_CORE_OPERAND_H

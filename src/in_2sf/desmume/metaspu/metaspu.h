@@ -20,8 +20,7 @@
 // and is designed to be as portable between multiple emulators
 // -------------------------
 
-#ifndef _METASPU_H_
-#define _METASPU_H_
+#pragma once
 
 #include "../types.h"
 
@@ -48,5 +47,3 @@ enum ESynchMethod
 };
 
 ISynchronizingAudioBuffer *metaspu_construct(ESynchMethod method);
-
-#endif

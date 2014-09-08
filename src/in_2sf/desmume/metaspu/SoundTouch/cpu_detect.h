@@ -40,8 +40,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _CPU_DETECT_H_
-#define _CPU_DETECT_H_
+#pragma once
 
 #include "STTypes.h"
 
@@ -56,5 +55,3 @@ uint32_t detectCPUextensions();
 
 /// Disables given set of instruction extensions. See SUPPORT_... defines.
 void disableExtensions(uint32_t wDisableMask);
-
-#endif  // _CPU_DETECT_H_

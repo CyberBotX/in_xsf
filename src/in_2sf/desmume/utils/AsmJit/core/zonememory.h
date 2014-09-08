@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_ZONEMEMORY_H
-#define _ASMJIT_CORE_ZONEMEMORY_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/build.h"
@@ -148,5 +146,3 @@ struct ZoneMemory
 //! @}
 
 } // AsmJit namespace
-
-#endif // _ASMJIT_CORE_ZONEMEMORY_H

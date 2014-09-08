@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_STRINGUTIL_H
-#define _ASMJIT_CORE_STRINGUTIL_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/defs.h"
@@ -41,5 +39,3 @@ struct StringUtil
 //! @}
 
 } // AsmJit namespace
-
-#endif // _ASMJIT_CORE_STRINGUTIL_H

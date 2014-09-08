@@ -1,11 +1,10 @@
 /*
  * String class in ANSI (or rather, current Windows code page), UTF-8, and UTF-16
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2014-09-08
  */
 
-#ifndef BIGSSTRING_H
-#define BIGSSTRING_H
+#pragma once
 
 #include <string>
 #include <cstring>
@@ -216,5 +215,3 @@ protected:
 	std::wstring utf16;
 	std::locale loc;
 };
-
-#endif

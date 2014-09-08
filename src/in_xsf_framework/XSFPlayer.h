@@ -1,13 +1,12 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-05-07
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  */
 
-#ifndef XSFPLAYER_H
-#define XSFPLAYER_H
+#pragma once
 
 #include "XSFFile.h"
 
@@ -56,5 +55,3 @@ public:
 #endif
 	virtual void Terminate() = 0;
 };
-
-#endif

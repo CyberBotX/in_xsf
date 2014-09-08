@@ -42,8 +42,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RateTransposer_H
-#define RateTransposer_H
+#pragma once
 
 #include "AAFilter.h"
 #include "FIFOSampleBuffer.h"
@@ -141,5 +140,3 @@ public:
 };
 
 }
-
-#endif

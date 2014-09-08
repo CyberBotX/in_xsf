@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-05-07
+ * Last modification on 2014-09-08
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -11,8 +11,7 @@
  * http://desmume.org/
  */
 
-#ifndef SSEQPLAYER_CHANNEL_H
-#define SSEQPLAYER_CHANNEL_H
+#pragma once
 
 #include <bitset>
 #include <cstdint>
@@ -240,5 +239,3 @@ struct Channel
 	int32_t GenerateSample();
 	void IncrementSample();
 };
-
-#endif

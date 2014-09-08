@@ -1,15 +1,14 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-01
+ * Last modification on 2014-09-08
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
  * https://github.com/fincs/FSS
  */
 
-#ifndef SSEQPLAYER_PLAYER_H
-#define SSEQPLAYER_PLAYER_H
+#pragma once
 
 #include "SSEQ.h"
 #include "Track.h"
@@ -43,5 +42,3 @@ struct Player
 	void UpdateTracks();
 	void Timer();
 };
-
-#endif

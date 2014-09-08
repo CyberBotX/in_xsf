@@ -41,8 +41,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef TDStretch_H
-#define TDStretch_H
+#pragma once
 
 #include <memory>
 #include "RateTransposer.h"
@@ -243,5 +242,3 @@ protected:
 #endif ///  SOUNDTOUCH_ALLOW_SSE
 
 }
-
-#endif  /// TDStretch_H

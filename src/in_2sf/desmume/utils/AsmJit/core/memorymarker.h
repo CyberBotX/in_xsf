@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_MEMORYMARKER_H
-#define _ASMJIT_CORE_MEMORYMARKER_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/build.h"
@@ -50,6 +48,3 @@ struct MemoryMarker
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_MEMORYMARKER_H

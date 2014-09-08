@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_ASMJIT_H
-#define _ASMJIT_ASMJIT_H
+#pragma once
 
 //! @mainpage
 //!
@@ -337,6 +335,3 @@
 #if defined(ASMJIT_X86) || defined(ASMJIT_X64)
 #include "x86.h"
 #endif // ASMJIT_X86 || ASMJIT_X64
-
-// [Guard]
-#endif // _ASMJIT_ASMJIT_H

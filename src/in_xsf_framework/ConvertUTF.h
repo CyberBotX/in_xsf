@@ -79,8 +79,7 @@
 
 ------------------------------------------------------------------------ */
 
-#ifndef _CONVERTUTF_H_
-#define _CONVERTUTF_H_
+#pragma once
 
 /* ---------------------------------------------------------------------
     The following 4 definitions are compiler-specific.
@@ -130,5 +129,3 @@ ConversionResult ConvertUTF32toUTF16(const UTF32 **, const UTF32 *, UTF16 **, UT
 bool isLegalUTF8Sequence(const UTF8 *, const UTF8 *);
 
 /* --------------------------------------------------------------------- */
-
-#endif

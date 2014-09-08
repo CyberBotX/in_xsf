@@ -15,8 +15,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _READWRITE_H_
-#define _READWRITE_H_
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -42,5 +41,3 @@ int read16le(uint16_t *Bufo, std::istream *is);
 int readbool(bool *b, EMUFILE *is);
 
 int readbuffer(std::vector<uint8_t> &vec, EMUFILE *is);
-
-#endif

@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_X86_X86COMPILERFUNC_H
-#define _ASMJIT_X86_X86COMPILERFUNC_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../x86/x86assembler.h"
@@ -364,6 +362,3 @@ struct X86CompilerFuncCall : public CompilerFuncCall
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_X86_X86COMPILERFUNC_H

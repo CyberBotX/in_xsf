@@ -15,13 +15,10 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _INSTRUCIONS_H_
-#define _INSTRUCIONS_H_
+#pragma once
 
 typedef uint32_t (FASTCALL *OpFunc)(uint32_t i);
 extern const OpFunc arm_instructions_set[2][4096];
-extern const char* arm_instruction_names[4096];
+extern const char *arm_instruction_names[4096];
 extern const OpFunc thumb_instructions_set[2][1024];
-extern const char* thumb_instruction_names[1024];
-
-#endif
+extern const char *thumb_instruction_names[1024];

@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_COMPILERCONTEXT_H
-#define _ASMJIT_CORE_COMPILERCONTEXT_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/compiler.h"
@@ -82,6 +80,3 @@ struct CompilerContext
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_COMPILERCONTEXT_H

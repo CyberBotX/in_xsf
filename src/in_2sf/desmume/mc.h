@@ -17,8 +17,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __FW_H__
-#define __FW_H__
+#pragma once
 
 #include <vector>
 #include <string>
@@ -162,5 +161,3 @@ struct SAVE_TYPE
 	int media_type;
 	int size;
 };
-
-#endif /*__FW_H__*/

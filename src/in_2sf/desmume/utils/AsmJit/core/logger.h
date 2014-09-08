@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_LOGGER_H
-#define _ASMJIT_CORE_LOGGER_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/build.h"
@@ -240,6 +238,3 @@ struct StringLogger : public Logger
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_LOGGER_H

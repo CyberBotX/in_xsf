@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef instruction_attributes_H_
-#define instruction_attributes_H_
+#pragma once
 
 #include "types.h"
 
@@ -5170,5 +5169,3 @@ INSTR_CYCLES(4) | BRANCH_ALWAYS, //OP_BL_11
 INSTR_CYCLES(4) | BRANCH_ALWAYS, //OP_BL_11
 INSTR_CYCLES(4) | BRANCH_ALWAYS, //OP_BL_11
 };
-
-#endif

@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __CP15_H__
-#define __CP15_H__
+#pragma once
 
 #include "armcpu.h"
 
@@ -110,5 +109,3 @@ public:
 
 extern armcp15_t cp15;
 void maskPrecalc();
-
-#endif /* __CP15_H__*/

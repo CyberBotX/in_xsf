@@ -1,8 +1,7 @@
 // original code is from here: http://www.codeproject.com/Tips/197097/Converting-ANSI-to-Unicode-and-back
 // License: The Code Project Open License (CPOL) http://www.codeproject.com/info/cpol10.aspx
 
-#ifndef UTFENCODEDECODE_H
-#define UTFENCODEDECODE_H
+#pragma once
 
 #include <string>
 #include <locale>
@@ -59,5 +58,3 @@ private:
 		return os.str();
 	}
 };
-
-#endif

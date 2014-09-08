@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  *
@@ -10,8 +10,7 @@
  * snes9x.
  */
 
-#ifndef XSFCONFIG_SNSF_H
-#define XSFCONFIG_SNSF_H
+#pragma once
 
 #include <bitset>
 #include "XSFPlayer.h"
@@ -41,5 +40,3 @@ public:
 
 	void About(HWND parent);
 };
-
-#endif

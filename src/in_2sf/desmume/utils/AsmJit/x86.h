@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_X86_H
-#define _ASMJIT_X86_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "core.h"
@@ -21,6 +19,3 @@
 #include "x86/x86func.h"
 #include "x86/x86operand.h"
 #include "x86/x86util.h"
-
-// [Guard]
-#endif // _ASMJIT_X86_H

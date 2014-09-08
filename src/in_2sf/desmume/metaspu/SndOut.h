@@ -15,8 +15,7 @@
  * along with SPU2-X.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SNDOUT_H
-#define SNDOUT_H
+#pragma once
 
 #include <memory>
 #include <algorithm>
@@ -213,5 +212,3 @@ public:
 		memset(bData, 0, quietSamples * sizeof(T));
 	}
 };
-
-#endif

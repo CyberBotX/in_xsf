@@ -18,12 +18,9 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _STRINGUTIL_H_
-#define _STRINGUTIL_H_
+#pragma once
 
 #include <string>
 #include <vector>
 
 std::vector<std::string> tokenize_str(const std::string &str, const std::string &delims);
-
-#endif

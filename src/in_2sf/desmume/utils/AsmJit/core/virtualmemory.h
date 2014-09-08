@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_VIRTUALMEMORY_H
-#define _ASMJIT_CORE_VIRTUALMEMORY_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/build.h"
@@ -76,6 +74,3 @@ struct VirtualMemory
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_VIRTUALMEMORY_H

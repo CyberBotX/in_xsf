@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_ASSEMBLER_H
-#define _ASMJIT_CORE_ASSEMBLER_H
+#pragma once
 
 #include <vector>
 
@@ -459,6 +457,3 @@ struct Assembler
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_ASSEMBLER_H

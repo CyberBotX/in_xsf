@@ -20,8 +20,7 @@
 // this file is split from MMU.h for the purpose of avoiding ridiculous recompile times
 // when changing it, because practically everything includes MMU.h.
 
-#ifndef MMUTIMING_H
-#define MMUTIMING_H
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -382,5 +381,3 @@ template<int PROCNUM> inline uint32_t MMU_fetchExecuteCycles(uint32_t executeCyc
 	}
 	return executeCycles;
 }
-
-#endif // MMUTIMING_H

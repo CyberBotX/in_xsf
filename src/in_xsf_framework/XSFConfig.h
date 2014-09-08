@@ -1,13 +1,12 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-02
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  */
 
-#ifndef XSFCONFIG_H
-#define XSFCONFIG_H
+#pragma once
 
 #include <memory>
 #include "XSFPlayer.h"
@@ -95,5 +94,3 @@ public:
 	PeakType GetPeakType() const;
 	const std::wstring &GetTitleFormat() const;
 };
-
-#endif

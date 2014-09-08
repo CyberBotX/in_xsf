@@ -16,11 +16,8 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef BIOS_H
-#define BIOS_H
+#pragma once
 
 #include "armcpu.h"
 
 extern uint32_t (*ARM_swi_tab[2][32])();
-
-#endif

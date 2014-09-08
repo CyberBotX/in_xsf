@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _CPUADDR_H_
-#define _CPUADDR_H_
+#pragma once
 
 enum AccessMode
 {
@@ -702,5 +701,3 @@ inline uint32_t StackRelativeIndirectIndexed(AccessMode a) // (d,S),Y
 {
 	return StackRelativeIndirectIndexedWrapper(StackRelative, a);
 }
-
-#endif

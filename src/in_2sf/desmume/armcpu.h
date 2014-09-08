@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef ARM_CPU
-#define ARM_CPU
+#pragma once
 
 #include "types.h"
 #include "bits.h"
@@ -245,5 +244,3 @@ inline void NDS_makeIrq(int PROCNUM, uint32_t num)
 {
 	setIF(PROCNUM, 1 << num);
 }
-
-#endif

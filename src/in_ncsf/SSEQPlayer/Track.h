@@ -1,15 +1,14 @@
 /*
  * SSEQ Player - Track structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-01
+ * Last modification on 2014-09-08
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
  * https://github.com/fincs/FSS
  */
 
-#ifndef SSEQPLAYER_TRACK_H
-#define SSEQPLAYER_TRACK_H
+#pragma once
 
 #include <bitset>
 #include "consts.h"
@@ -58,5 +57,3 @@ struct Track
 	void ReleaseAllNotes();
 	void Run();
 };
-
-#endif

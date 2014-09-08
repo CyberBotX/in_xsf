@@ -3,8 +3,7 @@
  * http://learnwinapi.wordpress.com/2011/12/13/lesson-2-the-api-is-based-on-unicode/
  */
 
-#ifndef WINDOWSH_WRAPPER_H
-#define WINDOWSH_WRAPPER_H
+#pragma once
 
 #ifdef _MBCS
 # error "_MBCS (multi-byte character set) is defined, but only Unicode is supported"
@@ -29,5 +28,3 @@
 #undef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
-#endif

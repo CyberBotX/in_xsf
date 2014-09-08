@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_COMPILER_H
-#define _ASMJIT_CORE_COMPILER_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/assembler.h"
@@ -332,6 +330,3 @@ template<typename T, typename Compiler, typename P1, typename P2, typename P3, t
 
 // [Api-End]
 #include "../core/apiend.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_COMPILER_H

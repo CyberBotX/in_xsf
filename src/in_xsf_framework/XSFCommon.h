@@ -1,13 +1,12 @@
 /*
  * xSF - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-26
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  */
 
-#ifndef XSFCOMMON_H
-#define XSFCOMMON_H
+#pragma once
 
 #include <limits>
 #include <fstream>
@@ -87,6 +86,4 @@ inline bool FileExists(const std::wstring &filename)
 	std::ifstream file((filename.c_str()));
 	return !!file;
 }
-#endif
-
 #endif

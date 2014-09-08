@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _65C816_H_
-#define _65C816_H_
+#pragma once
 
 const uint16_t Carry = 1;
 const uint16_t Zero = 2;
@@ -245,5 +244,3 @@ inline bool CheckEmulation() { return !!(Registers.P.W & Emulation); }
 inline void SetFlags(uint16_t f) { Registers.P.W |= f; }
 inline void ClearFlags(uint16_t f) { Registers.P.W &= ~f; }
 inline bool CheckFlag(uint16_t f) { return !!(Registers.P.W & f); }
-
-#endif

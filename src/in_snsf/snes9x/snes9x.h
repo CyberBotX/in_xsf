@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _SNES9X_H_
-#define _SNES9X_H_
+#pragma once
 
 #ifndef VERSION
 #define VERSION "1.53"
@@ -306,5 +305,3 @@ extern SSettings Settings;
 extern SCPUState CPU;
 extern STimings Timings;
 extern SSNESGameFixes SNESGameFixes;
-
-#endif

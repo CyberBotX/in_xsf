@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_STRINGBUILDER_H
-#define _ASMJIT_CORE_STRINGBUILDER_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/assert.h"
@@ -179,5 +177,3 @@ template<size_t N> struct StringBuilderT : public StringBuilder
 //! @}
 
 } // AsmJit namespace
-
-#endif // _ASMJIT_CORE_STRINGBUILDER_H

@@ -1,14 +1,13 @@
 /*
  * Case-insensitive string comparison
- * Last modification on 2012-03-30
+ * Last modification on 2014-09-08
  *
  * Based on "How to do case-insensitive string comparison"
  * By Matt Austern
  * http://lafstern.org/matt/col2_new.pdf
  */
 
-#ifndef LTSTR_H
-#define LTSTR_H
+#pragma once
 
 #include <functional>
 #include <locale>
@@ -39,5 +38,3 @@ struct lt_str : std::binary_function<std::string, std::string, bool>
 		return std::lexicographical_compare(x.begin(), x.end(), y.begin(), y.end(), lt_char(this->tab));
 	}
 };
-
-#endif

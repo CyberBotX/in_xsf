@@ -1,5 +1,4 @@
-#ifndef BITS_H
-#define BITS_H
+#pragma once
 
 inline uint32_t BIT(uint32_t n) { return 1 << n; }
 
@@ -40,5 +39,3 @@ inline uint32_t BIT31(uint32_t i) { return i >> 31; }
 inline uint32_t CONDITION(uint32_t i) { return i >> 28; }
 
 inline uint32_t REG_POS(uint32_t i, uint32_t n) { return (i >> n) & 0xF; }
-
-#endif

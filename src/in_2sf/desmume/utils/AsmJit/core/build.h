@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_BUILD_H
-#define _ASMJIT_CORE_BUILD_H
+#pragma once
 
 // [Include]
 #include "../Config.h"
@@ -226,6 +224,3 @@ struct _DontInitialize {};
 #ifdef ASMJIT_WINDOWS
 # include "windowsh_wrapper.h"
 #endif // ASMJIT_WINDOWS
-
-// [Guard]
-#endif // _ASMJIT_CORE_BUILD_H

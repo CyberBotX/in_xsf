@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_H
-#define _ASMJIT_CORE_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "core/build.h"
@@ -32,6 +30,3 @@
 #include "core/stringutil.h"
 #include "core/virtualmemory.h"
 #include "core/zonememory.h"
-
-// [Guard]
-#endif // _ASMJIT_CORE_H

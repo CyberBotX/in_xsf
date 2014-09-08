@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TYPES_HPP
-#define TYPES_HPP
+#pragma once
 
 #include <cstdint>
 
@@ -138,5 +137,3 @@ template<typename T> inline void reconstruct(T *t)
 	t->~T();
 	new(t) T();
 }
-
-#endif

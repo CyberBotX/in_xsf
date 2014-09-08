@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-01
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  *
@@ -9,8 +9,7 @@
  * https://github.com/fincs/FSS
  */
 
-#ifndef XSFPLAYER_NCSF_H
-#define XSFPLAYER_NCSF_H
+#pragma once
 
 #include <memory>
 #include <bitset>
@@ -42,5 +41,3 @@ public:
 	void SetInterpolation(unsigned interpolation);
 	void SetMutes(const std::bitset<16> &newMutes);
 };
-
-#endif

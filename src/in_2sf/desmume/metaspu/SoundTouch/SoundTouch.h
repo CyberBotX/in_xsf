@@ -69,8 +69,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SoundTouch_H
-#define SoundTouch_H
+#pragma once
 
 #include <memory>
 #include "FIFOSamplePipe.h"
@@ -238,5 +237,3 @@ public:
 };
 
 }
-
-#endif

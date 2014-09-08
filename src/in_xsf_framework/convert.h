@@ -1,11 +1,10 @@
 /*
  * Common conversion functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2014-09-08
  */
 
-#ifndef _CONVERT_H_
-#define _CONVERT_H_
+#pragma once
 
 #include <stdexcept>
 #include <string>
@@ -152,5 +151,3 @@ public:
 		return String(ConvertFuncs::MSToString(time)).GetWStr();
 	}
 };
-
-#endif

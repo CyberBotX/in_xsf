@@ -17,8 +17,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MMU_H
-#define MMU_H
+#pragma once
 
 #include "FIFO.h"
 #include "mem.h"
@@ -812,5 +811,3 @@ template<int PROCNUM, MMU_ACCESS_TYPE AT> inline uint32_t _MMU_read32(uint32_t a
 template<int PROCNUM, MMU_ACCESS_TYPE AT> inline void _MMU_write08(uint32_t addr, uint8_t val) { _MMU_write08(PROCNUM, AT, addr, val); }
 template<int PROCNUM, MMU_ACCESS_TYPE AT> inline void _MMU_write16(uint32_t addr, uint16_t val) { _MMU_write16(PROCNUM, AT, addr, val); }
 template<int PROCNUM, MMU_ACCESS_TYPE AT> inline void _MMU_write32(uint32_t addr, uint32_t val) { _MMU_write32(PROCNUM, AT, addr, val); }
-
-#endif

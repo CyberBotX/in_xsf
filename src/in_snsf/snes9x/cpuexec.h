@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _CPUEXEC_H_
-#define _CPUEXEC_H_
+#pragma once
 
 #include "ppu.h"
 
@@ -297,5 +296,3 @@ inline void S9xCheckInterrupts()
 
 	CPU.IRQLastState = thisIRQ;
 }
-
-#endif

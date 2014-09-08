@@ -1,11 +1,10 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2014-09-08
  */
 
-#ifndef DIALOG_BUILDER_H
-#define DIALOG_BUILDER_H
+#pragma once
 
 #include <string>
 #include <memory>
@@ -673,5 +672,3 @@ public:
 	void AutoSize();
 	const DLGTEMPLATE *GenerateTemplate();
 };
-
-#endif

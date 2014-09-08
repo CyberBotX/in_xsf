@@ -16,8 +16,7 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SPU_H
-#define SPU_H
+#pragma once
 
 #include <iosfwd>
 #include <string>
@@ -207,5 +206,3 @@ extern int spu_core_samples;
 // but at least defining it somewhere is probably a step in the right direction
 const int DESMUME_SAMPLE_RATE = 44100;
 //#define DESMUME_SAMPLE_RATE 48000
-
-#endif

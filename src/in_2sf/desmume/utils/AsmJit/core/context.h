@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_CORE_CONTEXT_H
-#define _ASMJIT_CORE_CONTEXT_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/build.h"
@@ -135,6 +133,3 @@ struct JitContext : public Context
 };
 
 } // AsmJit namespace
-
-// [Guard]
-#endif // _ASMJIT_CORE_CONTEXT_H

@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _PPU_H_
-#define _PPU_H_
+#pragma once
 
 const int32_t FIRST_VISIBLE_LINE = 1;
 
@@ -442,5 +441,3 @@ inline uint8_t REGISTER_4212()
 
 	return byte;
 }
-
-#endif

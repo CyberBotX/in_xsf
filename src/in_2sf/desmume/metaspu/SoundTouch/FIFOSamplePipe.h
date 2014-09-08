@@ -45,8 +45,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FIFOSamplePipe_H
-#define FIFOSamplePipe_H
+#pragma once
 
 #include <cassert>
 #include "STTypes.h"
@@ -215,5 +214,3 @@ public:
 };
 
 }
-
-#endif

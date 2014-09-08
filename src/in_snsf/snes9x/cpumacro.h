@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _CPUMACRO_H_
-#define _CPUMACRO_H_
+#pragma once
 
 template<typename Fa, typename Ff> inline void rOP8(Fa addr, Ff func)
 {
@@ -879,5 +878,3 @@ inline void TSB8(uint32_t OpAddress)
 	S9xSetByte(Work8, OpAddress);
 	OpenBus = Work8;
 }
-
-#endif

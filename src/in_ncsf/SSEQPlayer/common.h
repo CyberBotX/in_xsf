@@ -1,15 +1,14 @@
 /*
  * SSEQ Player - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-05-01
+ * Last modification on 2014-09-08
  *
  * Some code from FeOS Sound System
  * By fincs
  * https://github.com/fincs/FSS
  */
 
-#ifndef SSEQPLAYER_COMMON_H
-#define SSEQPLAYER_COMMON_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -243,5 +242,3 @@ inline int readvl(const uint8_t **ppData)
 	}
 	return x;
 }
-
-#endif

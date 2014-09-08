@@ -4,9 +4,7 @@
 // [License]
 // Zlib - See COPYING file in this package.
 
-// [Guard]
-#ifndef _ASMJIT_X86_X86OPERAND_H
-#define _ASMJIT_X86_X86OPERAND_H
+#pragma once
 
 // [Dependencies - AsmJit]
 #include "../core/defs.h"
@@ -1774,6 +1772,3 @@ inline uint8_t mm_shuffle(uint8_t z, uint8_t y, uint8_t x, uint8_t w) { return (
 //! @}
 
 } // AsmJit namespace
-
-// [Guard]
-#endif // _ASMJIT_X86_X86OPERAND_H

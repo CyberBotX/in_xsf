@@ -175,11 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-
-#ifndef _CPUOPS_H_
-#define _CPUOPS_H_
+#pragma once
 
 void S9xOpcode_NMI();
 void S9xOpcode_IRQ();
-
-#endif

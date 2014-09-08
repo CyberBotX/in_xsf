@@ -43,8 +43,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FIFOSampleBuffer_H
-#define FIFOSampleBuffer_H
+#pragma once
 
 #include <memory>
 #include "FIFOSamplePipe.h"
@@ -171,5 +170,3 @@ public:
 };
 
 }
-
-#endif
