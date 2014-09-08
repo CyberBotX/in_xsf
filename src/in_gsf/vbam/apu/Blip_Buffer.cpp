@@ -264,7 +264,7 @@ void Blip_Synth_::treble_eq(const blip_eq_t &eq)
 		fimpulse[blip_res + half_size + i] = fimpulse[blip_res + half_size - 1 - i];
 
 	// starts at 0
-	std::fill_n(&fimpulse[0], blip_res, 0.0f);
+	std::fill_n(&fimpulse[0], static_cast<unsigned>(blip_res), 0.0f);
 
 	// find rescale factor
 	double total = std::accumulate(&fimpulse[blip_res], &fimpulse[blip_res + half_size], 0.0);
