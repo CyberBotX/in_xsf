@@ -1,7 +1,6 @@
 /* Simple fixed-point linear resampler by BearOso*/
 
-#ifndef __LINEAR_RESAMPLER_H
-#define __LINEAR_RESAMPLER_H
+#pragma once
 
 #include "resampler.h"
 
@@ -98,5 +97,3 @@ public:
 		return (((this->size >> 2) * this->f__inv_r_step) - ((this->f__r_frac * this->f__inv_r_step) >> f_prec)) >> (f_prec - 1);
 	}
 };
-
-#endif /* __LINEAR_RESAMPLER_H */

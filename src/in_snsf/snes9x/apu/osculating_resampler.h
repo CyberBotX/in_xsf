@@ -1,7 +1,6 @@
 /* Simple resampler based on bsnes's ruby audio library */
 
-#ifndef __OSCULATING_RESAMPLER_H
-#define __OSCULATING_RESAMPLER_H
+#pragma once
 
 #include <cmath>
 #include "resampler.h"
@@ -125,5 +124,3 @@ public:
 		return static_cast<int>(std::floor(((this->size >> 2) - this->r_frac) / this->r_step) * 2);
 	}
 };
-
-#endif /* __OSCULATING_RESAMPLER_H */

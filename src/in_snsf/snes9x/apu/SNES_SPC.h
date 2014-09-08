@@ -1,8 +1,7 @@
 // SNES SPC-700 APU emulator
 
 // snes_spc 0.9.0
-#ifndef SNES_SPC_H
-#define SNES_SPC_H
+#pragma once
 
 #include "SPC_DSP.h"
 #include "blargg_endian.h"
@@ -235,5 +234,3 @@ inline void SNES_SPC::mute_voices(int mask) { this->dsp.mute_voices(mask); }
 inline void SNES_SPC::disable_surround(bool disable) { this->dsp.disable_surround(disable); }
 
 inline void SNES_SPC::spc_allow_time_overflow(bool allow) { this->allow_time_overflow = allow; }
-
-#endif

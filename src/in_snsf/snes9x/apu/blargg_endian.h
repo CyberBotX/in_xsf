@@ -1,8 +1,7 @@
 // CPU Byte Order Utilities
 
 // snes_spc 0.9.0
-#ifndef BLARGG_ENDIAN
-#define BLARGG_ENDIAN
+#pragma once
 
 #include "blargg_common.h"
 
@@ -64,5 +63,3 @@ inline void set_le16(uint8_t *p, unsigned n)
 	p[1] = static_cast<unsigned char>(n >> 8);
 	p[0] = static_cast<unsigned char>(n);
 }
-
-#endif

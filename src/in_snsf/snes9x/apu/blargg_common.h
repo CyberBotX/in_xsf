@@ -2,19 +2,14 @@
 // To change configuration options, modify blargg_config.h, not this file.
 
 // snes_spc 0.9.0
-#ifndef BLARGG_COMMON_H
-#define BLARGG_COMMON_H
+#pragma once
 
 #include <cstddef>
 #include <cstdlib>
 #include <cassert>
 #include <climits>
 
-#undef BLARGG_COMMON_H
-// allow blargg_config.h to #include blargg_common.h
 #include "blargg_config.h"
-#ifndef BLARGG_COMMON_H
-#define BLARGG_COMMON_H
 
 // BLARGG_COMPILER_HAS_BOOL: If 0, provides bool support for old compiler. If 1,
 // compiler is assumed to support bool. If undefined, availability is determined.
@@ -41,6 +36,3 @@ const bool false = 0;
 #endif
 
 #include <cstdint>
-
-#endif
-#endif

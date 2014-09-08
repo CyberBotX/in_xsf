@@ -175,8 +175,7 @@
   Nintendo Co., Limited and its subsidiary companies.
  ***********************************************************************************/
 
-#ifndef _APU_H_
-#define _APU_H_
+#pragma once
 
 #include "../snes9x.h"
 #include "SNES_SPC.h"
@@ -199,5 +198,3 @@ int S9xGetSampleCount();
 void S9xSetSoundControl(uint8_t);
 void S9xSetSoundMute(bool);
 bool S9xMixSamples(uint8_t *, int);
-
-#endif

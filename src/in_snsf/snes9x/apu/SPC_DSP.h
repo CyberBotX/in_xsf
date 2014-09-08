@@ -1,8 +1,7 @@
 // Highly accurate SNES SPC-700 DSP emulator
 
 // snes_spc 0.9.0
-#ifndef SPC_DSP_H
-#define SPC_DSP_H
+#pragma once
 
 #include "blargg_common.h"
 
@@ -284,5 +283,3 @@ inline void SPC_DSP::write(int addr, int data)
 }
 
 inline void SPC_DSP::mute_voices(int mask) { this->m.mute_mask = mask; }
-
-#endif

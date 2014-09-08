@@ -1,7 +1,6 @@
 /* Simple resampler based on bsnes's ruby audio library */
 
-#ifndef __RESAMPLER_H
-#define __RESAMPLER_H
+#pragma once
 
 #include "ring_buffer.h"
 
@@ -41,5 +40,3 @@ public:
 		ring_buffer::resize(num_samples << 1);
 	}
 };
-
-#endif /* __RESAMPLER_H */

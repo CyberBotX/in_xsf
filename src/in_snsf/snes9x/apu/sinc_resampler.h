@@ -1,7 +1,6 @@
 /* Simple resampler based on bsnes's ruby audio library */
 
-#ifndef __SINC_RESAMPLER_H
-#define __SINC_RESAMPLER_H
+#pragma once
 
 #include <algorithm>
 #define _USE_MATH_DEFINES
@@ -151,5 +150,3 @@ public:
 		return static_cast<int>(std::floor(((this->size >> 2) - this->r_frac) / this->r_step) * 2);
 	}
 };
-
-#endif /* __SINC_RESAMPLER_H */
