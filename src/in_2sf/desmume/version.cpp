@@ -32,7 +32,7 @@
 
 #define DESMUME_NAME "DeSmuME"
 
-#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64) 
+#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64)
 # define DESMUME_PLATFORM_STRING " x64"
 #elif defined(__i386__) || defined(_M_IX86) || defined(_WIN32)
 # define DESMUME_PLATFORM_STRING " x86"

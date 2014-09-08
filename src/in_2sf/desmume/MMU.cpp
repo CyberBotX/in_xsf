@@ -214,7 +214,7 @@ static const uint32_t ARM7_HACKY_SIWRAM_LOCATION = 0x03000000;
 // NOTE - this whole approach is probably fundamentally wrong.
 // according to dasShiny research, its possible to map multiple banks to the same addresses. something more sophisticated would be needed.
 // however, it hasnt proven necessary yet for any known test case.
-template<int PROCNUM> static inline uint32_t MMU_LCDmap(uint32_t addr, bool &unmapped, bool &restricted)
+static inline uint32_t MMU_LCDmap(int PROCNUM, uint32_t addr, bool &unmapped, bool &restricted)
 {
 	unmapped = false;
 	restricted = false; // this will track whether 8bit writes are allowed
@@ -988,7 +988,7 @@ uint16_t DSI_TSC::read16()
 
 // TODO:
 // NAND flash support (used in Made in Ore/WarioWare D.I.Y.)
-template<int PROCNUM> void FASTCALL MMU_writeToGCControl(uint32_t val)
+void FASTCALL MMU_writeToGCControl(int PROCNUM, uint32_t val)
 {
 	int TEST_PROCNUM = PROCNUM;
 	nds_dscard &card = MMU.dscard[TEST_PROCNUM];
@@ -1069,7 +1069,7 @@ template<int PROCNUM> void FASTCALL MMU_writeToGCControl(uint32_t val)
 	triggerDma(EDMAMode_Card);
 }
 
-template<int PROCNUM> uint32_t MMU_readFromGC()
+uint32_t MMU_readFromGC(int PROCNUM)
 {
 	int TEST_PROCNUM = PROCNUM;
 
@@ -1109,7 +1109,7 @@ template<int PROCNUM> uint32_t MMU_readFromGC()
 	return val;
 }
 
-template<int PROCNUM> static void REG_IF_WriteByte(uint32_t addr, uint8_t val)
+static void REG_IF_WriteByte(int PROCNUM, uint32_t addr, uint8_t val)
 {
 	// the following bits are generated from logic and should not be affected here
 	// Bit 21    NDS9 only: Geometry Command FIFO
@@ -1132,18 +1132,18 @@ template<int PROCNUM> static void REG_IF_WriteByte(uint32_t addr, uint8_t val)
 	NDS_Reschedule();
 }
 
-template<int PROCNUM> static void REG_IF_WriteWord(uint32_t addr, uint16_t val)
+static void REG_IF_WriteWord(int PROCNUM, uint32_t addr, uint16_t val)
 {
-	REG_IF_WriteByte<PROCNUM>(addr, val & 0xFF);
-	REG_IF_WriteByte<PROCNUM>(addr + 1, (val >> 8) & 0xFF);
+	REG_IF_WriteByte(PROCNUM, addr, val & 0xFF);
+	REG_IF_WriteByte(PROCNUM, addr + 1, (val >> 8) & 0xFF);
 }
 
-template<int PROCNUM> static void REG_IF_WriteLong(uint32_t val)
+static void REG_IF_WriteLong(int PROCNUM, uint32_t val)
 {
-	REG_IF_WriteByte<PROCNUM>(0, val & 0xFF);
-	REG_IF_WriteByte<PROCNUM>(1, (val >> 8) & 0xFF);
-	REG_IF_WriteByte<PROCNUM>(2, (val >> 16) & 0xFF);
-	REG_IF_WriteByte<PROCNUM>(3, (val >> 24) & 0xFF);
+	REG_IF_WriteByte(PROCNUM, 0, val & 0xFF);
+	REG_IF_WriteByte(PROCNUM, 1, (val >> 8) & 0xFF);
+	REG_IF_WriteByte(PROCNUM, 2, (val >> 16) & 0xFF);
+	REG_IF_WriteByte(PROCNUM, 3, (val >> 24) & 0xFF);
 }
 
 template<int PROCNUM> uint32_t MMU_struct::gen_IF()
@@ -1650,16 +1650,16 @@ void FASTCALL _MMU_ARM9_write08(uint32_t adr, uint8_t val)
 #endif
 
 			case REG_IF:
-				REG_IF_WriteByte<ARMCPU_ARM9>(0, val);
+				REG_IF_WriteByte(ARMCPU_ARM9, 0, val);
 				break;
 			case REG_IF + 1:
-				REG_IF_WriteByte<ARMCPU_ARM9>(1, val);
+				REG_IF_WriteByte(ARMCPU_ARM9, 1, val);
 				break;
 			case REG_IF + 2:
-				REG_IF_WriteByte<ARMCPU_ARM9>(2, val);
+				REG_IF_WriteByte(ARMCPU_ARM9, 2, val);
 				break;
 			case REG_IF + 3:
-				REG_IF_WriteByte<ARMCPU_ARM9>(3, val);
+				REG_IF_WriteByte(ARMCPU_ARM9, 3, val);
 				break;
 
 			case REG_VRAMCNTA:
@@ -1779,10 +1779,11 @@ void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 				MMU.reg_IE[ARMCPU_ARM9] = (MMU.reg_IE[ARMCPU_ARM9] & 0xFFFF) | (val << 16);
 				return;
 			case REG_IF:
-				REG_IF_WriteWord<ARMCPU_ARM9>(0, val);
+				REG_IF_WriteWord(ARMCPU_ARM9, 0, val);
 				return;
-			case REG_IF+2:
-				REG_IF_WriteWord<ARMCPU_ARM9>(2, val); return;
+			case REG_IF + 2:
+				REG_IF_WriteWord(ARMCPU_ARM9, 2, val);
+				return;
 
 			case REG_IPCSYNC:
 				MMU_IPCSync(ARMCPU_ARM9, val);
@@ -1808,10 +1809,10 @@ void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 			}
 
 			case REG_GCROMCTRL:
-				MMU_writeToGCControl<ARMCPU_ARM9>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF0000) | val);
+				MMU_writeToGCControl(ARMCPU_ARM9, (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF0000) | val);
 				return;
 			case REG_GCROMCTRL + 2:
-				MMU_writeToGCControl<ARMCPU_ARM9>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF) | (val << 16));
+				MMU_writeToGCControl(ARMCPU_ARM9, (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM9][0x40], 0x1A4) & 0xFFFF) | (val << 16));
 				return;
 		}
 
@@ -1820,7 +1821,7 @@ void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 	}
 
 	bool unmapped, restricted;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
+	adr = MMU_LCDmap(ARMCPU_ARM9, adr, unmapped, restricted);
 	if (unmapped)
 		return;
 
@@ -1892,7 +1893,7 @@ void FASTCALL _MMU_ARM9_write32(uint32_t adr, uint32_t val)
 				return;
 
 			case REG_IF:
-				REG_IF_WriteLong<ARMCPU_ARM9>(val);
+				REG_IF_WriteLong(ARMCPU_ARM9, val);
 				return;
 
 			case REG_TM0CNTL:
@@ -1953,7 +1954,7 @@ void FASTCALL _MMU_ARM9_write32(uint32_t adr, uint32_t val)
 				return;
 
 			case REG_GCROMCTRL:
-				MMU_writeToGCControl<ARMCPU_ARM9>(val);
+				MMU_writeToGCControl(ARMCPU_ARM9, val);
 				return;
 			case REG_DISPA_DISPCAPCNT:
 				T1WriteLong(MMU.ARM9_REG, 0x64, val);
@@ -1969,7 +1970,7 @@ void FASTCALL _MMU_ARM9_write32(uint32_t adr, uint32_t val)
 	}
 
 	bool unmapped, restricted;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
+	adr = MMU_LCDmap(ARMCPU_ARM9, adr, unmapped, restricted);
 	if (unmapped)
 		return;
 
@@ -2047,7 +2048,7 @@ uint8_t FASTCALL _MMU_ARM9_read08(uint32_t adr)
 	}
 
 	bool unmapped, restricted;
-	adr = MMU_LCDmap<ARMCPU_ARM9>(adr, unmapped, restricted);
+	adr = MMU_LCDmap(ARMCPU_ARM9, adr, unmapped, restricted);
 	if (unmapped)
 		return 0;
 
@@ -2181,7 +2182,7 @@ uint32_t FASTCALL _MMU_ARM9_read32(uint32_t adr)
 			}
 
 			case REG_GCDATAIN:
-				return MMU_readFromGC<ARMCPU_ARM9>();
+				return MMU_readFromGC(ARMCPU_ARM9);
 		}
 		return T1ReadLong_guaranteedAligned(MMU.MMU_MEM[ARMCPU_ARM9][adr >> 20], adr & MMU.MMU_MASK[ARMCPU_ARM9][adr >> 20]);
 	}
@@ -2227,16 +2228,16 @@ void FASTCALL _MMU_ARM7_write08(uint32_t adr, uint8_t val)
 		switch (adr)
 		{
 			case REG_IF:
-				REG_IF_WriteByte<ARMCPU_ARM7>(0, val);
+				REG_IF_WriteByte(ARMCPU_ARM7, 0, val);
 				break;
 			case REG_IF + 1:
-				REG_IF_WriteByte<ARMCPU_ARM7>(1, val);
+				REG_IF_WriteByte(ARMCPU_ARM7, 1, val);
 				break;
 			case REG_IF + 2:
-				REG_IF_WriteByte<ARMCPU_ARM7>(2, val);
+				REG_IF_WriteByte(ARMCPU_ARM7, 2, val);
 				break;
 			case REG_IF + 3:
-				REG_IF_WriteByte<ARMCPU_ARM7>(3, val);
+				REG_IF_WriteByte(ARMCPU_ARM7, 3, val);
 				break;
 
 			case REG_POSTFLG:
@@ -2530,10 +2531,10 @@ void FASTCALL _MMU_ARM7_write16(uint32_t adr, uint16_t val)
 				return;
 
 			case REG_IF:
-				REG_IF_WriteWord<ARMCPU_ARM7>(0, val);
+				REG_IF_WriteWord(ARMCPU_ARM7, 0, val);
 				return;
 			case REG_IF + 2:
-				REG_IF_WriteWord<ARMCPU_ARM7>(2, val);
+				REG_IF_WriteWord(ARMCPU_ARM7, 2, val);
 				return;
 
 			case REG_IPCSYNC:
@@ -2560,10 +2561,10 @@ void FASTCALL _MMU_ARM7_write16(uint32_t adr, uint16_t val)
 			}
 
 			case REG_GCROMCTRL:
-				MMU_writeToGCControl<ARMCPU_ARM7>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF0000) | val);
+				MMU_writeToGCControl(ARMCPU_ARM7, (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF0000) | val);
 				return;
 			case REG_GCROMCTRL + 2:
-				MMU_writeToGCControl<ARMCPU_ARM7>((T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF) | (val << 16));
+				MMU_writeToGCControl(ARMCPU_ARM7, (T1ReadLong(MMU.MMU_MEM[ARMCPU_ARM7][0x40], 0x1A4) & 0xFFFF) | (val << 16));
 				return;
 		}
 
@@ -2619,7 +2620,7 @@ void FASTCALL _MMU_ARM7_write32(uint32_t adr, uint32_t val)
 				return;
 
 			case REG_IF:
-				REG_IF_WriteLong<ARMCPU_ARM7>(val);
+				REG_IF_WriteLong(ARMCPU_ARM7, val);
 				return;
 
 			case REG_TM0CNTL:
@@ -2645,7 +2646,7 @@ void FASTCALL _MMU_ARM7_write32(uint32_t adr, uint32_t val)
 				return;
 
 			case REG_GCROMCTRL:
-				MMU_writeToGCControl<ARMCPU_ARM7>(val);
+				MMU_writeToGCControl(ARMCPU_ARM7, val);
 				return;
 
 			case REG_GCDATAIN:
@@ -2818,7 +2819,7 @@ uint32_t FASTCALL _MMU_ARM7_read32(uint32_t adr)
 			case REG_GCROMCTRL:
 				break;
 			case REG_GCDATAIN:
-				return MMU_readFromGC<ARMCPU_ARM7>();
+				return MMU_readFromGC(ARMCPU_ARM7);
 
 			case REG_VRAMSTAT:
 				// make sure WRAMSTAT is stashed and then fallthrough return the value from memory. i know, gross.

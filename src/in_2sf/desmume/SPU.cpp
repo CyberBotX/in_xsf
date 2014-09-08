@@ -787,7 +787,7 @@ void SPU_WriteLong(uint32_t addr, uint32_t val)
 
 //////////////////////////////////////////////////////////////////////////////
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static inline int32_t Interpolate(int32_t a, int32_t b, double ratio)
+static inline int32_t Interpolate(int32_t a, int32_t b, double ratio, SPUInterpolationMode INTERPOLATE_MODE)
 {
 	double sampleA = static_cast<double>(a);
 	double sampleB = static_cast<double>(b);
@@ -817,7 +817,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static inline int32_t Interpolat
 
 //////////////////////////////////////////////////////////////////////////////
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static inline void Fetch8BitData(channel_struct *chan, int32_t *data)
+static inline void Fetch8BitData(const channel_struct *const chan, int32_t *const data, SPUInterpolationMode INTERPOLATE_MODE)
 {
 	if (chan->sampcnt < 0)
 	{
@@ -832,7 +832,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static inline void Fetch8BitData
 		if (loc < (chan->totlength << 2) - 1)
 		{
 			int32_t b = static_cast<int32_t>(read_s8(chan->addr + loc + 1) << 8);
-			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
+			a = Interpolate(a, b, chan->sampcnt, INTERPOLATE_MODE);
 		}
 		*data = a;
 	}
@@ -840,7 +840,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static inline void Fetch8BitData
 		*data = static_cast<int32_t>(read_s8(chan->addr + loc) << 8);
 }
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static inline void Fetch16BitData(const channel_struct * const chan, int32_t *data)
+static inline void Fetch16BitData(const channel_struct *const chan, int32_t *const data, SPUInterpolationMode INTERPOLATE_MODE)
 {
 	if (chan->sampcnt < 0)
 	{
@@ -848,7 +848,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static inline void Fetch16BitDat
 		return;
 	}
 
-	if(INTERPOLATE_MODE != SPUInterpolation_None)
+	if (INTERPOLATE_MODE != SPUInterpolation_None)
 	{
 		uint32_t loc = u32floor(chan->sampcnt);
 		
@@ -856,7 +856,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static inline void Fetch16BitDat
 		if (loc < (chan->totlength << 1) - 1)
 		{
 			int32_t b = static_cast<int32_t>(read16(loc * 2 + chan->addr + 2));
-			a = Interpolate<INTERPOLATE_MODE>(a, b, chan->sampcnt);
+			a = Interpolate(a, b, chan->sampcnt, INTERPOLATE_MODE);
 		}
 		*data = a;
 	}
@@ -864,7 +864,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static inline void Fetch16BitDat
 		*data = read16(chan->addr + u32floor(chan->sampcnt) * 2);
 }
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static inline void FetchADPCMData(channel_struct * const chan, int32_t * const data)
+static inline void FetchADPCMData(channel_struct *const chan, int32_t *const data, SPUInterpolationMode INTERPOLATE_MODE)
 {
 	if (chan->sampcnt < 8)
 	{
@@ -900,7 +900,7 @@ template<SPUInterpolationMode INTERPOLATE_MODE> static inline void FetchADPCMDat
 	}
 
 	if (INTERPOLATE_MODE != SPUInterpolation_None)
-		*data = Interpolate<INTERPOLATE_MODE>(static_cast<int32_t>(chan->pcm16b_last), static_cast<int32_t>(chan->pcm16b), chan->sampcnt);
+		*data = Interpolate(static_cast<int32_t>(chan->pcm16b_last), static_cast<int32_t>(chan->pcm16b), chan->sampcnt, INTERPOLATE_MODE);
 	else
 		*data = static_cast<int32_t>(chan->pcm16b);
 }
@@ -969,7 +969,7 @@ static inline void MixLR(SPU_struct *SPU, channel_struct *chan, int32_t data)
 
 //////////////////////////////////////////////////////////////////////////////
 
-template<int FORMAT> static inline void TestForLoop(SPU_struct *SPU, channel_struct *chan)
+static inline void TestForLoop(SPU_struct *SPU, channel_struct *chan, int FORMAT)
 {
 	int shift = !FORMAT ? 2 : 1;
 
@@ -1026,7 +1026,7 @@ static inline void TestForLoop2(SPU_struct *SPU, channel_struct *chan)
 	}
 }
 
-template<int CHANNELS> static inline void SPU_Mix(SPU_struct *SPU, channel_struct *chan, int32_t data)
+static inline void SPU_Mix(SPU_struct *SPU, channel_struct *chan, int32_t data, int CHANNELS)
 {
 	switch (CHANNELS)
 	{
@@ -1043,7 +1043,7 @@ template<int CHANNELS> static inline void SPU_Mix(SPU_struct *SPU, channel_struc
 }
 
 // WORK
-template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS> static inline void ____SPU_ChanUpdate(SPU_struct *const SPU, channel_struct *const chan)
+static inline void ____SPU_ChanUpdate(SPU_struct *const SPU, channel_struct *const chan, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS)
 {
 	for (; SPU->bufpos < SPU->buflength; ++SPU->bufpos)
 	{
@@ -1053,25 +1053,25 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS> static
 			switch (FORMAT)
 			{
 				case 0:
-					Fetch8BitData<INTERPOLATE_MODE>(chan, &data);
+					Fetch8BitData(chan, &data, INTERPOLATE_MODE);
 					break;
 				case 1:
-					Fetch16BitData<INTERPOLATE_MODE>(chan, &data);
+					Fetch16BitData(chan, &data, INTERPOLATE_MODE);
 					break;
 				case 2:
-					FetchADPCMData<INTERPOLATE_MODE>(chan, &data);
+					FetchADPCMData(chan, &data, INTERPOLATE_MODE);
 					break;
 				case 3:
 					FetchPSGData(chan, &data);
 			}
-			SPU_Mix<CHANNELS>(SPU, chan, data);
+			SPU_Mix(SPU, chan, data, CHANNELS);
 		}
 
 		switch (FORMAT)
 		{
 			case 0:
 			case 1:
-				TestForLoop<FORMAT>(SPU, chan);
+				TestForLoop(SPU, chan, FORMAT);
 				break;
 			case 2:
 				TestForLoop2(SPU, chan);
@@ -1082,33 +1082,33 @@ template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE, int CHANNELS> static
 	}
 }
 
-template<int FORMAT, SPUInterpolationMode INTERPOLATE_MODE> static inline void ___SPU_ChanUpdate(bool actuallyMix, SPU_struct *const SPU, channel_struct *const chan)
+static inline void ___SPU_ChanUpdate(bool actuallyMix, SPU_struct *const SPU, channel_struct *const chan, int FORMAT, SPUInterpolationMode INTERPOLATE_MODE)
 {
 	if (!actuallyMix)
-		____SPU_ChanUpdate<FORMAT, INTERPOLATE_MODE, -1>(SPU, chan);
+		____SPU_ChanUpdate(SPU, chan, FORMAT, INTERPOLATE_MODE, -1);
 	else if (!chan->pan)
-		____SPU_ChanUpdate<FORMAT, INTERPOLATE_MODE, 0>(SPU, chan);
+		____SPU_ChanUpdate(SPU, chan, FORMAT, INTERPOLATE_MODE, 0);
 	else if (chan->pan == 127)
-		____SPU_ChanUpdate<FORMAT, INTERPOLATE_MODE, 2>(SPU, chan);
+		____SPU_ChanUpdate(SPU, chan, FORMAT, INTERPOLATE_MODE, 2);
 	else
-		____SPU_ChanUpdate<FORMAT, INTERPOLATE_MODE, 1>(SPU, chan);
+		____SPU_ChanUpdate(SPU, chan, FORMAT, INTERPOLATE_MODE, 1);
 }
 
-template<SPUInterpolationMode INTERPOLATE_MODE> static inline void __SPU_ChanUpdate(bool actuallyMix, SPU_struct *const SPU, channel_struct *const chan)
+static inline void __SPU_ChanUpdate(bool actuallyMix, SPU_struct *const SPU, channel_struct *const chan, SPUInterpolationMode INTERPOLATE_MODE)
 {
 	switch (chan->format)
 	{
 		case 0:
-			___SPU_ChanUpdate<0, INTERPOLATE_MODE>(actuallyMix, SPU, chan);
+			___SPU_ChanUpdate(actuallyMix, SPU, chan, 0, INTERPOLATE_MODE);
 			break;
 		case 1:
-			___SPU_ChanUpdate<1, INTERPOLATE_MODE>(actuallyMix, SPU, chan);
+			___SPU_ChanUpdate(actuallyMix, SPU, chan, 1, INTERPOLATE_MODE);
 			break;
 		case 2:
-			___SPU_ChanUpdate<2, INTERPOLATE_MODE>(actuallyMix, SPU, chan);
+			___SPU_ChanUpdate(actuallyMix, SPU, chan, 2, INTERPOLATE_MODE);
 			break;
 		case 3:
-			___SPU_ChanUpdate<3, INTERPOLATE_MODE>(actuallyMix, SPU, chan);
+			___SPU_ChanUpdate(actuallyMix, SPU, chan, 3, INTERPOLATE_MODE);
 			break;
 		default:
 			assert(false);
@@ -1120,13 +1120,13 @@ static inline void _SPU_ChanUpdate(bool actuallyMix, SPU_struct *const SPU, chan
 	switch (CommonSettings.spuInterpolationMode)
 	{
 		case SPUInterpolation_None:
-			__SPU_ChanUpdate<SPUInterpolation_None>(actuallyMix, SPU, chan);
+			__SPU_ChanUpdate(actuallyMix, SPU, chan, SPUInterpolation_None);
 			break;
 		case SPUInterpolation_Linear:
-			__SPU_ChanUpdate<SPUInterpolation_Linear>(actuallyMix, SPU, chan);
+			__SPU_ChanUpdate(actuallyMix, SPU, chan, SPUInterpolation_Linear);
 			break;
 		case SPUInterpolation_Cosine:
-			__SPU_ChanUpdate<SPUInterpolation_Cosine>(actuallyMix, SPU, chan);
+			__SPU_ChanUpdate(actuallyMix, SPU, chan, SPUInterpolation_Cosine);
 			break;
 		default:
 			assert(false);
