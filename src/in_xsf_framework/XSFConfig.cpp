@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  */
@@ -56,7 +56,7 @@ const String &XSFConfig::CommonNameWithVersion()
 
 std::wstring XSFConfig::GetTextFromWindow(HWND hwnd)
 {
-	LRESULT length = SendMessageW(hwnd, WM_GETTEXTLENGTH, 0, 0);
+	auto length = SendMessageW(hwnd, WM_GETTEXTLENGTH, 0, 0);
 	auto value = std::vector<wchar_t>(length + 1);
 	length = SendMessageW(hwnd, WM_GETTEXT, length + 1, reinterpret_cast<LPARAM>(&value[0]));
 	return std::wstring(value.begin(), value.begin() + length);

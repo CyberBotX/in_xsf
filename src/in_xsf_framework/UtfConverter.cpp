@@ -14,11 +14,11 @@ namespace UtfConverter
 		auto result = std::vector<wchar_t>(widesize + 1, L'\0');
 		auto orig = std::vector<char>(widesize + 1, '\0');
 		std::copy(utf8string.begin(), utf8string.end(), orig.begin());
-		auto *sourcestart = reinterpret_cast<const UTF8 *>(&orig[0]), *sourceend = sourcestart + widesize;
+		auto sourcestart = reinterpret_cast<const UTF8 *>(&orig[0]), sourceend = sourcestart + widesize;
 		ConversionResult res;
 		if (sizeof(wchar_t) == 2)
 		{
-			auto *targetstart = reinterpret_cast<UTF16 *>(&result[0]), *targetend = targetstart + widesize;
+			auto targetstart = reinterpret_cast<UTF16 *>(&result[0]), targetend = targetstart + widesize;
 			res = ConvertUTF8toUTF16(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
 			*targetstart = 0;
 			unsigned end = targetstart - reinterpret_cast<UTF16 *>(&result[0]);
@@ -26,7 +26,7 @@ namespace UtfConverter
 		}
 		else if (sizeof(wchar_t) == 4)
 		{
-			auto *targetstart = reinterpret_cast<UTF32 *>(&result[0]), *targetend = targetstart + widesize;
+			auto targetstart = reinterpret_cast<UTF32 *>(&result[0]), targetend = targetstart + widesize;
 			res = ConvertUTF8toUTF32(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
 			*targetstart = 0;
 			unsigned end = targetstart - reinterpret_cast<UTF32 *>(&result[0]);
@@ -45,16 +45,16 @@ namespace UtfConverter
 		auto result = std::vector<char>(utf8size, '\0');
 		auto orig = std::vector<wchar_t>(widesize + 1, L'\0');
 		std::copy(widestring.begin(), widestring.end(), orig.begin());
-		auto *targetstart = reinterpret_cast<UTF8 *>(&result[0]), *targetend = targetstart + utf8size;
+		auto targetstart = reinterpret_cast<UTF8 *>(&result[0]), targetend = targetstart + utf8size;
 		ConversionResult res;
 		if (sizeof(wchar_t) == 2)
 		{
-			auto *sourcestart = reinterpret_cast<const UTF16 *>(&orig[0]), *sourceend = sourcestart + widesize;
+			auto sourcestart = reinterpret_cast<const UTF16 *>(&orig[0]), sourceend = sourcestart + widesize;
 			res = ConvertUTF16toUTF8(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
 		}
 		else if (sizeof(wchar_t) == 4)
 		{
-			auto *sourcestart = reinterpret_cast<const UTF32 *>(&orig[0]), *sourceend = sourcestart + widesize;
+			auto sourcestart = reinterpret_cast<const UTF32 *>(&orig[0]), sourceend = sourcestart + widesize;
 			res = ConvertUTF32toUTF8(&sourcestart, sourceend, &targetstart, targetend, strictConversion);
 		}
 		else

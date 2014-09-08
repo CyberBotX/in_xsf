@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-05-07
+ * Last modification on 2014-09-08
  *
  * Partially based on the vio*sf framework
  */
@@ -56,25 +56,21 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 	bool endFlag = false;
 	unsigned detectSilence = xSFConfig->GetDetectSilenceSec();
 	unsigned pos = 0, bufsize = buf.size() >> 2;
-	std::vector<uint8_t> trueBuffer;
-	if (this->uses32BitSamplesClampedTo16Bit)
-		trueBuffer.resize(bufsize << 3);
-	else
-		trueBuffer.resize(bufsize << 2);
+	auto trueBuffer = std::vector<uint8_t>(bufsize << (this->uses32BitSamplesClampedTo16Bit ? 3 : 2));
 	auto longBuffer = std::vector<uint8_t>(bufsize << 3);
-	int32_t *bufLong = reinterpret_cast<int32_t *>(&longBuffer[0]);
+	auto bufLong = reinterpret_cast<int32_t *>(&longBuffer[0]);
 	while (pos < bufsize)
 	{
 		unsigned remain = bufsize - pos, offset = pos;
 		this->GenerateSamples(trueBuffer, pos << (this->uses32BitSamplesClampedTo16Bit ? 2 : 1), remain);
 		if (this->uses32BitSamplesClampedTo16Bit)
 		{
-			int32_t *trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
+			auto trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
 			std::copy(&trueBufLong[0], &trueBufLong[bufsize << 1], &bufLong[0]);
 		}
 		else
 		{
-			int16_t *trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+			auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
 			std::copy(&trueBufShort[0], &trueBufShort[bufsize << 1], &bufLong[0]);
 		}
 		if (detectSilence || skipSilenceOnStartSec)
@@ -134,12 +130,12 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 		{
 			if (this->uses32BitSamplesClampedTo16Bit)
 			{
-				int32_t *trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
+				auto trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
 				std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufLong[0]);
 			}
 			else
 			{
-				int16_t *trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+				auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
 				std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufShort[0]);
 			}
 		}
@@ -179,7 +175,7 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 
 	if (this->uses32BitSamplesClampedTo16Bit)
 	{
-		int16_t *bufShort = reinterpret_cast<int16_t *>(&buf[0]);
+		auto bufShort = reinterpret_cast<int16_t *>(&buf[0]);
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
 			int32_t s1 = bufLong[2 * ofs], s2 = bufLong[2 * ofs + 1];
@@ -191,7 +187,7 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 	}
 	else
 	{
-		int16_t *trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+		auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
 		std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufShort[0]);
 		std::copy(&trueBuffer[0], &trueBuffer[bufsize << 2], &buf[0]);
 	}
@@ -199,7 +195,7 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 	/* Fading */
 	if (!xSFConfig->GetPlayInfinitely() && this->fadeSample && this->currentSample + bufsize >= this->lengthSample)
 	{
-		int16_t *bufShort = reinterpret_cast<int16_t *>(&buf[0]);
+		auto bufShort = reinterpret_cast<int16_t *>(&buf[0]);
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
 			if (this->currentSample + ofs >= this->lengthSample && this->currentSample + ofs < this->lengthSample + this->fadeSample)
