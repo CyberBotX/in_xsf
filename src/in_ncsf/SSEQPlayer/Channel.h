@@ -102,11 +102,11 @@ template<size_t N> struct RingBuffer
 
 	RingBuffer() : bufferPos(N / 2), getPos(N / 2)
 	{
-		std::fill(&this->buffer[0], &this->buffer[N * 2], 0);
+		std::fill_n(&this->buffer[0], N * 2, 0);
 	}
 	void Clear()
 	{
-		std::fill(&this->buffer[0], &this->buffer[N * 2], 0);
+		std::fill_n(&this->buffer[0], N * 2, 0);
 		this->bufferPos = this->getPos = N / 2;
 	}
 	void PushSample(int16_t sample)
@@ -125,11 +125,11 @@ template<size_t N> struct RingBuffer
 		if (this->bufferPos + size > N * 3 / 2)
 		{
 			size_t free = N * 3 / 2 - this->bufferPos;
-			std::copy(&samples[0], &samples[free], &this->buffer[this->bufferPos]);
+			std::copy_n(&samples[0], free, &this->buffer[this->bufferPos]);
 			std::copy(&samples[free], &samples[size], &this->buffer[N / 2]);
 		}
 		else
-			std::copy(&samples[0], &samples[size], &this->buffer[this->bufferPos]);
+			std::copy_n(&samples[0], size, &this->buffer[this->bufferPos]);
 		size_t rightFree = this->bufferPos < N ? N - this->bufferPos : 0;
 		if (rightFree < size)
 		{
@@ -137,18 +137,18 @@ template<size_t N> struct RingBuffer
 			{
 				size_t leftStart = this->bufferPos - N;
 				size_t leftSize = std::min(N / 2 - leftStart, size);
-				std::copy(&samples[0], &samples[leftSize], &this->buffer[leftStart]);
+				std::copy_n(&samples[0], leftSize, &this->buffer[leftStart]);
 				if (leftSize < size)
 					std::copy(&samples[leftSize], &samples[size], &this->buffer[N * 3 / 2]);
 			}
 			else
 			{
-				std::copy(&samples[0], &samples[rightFree], &this->buffer[this->bufferPos + N]);
+				std::copy_n(&samples[0], rightFree, &this->buffer[this->bufferPos + N]);
 				std::copy(&samples[rightFree], &samples[size], &this->buffer[0]);
 			}
 		}
 		else
-			std::copy(&samples[0], &samples[size], &this->buffer[this->bufferPos + N]);
+			std::copy_n(&samples[0], size, &this->buffer[this->bufferPos + N]);
 		this->bufferPos += size;
 		if (this->bufferPos >= N * 3 / 2)
 			this->bufferPos -= N;

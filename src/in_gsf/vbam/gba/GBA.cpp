@@ -1505,7 +1505,7 @@ void CPUInit()
 		cpuBitsSet[i] = count;
 	}
 
-	std::fill(&ioReadable[0], &ioReadable[0x304], true);
+	std::fill_n(&ioReadable[0], 0x304, true);
 	std::fill(&ioReadable[0x10], &ioReadable[0x48], false);
 	std::fill(&ioReadable[0x4c], &ioReadable[0x50], false);
 	std::fill(&ioReadable[0x54], &ioReadable[0x60], false);

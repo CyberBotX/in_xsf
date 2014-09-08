@@ -83,7 +83,7 @@ void Gb_Apu::volume(double v)
 
 void Gb_Apu::reset_regs()
 {
-	std::fill(&this->regs[0], &this->regs[0x20], 0);
+	std::fill_n(&this->regs[0], 0x20, 0);
 
 	this->square1.reset();
 	this->square2.reset();

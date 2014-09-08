@@ -66,12 +66,12 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 		if (this->uses32BitSamplesClampedTo16Bit)
 		{
 			auto trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
-			std::copy(&trueBufLong[0], &trueBufLong[bufsize << 1], &bufLong[0]);
+			std::copy_n(&trueBufLong[0], bufsize << 1, &bufLong[0]);
 		}
 		else
 		{
 			auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
-			std::copy(&trueBufShort[0], &trueBufShort[bufsize << 1], &bufLong[0]);
+			std::copy_n(&trueBufShort[0], bufsize << 1, &bufLong[0]);
 		}
 		if (detectSilence || skipSilenceOnStartSec)
 		{
@@ -117,7 +117,7 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 				{
 					auto tmpBuf = std::vector<int32_t>((bufsize - skipOffset) << 1);
 					std::copy(&bufLong[(offset + skipOffset) << 1], &bufLong[bufsize << 1], &tmpBuf[0]);
-					std::copy(&tmpBuf[0], &tmpBuf[(bufsize - skipOffset) << 1], &bufLong[offset << 1]);
+					std::copy_n(&tmpBuf[0], (bufsize - skipOffset) << 1, &bufLong[offset << 1]);
 					pos += skipOffset;
 				}
 				else
@@ -131,12 +131,12 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 			if (this->uses32BitSamplesClampedTo16Bit)
 			{
 				auto trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
-				std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufLong[0]);
+				std::copy_n(&bufLong[0], bufsize << 1, &trueBufLong[0]);
 			}
 			else
 			{
 				auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
-				std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufShort[0]);
+				std::copy_n(&bufLong[0], bufsize << 1, &trueBufShort[0]);
 			}
 		}
 	}
@@ -188,7 +188,7 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 	else
 	{
 		auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
-		std::copy(&bufLong[0], &bufLong[bufsize << 1], &trueBufShort[0]);
+		std::copy_n(&bufLong[0], bufsize << 1, &trueBufShort[0]);
 		std::copy(&trueBuffer[0], &trueBuffer[bufsize << 2], &buf[0]);
 	}
 
