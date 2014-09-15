@@ -373,7 +373,7 @@ void Gb_Square::run(blip_time_t time, blip_time_t end_time)
 		if (!vol)
 		{
 			// Maintain phase when not playing
-			int count = (end_time - time + per - 1) / per;
+			int32_t count = (end_time - time + per - 1) / per;
 			ph += count; // will be masked below
 			time += static_cast<blip_time_t>(count) * per;
 		}
@@ -402,7 +402,7 @@ void Gb_Square::run(blip_time_t time, blip_time_t end_time)
 
 // Quickly runs LFSR for a large number of clocks. For use when noise is generating
 // no sound.
-static unsigned run_lfsr(unsigned s, unsigned mask, int count)
+static unsigned run_lfsr(unsigned s, unsigned mask, int32_t count)
 {
 	static const bool optimized = true; // set to false to use only unoptimized loop in middle
 
@@ -513,11 +513,11 @@ void Gb_Noise::run(blip_time_t time, blip_time_t end_time)
 	// Run timer and calculate time of next LFSR clock
 	static const uint8_t period1s[] = { 1, 2, 4, 6, 8, 10, 12, 14 };
 	int period1 = period1s[this->regs[3] & 7] * clk_mul;
-	int extra = (end_time - time) - this->delay;
+	int32_t extra = (end_time - time) - this->delay;
 	int per2 = this->period2();
 	time += this->delay + ((this->divider ^ (per2 >> 1)) & (per2 - 1)) * period1;
 
-	int count = extra < 0 ? 0 : (extra + period1 - 1) / period1;
+	int32_t count = extra < 0 ? 0 : (extra + period1 - 1) / period1;
 	this->divider = (this->divider - count) & period2_mask;
 	this->delay = count * period1 - extra;
 
@@ -533,7 +533,7 @@ void Gb_Noise::run(blip_time_t time, blip_time_t end_time)
 		else if (!vol)
 		{
 			// Maintain phase when not playing
-			int count = (end_time - time + per - 1) / per;
+			int32_t count = (end_time - time + per - 1) / per;
 			time += static_cast<blip_time_t>(count) * per;
 			bits = run_lfsr(bits, ~mask, count);
 		}
@@ -618,7 +618,7 @@ void Gb_Wave::run(blip_time_t time, blip_time_t end_time)
 		if (!playing)
 		{
 			// Maintain phase when not playing
-			int count = (end_time - time + per - 1) / per;
+			int32_t count = (end_time - time + per - 1) / per;
 			ph += count; // will be masked below
 			time += static_cast<blip_time_t>(count) * per;
 		}

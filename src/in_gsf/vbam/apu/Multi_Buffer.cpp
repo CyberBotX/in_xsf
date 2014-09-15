@@ -94,7 +94,7 @@ Stereo_Buffer::Stereo_Buffer() : Multi_Buffer(2)
 
 Stereo_Buffer::~Stereo_Buffer() { }
 
-void Stereo_Buffer::set_sample_rate(long rate, int msec)
+void Stereo_Buffer::set_sample_rate(long rate, long msec)
 {
 	this->mixer.samples_read = 0;
 	for (int i = bufs_size; --i >= 0; )

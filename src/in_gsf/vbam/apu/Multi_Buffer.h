@@ -31,14 +31,14 @@ public:
 	virtual channel_t channel(int index);
 
 	// See Blip_Buffer.h
-	virtual void set_sample_rate(long rate, int msec = blip_default_length);
+	virtual void set_sample_rate(long rate, long msec = blip_default_length);
 	virtual void clock_rate(long) { }
 	virtual void bass_freq(int) { }
 	virtual void clear() { }
 	long sample_rate() const;
 
 	// Length of buffer, in milliseconds
-	int length() const;
+	int32_t length() const;
 
 	// See Blip_Buffer.h
 	virtual void end_frame(blip_time_t) { }
@@ -66,7 +66,7 @@ private:
 
 	unsigned channels_changed_count_;
 	long sample_rate_;
-	int length_;
+	int32_t length_;
 	int channel_count_;
 	const int samples_per_frame_;
 	const int *channel_types_;
@@ -115,7 +115,7 @@ public:
 
 	Stereo_Buffer();
 	~Stereo_Buffer();
-	void set_sample_rate(long, int msec = blip_default_length);
+	void set_sample_rate(long, long msec = blip_default_length);
 	void clock_rate(long);
 	void bass_freq(int);
 	void clear();
@@ -134,7 +134,7 @@ private:
 	long samples_avail_;
 };
 
-inline void Multi_Buffer::set_sample_rate(long rate, int msec)
+inline void Multi_Buffer::set_sample_rate(long rate, long msec)
 {
 	this->sample_rate_ = rate;
 	this->length_ = msec;
@@ -144,7 +144,7 @@ inline int Multi_Buffer::samples_per_frame() const { return this->samples_per_fr
 
 inline long Multi_Buffer::sample_rate() const { return this->sample_rate_; }
 
-inline int Multi_Buffer::length() const { return this->length_; }
+inline int32_t Multi_Buffer::length() const { return this->length_; }
 
 inline void Multi_Buffer::set_channel_count(int n, const int *types)
 {

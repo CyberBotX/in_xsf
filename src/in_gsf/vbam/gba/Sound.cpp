@@ -115,7 +115,7 @@ void Gba_Pcm::apply_control(int idx)
 			if (soundInterpolation)
 			{
 				// base filtering on how long since last sample was output
-				int period = time - this->last_time;
+				int32_t period = time - this->last_time;
 
 				int idx = period / 512;
 				if (idx >= 3)
@@ -158,7 +158,7 @@ void Gba_Pcm::update(int dac)
 			if (soundInterpolation)
 			{
 				// base filtering on how long since last sample was output
-				int period = time - this->last_time;
+				int32_t period = time - this->last_time;
 
 				int idx = period / 512;
 				if (idx >= 3)
@@ -350,22 +350,21 @@ void flush_samples(Multi_Buffer *buffer)
 	// that don't use the length parameter of the write method.
 	// TODO: Update the Win32 audio drivers (DS, OAL, XA2), and flush all the
 	// samples at once to help reducing the audio delay on all platforms.
-	int soundBufferLen = (soundSampleRate / 60) * 4;
+	int32_t soundBufferLen = (soundSampleRate / 60) * 4;
 
 	// soundBufferLen should have a whole number of sample pairs
 	assert(!(soundBufferLen % (2 * sizeof(*soundFinalWave))));
 
 	// number of samples in output buffer
-	int out_buf_size = soundBufferLen / sizeof(*soundFinalWave);
+	int32_t out_buf_size = soundBufferLen / sizeof(*soundFinalWave);
 
-	// Keep filling and writing soundFinalWave until it can't be fully filled
-	while (buffer->samples_avail() >= out_buf_size)
+	while (buffer->samples_avail())
 	{
-		buffer->read_samples(reinterpret_cast<blip_sample_t *>(soundFinalWave), out_buf_size);
+		long samples_read = buffer->read_samples(reinterpret_cast<blip_sample_t *>(soundFinalWave), out_buf_size);
 		if (soundPaused)
 			soundResume();
 
-		soundDriver->write(soundFinalWave, soundBufferLen);
+		soundDriver->write(soundFinalWave, samples_read * sizeof(*soundFinalWave));
 	}
 }
 
@@ -374,11 +373,11 @@ static void apply_filtering()
 	soundFiltering_ = soundFiltering;
 
 	int base_freq = static_cast<int>(32768 - soundFiltering_ * 16384);
-	int nyquist = stereo_buffer->sample_rate() / 2;
+	int32_t nyquist = stereo_buffer->sample_rate() / 2;
 
 	for (int i = 0; i < 3; ++i)
 	{
-		int cutoff = base_freq >> i;
+		int32_t cutoff = base_freq >> i;
 		if (cutoff > nyquist)
 			cutoff = nyquist;
 		pcm_synth[i].treble_eq(blip_eq_t(0, 0, stereo_buffer->sample_rate(), cutoff));
@@ -400,8 +399,6 @@ void psoundTickfn()
 		if (soundVolume_ != soundVolume)
 			apply_volume();
 	}
-
-	ioMem[NR52] = (ioMem[NR52] & 0x80) | (gb_apu->read_status() & 0x7f);
 }
 
 static void apply_muting()
@@ -423,8 +420,11 @@ static void apply_muting()
 
 static void reset_apu()
 {
-	gb_apu->reduce_clicks(true);
-	gb_apu->reset(gb_apu->mode_agb, true);
+	if (gb_apu)
+	{
+		gb_apu->reduce_clicks(true);
+		gb_apu->reset(Gb_Apu::mode_agb, true);
+	}
 
 	if (stereo_buffer)
 		stereo_buffer->clear();
@@ -438,22 +438,23 @@ static void remake_stereo_buffer()
 	pcm[0].pcm.init();
 	pcm[1].pcm.init();
 
-	// APU
-	if (!gb_apu)
-	{
-		gb_apu.reset(new Gb_Apu); // TODO: handle out of memory
-		reset_apu();
-	}
-
 	// Stereo_Buffer
 	stereo_buffer.reset(new Stereo_Buffer); // TODO: handle out of memory
 	stereo_buffer->set_sample_rate(soundSampleRate); // TODO: handle out of memory
-	stereo_buffer->clock_rate(gb_apu->clock_rate);
 
 	// PCM
 	pcm[0].which = 0;
 	pcm[1].which = 1;
 	apply_filtering();
+
+	// APU
+	if (!gb_apu)
+	{
+		gb_apu.reset(new Gb_Apu); // TODO: handle out of memory
+		reset_apu();
+		gb_apu->treble_eq(blip_eq_t(0, 0, soundSampleRate, soundSampleRate / 2));
+	}
+	stereo_buffer->clock_rate(gb_apu->clock_rate);
 
 	// Volume Level
 	apply_muting();

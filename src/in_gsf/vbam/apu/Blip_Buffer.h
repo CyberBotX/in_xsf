@@ -19,7 +19,7 @@ public:
 	// Sets output sample rate and buffer length in milliseconds (1/1000 sec, defaults
 	// to 1/4 second) and clears buffer. If there isn't enough memory, leaves buffer
 	// untouched and returns "Out of memory", otherwise returns NULL.
-	void set_sample_rate(long samples_per_sec, int msec_length = 250);
+	void set_sample_rate(long samples_per_sec, long msec_length = 250);
 
 	// Sets number of source time units per second
 	void clock_rate(long clocks_per_sec);
@@ -54,7 +54,7 @@ public:
 	long sample_rate() const;
 
 	// Length of buffer in milliseconds
-	int length() const;
+	int32_t length() const;
 
 	// Number of source time units per second
 	long clock_rate() const;
@@ -107,7 +107,7 @@ private:
 	long sample_rate_;
 	long clock_rate_;
 	int bass_freq_;
-	int length_;
+	int32_t length_;
 	Blip_Buffer *modified_; // non-zero = true (more optimal than using bool, heh)
 };
 
@@ -421,7 +421,7 @@ template<int quality, int range> inline void Blip_Synth<quality, range>::update(
 inline blip_eq_t::blip_eq_t(double t) : treble(t), rolloff_freq(0), sample_rate(44100), cutoff_freq(0) { }
 inline blip_eq_t::blip_eq_t(double t, long rf, long sr, long cf) : treble(t), rolloff_freq(rf), sample_rate(sr), cutoff_freq(cf) { }
 
-inline int Blip_Buffer::length() const { return this->length_; }
+inline int32_t Blip_Buffer::length() const { return this->length_; }
 inline long Blip_Buffer::samples_avail() const { return static_cast<long>(this->offset_ >> BLIP_BUFFER_ACCURACY); }
 inline long Blip_Buffer::sample_rate() const { return this->sample_rate_; }
 inline int Blip_Buffer::output_latency() const { return blip_widest_impulse_ / 2; }

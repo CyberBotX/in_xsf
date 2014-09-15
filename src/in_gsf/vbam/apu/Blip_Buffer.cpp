@@ -60,7 +60,7 @@ void Blip_Buffer::clear(int entire_buffer)
 	}
 }
 
-void Blip_Buffer::set_sample_rate(long new_rate, int msec)
+void Blip_Buffer::set_sample_rate(long new_rate, long msec)
 {
 	// start with maximum length that resampled time can represent
 	long new_size = (ULONG_MAX >> BLIP_BUFFER_ACCURACY) - blip_buffer_extra_ - 64;
@@ -372,7 +372,7 @@ void Blip_Buffer::mix_samples(const blip_sample_t *in, long count)
 	auto out = &this->buffer_[(this->offset_ >> BLIP_BUFFER_ACCURACY) + blip_widest_impulse_ / 2];
 
 	static const int sample_shift = blip_sample_bits - 16;
-	int prev = 0;
+	int32_t prev = 0;
 	while (count--)
 	{
 		int32_t s = static_cast<int32_t>(*in++) << sample_shift;

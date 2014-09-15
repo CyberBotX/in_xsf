@@ -37,7 +37,7 @@ public:
 	const Good_Synth *good_synth;
 	const Med_Synth *med_synth;
 
-	int delay; // clocks until frequency timer expires
+	int32_t delay; // clocks until frequency timer expires
 	int length_ctr; // length counter
 	unsigned phase; // waveform phase (or equivalent)
 	bool enabled; // internal enabled flag
