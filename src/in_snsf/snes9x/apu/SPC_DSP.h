@@ -243,7 +243,7 @@ private:
 	void echo_28();
 	void echo_29();
 	void echo_30();
-	
+
 	void soft_reset_common();
 };
 

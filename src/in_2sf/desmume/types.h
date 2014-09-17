@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 #ifdef _WINDOWS
@@ -72,6 +73,7 @@
 #define CACHE_ALIGN DS_ALIGN(32)
 
 #ifdef __MINGW32__
+# undef FASTCALL
 # define FASTCALL __attribute__((fastcall))
 # define ASMJIT_CALL_CONV kX86FuncConvGccFastCall
 #elif defined (__i386__) && !defined(__clang__)
@@ -79,10 +81,10 @@
 # define ASMJIT_CALL_CONV kX86FuncConvGccRegParm3
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 # define FASTCALL
-# define ASMJIT_CALL_CONV kX86FuncConvDefault
+# define ASMJIT_CALL_CONV kX86FuncConvCDecl
 #else
 # define FASTCALL
-# define ASMJIT_CALL_CONV kX86FuncConvDefault
+# define ASMJIT_CALL_CONV kX86FuncConvCDecl
 #endif
 
 /*----------------------*/
@@ -129,8 +131,8 @@ inline double u64_to_double(uint64_t u)
 
 // fairly standard for loop macros
 #define MACRODO1(TRICK, TODO) { int X = TRICK; TODO; }
-#define MACRODO2(X, TODO) { MACRODO1((X), TODO) MACRODO1(((X) + 1), TODO) }
-#define MACRODO4(X, TODO) { MACRODO2((X), TODO) MACRODO2(((X) + 2), TODO) }
+#define MACRODO2(TRICK, TODO) { MACRODO1((TRICK), TODO) MACRODO1(((TRICK) + 1), TODO) }
+#define MACRODO4(TRICK, TODO) { MACRODO2((TRICK), TODO) MACRODO2(((TRICK) + 2), TODO) }
 
 template<typename T> inline void reconstruct(T *t)
 {

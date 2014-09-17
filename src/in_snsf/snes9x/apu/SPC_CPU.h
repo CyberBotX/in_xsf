@@ -172,7 +172,7 @@ loop:
 		goto stop;
 	if ((rel_time += this->m.cycle_table[opcode]) > 0 && !this->allow_time_overflow)
 		goto out_of_time;
-	
+
 #ifdef SPC_CPU_OPCODE_HOOK
 	SPC_CPU_OPCODE_HOOK(GET_PC(), opcode);
 #endif

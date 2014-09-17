@@ -204,7 +204,7 @@
 # endif
 #endif
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 # define strcasecmp stricmp
 #endif
 

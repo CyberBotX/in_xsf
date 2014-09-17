@@ -6,6 +6,7 @@
 #include "../apu/Gb_Apu.h"
 #include "../apu/Multi_Buffer.h"
 #include "../common/SoundDriver.h"
+#include "XSFCommon.h"
 
 extern SoundDriver *systemSoundInit();
 
@@ -117,7 +118,7 @@ void Gba_Pcm::apply_control(int idx)
 				// base filtering on how long since last sample was output
 				int32_t period = time - this->last_time;
 
-				int idx = period / 512;
+				idx = period / 512;
 				if (idx >= 3)
 					idx = 3;
 
@@ -189,11 +190,11 @@ void Gba_Pcm_Fifo::timer_overflowed(int which_timer)
 			if (!this->count)
 			{
 				// Not filled by DMA, so fill with 16 bytes of silence
-				int reg = this->which ? FIFOB_L : FIFOA_L;
+				int regi = this->which ? FIFOB_L : FIFOA_L;
 				for (int n = 8; n--; )
 				{
-					soundEvent(reg, static_cast<uint16_t>(0));
-					soundEvent(reg + 2, static_cast<uint16_t>(0));
+					soundEvent(regi, static_cast<uint16_t>(0));
+					soundEvent(regi + 2, static_cast<uint16_t>(0));
 				}
 			}
 		}
@@ -393,10 +394,10 @@ void psoundTickfn()
 
 		flush_samples(stereo_buffer.get());
 
-		if (soundFiltering_ != soundFiltering)
+		if (!fEqual(soundFiltering_, soundFiltering))
 			apply_filtering();
 
-		if (soundVolume_ != soundVolume)
+		if (!fEqual(soundVolume_, soundVolume))
 			apply_volume();
 	}
 }
@@ -412,10 +413,12 @@ static void apply_muting()
 	if (gb_apu)
 		// APU
 		for (int i = 0; i < 4; ++i)
+		{
 			if (soundEnableFlag >> i & 1)
 				gb_apu->set_output(stereo_buffer->center(), stereo_buffer->left(), stereo_buffer->right(), i);
 			else
 				gb_apu->set_output(nullptr, nullptr, nullptr, i);
+		}
 }
 
 static void reset_apu()

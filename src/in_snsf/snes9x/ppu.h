@@ -281,13 +281,13 @@ struct SnesModel
 extern SnesModel *Model;
 extern SnesModel M1SNES;
 
-inline void REGISTER_2104(uint8_t Byte)
+inline void REGISTER_2104(uint8_t Byt)
 {
 	if (PPU.OAMAddr & 0x100)
 	{
 		int addr = ((PPU.OAMAddr & 0x10f) << 1) + (PPU.OAMFlip & 1);
-		if (Byte != PPU.OAMData[addr])
-			PPU.OAMData[addr] = Byte;
+		if (Byt != PPU.OAMData[addr])
+			PPU.OAMData[addr] = Byt;
 
 		PPU.OAMFlip ^= 1;
 		if (!(PPU.OAMFlip & 1))
@@ -301,15 +301,15 @@ inline void REGISTER_2104(uint8_t Byte)
 	else if (!(PPU.OAMFlip & 1))
 	{
 		PPU.OAMWriteRegister &= 0xff00;
-		PPU.OAMWriteRegister |= Byte;
+		PPU.OAMWriteRegister |= Byt;
 		PPU.OAMFlip |= 1;
 	}
 	else
 	{
 		PPU.OAMWriteRegister &= 0x00ff;
 		uint8_t lowbyte = static_cast<uint8_t>(PPU.OAMWriteRegister);
-		uint8_t highbyte = Byte;
-		PPU.OAMWriteRegister |= Byte << 8;
+		uint8_t highbyte = Byt;
+		PPU.OAMWriteRegister |= Byt << 8;
 
 		int addr = PPU.OAMAddr << 1;
 		if (lowbyte != PPU.OAMData[addr] || highbyte != PPU.OAMData[addr + 1])
@@ -328,7 +328,7 @@ inline void REGISTER_2104(uint8_t Byte)
 // This code is correct, however due to Snes9x's inaccurate timings, some games might be broken by this chage. :(
 inline bool CHECK_INBLANK() { return Settings.BlockInvalidVRAMAccess && !PPU.ForcedBlanking && CPU.V_Counter < PPU.ScreenHeight + FIRST_VISIBLE_LINE; }
 
-inline void REGISTER_2118(uint8_t Byte)
+inline void REGISTER_2118(uint8_t Byt)
 {
 	if (CHECK_INBLANK())
 		return;
@@ -339,16 +339,16 @@ inline void REGISTER_2118(uint8_t Byte)
 	{
 		uint32_t rem = PPU.VMA.Address & PPU.VMA.Mask1;
 		address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
-		Memory.VRAM[address] = Byte;
+		Memory.VRAM[address] = Byt;
 	}
 	else
-		Memory.VRAM[address = (PPU.VMA.Address << 1) & 0xffff] = Byte;
+		Memory.VRAM[address = (PPU.VMA.Address << 1) & 0xffff] = Byt;
 
 	if (!PPU.VMA.High)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-inline void REGISTER_2119(uint8_t Byte)
+inline void REGISTER_2119(uint8_t Byt)
 {
 	if (CHECK_INBLANK())
 		return;
@@ -359,16 +359,16 @@ inline void REGISTER_2119(uint8_t Byte)
 	{
 		uint32_t rem = PPU.VMA.Address & PPU.VMA.Mask1;
 		address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
-		Memory.VRAM[address] = Byte;
+		Memory.VRAM[address] = Byt;
 	}
 	else
-		Memory.VRAM[address = ((PPU.VMA.Address << 1) + 1) & 0xffff] = Byte;
+		Memory.VRAM[address = ((PPU.VMA.Address << 1) + 1) & 0xffff] = Byt;
 
 	if (PPU.VMA.High)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-inline void REGISTER_2118_tile(uint8_t Byte)
+inline void REGISTER_2118_tile(uint8_t Byt)
 {
 	if (CHECK_INBLANK())
 		return;
@@ -376,13 +376,13 @@ inline void REGISTER_2118_tile(uint8_t Byte)
 	uint32_t rem = PPU.VMA.Address & PPU.VMA.Mask1;
 	uint32_t address = (((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) & 0xffff;
 
-	Memory.VRAM[address] = Byte;
+	Memory.VRAM[address] = Byt;
 
 	if (!PPU.VMA.High)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-inline void REGISTER_2119_tile(uint8_t Byte)
+inline void REGISTER_2119_tile(uint8_t Byt)
 {
 	if (CHECK_INBLANK())
 		return;
@@ -390,41 +390,41 @@ inline void REGISTER_2119_tile(uint8_t Byte)
 	uint32_t rem = PPU.VMA.Address & PPU.VMA.Mask1;
 	uint32_t address = ((((PPU.VMA.Address & ~PPU.VMA.Mask1) + (rem >> PPU.VMA.Shift) + ((rem & (PPU.VMA.FullGraphicCount - 1)) << 3)) << 1) + 1) & 0xffff;
 
-	Memory.VRAM[address] = Byte;
+	Memory.VRAM[address] = Byt;
 
 	if (PPU.VMA.High)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-inline void REGISTER_2118_linear(uint8_t Byte)
+inline void REGISTER_2118_linear(uint8_t Byt)
 {
 	if (CHECK_INBLANK())
 		return;
 
 	uint32_t address;
 
-	Memory.VRAM[address = (PPU.VMA.Address << 1) & 0xffff] = Byte;
+	Memory.VRAM[address = (PPU.VMA.Address << 1) & 0xffff] = Byt;
 
 	if (!PPU.VMA.High)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-inline void REGISTER_2119_linear(uint8_t Byte)
+inline void REGISTER_2119_linear(uint8_t Byt)
 {
 	if (CHECK_INBLANK())
 		return;
 
 	uint32_t address;
 
-	Memory.VRAM[address = ((PPU.VMA.Address << 1) + 1) & 0xffff] = Byte;
+	Memory.VRAM[address = ((PPU.VMA.Address << 1) + 1) & 0xffff] = Byt;
 
 	if (PPU.VMA.High)
 		PPU.VMA.Address += PPU.VMA.Increment;
 }
 
-inline void REGISTER_2180(uint8_t Byte)
+inline void REGISTER_2180(uint8_t Byt)
 {
-	Memory.RAM[PPU.WRAM++] = Byte;
+	Memory.RAM[PPU.WRAM++] = Byt;
 	PPU.WRAM &= 0x1ffff;
 }
 

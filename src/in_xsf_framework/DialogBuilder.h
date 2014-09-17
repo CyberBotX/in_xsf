@@ -1,7 +1,7 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-17
  */
 
 #pragma once
@@ -429,14 +429,14 @@ class DialogTemplate
 		DialogGroup() : DialogControl(), controls(), groupName(L"") { }
 		DialogGroup(const DialogGroup &control) : DialogControl(control), controls(), groupName(control.groupName)
 		{
-			std::for_each(control.controls.begin(), control.controls.end(), [&](const std::unique_ptr<DialogControl> &control) { this->controls.push_back(std::unique_ptr<DialogControl>(control->Clone())); });
+			std::for_each(control.controls.begin(), control.controls.end(), [&](const std::unique_ptr<DialogControl> &ctl) { this->controls.push_back(std::unique_ptr<DialogControl>(ctl->Clone())); });
 		}
 		DialogGroup &operator=(const DialogGroup &control)
 		{
 			DialogControl::operator=(control);
 
 			this->controls.clear();
-			std::for_each(control.controls.begin(), control.controls.end(), [&](const std::unique_ptr<DialogControl> &control) { this->controls.push_back(std::unique_ptr<DialogControl>(control->Clone())); });
+			std::for_each(control.controls.begin(), control.controls.end(), [&](const std::unique_ptr<DialogControl> &ctl) { this->controls.push_back(std::unique_ptr<DialogControl>(ctl->Clone())); });
 
 			this->groupName = control.groupName;
 

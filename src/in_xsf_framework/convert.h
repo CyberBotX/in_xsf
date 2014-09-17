@@ -1,7 +1,7 @@
 /*
  * Common conversion functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-17
  */
 
 #pragma once
@@ -12,6 +12,7 @@
 #include <typeinfo>
 #include <locale>
 #include <vector>
+#include <memory>
 #include <cmath>
 #include "BigSString.h"
 
@@ -48,7 +49,7 @@ template<typename T> inline std::wstring wstringify(const T &x)
 
 template<typename T, typename S> inline void convert(const std::basic_string<S> &s, T &x, bool failIfLeftoverChars = true)
 {
-	auto i = std::basic_istringstream<S>(s);
+	std::basic_istringstream<S> i(s);
 	S c;
 	if (!(i >> x) || (failIfLeftoverChars && i.get(c)))
 		throw BadConversion(std::string("convert(") + typeid(S).name() + ")");
@@ -69,7 +70,7 @@ private:
 	{
 		auto inputChars = std::vector<T>(input.begin(), input.end());
 		size_t length = inputChars.size();
-		auto masks = std::vector<std::ctype<T>::mask>(length);
+		auto masks = std::vector<typename std::ctype<T>::mask>(length);
 		std::use_facet<std::ctype<T>>(loc).is(&inputChars[0], &inputChars[length], &masks[0]);
 		for (size_t x = 0; x < length; ++x)
 			if (inputChars[x] != '.' && !(masks[x] & std::ctype<T>::digit))

@@ -187,16 +187,16 @@ static inline void AddCycles(int32_t n) { CPU.PrevCycles = CPU.Cycles; CPU.Cycle
 
 /* ADC ********************************************************************* */
 
-template<typename T> static inline void ADC(T Work)
+template<typename T> static inline void ADC(T)
 {
 }
 
-template<> static inline void ADC<uint16_t>(uint16_t Work16)
+template<> inline void ADC<uint16_t>(uint16_t Work16)
 {
 	ADC16(Work16);
 }
 
-template<> static inline void ADC<uint8_t>(uint8_t Work8)
+template<> inline void ADC<uint8_t>(uint8_t Work8)
 {
 	ADC8(Work8);
 }
@@ -1199,16 +1199,16 @@ static void Op7ESlow() { mOPM(AbsoluteIndexedXSlow, ROR8, ROR16); }
 
 /* SBC ********************************************************************* */
 
-template<typename T> static inline void SBC(T Work)
+template<typename T> static inline void SBC(T)
 {
 }
 
-template<> static inline void SBC<uint16_t>(uint16_t Work16)
+template<> inline void SBC<uint16_t>(uint16_t Work16)
 {
 	SBC16(Work16);
 }
 
-template<> static inline void SBC<uint8_t>(uint8_t Work8)
+template<> inline void SBC<uint8_t>(uint8_t Work8)
 {
 	SBC8(Work8);
 }

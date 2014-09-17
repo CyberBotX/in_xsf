@@ -283,7 +283,7 @@ inline uint32_t AbsoluteIndexedIndirectSlow(AccessMode a) // (a,X)
 	return addr2;
 }
 
-inline uint32_t AbsoluteIndexedIndirect(AccessMode a) // (a,X)
+inline uint32_t AbsoluteIndexedIndirect(AccessMode) // (a,X)
 {
 	uint16_t addr = Immediate16Slow(READ);
 	addr += Registers.X.W;
@@ -295,7 +295,7 @@ inline uint32_t AbsoluteIndexedIndirect(AccessMode a) // (a,X)
 	return addr2;
 }
 
-template<typename F> inline uint32_t AbsoluteIndirectLongWrapper(F f, AccessMode a)
+template<typename F> inline uint32_t AbsoluteIndirectLongWrapper(F f, AccessMode)
 {
 	uint16_t addr = f(READ);
 
@@ -317,7 +317,7 @@ inline uint32_t AbsoluteIndirectLong(AccessMode a) // [a]
 	return AbsoluteIndirectLongWrapper(Immediate16, a);
 }
 
-template<typename F> inline uint32_t AbsoluteIndirectWrapper(F f, AccessMode a)
+template<typename F> inline uint32_t AbsoluteIndirectWrapper(F f, AccessMode)
 {
 	// No info on wrapping, but it doesn't matter anyway due to mirroring
 	uint16_t addr2 = S9xGetWord(f(READ));
@@ -460,7 +460,7 @@ inline uint32_t DirectIndirectIndexedE1(AccessMode a) // (d),Y
 	return addr + Registers.Y.W;
 }
 
-template<typename F> inline uint32_t DirectIndirectLongWrapper(F f, AccessMode a)
+template<typename F> inline uint32_t DirectIndirectLongWrapper(F f, AccessMode)
 {
 	uint16_t addr = f(READ);
 	uint32_t addr2 = S9xGetWord(addr);

@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-05-08
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  *
@@ -133,7 +133,7 @@ void XSFConfig_SNSF::SaveSpecificConfigDialog(HWND hwndDlg)
 		this->mutes[x] = !!SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_GETSEL, x, 0);
 }
 
-void XSFConfig_SNSF::CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad)
+void XSFConfig_SNSF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 {
 	if (preLoad)
 	{
@@ -147,6 +147,6 @@ void XSFConfig_SNSF::CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLo
 
 void XSFConfig_SNSF::About(HWND parent)
 {
-	MessageBox(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
+	MessageBoxW(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
 		L"Utilizes modified snes9x v1.53 for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }

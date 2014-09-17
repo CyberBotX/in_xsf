@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  *
@@ -33,7 +33,9 @@ class XSFPlayer_NCSF : public XSFPlayer
 	bool LoadNCSF();
 public:
 	XSFPlayer_NCSF(const std::string &filename);
+#ifdef _MSC_VER
 	XSFPlayer_NCSF(const std::wstring &filename);
+#endif
 	bool Load();
 	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
 	void Terminate();

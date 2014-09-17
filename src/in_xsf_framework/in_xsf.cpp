@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  */
@@ -361,6 +361,7 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, c
 	}
 }
 
+#ifdef _MSC_VER
 extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *fn, const char *data, wchar_t *dest, size_t destlen)
 {
 	try
@@ -373,6 +374,7 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *f
 		return 0;
 	}
 }
+#endif
 
 std::unique_ptr<XSFFile> extendedXSFFile;
 
@@ -396,6 +398,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfo(const char *fn, c
 	}
 }
 
+#ifdef _MSC_VER
 extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *fn, const char *data, const wchar_t *val)
 {
 	try
@@ -409,6 +412,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *f
 		return 0;
 	}
 }
+#endif
 
 extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
 {
@@ -454,6 +458,7 @@ extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_open(const char 
 	}
 }
 
+#ifdef _MSC_VER
 extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wchar_t *fn, int *size, int *bps, int *nch, int *srate)
 {
 	try
@@ -466,6 +471,7 @@ extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wcha
 		return 0;
 	}
 }
+#endif
 
 int extendedSeekNeeded = -1;
 

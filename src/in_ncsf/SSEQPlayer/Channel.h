@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-17
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <bitset>
 #include <cstdint>
 #include "SWAV.h"
@@ -153,7 +154,7 @@ template<size_t N> struct RingBuffer
 		if (this->bufferPos >= N * 3 / 2)
 			this->bufferPos -= N;
 	}
-	const int16_t *const GetBuffer() const
+	const int16_t *GetBuffer() const
 	{
 		return &this->buffer[this->getPos];
 	}

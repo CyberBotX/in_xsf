@@ -53,7 +53,7 @@ public:
 	void read(short *data, int num_samples)
 	{
 		int i_position = this->start >> 1;
-		short *internal_buffer = reinterpret_cast<short *>(this->buffer);
+		short *internal_buffer = reinterpret_cast<short *>(&this->buffer[0]);
 		int o_position = 0;
 		int consumed = 0;
 

@@ -6,6 +6,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "resampler.h"
+#include "XSFCommon.h"
 
 #ifndef M_PI
 const double M_PI = 3.14159265358979323846;
@@ -26,14 +27,6 @@ protected:
 
 	template<typename T1, typename T2> static T1 CLAMP(T1 x, T2 low, T2 high) { return x > high ? high : (x < low ? low : x); }
 	template<typename T> static short SHORT_CLAMP(T n) { return static_cast<short>(CLAMP(n, -32768, 32767)); }
-
-	// Code from http://learningcppisfun.blogspot.com/2010/04/comparing-floating-point-numbers.html
-	template<typename T> static bool fEqual(T x, T y, int N = 1)
-	{
-		T diff = std::abs(x - y);
-		T tolerance = N * std::numeric_limits<T>::epsilon();
-		return diff <= tolerance * std::abs(x) && diff <= tolerance * std::abs(y);
-	}
 
 	static inline double sinc(double x)
 	{
@@ -87,7 +80,7 @@ public:
 	void read(short *data, int num_samples)
 	{
 		int i_position = this->start >> 1;
-		short *internal_buffer = reinterpret_cast<short *>(this->buffer);
+		short *internal_buffer = reinterpret_cast<short *>(&this->buffer[0]);
 		int o_position = 0;
 		int consumed = 0;
 

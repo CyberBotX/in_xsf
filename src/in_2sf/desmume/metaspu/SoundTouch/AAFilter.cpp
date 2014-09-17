@@ -45,7 +45,6 @@
 #include <vector>
 #include <cassert>
 #include "AAFilter.h"
-#include "FIRFilter.h"
 
 using namespace soundtouch;
 

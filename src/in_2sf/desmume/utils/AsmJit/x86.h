@@ -1,21 +1,16 @@
 // [AsmJit]
-// Complete JIT Assembler for C++ Language.
+// Complete x86/x64 JIT and Remote Assembler for C++.
 //
 // [License]
-// Zlib - See COPYING file in this package.
+// Zlib - See LICENSE.md file in the package.
 
 #pragma once
 
 // [Dependencies - AsmJit]
-#include "core.h"
+#include "base.h"
 
 #include "x86/x86assembler.h"
 #include "x86/x86compiler.h"
-#include "x86/x86compilercontext.h"
-#include "x86/x86compilerfunc.h"
-#include "x86/x86compileritem.h"
 #include "x86/x86cpuinfo.h"
-#include "x86/x86defs.h"
-#include "x86/x86func.h"
+#include "x86/x86inst.h"
 #include "x86/x86operand.h"
-#include "x86/x86util.h"

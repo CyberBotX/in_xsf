@@ -77,8 +77,6 @@
 #include <cstring>
 #include <cstdio>
 #include "SoundTouch.h"
-#include "TDStretch.h"
-#include "RateTransposer.h"
 #include "cpu_detect.h"
 
 using namespace soundtouch;
@@ -144,7 +142,7 @@ void SoundTouch::calcEffectiveRateAndTempo()
 		this->pTDStretch->setTempo(this->tempo);
 
 #ifndef SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER
-	if (this->rate <= 1.0f) 
+	if (this->rate <= 1.0f)
 	{
 		if (this->output != this->pTDStretch.get())
 		{
@@ -256,7 +254,7 @@ void SoundTouch::flush()
 		{
 			// Enough new samples have appeared into the output!
 			// As samples come from processing with bigger chunks, now truncate it
-			// back to maximum "nOut" samples to improve duration accuracy 
+			// back to maximum "nOut" samples to improve duration accuracy
 			this->adjustAmountOfSamples(nOut);
 
 			// finish

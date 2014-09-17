@@ -230,7 +230,7 @@ inline void SNES_SPC::write_port(time_t t, int port, int data)
 }
 
 inline void SNES_SPC::mute_voices(int mask) { this->dsp.mute_voices(mask); }
-	
+
 inline void SNES_SPC::disable_surround(bool disable) { this->dsp.disable_surround(disable); }
 
 inline void SNES_SPC::spc_allow_time_overflow(bool allow) { this->allow_time_overflow = allow; }

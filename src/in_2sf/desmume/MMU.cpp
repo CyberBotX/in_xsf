@@ -433,7 +433,7 @@ static inline void MMU_VRAMmapRefreshBank(int bank)
 					MMU.texInfo.textureSlotAddr[ofs] = MMU_vram_physical(vram_bank_info[bank].page_addr);
 					break;
 				case 4: // BGB or BOBJ
-					if (bank == VRAM_BANK_C) 
+					if (bank == VRAM_BANK_C)
 					{
 						vramConfiguration.banks[bank].purpose = VramConfiguration::BBG;
 						MMU_vram_arm9(bank, VRAM_PAGE_BBG); // BBG
@@ -604,7 +604,7 @@ void MMU_VRAM_unmap_all()
 	vram_arm7_map[0] = VRAM_PAGE_UNMAPPED;
 	vram_arm7_map[1] = VRAM_PAGE_UNMAPPED;
 
-	for (int i = 0; i < VRAM_LCDC_PAGES; ++i)
+	for (unsigned i = 0; i < VRAM_LCDC_PAGES; ++i)
 		vram_lcdc_map[i] = VRAM_PAGE_UNMAPPED;
 	for (int i = 0; i < VRAM_ARM9_PAGES; ++i)
 		vram_arm9_map[i] = VRAM_PAGE_UNMAPPED;
@@ -636,8 +636,8 @@ static inline void MMU_VRAMmapControl(uint8_t block, uint8_t VRAMBankCnt)
 		return;
 	}
 
-	//f irst, save the texture info so we can check it for changes and trigger purges of the texcache
-	MMU_struct::TextureInfo oldTexInfo = MMU.texInfo;
+	// first, save the texture info so we can check it for changes and trigger purges of the texcache
+	//MMU_struct::TextureInfo oldTexInfo = MMU.texInfo;
 
 	// unmap everything
 	MMU_VRAM_unmap_all();
@@ -664,7 +664,7 @@ static inline void MMU_VRAMmapControl(uint8_t block, uint8_t VRAMBankCnt)
 	MMU_VRAMmapRefreshBank(VRAM_BANK_E);
 	// zero 21-jun-2012
 	// tomwi's streaming music demo sets A and D to ABG (the A is an accident).
-	// in this case, D should get priority. 
+	// in this case, D should get priority.
 	// this is somewhat risky. will it break other things?
 	MMU_VRAMmapRefreshBank(VRAM_BANK_A);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_B);
@@ -1392,6 +1392,9 @@ void DmaController::exec()
 		{
 			case EDMAMode_Immediate:
 				this->triggered = true;
+				break;
+			default:
+				break;
 		}
 
 		if (this->triggered)
@@ -2244,7 +2247,7 @@ void FASTCALL _MMU_ARM7_write08(uint32_t adr, uint8_t val)
 				// The NDS7 register can be written to only from code executed in BIOS.
 				if (NDS_ARM7.instruct_adr > 0x3FFF)
 					return;
-				
+
 				// hack for patched firmwares
 				if (val == 1)
 				{

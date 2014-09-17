@@ -238,7 +238,7 @@ void SPC_DSP::run_envelope(voice_t *const v)
 			if (v->env_mode == env_attack)
 				v->env_mode = env_decay;
 		}
-		
+
 		if (!this->read_counter(rate))
 			v->env = env; // nothing else is controlled by the counter
 	}
@@ -326,7 +326,7 @@ void SPC_DSP::misc_30()
 	if (this->m.every_other_sample)
 	{
 		this->m.kon = this->m.new_kon;
-		this->m.t_koff = this->m.regs[r_koff] | this->m.mute_mask; 
+		this->m.t_koff = this->m.regs[r_koff] | this->m.mute_mask;
 	}
 
 	this->run_counters();
@@ -606,7 +606,7 @@ void SPC_DSP::echo_26()
 	// Left output volumes
 	// (save sample for next clock so we can output both together)
 	this->m.t_main_out[0] = echo_output(0);
-	
+
 	// Echo feedback
 	int l = this->m.t_echo_out[0] + static_cast<int16_t>((this->m.t_echo_in[0] * static_cast<int8_t>(this->m.regs[r_efb])) >> 7);
 	int r = this->m.t_echo_out[1] + static_cast<int16_t>((this->m.t_echo_in[1] * static_cast<int8_t>(this->m.regs[r_efb])) >> 7);
@@ -744,7 +744,7 @@ void SPC_DSP::run(int clocks_remain)
 #define PHASE(n) if (n && !--clocks_remain) break; case n:
 		GEN_DSP_TIMING
 #undef PHASE
-	
+
 		if (--clocks_remain)
 			goto loop;
 	}

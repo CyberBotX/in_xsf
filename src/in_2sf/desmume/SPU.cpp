@@ -851,7 +851,7 @@ static inline void Fetch16BitData(const channel_struct *const chan, int32_t *con
 	if (INTERPOLATE_MODE != SPUInterpolation_None)
 	{
 		uint32_t loc = u32floor(chan->sampcnt);
-		
+
 		int32_t a = static_cast<int32_t>(read16(loc * 2 + chan->addr));
 		if (loc < (chan->totlength << 1) - 1)
 		{
@@ -1450,7 +1450,7 @@ void SPU_Emulate_core()
 		SPU_DefaultFetchSamples(&SPU_core->outbuf[0], spu_core_samples, synchmode, synchronizer.get());
 }
 
-void SPU_Emulate_user(bool mix)
+void SPU_Emulate_user(bool /*mix*/)
 {
 	static std::vector<int16_t> postProcessBuffer;
 	static size_t postProcessBufferSize = 0;
@@ -1494,7 +1494,7 @@ void SPU_DefaultFetchSamples(int16_t *sampleBuffer, size_t sampleCount, ESynchMo
 size_t SPU_DefaultPostProcessSamples(int16_t *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer)
 {
 	size_t processedSampleCount = 0;
-	
+
 	switch (synchMode)
 	{
 		case ESynchMode_DualSynchAsynch:
@@ -1509,7 +1509,7 @@ size_t SPU_DefaultPostProcessSamples(int16_t *postProcessBuffer, size_t requeste
 		case ESynchMode_Synchronous:
 			processedSampleCount = theSynchronizer->output_samples(postProcessBuffer, requestedSampleCount);
 	}
-	
+
 	return processedSampleCount;
 }
 
@@ -1525,8 +1525,8 @@ void SNDDummyMuteAudio() {}
 void SNDDummyUnMuteAudio() {}
 void SNDDummySetVolume(int) {}
 void SNDDummyClearBuffer() {}
-void SNDDummyFetchSamples(int16_t *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer) {}
-size_t SNDDummyPostProcessSamples(int16_t *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer) { return 0; }
+void SNDDummyFetchSamples(int16_t *, size_t, ESynchMode, ISynchronizingAudioBuffer *) { }
+size_t SNDDummyPostProcessSamples(int16_t *, size_t, ESynchMode, ISynchronizingAudioBuffer *) { return 0; }
 
 SoundInterface_struct SNDDummy =
 {

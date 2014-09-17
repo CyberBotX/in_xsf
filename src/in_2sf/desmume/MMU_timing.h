@@ -226,7 +226,7 @@ extern MMU_struct_timing MMU_timing;
 // in units of cycles of the current processor.
 // this function replaces what used to be MMU_WAIT16 and MMU_WAIT32.
 // this may have side effects, so don't call it more than necessary.
-template<int PROCNUM, MMU_ACCESS_TYPE AT, int READSIZE, MMU_ACCESS_DIRECTION DIRECTION, bool TIMING> inline uint32_t _MMU_accesstime(uint32_t addr, bool sequential)
+template<int PROCNUM, MMU_ACCESS_TYPE AT, int READSIZE, MMU_ACCESS_DIRECTION DIRECTION, bool TIMING> inline uint32_t _MMU_accesstime(uint32_t addr, bool /*sequential*/)
 {
 	static const int MC = 1; // cached or tcm memory speed
 	static const int M32 = PROCNUM == ARMCPU_ARM9 ? 2 : 1; // access through 32-bit bus

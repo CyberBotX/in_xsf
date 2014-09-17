@@ -4,6 +4,7 @@
 #include "bios.h"
 #include "GBAinline.h"
 #include "Globals.h"
+#include "XSFCommon.h"
 
 int32_t sineTable[] =
 {
@@ -64,7 +65,7 @@ void BIOS_ArcTan2()
 		res = (x >> 16) & 0x8000;
 	else if (!x)
 		res = ((y >> 16) & 0x8000) + 0x4000;
-	else if (std::abs(x) > std::abs(y) || (std::abs(x) == std::abs(y) && !(x < 0 && y < 0)))
+	else if (std::abs(x) > std::abs(y) || (fEqual(std::abs(x), std::abs(y)) && !(x < 0 && y < 0)))
 	{
 		reg[1].I = x;
 		reg[0].I = y << 14;

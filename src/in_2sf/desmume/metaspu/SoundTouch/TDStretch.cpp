@@ -44,9 +44,9 @@
 #include "XSFCommon.h"
 
 #include <stdexcept>
+#include <limits>
 #include <cstring>
 #include <cstdlib>
-#include <climits>
 #include <cassert>
 #include "STTypes.h"
 #include "cpu_detect.h"
@@ -129,7 +129,7 @@ void TDStretch::setParameters(int32_t aSampleRate, int32_t aSequenceMS, int32_t 
 		// if zero, use automatic setting
 		this->bAutoSeqSetting = true;
 
-	if (aSeekWindowMS > 0) 
+	if (aSeekWindowMS > 0)
 	{
 		this->seekWindowMs = aSeekWindowMS;
 		this->bAutoSeekSetting = false;
@@ -232,7 +232,7 @@ void TDStretch::overlap(SAMPLETYPE *pOutput, const SAMPLETYPE *pInput, uint32_t 
 // value over the overlapping period
 int32_t TDStretch::seekBestOverlapPositionFull(const SAMPLETYPE *refPos)
 {
-	double bestCorr = FLT_MIN;
+	double bestCorr = std::numeric_limits<float>::min();
 	int32_t bestOffs = 0;
 
 	// Scans for the best correlation value by testing each possible position
@@ -267,7 +267,7 @@ int32_t TDStretch::seekBestOverlapPositionFull(const SAMPLETYPE *refPos)
 // value over the overlapping period
 int32_t TDStretch::seekBestOverlapPositionQuick(const SAMPLETYPE *refPos)
 {
-	double bestCorr = FLT_MIN;
+	double bestCorr = std::numeric_limits<float>::min();
 	int32_t bestOffs = _scanOffsets[0][0], corrOffset = 0;
 
 	// Scans for the best correlation value using four-pass hierarchical search.
@@ -308,7 +308,7 @@ int32_t TDStretch::seekBestOverlapPositionQuick(const SAMPLETYPE *refPos)
 	return bestOffs;
 }
 
-/// clear cross correlation routine state if necessary 
+/// clear cross correlation routine state if necessary
 void TDStretch::clearCrossCorrState()
 {
 	// default implementation is empty.
@@ -352,7 +352,7 @@ void TDStretch::calcSeqParameters()
 
 	// Update seek window lengths
 	this->seekWindowLength = (this->sampleRate * this->sequenceMs) / 1000;
-	if (this->seekWindowLength < 2 * this->overlapLength) 
+	if (this->seekWindowLength < 2 * this->overlapLength)
 		this->seekWindowLength = 2 * this->overlapLength;
 	this->seekLength = (this->sampleRate * this->seekWindowMs) / 1000;
 }
@@ -472,7 +472,7 @@ void TDStretch::acceptNewOverlapLength(int32_t newOverlapLength)
 
 // Operator 'new' is overloaded so that it automatically creates a suitable instance
 // depending on if we've a MMX/SSE/etc-capable CPU available or not.
-void *TDStretch::operator new(size_t s)
+void *TDStretch::operator new(size_t /*s*/)
 {
 	// Notice! don't use "new TDStretch" directly, use "newInstance" to create a new instance instead!
 	//assert(false);
@@ -480,7 +480,7 @@ void *TDStretch::operator new(size_t s)
 	throw std::runtime_error("Don't use 'new TDStretch', use 'newInstance' member instead!");
 }
 
-TDStretch * TDStretch::newInstance()
+TDStretch *TDStretch::newInstance()
 {
 	uint32_t uExtensions = detectCPUextensions();
 
@@ -537,8 +537,8 @@ void TDStretch::calculateOverlapLength(int32_t aoverlapMs)
 	assert(aoverlapMs >= 0);
 
 	// calculate overlap length so that it's power of 2 - thus it's easy to do
-	// integer division by right-shifting. Term "-1" at end is to account for 
-	// the extra most significatnt bit left unused in result by signed multiplication 
+	// integer division by right-shifting. Term "-1" at end is to account for
+	// the extra most significatnt bit left unused in result by signed multiplication
 	this->overlapDividerBits = _getClosest2Power((this->sampleRate * aoverlapMs) / 1000.0) - 1;
 	if (this->overlapDividerBits > 9)
 		this->overlapDividerBits = 9;
@@ -558,7 +558,7 @@ double TDStretch::calcCrossCorr(const short *mixingPos, const short *compare) co
 {
 	long corr = 0, norm = 0;
 	// Same routine for stereo and mono. For stereo, unroll loop for better
-	// efficiency and gives slightly better resolution against rounding. 
+	// efficiency and gives slightly better resolution against rounding.
 	// For mono it same routine, just  unrolls loop by factor of 4
 	for (int32_t i = 0; i < this->overlapLength; i += 4)
 	{
@@ -566,7 +566,7 @@ double TDStretch::calcCrossCorr(const short *mixingPos, const short *compare) co
 		norm += (mixingPos[i] * mixingPos[i] + mixingPos[i + 1] * mixingPos[i + 1] + mixingPos[i + 2] * mixingPos[i + 2] + mixingPos[i + 3] * mixingPos[i + 3]) >> this->overlapDividerBits;
 	}
 
-	// Normalize result by dividing by sqrt(norm) - this step is easiest 
+	// Normalize result by dividing by sqrt(norm) - this step is easiest
 	// done using floating point operation
 	if (!norm)
 		norm = 1; // to avoid div by zero

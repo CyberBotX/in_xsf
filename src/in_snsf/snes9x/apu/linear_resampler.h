@@ -3,12 +3,13 @@
 #pragma once
 
 #include "resampler.h"
-
-const int f_prec = 15;
-const uint32_t f__one = 1 << f_prec;
+#include "XSFCommon.h"
 
 class LinearResampler : public Resampler
 {
+	static const int f_prec = 15;
+	static const uint32_t f__one = 1 << f_prec;
+
 protected:
 	uint32_t f__r_step;
 	uint32_t f__inv_r_step;
@@ -25,7 +26,7 @@ public:
 
 	void time_ratio(double ratio)
 	{
-		if (!ratio)
+		if (fEqual(ratio, 0.0))
 			ratio = 1.0;
 		this->f__r_step = static_cast<uint32_t>(ratio * f__one);
 		this->f__inv_r_step = static_cast<uint32_t>(f__one / ratio);
@@ -43,7 +44,7 @@ public:
 	void read(short *data, int num_samples)
 	{
 		int i_position = this->start >> 1;
-		short *internal_buffer = reinterpret_cast<short *>(this->buffer);
+		short *internal_buffer = reinterpret_cast<short *>(&this->buffer[0]);
 		int o_position = 0;
 		int consumed = 0;
 		int max_samples = this->buffer_size >> 1;

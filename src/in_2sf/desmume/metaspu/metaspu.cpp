@@ -19,7 +19,7 @@
 
 #include <queue>
 #include <vector>
-#include <cassert>
+#include <cmath>
 #include "../types.h"
 #include "metaspu.h"
 

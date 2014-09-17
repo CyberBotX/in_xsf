@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include "Blip_Buffer.h"
+#include "XSFCommon.h"
 
 /* Copyright (C) 2003-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -63,7 +64,7 @@ void Blip_Buffer::clear(int entire_buffer)
 void Blip_Buffer::set_sample_rate(long new_rate, long msec)
 {
 	// start with maximum length that resampled time can represent
-	long new_size = (ULONG_MAX >> BLIP_BUFFER_ACCURACY) - blip_buffer_extra_ - 64;
+	long new_size = (std::numeric_limits<unsigned long>::max() >> BLIP_BUFFER_ACCURACY) - blip_buffer_extra_ - 64;
 	if (msec != blip_max_length)
 	{
 		long s = (new_rate * (msec + 1) + 999) / 1000;
@@ -289,7 +290,7 @@ void Blip_Synth_::treble_eq(const blip_eq_t &eq)
 
 	// volume might require rescaling
 	double vol = this->volume_unit_;
-	if (vol)
+	if (!fEqual(vol, 0.0))
 	{
 		this->volume_unit_ = 0.0;
 		this->volume_unit(vol);
@@ -298,7 +299,7 @@ void Blip_Synth_::treble_eq(const blip_eq_t &eq)
 
 void Blip_Synth_::volume_unit(double new_unit)
 {
-	if (new_unit != this->volume_unit_)
+	if (!fEqual(new_unit, this->volume_unit_))
 	{
 		// use default eq if it hasn't been set yet
 		if (!this->kernel_unit)

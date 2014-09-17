@@ -1,7 +1,7 @@
 /*
  * xSF - File structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  */
@@ -9,6 +9,7 @@
 #pragma once
 
 #include <cstdint>
+#include "convert.h"
 #include "TagList.h"
 #include "BigSString.h"
 
@@ -36,7 +37,7 @@ protected:
 	TagList tags;
 	String fileName;
 	void ReadXSF(const std::string &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly = false);
-#ifdef _WIN32
+#ifdef _MSC_VER
 	void ReadXSF(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly = false);
 #endif
 	void ReadXSF(std::ifstream &xSF, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly = false);
@@ -45,7 +46,7 @@ public:
 	XSFFile();
 	XSFFile(const std::string &filename);
 	XSFFile(const std::string &filename, uint32_t programSizeOffset, uint32_t programHeaderSize);
-#ifdef _WIN32
+#ifdef _MSC_VER
 	XSFFile(const std::wstring &filename);
 	XSFFile(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize);
 #endif

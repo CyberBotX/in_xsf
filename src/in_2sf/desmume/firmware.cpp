@@ -152,7 +152,7 @@ uint16_t CFIRMWARE::getBootCodeCRC16()
 uint32_t CFIRMWARE::decrypt(const uint8_t *in, std::unique_ptr<uint8_t[]> &out)
 {
 	uint32_t curBlock[2] = { 0 };
-	
+
 	uint32_t xIn = 4, xOut = 0;
 
 	memcpy(curBlock, in, 8);

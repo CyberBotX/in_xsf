@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <memory>
 #include <iosfwd>
 #include <string>
 #include <cassert>

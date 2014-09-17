@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <memory>
 #include <algorithm>
 #include <cstring>
 
@@ -11,19 +12,14 @@ protected:
 	int size;
 	int buffer_size;
 	int start;
-	unsigned char *buffer;
+	std::unique_ptr<unsigned char[]> buffer;
 
 public:
-	ring_buffer(int buffer_size)
+	ring_buffer(int buf_size)
 	{
-		this->buffer_size = buffer_size;
-		this->buffer = new unsigned char[this->buffer_size];
+		this->buffer_size = buf_size;
+		this->buffer.reset(new unsigned char[this->buffer_size]);
 		this->clear();
-	}
-
-	~ring_buffer()
-	{
-		delete[] buffer;
 	}
 
 	bool push(unsigned char *src, int bytes)
@@ -60,11 +56,10 @@ public:
 		std::fill_n(&this->buffer[0], this->buffer_size, 0);
 	}
 
-	void resize(int size)
+	void resize(int new_size)
 	{
-		delete[] this->buffer;
-		this->buffer_size = size;
-		this->buffer = new unsigned char[this->buffer_size];
+		this->buffer_size = new_size;
+		this->buffer.reset(new unsigned char[this->buffer_size]);
 		this->clear();
 	}
 };

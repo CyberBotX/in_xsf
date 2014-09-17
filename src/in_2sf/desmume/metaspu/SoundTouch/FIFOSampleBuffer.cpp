@@ -59,7 +59,7 @@ FIFOSampleBuffer::FIFOSampleBuffer(int32_t numChannels)
 	this->samplesInBuffer = 0;
 	this->bufferPos = 0;
 	this->channels = numChannels;
-	this->ensureCapacity(32); // allocate initial capacity 
+	this->ensureCapacity(32); // allocate initial capacity
 }
 
 // Sets number of channels, 1 = mono, 2 = stereo
@@ -218,9 +218,9 @@ void FIFOSampleBuffer::clear()
 
 /// allow trimming (downwards) amount of samples in pipeline.
 /// Returns adjusted amount of samples
-uint32_t FIFOSampleBuffer::adjustAmountOfSamples(uint32_t numSamples)
+uint32_t FIFOSampleBuffer::adjustAmountOfSamples(uint32_t numSmpls)
 {
-	if (numSamples < this->samplesInBuffer)
-		this->samplesInBuffer = numSamples;
+	if (numSmpls < this->samplesInBuffer)
+		this->samplesInBuffer = numSmpls;
 	return this->samplesInBuffer;
 }

@@ -274,7 +274,7 @@ bool armcp15_t::moveCP2ARM(uint32_t *R, uint8_t CRn, uint8_t CRm, uint8_t opcode
 			}
 			return false;
 		case 3:
-			if (!opcode1 && ~opcode2 && !CRm)
+			if (!opcode1 && ~static_cast<int8_t>(opcode2) && !CRm)
 			{
 				*R = this->writeBuffCtrl;
 				return true;

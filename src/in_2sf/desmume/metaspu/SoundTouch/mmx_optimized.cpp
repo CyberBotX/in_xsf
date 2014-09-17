@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 ///
-/// MMX optimized routines. All MMX optimized functions have been gathered into 
-/// this single source code file, regardless to their class or original source 
-/// code file, in order to ease porting the library to other compiler and 
+/// MMX optimized routines. All MMX optimized functions have been gathered into
+/// this single source code file, regardless to their class or original source
+/// code file, in order to ease porting the library to other compiler and
 /// processor platforms.
 ///
 /// The MMX-optimizations are programmed using MMX compiler intrinsics that
 /// are supported both by Microsoft Visual C++ and GCC compilers, so this file
 /// should compile with both toolsets.
 ///
-/// NOTICE: If using Visual Studio 6.0, you'll need to install the "Visual C++ 
+/// NOTICE: If using Visual Studio 6.0, you'll need to install the "Visual C++
 /// 6.0 processor pack" update to support compiler intrinsic syntax. The update
 /// is available for download at Microsoft Developers Network, see here:
 /// http://msdn.microsoft.com/en-us/vstudio/aa718349.aspx
@@ -74,7 +74,7 @@ double TDStretchMMX::calcCrossCorr(const short *pV1, const short *pV2) const
 	__m64 normaccu, accu;
 	normaccu = accu = _mm_setzero_si64();
 
-	// Process 4 parallel sets of 2 * stereo samples or 4 * mono samples 
+	// Process 4 parallel sets of 2 * stereo samples or 4 * mono samples
 	// during each round for improved CPU-level parallellization.
 	for (int32_t i = 0; i < this->channels * this->overlapLength / 16; ++i)
 	{
@@ -109,7 +109,7 @@ double TDStretchMMX::calcCrossCorr(const short *pV1, const short *pV2) const
 	// Clear MMS state
 	_m_empty();
 
-	// Normalize result by dividing by sqrt(norm) - this step is easiest 
+	// Normalize result by dividing by sqrt(norm) - this step is easiest
 	// done using floating point operation
 	if (!norm)
 		norm = 1; // to avoid div by zero
@@ -210,7 +210,7 @@ void FIRFilterMMX::setCoefficients(const short *coeffs, uint32_t newLength, uint
 	this->filterCoeffsUnalign.reset(new short[2 * newLength + 8]);
 	this->filterCoeffsAlign = reinterpret_csat<short *>(SOUNDTOUCH_ALIGN_POINTER_16(this->filterCoeffsUnalign.get()));
 
-	// rearrange the filter coefficients for mmx routines 
+	// rearrange the filter coefficients for mmx routines
 	for (uint32_t i = 0; i < length; i += 4)
 	{
 		this->filterCoeffsAlign[2 * i ] = coeffs[i];

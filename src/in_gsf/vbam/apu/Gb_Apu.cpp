@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include "Gb_Apu.h"
+#include "XSFCommon.h"
 
 /* Copyright (C) 2003-2007 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -76,7 +77,7 @@ void Gb_Apu::apply_volume()
 
 void Gb_Apu::volume(double v)
 {
-	if (this->volume_ != v)
+	if (!fEqual(this->volume_, v))
 	{
 		this->volume_ = v;
 		this->apply_volume();
@@ -157,7 +158,7 @@ void Gb_Apu::reset(mode_t mode, bool agb_wave)
 void Gb_Apu::set_tempo(double t)
 {
 	this->frame_period = 4194304 / 512; // 512 Hz
-	if (t != 1.0)
+	if (!fEqual(t, 1.0))
 		this->frame_period = static_cast<blip_time_t>(this->frame_period / t);
 }
 

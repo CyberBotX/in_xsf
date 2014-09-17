@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-05-08
+ * Last modification on 2014-09-17
  *
  * Based on a modified in_snsf by Caitsith2
  * http://snsf.caitsith2.net/
@@ -33,7 +33,9 @@ class XSFPlayer_SNSF : public XSFPlayer
 {
 public:
 	XSFPlayer_SNSF(const std::string &filename);
+#ifdef _MSC_VER
 	XSFPlayer_SNSF(const std::wstring &filename);
+#endif
 	~XSFPlayer_SNSF() { this->Terminate(); }
 	bool Load();
 	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
@@ -50,10 +52,12 @@ XSFPlayer *XSFPlayer::Create(const std::string &fn)
 	return new XSFPlayer_SNSF(fn);
 }
 
+#ifdef _MSC_VER
 XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
 {
 	return new XSFPlayer_SNSF(fn);
 }
+#endif
 
 volatile bool execute = false;
 
@@ -105,7 +109,7 @@ bool S9xOpenSoundDevice()
 	return true;
 }
 
-static void Map2SFSection(const std::vector<uint8_t> &section, int level)
+static void Map2SFSection(const std::vector<uint8_t> &section)
 {
 	auto &data = loaderwork.rom;
 
@@ -125,7 +129,7 @@ static void Map2SFSection(const std::vector<uint8_t> &section, int level)
 	std::copy_n(&section[8], size, &data[offset]);
 }
 
-static bool Map2SF(XSFFile *xSF, int level)
+static bool Map2SF(XSFFile *xSF)
 {
 	if (!xSF->IsValidType(0x23))
 		return false;
@@ -156,7 +160,7 @@ static bool Map2SF(XSFFile *xSF, int level)
 	}
 
 	if (!programSection.empty())
-		Map2SFSection(programSection, level);
+		Map2SFSection(programSection);
 
 	return true;
 }
@@ -165,7 +169,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 {
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
-#ifdef _WIN32
+#ifdef _MSC_VER
 		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetWStr()) + xSF->GetTagValue("_lib").GetWStr(), 4, 8));
 #else
 		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetAnsi()) + xSF->GetTagValue("_lib").GetAnsi(), 4, 8));
@@ -174,7 +178,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 			return false;
 	}
 
-	if (!Map2SF(xSF, level))
+	if (!Map2SF(xSF))
 		return false;
 
 	unsigned n = 2;
@@ -186,7 +190,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 		if (xSF->GetTagExists(libTag))
 		{
 			found = true;
-#ifdef _WIN32
+#ifdef _MSC_VER
 			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetWStr()) + xSF->GetTagValue(libTag).GetWStr(), 4, 8));
 #else
 			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetAnsi()) + xSF->GetTagValue(libTag).GetAnsi(), 4, 8));
@@ -214,10 +218,12 @@ XSFPlayer_SNSF::XSFPlayer_SNSF(const std::string &filename) : XSFPlayer()
 	this->xSF.reset(new XSFFile(filename, 4, 8));
 }
 
+#ifdef _MSC_VER
 XSFPlayer_SNSF::XSFPlayer_SNSF(const std::wstring &filename) : XSFPlayer()
 {
 	this->xSF.reset(new XSFFile(filename, 4, 8));
 }
+#endif
 
 bool XSFPlayer_SNSF::Load()
 {

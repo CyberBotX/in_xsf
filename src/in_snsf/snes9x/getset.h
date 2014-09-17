@@ -363,7 +363,7 @@ inline uint16_t S9xGetWord(uint32_t Address, s9xwrap_t w = WRAP_NONE)
 	}
 }
 
-inline void S9xSetByte(uint8_t Byte, uint32_t Address)
+inline void S9xSetByte(uint8_t Byt, uint32_t Address)
 {
 	int block = (Address & 0xffffff) >> MEMMAP_SHIFT;
 	uint8_t *SetAddress = Memory.WriteMap[block];
@@ -371,7 +371,7 @@ inline void S9xSetByte(uint8_t Byte, uint32_t Address)
 
 	if (SetAddress >= reinterpret_cast<uint8_t *>(CMemory::MAP_LAST))
 	{
-		SetAddress[Address & 0xffff] = Byte;
+		SetAddress[Address & 0xffff] = Byt;
 		addCyclesInMemoryAccess(speed);
 		return;
 	}
@@ -379,7 +379,7 @@ inline void S9xSetByte(uint8_t Byte, uint32_t Address)
 	switch (reinterpret_cast<intptr_t>(SetAddress))
 	{
 		case CMemory::MAP_CPU:
-			S9xSetCPU(Byte, Address & 0xffff);
+			S9xSetCPU(Byt, Address & 0xffff);
 			addCyclesInMemoryAccess(speed);
 			break;
 
@@ -387,26 +387,26 @@ inline void S9xSetByte(uint8_t Byte, uint32_t Address)
 			if (CPU.InDMAorHDMA && (Address & 0xff00) == 0x2100)
 				return;
 
-			S9xSetPPU(Byte, Address & 0xffff);
+			S9xSetPPU(Byt, Address & 0xffff);
 			addCyclesInMemoryAccess(speed);
 			break;
 
 		case CMemory::MAP_LOROM_SRAM:
 			if (Memory.SRAMMask)
-				Memory.SRAM[(((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask] = Byte;
+				Memory.SRAM[(((Address & 0xff0000) >> 1) | (Address & 0x7fff)) & Memory.SRAMMask] = Byt;
 
 			addCyclesInMemoryAccess(speed);
 			break;
 
 		case CMemory::MAP_HIROM_SRAM:
 			if (Memory.SRAMMask)
-				Memory.SRAM[((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask] = Byte;
+				Memory.SRAM[((Address & 0x7fff) - 0x6000 + ((Address & 0xf0000) >> 3)) & Memory.SRAMMask] = Byt;
 
 			addCyclesInMemoryAccess(speed);
 			break;
 
 		case CMemory::MAP_SA1RAM:
-			Memory.SRAM[Address & 0xffff] = Byte;
+			Memory.SRAM[Address & 0xffff] = Byt;
 			addCyclesInMemoryAccess(speed);
 			break;
 

@@ -1,7 +1,7 @@
 /*
  * xSF - File structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-30
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  */
@@ -64,7 +64,7 @@ XSFFile::XSFFile(const std::string &filename, uint32_t programSizeOffset, uint32
 	this->ReadXSF(filename, programSizeOffset, programHeaderSize);
 }
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 XSFFile::XSFFile(const std::wstring &filename) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(filename)
 {
 	this->ReadXSF(filename, 0, 0, true);
@@ -88,7 +88,7 @@ void XSFFile::ReadXSF(const std::string &filename, uint32_t programSizeOffset, u
 	this->ReadXSF(xSF, programSizeOffset, programHeaderSize, readTagsOnly);
 }
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 void XSFFile::ReadXSF(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly)
 {
 	if (!FileExists(filename))
@@ -454,7 +454,7 @@ void XSFFile::SaveFile() const
 {
 	std::ofstream xSF;
 	xSF.exceptions(std::ofstream::failbit);
-#ifdef _WIN32
+#ifdef _MSC_VER
 	xSF.open(this->fileName.GetWStrC(), std::ofstream::out | std::ofstream::binary);
 #else
 	xSF.open(this->fileName.GetStrC(), std::ofstream::out | std::ofstream::binary);

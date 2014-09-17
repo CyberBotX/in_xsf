@@ -164,8 +164,6 @@ enum ESI_DISPCNT
 uint64_t nds_timer;
 uint64_t nds_arm9_timer, nds_arm7_timer;
 
-static const uint64_t kNever = 0xFFFFFFFFFFFFFFFFULL;
-
 struct TSequenceItem
 {
 	uint64_t timestamp;
@@ -910,7 +908,7 @@ static void PrepareBiosARM9()
 	{
 		// read arm9 bios from inputfile and flag it if it succeeds
 		FILE *arm9inf = fopen(CommonSettings.ARM9BIOS, "rb");
-		if (fread(MMU.ARM9_BIOS, 1, 4096, arm9inf) == 4096) 
+		if (fread(MMU.ARM9_BIOS, 1, 4096, arm9inf) == 4096)
 			NDS_ARM9.BIOS_loaded = true;
 		fclose(arm9inf);
 	}
@@ -919,7 +917,7 @@ static void PrepareBiosARM9()
 	if (CommonSettings.SWIFromBIOS && NDS_ARM9.BIOS_loaded)
 	{
 		NDS_ARM9.swi_tab = 0;
-		
+
 		// if we used routines from bios, apply patches
 		if (CommonSettings.PatchSWI3)
 			_MMU_write16<ARMCPU_ARM9>(0xFFFF07CC, 0x4770);
@@ -927,7 +925,7 @@ static void PrepareBiosARM9()
 	else
 		NDS_ARM9.swi_tab = ARM_swi_tab[ARMCPU_ARM9];
 
-	if (!NDS_ARM9.BIOS_loaded) 
+	if (!NDS_ARM9.BIOS_loaded)
 	{
 		// fake bios content, critical to normal operations, since we dont have a real bios.
 		// it'd be cool if we could write this in some kind of assembly language, inline or otherwise, without some bulky dependencies
@@ -1038,7 +1036,7 @@ void NDS_Reset()
 	PrepareBiosARM7();
 	PrepareBiosARM9();
 
-	// according to smea, this is initialized to 3 by the time we get into a user game program. who does this? 
+	// according to smea, this is initialized to 3 by the time we get into a user game program. who does this?
 	// well, the firmware load process is about to write a boot program into SIWRAM for the arm7. so we need it setup by now.
 	// but, this is a bit weird.. I would be expecting the bioses to do that. maybe we have some more detail to emulate.
 	// * is this setting the default, or does the bios do it before loading the firmware programs?

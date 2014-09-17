@@ -404,7 +404,7 @@ template<class ResamplerClass> bool S9xInitSound(int buffer_ms, int lag_ms)
 		return false;
 
 	/* The resampler and spc unit use samples (16-bit short) as
-	/*   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
+	 *   arguments. Use 2x in the resampler for buffer leveling with SoundSync */
 	spc::resampler.reset(new ResamplerClass(spc::buffer_size >> (Settings.SoundSync ? 0 : 1)));
 	if (!spc::resampler)
 	{

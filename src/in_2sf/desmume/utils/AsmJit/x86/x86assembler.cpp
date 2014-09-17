@@ -1,2790 +1,4189 @@
 // [AsmJit]
-// Complete JIT Assembler for C++ Language.
+// Complete x86/x64 JIT and Remote Assembler for C++.
 //
 // [License]
-// Zlib - See COPYING file in this package.
+// Zlib - See LICENSE.md file in the package.
 
+// [Export]
 #define ASMJIT_EXPORTS
 
-// [Dependencies - AsmJit]
-#include "../core/assembler.h"
-#include "../core/context.h"
-#include "../core/cpuinfo.h"
-#include "../core/defs.h"
-#include "../core/intutil.h"
-#include "../core/logger.h"
-#include "../core/memorymanager.h"
-#include "../core/memorymarker.h"
-#include "../core/stringutil.h"
+// [Guard]
+#include "../build.h"
+#if defined(ASMJIT_BUILD_X86) || defined(ASMJIT_BUILD_X64)
 
+// [Dependencies - AsmJit]
+#include "../base/intutil.h"
+#include "../base/logger.h"
+#include "../base/runtime.h"
+#include "../base/string.h"
+#include "../base/vmem.h"
 #include "../x86/x86assembler.h"
 #include "../x86/x86cpuinfo.h"
-#include "../x86/x86defs.h"
-#include "../x86/x86operand.h"
-#include "../x86/x86util.h"
 
 // [Api-Begin]
-#include "../core/apibegin.h"
+#include "../apibegin.h"
 
-namespace AsmJit
-{
+namespace asmjit {
 
 // ============================================================================
 // [Constants]
 // ============================================================================
 
+enum { kRexShift = 6 };
+enum { kRexForbidden = 0x80 };
 enum { kMaxCommentLength = 80 };
 
-// ============================================================================
-// [AsmJit::X64TrampolineWriter]
-// ============================================================================
+// 2-byte VEX prefix.
+//   [0] kVex2Byte.
+//   [1] RvvvvLpp.
+enum { kVex2Byte = 0xC5 };
 
-#ifdef ASMJIT_X64
-//! @brief Class used to determine size of trampoline and as trampoline writer.
-struct X64TrampolineWriter
-{
-	// Size of trampoline
-	enum
-	{
-		kSizeJmp = 6,
-		kSizeAddr = 8,
-		kSizeTotal = kSizeJmp + kSizeAddr
-	};
+// 3-byte VEX prefix.
+//   [0] kVex3Byte.
+//   [1] RXBmmmmm.
+//   [2] WvvvvLpp.
+enum { kVex3Byte = 0xC4 };
 
-	// Write trampoline into code at address @a code that will jump to @a target.
-	static void writeTrampoline(uint8_t *code, uint64_t target)
-	{
-		code[0] = 0xFF; // Jmp OpCode.
-		code[1] = 0x25; // ModM (RIP addressing).
-		reinterpret_cast<uint32_t *>(code + 2)[0] = 0; // Offset (zero).
-		reinterpret_cast<uint64_t *>(code + kSizeJmp)[0] = target; // Absolute address.
-	}
+// 3-byte XOP prefix.
+//   [0] kXopByte
+//   [1] RXBmmmmm
+//   [2] WvvvvLpp
+enum { kXopByte = 0x8F };
+
+// AsmJit specific (used to encode VVVV field in XOP/VEX).
+enum kVexVVVV {
+  kVexVVVVShift = 12,
+  kVexVVVVMask = 0xF << kVexVVVVShift
 };
-#endif // ASMJIT_X64
 
-// ============================================================================
-// [AsmJit::X86Assembler - Construction / Destruction]
-// ============================================================================
-
-X86Assembler::X86Assembler(Context *context) : Assembler(context)
-{
-	this->_properties = IntUtil::maskFromIndex(kX86PropertyOptimizedAlign);
-}
-
-X86Assembler::~X86Assembler()
-{
-}
-
-// ============================================================================
-// [AsmJit::X86Assembler - Buffer - Setters (X86-Extensions)]
-// ============================================================================
-
-void X86Assembler::setVarAt(size_t pos, sysint_t i, uint8_t isUnsigned, uint32_t size)
-{
-	if (size == 1 && !isUnsigned)
-		this->setByteAt(pos, static_cast<int8_t>(i));
-	else if (size == 1 && isUnsigned)
-		this->setByteAt(pos, static_cast<uint8_t>(i));
-	else if (size == 2 && !isUnsigned)
-		this->setWordAt(pos, static_cast<int16_t>(i));
-	else if (size == 2 && isUnsigned)
-		this->setWordAt(pos, static_cast<uint16_t>(i));
-	else if (size == 4 && !isUnsigned)
-		this->setDWordAt(pos, static_cast<int32_t>(i));
-	else if (size == 4 && isUnsigned)
-		this->setDWordAt(pos, static_cast<uint32_t>(i));
-#ifdef ASMJIT_X64
-	else if (size == 8 && !isUnsigned)
-		this->setQWordAt(pos, static_cast<int64_t>(i));
-	else if (size == 8 && isUnsigned)
-		this->setQWordAt(pos, static_cast<uint64_t>(i));
-#endif // ASMJIT_X64
-	else
-		ASMJIT_ASSERT(0);
-}
-
-// ============================================================================
-// [AsmJit::X86Assembler - Emit]
-// ============================================================================
-
-void X86Assembler::_emitModM(uint8_t opReg, const Mem &mem, sysint_t immSize)
-{
-	ASMJIT_ASSERT(mem.getType() == kOperandMem);
-
-	uint8_t baseReg = mem.getBase() & 0x7;
-	uint8_t indexReg = mem.getIndex() & 0x7;
-	sysint_t disp = mem.getDisplacement();
-	uint32_t shift = mem.getShift();
-
-	if (mem.getMemType() == kOperandMemNative)
-	{
-		// [base + displacemnt]
-		if (!mem.hasIndex())
-		{
-			// ESP/RSP/R12 == 4
-			if (baseReg == 4)
-			{
-				uint8_t mod = 0;
-
-				if (disp)
-					mod = IntUtil::isInt8(disp) ? 1 : 2;
-
-				this->_emitMod(mod, opReg, 4);
-				this->_emitSib(0, 4, 4);
-
-				if (disp)
-				{
-					if (IntUtil::isInt8(disp))
-						this->_emitByte(static_cast<int8_t>(disp));
-					else
-						this->_emitInt32(static_cast<int32_t>(disp));
-				}
-			}
-			// EBP/RBP/R13 == 5
-			else if (baseReg != 5 && !disp)
-				this->_emitMod(0, opReg, baseReg);
-			else if (IntUtil::isInt8(disp))
-			{
-				this->_emitMod(1, opReg, baseReg);
-				this->_emitByte(static_cast<int8_t>(disp));
-			}
-			else
-			{
-				this->_emitMod(2, opReg, baseReg);
-				this->_emitInt32(static_cast<int32_t>(disp));
-			}
-		}
-		// [base + index * scale + displacemnt]
-		else
-		{
-			//ASMJIT_ASSERT(indexReg != RID_ESP);
-
-			// EBP/RBP/R13 == 5
-			if (baseReg != 5 && !disp)
-			{
-				this->_emitMod(0, opReg, 4);
-				this->_emitSib(shift, indexReg, baseReg);
-			}
-			else if (IntUtil::isInt8(disp))
-			{
-				this->_emitMod(1, opReg, 4);
-				this->_emitSib(shift, indexReg, baseReg);
-				this->_emitByte(static_cast<int8_t>(disp));
-			}
-			else
-			{
-				this->_emitMod(2, opReg, 4);
-				this->_emitSib(shift, indexReg, baseReg);
-				this->_emitInt32(static_cast<int32_t>(disp));
-			}
-		}
-	}
-	// Address                       | 32-bit mode | 64-bit mode
-	// ------------------------------+-------------+---------------
-	// [displacement]                |   ABSOLUTE  | RELATIVE (RIP)
-	// [index * scale + displacemnt] |   ABSOLUTE  | ABSOLUTE (ZERO EXTENDED)
-	else
-	{
-		// - In 32-bit mode the absolute addressing model is used.
-		// - In 64-bit mode the relative addressing model is used together with
-		//   the absolute addressing. Main problem is that if instruction
-		//   contains SIB then relative addressing (RIP) is not possible.
-
-#ifdef ASMJIT_X86
-		if (mem.hasIndex())
-		{
-			// ASMJIT_ASSERT(mem.getMemIndex() != 4); // ESP/RSP == 4
-			this->_emitMod(0, opReg, 4);
-			this->_emitSib(shift, indexReg, 5);
-		}
-		else
-			this->_emitMod(0, opReg, 5);
-
-		// X86 uses absolute addressing model, all relative addresses will be
-		// relocated to absolute ones.
-		if (mem.getMemType() == kOperandMemLabel)
-		{
-			LabelData &l_data = this->_labels[mem._mem.base & kOperandIdValueMask];
-			RelocData r_data;
-			uint32_t relocId = this->_relocData.size();
-
-			// Relative addressing will be relocated to absolute address.
-			r_data.type = kRelocRelToAbs;
-			r_data.size = 4;
-			r_data.offset = this->getOffset();
-			r_data.destination = disp;
-
-			if (l_data.offset != -1)
-			{
-				// Bound label.
-				r_data.destination += l_data.offset;
-
-				// Add a dummy DWORD.
-				this->_emitInt32(0);
-			}
-			else
-				// Non-bound label.
-				this->_emitDisplacement(l_data, -4 - immSize, 4)->relocId = relocId;
-
-			this->_relocData.push_back(r_data);
-		}
-		else
-			// Absolute address
-			this->_emitInt32((int32_t)((uint8_t*)mem._mem.target + disp));
-#else
-		// X64 uses relative addressing model
-		if (mem.getMemType() == kOperandMemLabel)
-		{
-			LabelData &l_data = this->_labels[mem._mem.base & kOperandIdValueMask];
-
-			if (mem.hasIndex())
-			{
-				// Indexing is not possible.
-				this->setError(kErrorIllegalAddressing);
-				return;
-			}
-
-			// Relative address (RIP +/- displacement).
-			this->_emitMod(0, opReg, 5);
-
-			disp -= 4 + immSize;
-
-			if (l_data.offset != -1)
-			{
-				// Bound label.
-				disp += getOffset() - l_data.offset;
-
-				// Displacement is known.
-				this->_emitInt32(static_cast<int32_t>(disp));
-			}
-			else
-				// Non-bound label.
-				this->_emitDisplacement(l_data, disp, 4);
-		}
-		else
-		{
-			// Absolute address (truncated to 32-bits), this kind of address requires
-			// SIB byte (4).
-			this->_emitMod(0, opReg, 4);
-
-			if (mem.hasIndex())
-				//ASMJIT_ASSERT(mem.getMemIndex() != 4); // ESP/RSP == 4
-				this->_emitSib(shift, indexReg, 5);
-			else
-				this->_emitSib(0, 4, 5);
-
-			// Truncate to 32-bits.
-			sysuint_t target = (sysuint_t)((uint8_t*)mem._mem.target + disp);
-
-			if (target > static_cast<sysuint_t>(0xFFFFFFFF))
-			{
-				if (this->_logger)
-					this->_logger->logString("*** ASSEMBER WARNING - Absolute address truncated to 32-bits.\n");
-				target &= 0xFFFFFFFF;
-			}
-
-			this->_emitInt32(static_cast<int32_t>(static_cast<uint32_t>(target)));
-		}
-#endif // ASMJIT_X64
-	}
-}
-
-void X86Assembler::_emitModRM(uint8_t opReg, const Operand &op, sysint_t immSize)
-{
-	ASMJIT_ASSERT(op.getType() == kOperandReg || op.getType() == kOperandMem);
-
-	if (op.getType() == kOperandReg)
-		this->_emitModR(opReg, reinterpret_cast<const Reg &>(op).getRegCode());
-	else
-		this->_emitModM(opReg, reinterpret_cast<const Mem &>(op), immSize);
-}
-
-void X86Assembler::_emitSegmentPrefix(const Operand &rm)
-{
-	static const uint8_t segmentCode[] =
-	{
-		0x26, // ES
-		0x2E, // SS
-		0x36, // SS
-		0x3E, // DS
-		0x64, // FS
-		0x65 // GS
-	};
-
-	if (!rm.isMem())
-		return;
-
-	uint32_t seg = reinterpret_cast<const Mem &>(rm).getSegment();
-	if (seg >= kX86RegNumSeg)
-		return;
-
-	this->_emitByte(segmentCode[seg]);
-}
-
-void X86Assembler::_emitX86Inl(uint32_t opCode, uint8_t i16bit, uint8_t rexw, uint8_t reg, bool forceRexPrefix)
-{
-	// 16-bit prefix.
-	if (i16bit)
-		this->_emitByte(0x66);
-
-	// Instruction prefix.
-	if (opCode & 0xFF000000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0xFF000000) >> 24));
-
-	// REX prefix.
-#ifdef ASMJIT_X64
-	this->_emitRexR(rexw, 0, reg, forceRexPrefix);
-#endif // ASMJIT_X64
-
-	// Instruction opcodes.
-	if (opCode & 0x00FF0000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0x00FF0000) >> 16));
-	if (opCode & 0x0000FF00)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0x0000FF00) >> 8));
-	this->_emitByte(static_cast<uint8_t>(opCode & 0x000000FF) + (reg & 0x7));
-}
-
-void X86Assembler::_emitX86RM(uint32_t opCode, uint8_t i16bit, uint8_t rexw, uint8_t o, const Operand &op, sysint_t immSize, bool forceRexPrefix)
-{
-	// 16-bit prefix.
-	if (i16bit)
-		this->_emitByte(0x66);
-
-	// Segment prefix.
-	this->_emitSegmentPrefix(op);
-
-	// Instruction prefix.
-	if (opCode & 0xFF000000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0xFF000000) >> 24));
-
-	// REX prefix.
-#ifdef ASMJIT_X64
-	this->_emitRexRM(rexw, o, op, forceRexPrefix);
-#endif // ASMJIT_X64
-
-	// Instruction opcodes.
-	if (opCode & 0x00FF0000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0x00FF0000) >> 16));
-	if (opCode & 0x0000FF00)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0x0000FF00) >> 8));
-	this->_emitByte(static_cast<uint8_t>(opCode & 0x000000FF));
-
-	// Mod R/M.
-	this->_emitModRM(o, op, immSize);
-}
-
-void X86Assembler::_emitFpu(uint32_t opCode)
-{
-	this->_emitOpCode(opCode);
-}
-
-void X86Assembler::_emitFpuSTI(uint32_t opCode, uint32_t sti)
-{
-	// Illegal stack offset.
-	ASMJIT_ASSERT(0 <= sti && sti < 8);
-	this->_emitOpCode(opCode + sti);
-}
-
-void X86Assembler::_emitFpuMEM(uint32_t opCode, uint8_t opReg, const Mem& mem)
-{
-	// Segment prefix.
-	this->_emitSegmentPrefix(mem);
-
-	// Instruction prefix.
-	if (opCode & 0xFF000000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0xFF000000) >> 24));
-
-	// REX prefix.
-#ifdef ASMJIT_X64
-	this->_emitRexRM(0, opReg, mem, false);
-#endif // ASMJIT_X64
-
-	// Instruction opcodes.
-	if (opCode & 0x00FF0000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0x00FF0000) >> 16));
-	if (opCode & 0x0000FF00)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0x0000FF00) >> 8));
-	this->_emitByte(static_cast<uint8_t>(opCode & 0x000000FF));
-	this->_emitModM(opReg, mem, 0);
-}
-
-void X86Assembler::_emitMmu(uint32_t opCode, uint8_t rexw, uint8_t opReg, const Operand &src, sysint_t immSize)
-{
-	// Segment prefix.
-	this->_emitSegmentPrefix(src);
-
-	// Instruction prefix.
-	if (opCode & 0xFF000000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0xFF000000) >> 24));
-
-	// REX prefix.
-#ifdef ASMJIT_X64
-	this->_emitRexRM(rexw, opReg, src, false);
-#endif // ASMJIT_X64
-
-	// Instruction opcodes.
-	if (opCode & 0x00FF0000)
-		this->_emitByte(static_cast<uint8_t>((opCode & 0x00FF0000) >> 16));
-
-	// No checking, MMX/SSE instructions have always two opcodes or more.
-	this->_emitByte(static_cast<uint8_t>((opCode & 0x0000FF00) >> 8));
-	this->_emitByte(static_cast<uint8_t>(opCode & 0x000000FF));
-
-	if (src.isReg())
-		this->_emitModR(opReg, reinterpret_cast<const Reg &>(src).getRegCode());
-	else
-		this->_emitModM(opReg, reinterpret_cast<const Mem &>(src), immSize);
-}
-
-X86Assembler::LabelLink *X86Assembler::_emitDisplacement(LabelData &l_data, sysint_t inlinedDisplacement, int size)
-{
-	ASMJIT_ASSERT(l_data.offset == -1);
-	ASMJIT_ASSERT(size == 1 || size == 4);
-
-	// Chain with label.
-	LabelLink *link = this->_newLabelLink();
-	link->prev = l_data.links;
-	link->offset = this->getOffset();
-	link->displacement = inlinedDisplacement;
-
-	l_data.links = link;
-
-	// Emit label size as dummy data.
-	if (size == 1)
-		this->_emitByte(0x01);
-	else // if (size == 4)
-		this->_emitDWord(0x04040404);
-
-	return link;
-}
-
-void X86Assembler::_emitJmpOrCallReloc(uint32_t instruction, void *target)
-{
-	RelocData rd;
-
-	rd.type = kRelocTrampoline;
-
-#ifdef ASMJIT_X64
-	// If we are compiling in 64-bit mode, we can use trampoline if relative jump
-	// is not possible.
-	this->_trampolineSize += X64TrampolineWriter::kSizeTotal;
-#endif // ARCHITECTURE_SPECIFIC
-
-	rd.size = 4;
-	rd.offset = this->getOffset();
-	rd.address = target;
-
-	this->_relocData.push_back(rd);
-
-	// Emit dummy 32-bit integer (will be overwritten by relocCode()).
-	this->_emitInt32(0);
-}
-
-//! @internal
+//! \internal
 //!
-//! @brief Get whether the extended register (additional eight registers
-//! introduced by 64-bit mode) is used.
-static inline bool X86Assembler_isExtRegisterUsed(const Operand &op)
-{
-	// Hacky, but correct.
-	// - If operand type is register then extended register is register with
-	//   index 8 and greater (8 to 15 inclusive).
-	// - If operand type is memory operand then we need to take care about
-	//   label (in _mem.base) and kInvalidValue, we just decrement the value
-	//   by 8 and check if it's at interval 0 to 7 inclusive (if it's there
-	//   then it's extended register.
-	return (op.isReg() && (op._reg.code & kRegIndexMask)  >= 8U) || (op.isMem() && (((static_cast<uint32_t>(op._mem.base) - 8U) < 8U) || ((static_cast<uint32_t>(op._mem.index) - 8U) < 8U)));
+//! Instruction 2-byte/3-byte opcode prefix definition.
+struct X86OpCodeMM {
+  uint8_t len;
+  uint8_t data[3];
+};
+
+//! \internal
+//!
+//! Mandatory prefixes encoded in 'asmjit' opcode [66, F3, F2] and asmjit
+//! extensions
+static const uint8_t x86OpCodePP[8] = {
+  0x00,
+  0x66,
+  0xF3,
+  0xF2,
+  0x00,
+  0x00,
+  0x00,
+  0x9B
+};
+
+//! \internal
+//!
+//! Instruction 2-byte/3-byte opcode prefix data.
+static const X86OpCodeMM x86OpCodeMM[] = {
+  { 0, { 0x00, 0x00, 0 } },
+  { 1, { 0x0F, 0x00, 0 } },
+  { 2, { 0x0F, 0x38, 0 } },
+  { 2, { 0x0F, 0x3A, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 0, { 0x00, 0x00, 0 } },
+  { 2, { 0x0F, 0x01, 0 } }
+};
+
+static const uint8_t x86SegmentPrefix[8] = { 0x00, 0x26, 0x2E, 0x36, 0x3E, 0x64, 0x65 };
+static const uint8_t x86OpCodePushSeg[8] = { 0x00, 0x06, 0x0E, 0x16, 0x1E, 0xA0, 0xA8 };
+static const uint8_t x86OpCodePopSeg[8]  = { 0x00, 0x07, 0x00, 0x17, 0x1F, 0xA1, 0xA9 };
+
+// ============================================================================
+// [Utils]
+// ============================================================================
+
+//! Encode MODR/M.
+static ASMJIT_INLINE uint32_t x86EncodeMod(uint32_t m, uint32_t o, uint32_t rm) {
+  return (m << 6) + (o << 3) + rm;
 }
 
+//! Encode SIB.
+static ASMJIT_INLINE uint32_t x86EncodeSib(uint32_t s, uint32_t i, uint32_t b) {
+  return (s << 6) + (i << 3) + b;
+}
+
+//! Get whether the two pointers `a` and `b` can be encoded by using relative
+//! displacement, which fits into a signed 32-bit integer.
+static ASMJIT_INLINE bool x64IsRelative(Ptr a, Ptr b) {
+  SignedPtr diff = static_cast<SignedPtr>(a) - static_cast<SignedPtr>(b);
+  return IntUtil::isInt32(diff);
+}
+
+// ============================================================================
+// [Macros]
+// ============================================================================
+
+#define ENC_OPS(_Op0_, _Op1_, _Op2_) \
+  ((kOperandType##_Op0_) + ((kOperandType##_Op1_) << 3) + ((kOperandType##_Op2_) << 6))
+
+#define ADD_66H_P(_Exp_) \
+  do { \
+    opCode |= (static_cast<uint32_t>(_Exp_) << kX86InstOpCode_PP_Shift); \
+  } while (0)
+
+#define ADD_66H_P_BY_SIZE(_Size_) \
+  do { \
+    opCode |= (static_cast<uint32_t>(_Size_) & 0x02) << (kX86InstOpCode_PP_Shift - 1); \
+  } while (0)
+
+#define ADD_REX_W(_Exp_) \
+  do { \
+    if (Arch == kArchX64) \
+      opX |= static_cast<uint32_t>(_Exp_) << 3; \
+  } while (0)
+
+#define ADD_REX_W_BY_SIZE(_Size_) \
+  do { \
+    if (Arch == kArchX64) \
+      opX |= static_cast<uint32_t>(_Size_) & 0x08; \
+  } while (0)
+
+#define ADD_REX_B(_Reg_) \
+  do { \
+    if (Arch == kArchX64) \
+      opX |= static_cast<uint32_t>(_Reg_) >> 3; \
+  } while (0)
+
+#define ADD_VEX_W(_Exp_) \
+  do { \
+    opX |= static_cast<uint32_t>(_Exp_) << 3; \
+  } while (0)
+
+#define ADD_VEX_L(_Exp_) \
+  do { \
+    opCode |= static_cast<uint32_t>(_Exp_) << kX86InstOpCode_L_Shift; \
+  } while (0)
+
+#define EMIT_BYTE(_Val_) \
+  do { \
+    cursor[0] = static_cast<uint8_t>(_Val_); \
+    cursor += 1; \
+  } while (0)
+
+#define EMIT_WORD(_Val_) \
+  do { \
+    reinterpret_cast<uint16_t*>(cursor)[0] = static_cast<uint16_t>(_Val_); \
+    cursor += 2; \
+  } while (0)
+
+#define EMIT_DWORD(_Val_) \
+  do { \
+    reinterpret_cast<uint32_t*>(cursor)[0] = static_cast<uint32_t>(_Val_); \
+    cursor += 4; \
+  } while (0)
+
+#define EMIT_QWORD(_Val_) \
+  do { \
+    reinterpret_cast<uint64_t*>(cursor)[0] = static_cast<uint64_t>(_Val_); \
+    cursor += 8; \
+  } while (0)
+
+#define EMIT_OP(_Val_) \
+  do { \
+    EMIT_BYTE((_Val_) & 0xFF); \
+  } while (0)
+
+#define EMIT_PP(_Val_) \
+  do { \
+    uint32_t ppIndex = ((_Val_) >> kX86InstOpCode_PP_Shift) & (kX86InstOpCode_PP_Mask >> kX86InstOpCode_PP_Shift); \
+    uint8_t ppCode = x86OpCodePP[ppIndex]; \
+    \
+    if (!ppIndex) \
+      break; \
+    \
+    cursor[0] = ppCode; \
+    cursor++; \
+  } while (0)
+
+#define EMIT_MM(_Val_) \
+  do { \
+    uint32_t mmIndex = ((_Val_) >> kX86InstOpCode_MM_Shift) & (kX86InstOpCode_MM_Mask >> kX86InstOpCode_MM_Shift); \
+    const X86OpCodeMM& mmCode = x86OpCodeMM[mmIndex]; \
+    \
+    if (!mmIndex) \
+      break; \
+    \
+    cursor[0] = mmCode.data[0]; \
+    cursor[1] = mmCode.data[1]; \
+    cursor += mmCode.len; \
+  } while (0)
+
+// ============================================================================
+// [asmjit::X86Assembler - Construction / Destruction]
+// ============================================================================
+
+X86Assembler::X86Assembler(Runtime* runtime, uint32_t arch) :
+  Assembler(runtime),
+  zax(NoInit),
+  zcx(NoInit),
+  zdx(NoInit),
+  zbx(NoInit),
+  zsp(NoInit),
+  zbp(NoInit),
+  zsi(NoInit),
+  zdi(NoInit) {
+
+  setArch(arch);
+}
+
+X86Assembler::~X86Assembler() {}
+
+// ============================================================================
+// [asmjit::X86Assembler - Arch]
+// ============================================================================
+
+Error X86Assembler::setArch(uint32_t arch) {
+#ifdef ASMJIT_BUILD_X86
+  if (arch == kArchX86) {
+    _arch = kArchX86;
+    _regSize = 4;
+
+    _regCount.reset();
+    _regCount._gp = 8;
+    _regCount._fp = 8;
+    _regCount._mm = 8;
+    _regCount._xy = 8;
+
+    zax = x86::eax;
+    zcx = x86::ecx;
+    zdx = x86::edx;
+    zbx = x86::ebx;
+    zsp = x86::esp;
+    zbp = x86::ebp;
+    zsi = x86::esi;
+    zdi = x86::edi;
+
+    return kErrorOk;
+  }
+#endif // ASMJIT_BUILD_X86
+
+#ifdef ASMJIT_BUILD_X64
+  if (arch == kArchX64) {
+    _arch = kArchX64;
+    _regSize = 8;
+
+    _regCount.reset();
+    _regCount._gp = 16;
+    _regCount._fp = 8;
+    _regCount._mm = 8;
+    _regCount._xy = 16;
+
+    zax = x86::rax;
+    zcx = x86::rcx;
+    zdx = x86::rdx;
+    zbx = x86::rbx;
+    zsp = x86::rsp;
+    zbp = x86::rbp;
+    zsi = x86::rsi;
+    zdi = x86::rdi;
+
+    return kErrorOk;
+  }
+#endif // ASMJIT_BUILD_X64
+
+  ASMJIT_ASSERT(!"Reached");
+  return kErrorInvalidArgument;
+}
+
+// ============================================================================
+// [asmjit::X86Assembler - Embed]
+// ============================================================================
+
+Error X86Assembler::embedLabel(const Label& op) {
+  ASMJIT_ASSERT(op.getId() != kInvalidValue);
+  uint32_t regSize = _regSize;
+
+  if (getRemainingSpace() < regSize)
+    ASMJIT_PROPAGATE_ERROR(_grow(regSize));
+
+  uint8_t* cursor = getCursor();
+
+  LabelData* label = getLabelData(op.getId());
+  RelocData reloc;
+
+#ifndef ASMJIT_DISABLE_LOGGER
+  if (_logger)
+    _logger->logFormat(kLoggerStyleData, regSize == 4 ? ".dd L%u\n" : ".dq L%u\n", op.getId());
+#endif // !ASMJIT_DISABLE_LOGGER
+
+  reloc.type = kRelocRelToAbs;
+  reloc.size = regSize;
+  reloc.from = static_cast<Ptr>(getOffset());
+  reloc.data = 0;
+
+  if (label->offset != -1) {
+    // Bound label.
+    reloc.data = static_cast<Ptr>(static_cast<SignedPtr>(label->offset));
+  }
+  else {
+    // Non-bound label. Need to chain.
+    LabelLink* link = _newLabelLink();
+
+    link->prev = label->links;
+    link->offset = getOffset();
+    link->displacement = 0;
+    link->relocId = _relocList.getLength();
+
+    label->links = link;
+  }
+
+  if (_relocList.append(reloc) != kErrorOk)
+    return setError(kErrorNoHeapMemory);
+
+  // Emit dummy intptr_t (4 or 8 bytes; depends on the address size).
+  if (regSize == 4)
+    EMIT_DWORD(0);
+  else
+    EMIT_QWORD(0);
+
+  setCursor(cursor);
+  return kErrorOk;
+}
+
+// ============================================================================
+// [asmjit::X86Assembler - Align]
+// ============================================================================
+
+Error X86Assembler::align(uint32_t mode, uint32_t offset) {
+#ifndef ASMJIT_DISABLE_LOGGER
+  if (_logger)
+    _logger->logFormat(kLoggerStyleDirective,
+      "%s.align %u\n", _logger->getIndentation(), static_cast<unsigned int>(offset));
+#endif // !ASMJIT_DISABLE_LOGGER
+
+  if (offset <= 1 || !IntUtil::isPowerOf2(offset) || offset > 64)
+    return setError(kErrorInvalidArgument);
+
+  uint32_t i = static_cast<uint32_t>(IntUtil::deltaTo<size_t>(getOffset(), offset));
+  if (i == 0)
+    return kErrorOk;
+
+  if (getRemainingSpace() < i)
+    ASMJIT_PROPAGATE_ERROR(_grow(i));
+
+  uint8_t* cursor = getCursor();
+  uint8_t alignPattern = 0xCC;
+
+  if (mode == kAlignCode) {
+    alignPattern = 0x90;
+
+    if (hasFeature(kCodeGenOptimizedAlign)) {
+      const X86CpuInfo* cpuInfo = static_cast<const X86CpuInfo*>(getRuntime()->getCpuInfo());
+
+      // NOPs optimized for Intel:
+      //   Intel 64 and IA-32 Architectures Software Developer's Manual
+      //   - Volume 2B
+      //   - Instruction Set Reference N-Z
+      //     - NOP
+
+      // NOPs optimized for AMD:
+      //   Software Optimization Guide for AMD Family 10h Processors (Quad-Core)
+      //   - 4.13 - Code Padding with Operand-Size Override and Multibyte NOP
+
+      // Intel and AMD.
+      static const uint8_t nop1[] = { 0x90 };
+      static const uint8_t nop2[] = { 0x66, 0x90 };
+      static const uint8_t nop3[] = { 0x0F, 0x1F, 0x00 };
+      static const uint8_t nop4[] = { 0x0F, 0x1F, 0x40, 0x00 };
+      static const uint8_t nop5[] = { 0x0F, 0x1F, 0x44, 0x00, 0x00 };
+      static const uint8_t nop6[] = { 0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00 };
+      static const uint8_t nop7[] = { 0x0F, 0x1F, 0x80, 0x00, 0x00, 0x00, 0x00 };
+      static const uint8_t nop8[] = { 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+      static const uint8_t nop9[] = { 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+      // AMD.
+      static const uint8_t nop10[] = { 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+      static const uint8_t nop11[] = { 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+      const uint8_t* p;
+      uint32_t n;
+
+      if (cpuInfo->getVendorId() == kCpuVendorIntel && (
+          (cpuInfo->getFamily() & 0x0F) == 0x06 ||
+          (cpuInfo->getFamily() & 0x0F) == 0x0F)) {
+        do {
+          switch (i) {
+            case  1: p = nop1; n = 1; break;
+            case  2: p = nop2; n = 2; break;
+            case  3: p = nop3; n = 3; break;
+            case  4: p = nop4; n = 4; break;
+            case  5: p = nop5; n = 5; break;
+            case  6: p = nop6; n = 6; break;
+            case  7: p = nop7; n = 7; break;
+            case  8: p = nop8; n = 8; break;
+            default: p = nop9; n = 9; break;
+          }
+
+          i -= n;
+          do {
+            EMIT_BYTE(*p++);
+          } while (--n);
+        } while (i);
+      }
+      else if (cpuInfo->getVendorId() == kCpuVendorAmd && cpuInfo->getFamily() >= 0x0F) {
+        do {
+          switch (i) {
+            case  1: p = nop1 ; n =  1; break;
+            case  2: p = nop2 ; n =  2; break;
+            case  3: p = nop3 ; n =  3; break;
+            case  4: p = nop4 ; n =  4; break;
+            case  5: p = nop5 ; n =  5; break;
+            case  6: p = nop6 ; n =  6; break;
+            case  7: p = nop7 ; n =  7; break;
+            case  8: p = nop8 ; n =  8; break;
+            case  9: p = nop9 ; n =  9; break;
+            case 10: p = nop10; n = 10; break;
+            default: p = nop11; n = 11; break;
+          }
+
+          i -= n;
+          do {
+            EMIT_BYTE(*p++);
+          } while (--n);
+        } while (i);
+      }
+    }
+  }
+
+  while (i) {
+    EMIT_BYTE(alignPattern);
+    i--;
+  }
+
+  setCursor(cursor);
+  return kErrorOk;
+}
+
+// ============================================================================
+// [asmjit::X86Assembler - Reloc]
+// ============================================================================
+
+size_t X86Assembler::_relocCode(void* _dst, Ptr baseAddress) const {
+  uint32_t arch = getArch();
+  uint8_t* dst = static_cast<uint8_t*>(_dst);
+
+#ifndef ASMJIT_DISABLE_LOGGER
+  Logger* logger = getLogger();
+#endif // ASMJIT_DISABLE_LOGGER
+
+  size_t minCodeSize = getOffset();   // Current offset is the minimum code size.
+  size_t maxCodeSize = getCodeSize(); // Includes all possible trampolines.
+
+  // We will copy the exact size of the generated code. Extra code for trampolines
+  // is generated on-the-fly by the relocator (this code doesn't exist at the moment).
+  ::memcpy(dst, _buffer, minCodeSize);
+
+  // Trampoline pointer.
+  uint8_t* tramp = dst + minCodeSize;
+
+  // Relocate all recorded locations.
+  size_t relocCount = _relocList.getLength();
+  const RelocData* relocData = _relocList.getData();
+
+  for (size_t i = 0; i < relocCount; i++) {
+    const RelocData& r = relocData[i];
+
+    // Make sure that the `RelocData` is correct.
+    Ptr ptr = r.data;
+
+    size_t offset = static_cast<size_t>(r.from);
+    ASMJIT_ASSERT(offset + r.size <= static_cast<Ptr>(maxCodeSize));
+
+    // Whether to use trampoline, can be only used if relocation type is
+    // kRelocAbsToRel on 64-bit.
+    bool useTrampoline = false;
+
+    switch (r.type) {
+      case kRelocAbsToAbs:
+        break;
+
+      case kRelocRelToAbs:
+        ptr += baseAddress;
+        break;
+
+      case kRelocAbsToRel:
+        ptr -= baseAddress + r.from + 4;
+        break;
+
+      case kRelocTrampoline:
+        ptr -= baseAddress + r.from + 4;
+        if (!IntUtil::isInt32(static_cast<SignedPtr>(ptr))) {
+          ptr = reinterpret_cast<Ptr>(tramp) - (baseAddress + r.from + 4);
+          useTrampoline = true;
+        }
+        break;
+
+      default:
+        ASMJIT_ASSERT(!"Reached");
+    }
+
+    switch (r.size) {
+      case 8:
+        *reinterpret_cast<int64_t*>(dst + offset) = static_cast<int64_t>(ptr);
+        break;
+
+      case 4:
+        *reinterpret_cast<int32_t*>(dst + offset) = static_cast<int32_t>(static_cast<SignedPtr>(ptr));
+        break;
+
+      default:
+        ASMJIT_ASSERT(!"Reached");
+    }
+
+    // Handle the case where trampoline has been used.
+    if (useTrampoline) {
+      // Bytes that replace [REX, OPCODE] bytes.
+      uint32_t byte0 = 0xFF;
+      uint32_t byte1 = dst[offset - 1];
+
+      // Call, patch to FF/2 (-> 0x15).
+      if (byte1 == 0xE8)
+        byte1 = x86EncodeMod(0, 2, 5);
+      // Jmp, patch to FF/4 (-> 0x25).
+      else if (byte1 == 0xE9)
+        byte1 = x86EncodeMod(0, 4, 5);
+
+      // Patch `jmp/call` instruction.
+      ASMJIT_ASSERT(offset >= 2);
+      dst[offset - 2] = byte0;
+      dst[offset - 1] = byte1;
+
+      // Absolute address.
+      reinterpret_cast<uint64_t*>(tramp)[0] = static_cast<uint64_t>(r.data);
+
+      // Advance trampoline pointer.
+      tramp += 8;
+
+#ifndef ASMJIT_DISABLE_LOGGER
+      if (logger)
+        logger->logFormat(kLoggerStyleComment, "; Trampoline %llX\n", r.data);
+#endif // !ASMJIT_DISABLE_LOGGER
+    }
+  }
+
+  if (arch == kArchX64)
+    return static_cast<size_t>(tramp - dst);
+  else
+    return minCodeSize;
+}
+
+// ============================================================================
+// [asmjit::X86Assembler - Logging]
+// ============================================================================
+
+#ifndef ASMJIT_DISABLE_LOGGER
 // Logging helpers.
-static const char *AssemblerX86_operandSize[] =
-{
-	nullptr,
-	"byte ptr ",
-	"word ptr ",
-	nullptr,
-	"dword ptr ",
-	nullptr,
-	nullptr,
-	nullptr,
-	"qword ptr ",
-	nullptr,
-	"tword ptr ",
-	nullptr,
-	nullptr,
-	nullptr,
-	nullptr,
-	nullptr,
-	"dqword ptr "
+static const char* AssemblerX86_operandSize[] = {
+  "",
+  "byte ptr ",
+  "word ptr ",
+  nullptr,
+  "dword ptr ",
+  nullptr,
+  nullptr,
+  nullptr,
+  "qword ptr ",
+  nullptr,
+  "tword ptr ",
+  nullptr,
+  nullptr,
+  nullptr,
+  nullptr,
+  nullptr,
+  "oword ptr "
 };
 
-static const char X86Assembler_segmentName[] =
-	"es:\0"
-	"cs:\0"
-	"ss:\0"
-	"ds:\0"
-	"fs:\0"
-	"gs:\0"
-	"\0\0\0\0";
+static const char X86Assembler_segName[] =
+  "\0\0\0\0"
+  "es:\0"
+  "cs:\0"
+  "ss:\0"
+  "ds:\0"
+  "fs:\0"
+  "gs:\0"
+  "\0\0\0\0";
 
-static char *X86Assembler_dumpInstructionName(char *buf, uint32_t code)
-{
-	ASMJIT_ASSERT(code < _kX86InstCount);
-	return StringUtil::copy(buf, x86InstInfo[code].getName());
+static void X86Assembler_dumpRegister(StringBuilder& sb, uint32_t type, uint32_t index) {
+  // -- (Not-Encodable).
+  static const char reg8l[] = "al\0\0" "cl\0\0" "dl\0\0" "bl\0\0" "spl\0"  "bpl\0"  "sil\0"  "dil\0" ;
+  static const char reg8h[] = "ah\0\0" "ch\0\0" "dh\0\0" "bh\0\0" "--\0\0" "--\0\0" "--\0\0" "--\0\0";
+  static const char reg16[] = "ax\0\0" "cx\0\0" "dx\0\0" "bx\0\0" "sp\0\0" "bp\0\0" "si\0\0" "di\0\0";
+
+  char suffix = '\0';
+
+  switch (type) {
+    case kX86RegTypeGpbLo:
+      if (index >= 8) {
+        sb._appendChar('r');
+        suffix = 'b';
+        goto _EmitID;
+      }
+
+      sb._appendString(&reg8l[index * 4]);
+      return;
+
+    case _kX86RegTypePatchedGpbHi:
+      if (index < 4)
+        goto _EmitNE;
+
+      index -= 4;
+      // ... Fall through ...
+
+    case kX86RegTypeGpbHi:
+      if (index >= 4)
+        goto _EmitNE;
+
+      sb._appendString(&reg8h[index * 4]);
+      return;
+
+_EmitNE:
+      sb._appendString("--", 2);
+      return;
+
+    case kX86RegTypeGpw:
+      if (index >= 8) {
+        sb._appendChar('r');
+        suffix = 'w';
+        goto _EmitID;
+      }
+
+      sb._appendString(&reg16[index * 4]);
+      return;
+
+    case kX86RegTypeGpd:
+      if (index >= 8) {
+        sb._appendChar('r');
+        suffix = 'd';
+        goto _EmitID;
+      }
+
+      sb._appendChar('e');
+      sb._appendString(&reg16[index * 4]);
+      return;
+
+    case kX86RegTypeGpq:
+      sb._appendChar('r');
+      if (index >= 8)
+        goto _EmitID;
+
+      sb._appendString(&reg16[index * 4]);
+      return;
+
+    case kX86RegTypeFp:
+      sb._appendString("fp", 2);
+      goto _EmitID;
+
+    case kX86RegTypeMm:
+      sb._appendString("mm", 2);
+      goto _EmitID;
+
+    case kX86RegTypeXmm:
+      sb._appendString("xmm", 3);
+      goto _EmitID;
+
+    case kX86RegTypeYmm:
+      sb._appendString("ymm", 3);
+      goto _EmitID;
+
+    case kX86RegTypeSeg:
+      if (index >= kX86SegCount)
+        goto _EmitNE;
+
+      sb._appendString(&X86Assembler_segName[index * 4], 2);
+      return;
+
+    default:
+      return;
+  }
+
+_EmitID:
+  sb._appendUInt32(index);
+
+  if (suffix)
+    sb._appendChar(suffix);
 }
 
-char *X86Assembler_dumpRegister(char *buf, uint32_t type, uint32_t index)
-{
-	// NE == Not-Encodable.
-	const char reg8l[] = "al\0\0" "cl\0\0" "dl\0\0" "bl\0\0" "spl\0"  "bpl\0"  "sil\0"  "dil\0" ;
-	const char reg8h[] = "ah\0\0" "ch\0\0" "dh\0\0" "bh\0\0" "NE\0\0" "NE\0\0" "NE\0\0" "NE\0\0";
-	const char reg16[] = "ax\0\0" "cx\0\0" "dx\0\0" "bx\0\0" "sp\0\0" "bp\0\0" "si\0\0" "di\0\0";
+static void X86Assembler_dumpOperand(StringBuilder& sb, uint32_t arch, const Operand* op, uint32_t loggerOptions) {
+  if (op->isReg()) {
+    X86Assembler_dumpRegister(sb,
+      static_cast<const X86Reg*>(op)->getRegType(),
+      static_cast<const X86Reg*>(op)->getRegIndex());
+  }
+  else if (op->isMem()) {
+    const X86Mem* m = static_cast<const X86Mem*>(op);
 
-	switch (type)
-	{
-		case kX86RegTypeGpbLo:
-			if (index < 8)
-				return StringUtil::copy(buf, &reg8l[index * 4]);
+    uint32_t type = kX86RegTypeGpd;
+    uint32_t seg = m->getSegment();
+    bool isAbsolute = false;
 
-			*buf++ = 'r';
-			goto _EmitID;
+    if (arch == kArchX86) {
+      if (!m->hasGpdBase())
+        type = kX86RegTypeGpw;
+    }
+    else {
+      if (!m->hasGpdBase())
+        type = kX86RegTypeGpq;
+    }
 
-		case kX86RegTypeGpbHi:
-			if (index < 4)
-				return StringUtil::copy(buf, &reg8h[index * 4]);
+    if (op->getSize() <= 16)
+      sb._appendString(AssemblerX86_operandSize[op->getSize()]);
 
-		_EmitNE:
-			return StringUtil::copy(buf, "NE");
+    if (seg < kX86SegCount)
+      sb._appendString(&X86Assembler_segName[seg * 4]);
 
-		case kX86RegTypeGpw:
-			if (index < 8)
-				return StringUtil::copy(buf, &reg16[index * 4]);
+    sb._appendChar('[');
+    switch (m->getMemType()) {
+      case kMemTypeBaseIndex:
+      case kMemTypeStackIndex:
+        // [base + index << shift + displacement]
+        X86Assembler_dumpRegister(sb, type, m->getBase());
+        break;
 
-			*buf++ = 'r';
-			buf = StringUtil::utoa(buf, index);
-			*buf++ = 'w';
-			return buf;
+      case kMemTypeLabel:
+        // [label + index << shift + displacement]
+        sb.appendFormat("L%u", m->getBase());
+        break;
 
-		case kX86RegTypeGpd:
-			if (index < 8)
-			{
-				*buf++ = 'e';
-				return StringUtil::copy(buf, &reg16[index * 4]);
-			}
+      case kMemTypeAbsolute:
+        // [absolute]
+        isAbsolute = true;
+        sb.appendUInt(static_cast<uint32_t>(m->getDisplacement()), 16);
+        break;
+    }
 
-			*buf++ = 'r';
-			buf = StringUtil::utoa(buf, index);
-			*buf++ = 'd';
-			return buf;
+    if (m->hasIndex()) {
+      switch (m->getVSib()) {
+        case kX86MemVSibXmm: type = kX86RegTypeXmm; break;
+        case kX86MemVSibYmm: type = kX86RegTypeYmm; break;
+      }
 
-		case kX86RegTypeGpq:
-			*buf++ = 'r';
+      sb._appendChar('+');
+      X86Assembler_dumpRegister(sb, type, m->getIndex());
 
-			if (index < 8)
-				return StringUtil::copy(buf, &reg16[index * 4]);
+      if (m->getShift()) {
+        sb._appendChar('*');
+        sb._appendChar("1248"[m->getShift() & 3]);
+      }
+    }
 
-		_EmitID:
-			return StringUtil::utoa(buf, index);
+    if (m->getDisplacement() && !isAbsolute) {
+      uint32_t base = 10;
+      int32_t dispOffset = m->getDisplacement();
 
-		case kX86RegTypeX87:
-			*buf++ = 's';
-			*buf++ = 't';
-			goto _EmitID;
+      char prefix = '+';
+      if (dispOffset < 0) {
+        dispOffset = -dispOffset;
+        prefix = '-';
+      }
 
-		case kX86RegTypeMm:
-			*buf++ = 'm';
-			*buf++ = 'm';
-			goto _EmitID;
+      sb._appendChar(prefix);
+      if ((loggerOptions & (1 << kLoggerOptionHexDisplacement)) != 0 && dispOffset > 9) {
+        sb._appendString("0x", 2);
+        base = 16;
+      }
+      sb.appendUInt(static_cast<uint32_t>(dispOffset), base);
+    }
 
-		case kX86RegTypeXmm:
-			*buf++ = 'x';
-			*buf++ = 'm';
-			*buf++ = 'm';
-			goto _EmitID;
+    sb._appendChar(']');
+  }
+  else if (op->isImm()) {
+    const Imm* i = static_cast<const Imm*>(op);
+    int64_t val = i->getInt64();
 
-		case kX86RegTypeYmm:
-			*buf++ = 'y';
-			*buf++ = 'm';
-			*buf++ = 'm';
-			goto _EmitID;
-
-		case kX86RegTypeSeg:
-			if (index < kX86RegNumSeg)
-				return StringUtil::copy(buf, &X86Assembler_segmentName[index * 4], 2);
-
-			goto _EmitNE;
-
-		default:
-			return buf;
-	}
+    if ((loggerOptions & (1 << kLoggerOptionHexImmediate)) && static_cast<uint64_t>(val) > 9)
+      sb.appendUInt(static_cast<uint64_t>(val), 16);
+    else
+      sb.appendInt(val, 10);
+  }
+  else if (op->isLabel()) {
+    sb.appendFormat("L%u", op->getId());
+  }
+  else {
+    sb._appendString("None", 4);
+  }
 }
 
-char *X86Assembler_dumpOperand(char *buf, const Operand *op, uint32_t memRegType, uint32_t loggerFlags)
-{
-	if (op->isReg())
-	{
-		const Reg &reg = reinterpret_cast<const Reg &>(*op);
-		return X86Assembler_dumpRegister(buf, reg.getRegType(), reg.getRegIndex());
-	}
-	else if (op->isMem())
-	{
-		const Mem &mem = reinterpret_cast<const Mem &>(*op);
-		uint32_t seg = mem.getSegment();
+static bool X86Assembler_dumpInstruction(StringBuilder& sb,
+  uint32_t arch,
+  uint32_t code, uint32_t options,
+  const Operand* o0,
+  const Operand* o1,
+  const Operand* o2,
+  const Operand* o3,
+  uint32_t loggerOptions) {
 
-		bool isAbsolute = false;
+  if (!sb.reserve(sb.getLength() + 128))
+    return false;
 
-		if (op->getSize() <= 16)
-			buf = StringUtil::copy(buf, AssemblerX86_operandSize[op->getSize()]);
+  // Rex, lock and short prefix.
+  if (options & kX86InstOptionRex)
+    sb._appendString("rex ", 4);
 
-		if (seg < kX86RegNumSeg)
-			buf = StringUtil::copy(buf, &X86Assembler_segmentName[seg * 4]);
+  if (options & kX86InstOptionLock)
+    sb._appendString("lock ", 5);
 
-		*buf++ = '[';
+  if (options & kInstOptionShortForm)
+    sb._appendString("short ", 6);
 
-		switch (mem.getMemType())
-		{
-			case kOperandMemNative:
-				// [base + index << shift + displacement]
-				buf = X86Assembler_dumpRegister(buf, memRegType, mem.getBase());
-				break;
-			case kOperandMemLabel:
-				// [label + index << shift + displacement]
-				buf += sprintf(buf, "L.%u", mem.getBase() & kOperandIdValueMask);
-				break;
-			case kOperandMemAbsolute:
-				// [absolute]
-				isAbsolute = true;
-				buf = StringUtil::utoa(buf, reinterpret_cast<sysuint_t>(mem.getTarget()) + mem.getDisplacement(), 16);
-		}
+  // Dump instruction name.
+  sb._appendString(_x86InstInfo[code].getInstName());
 
-		if (mem.hasIndex())
-		{
-			buf = StringUtil::copy(buf, " + ");
-			buf = X86Assembler_dumpRegister(buf, memRegType, mem.getIndex());
+  // Dump operands.
+  if (!o0->isNone()) {
+    sb._appendChar(' ');
+    X86Assembler_dumpOperand(sb, arch, o0, loggerOptions);
+  }
 
-			if (mem.getShift())
-			{
-				buf = StringUtil::copy(buf, " * ");
-				*buf++ = "1248"[mem.getShift() & 3];
-			}
-		}
+  if (!o1->isNone()) {
+    sb._appendString(", ", 2);
+    X86Assembler_dumpOperand(sb, arch, o1, loggerOptions);
+  }
 
-		if (mem.getDisplacement() && !isAbsolute)
-		{
-			sysint_t d = mem.getDisplacement();
-			uint32_t base = 10;
-			char sign = '+';
+  if (!o2->isNone()) {
+    sb._appendString(", ", 2);
+    X86Assembler_dumpOperand(sb, arch, o2, loggerOptions);
+  }
 
-			if (d < 0)
-			{
-				d = -d;
-				sign = '-';
-			}
+  if (!o3->isNone()) {
+    sb._appendString(", ", 2);
+    X86Assembler_dumpOperand(sb, arch, o3, loggerOptions);
+  }
 
-			buf[0] = ' ';
-			buf[1] = sign;
-			buf[2] = ' ';
-			buf += 3;
-
-			if ((loggerFlags & kLoggerOutputHexDisplacement) && d > 9)
-			{
-				buf[0] = '0';
-				buf[1] = 'x';
-				buf += 2;
-				base = 16;
-			}
-
-			buf = StringUtil::utoa(buf, static_cast<uintptr_t>(d), base);
-		}
-
-		*buf++ = ']';
-		return buf;
-	}
-	else if (op->isImm())
-	{
-		const Imm &i = reinterpret_cast<const Imm &>(*op);
-
-		sysuint_t value = i.getUValue();
-		uint32_t base = 10;
-
-		if ((loggerFlags & kLoggerOutputHexImmediate) && value > 9)
-			base = 16;
-
-		if (i.isUnsigned() || base == 16)
-			return StringUtil::utoa(buf, value, base);
-		else
-			return StringUtil::itoa(buf, static_cast<sysint_t>(value), base);
-	}
-	else if (op->isLabel())
-		return buf + sprintf(buf, "L.%u", op->getId() & kOperandIdValueMask);
-	else
-		return StringUtil::copy(buf, "None");
+  return true;
 }
 
-static char *X86Assembler_dumpInstruction(char *buf, uint32_t code, uint32_t emitOptions, const Operand *o0, const Operand *o1, const Operand *o2, uint32_t memRegType, uint32_t loggerFlags)
-{
-	// Rex, lock, and short prefix.
-	if (emitOptions & kX86EmitOptionRex)
-		buf = StringUtil::copy(buf, "rex ", 4);
+static bool X86Assembler_dumpComment(StringBuilder& sb, size_t len, const uint8_t* binData, size_t binLength, size_t dispSize, const char* comment) {
+  size_t currentLength = len;
+  size_t commentLength = comment ? StringUtil::nlen(comment, kMaxCommentLength) : 0;
 
-	if (emitOptions & kX86EmitOptionLock)
-		buf = StringUtil::copy(buf, "lock ", 5);
+  ASMJIT_ASSERT(binLength >= dispSize);
 
-	if (emitOptions & kX86EmitOptionShortJump)
-		buf = StringUtil::copy(buf, "short ", 6);
+  if (binLength || commentLength) {
+    size_t align = 36;
+    char sep = ';';
 
-	// Dump instruction name.
-	buf = X86Assembler_dumpInstructionName(buf, code);
+    for (size_t i = (binLength == 0); i < 2; i++) {
+      size_t begin = sb.getLength();
 
-	// Dump operands.
-	if (!o0->isNone())
-	{
-		*buf++ = ' ';
-		buf = X86Assembler_dumpOperand(buf, o0, memRegType, loggerFlags);
-	}
-	if (!o1->isNone())
-	{
-		*buf++ = ',';
-		*buf++ = ' ';
-		buf = X86Assembler_dumpOperand(buf, o1, memRegType, loggerFlags);
-	}
-	if (!o2->isNone())
-	{
-		*buf++ = ',';
-		*buf++ = ' ';
-		buf = X86Assembler_dumpOperand(buf, o2, memRegType, loggerFlags);
-	}
+      // Append align.
+      if (currentLength < align) {
+        if (!sb.appendChars(' ', align - currentLength))
+          return false;
+      }
 
-	return buf;
+      // Append separator.
+      if (sep) {
+        if (!(sb.appendChar(sep) & sb.appendChar(' ')))
+          return false;
+      }
+
+      // Append binary data or comment.
+      if (i == 0) {
+        if (!sb.appendHex(binData, binLength - dispSize))
+          return false;
+        if (!sb.appendChars('.', dispSize * 2))
+          return false;
+        if (commentLength == 0)
+          break;
+      }
+      else {
+        if (!sb.appendString(comment, commentLength))
+          return false;
+      }
+
+      currentLength += sb.getLength() - begin;
+      align += 22;
+      sep = '|';
+    }
+  }
+
+  return sb.appendChar('\n');
 }
+#endif // !ASMJIT_DISABLE_LOGGER
 
-static char *X86Assembler_dumpComment(char *buf, size_t len, const uint8_t *binaryData, size_t binaryLen, const char *comment)
-{
-	size_t currentLength = len;
-	size_t commentLength = comment ? strnlen(comment, kMaxCommentLength) : 0;
+// ============================================================================
+// [asmjit::X86Assembler - Emit]
+// ============================================================================
 
-	if (binaryLen || commentLength)
-	{
-		size_t align = 32;
-		char sep = ';';
-
-		for (size_t i = !binaryLen; i < 2; ++i)
-		{
-			char *bufBegin = buf;
-
-			// Append align.
-			if (currentLength < align) 
-				buf = StringUtil::fill(buf, ' ', align - currentLength);
-
-			// Append separator.
-			if (sep)
-			{
-				*buf++ = sep;
-				*buf++ = ' ';
-			}
-
-			// Append binary data or comment.
-			if (!i)
-			{
-				buf = StringUtil::hex(buf, binaryData, binaryLen);
-				if (!commentLength)
-					break;
-			}
-			else
-				buf = StringUtil::copy(buf, comment, commentLength);
-
-			currentLength += static_cast<size_t>(buf - bufBegin);
-			align += 18;
-			sep = '|';
-		}
-	}
-
-	*buf++ = '\n';
-	return buf;
-}
-
-static const _OpReg _patchedHiRegs[] =
-{
-	// Operand   |Size|Reserved0|Reserved1| OperandId    | RegisterCode          |
-	// ----------+----+---------+---------+--------------+-----------------------+
-	{ kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 4 },
-	{ kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 5 },
-	{ kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 6 },
-	{ kOperandReg, 1, {0        ,0       }, kInvalidValue, kX86RegTypeGpbLo | 7 }
+//! \internal
+static const Operand::VRegOp x86PatchedHiRegs[4] = {
+  // --------------+---+--------------------------------+--------------+------+
+  // Operand       | S | Register Code                  | OperandId    |Unused|
+  // --------------+---+--------------------------------+--------------+------+
+  { kOperandTypeReg, 1 , (_kX86RegTypePatchedGpbHi << 8) | 4, kInvalidValue, 0, 0 },
+  { kOperandTypeReg, 1 , (_kX86RegTypePatchedGpbHi << 8) | 5, kInvalidValue, 0, 0 },
+  { kOperandTypeReg, 1 , (_kX86RegTypePatchedGpbHi << 8) | 6, kInvalidValue, 0, 0 },
+  { kOperandTypeReg, 1 , (_kX86RegTypePatchedGpbHi << 8) | 7, kInvalidValue, 0, 0 }
 };
 
-void X86Assembler::_emitInstruction(uint32_t code)
-{
-	this->_emitInstruction(code, &noOperand, &noOperand, &noOperand);
-}
+template<int Arch>
+static Error ASMJIT_CDECL X86Assembler_emit(Assembler* self_, uint32_t code, const Operand* o0, const Operand* o1, const Operand* o2, const Operand* o3) {
+  X86Assembler* self = static_cast<X86Assembler*>(self_);
 
-void X86Assembler::_emitInstruction(uint32_t code, const Operand *o0)
-{
-	this->_emitInstruction(code, o0, &noOperand, &noOperand);
-}
+  uint8_t* cursor = self->getCursor();
+  uint32_t encoded = o0->getOp() + (o1->getOp() << 3) + (o2->getOp() << 6);
+  uint32_t options = self->getInstOptionsAndReset();
 
-void X86Assembler::_emitInstruction(uint32_t code, const Operand *o0, const Operand *o1)
-{
-	this->_emitInstruction(code, o0, o1, &noOperand);
-}
+  // Invalid instruction.
+  if (code >= _kX86InstIdCount) {
+    self->_comment = nullptr;
+    return self->setError(kErrorUnknownInst);
+  }
 
-void X86Assembler::_emitInstruction(uint32_t code, const Operand *o0, const Operand *o1, const Operand *o2)
-{
-	ASMJIT_ASSERT(o0);
-	ASMJIT_ASSERT(o1);
-	ASMJIT_ASSERT(o2);
+  // Instruction opcode.
+  uint32_t opCode;
+  // MODR/R opcode or register code.
+  uint32_t opReg;
 
-	const Operand *_loggerOperands[3];
+  // REX or VEX prefix data.
+  //
+  // REX:
+  //   0x0008 - REX.W.
+  //   0x0040 - Always emit REX prefix.
+  //
+  // AVX:
+  //   0x0008 - AVX.W.
+  //   0xF000 - VVVV, zeros by default, see `kVexVVVV`.
+  //
+  uint32_t opX;
 
-	uint32_t bLoHiUsed = 0;
-#ifdef ASMJIT_X86
-	uint32_t forceRexPrefix = false;
+  // MOD/RM, both rmReg and rmMem should refer to the same variable since they
+  // are never used together - either rmReg or rmMem.
+  union {
+    // MODR/M - register code.
+    uintptr_t rmReg;
+    // MODR/M - Memory operand.
+    const X86Mem* rmMem;
+  };
+
+  // Immediate value.
+  int64_t imVal;
+  // Immediate length.
+  uint32_t imLen = 0;
+
+  // Memory operand base register index.
+  uint32_t mBase;
+  // Memory operand index register index.
+  uint32_t mIndex;
+
+  // Label.
+  LabelData* label;
+  // Displacement offset
+  int32_t dispOffset;
+  // Displacement size.
+  uint32_t dispSize = 0;
+  // Displacement relocation id.
+  intptr_t relocId;
+
+#ifdef ASMJIT_DEBUG
+  bool assertIllegal = false;
+#endif // ASMJIT_DEBUG
+
+  const X86InstInfo& info = _x86InstInfo[code];
+  const X86InstExtendedInfo& extendedInfo = info.getExtendedInfo();
+
+  // Grow request happens rarely. C++ compiler generates better code if it is
+  // handled at the end of the function.
+  if (static_cast<size_t>(self->_end - cursor) < 16)
+    goto _GrowBuffer;
+
+  // --------------------------------------------------------------------------
+  // [Prepare]
+  // --------------------------------------------------------------------------
+
+_Prepare:
+  opCode = info.getPrimaryOpCode();
+  opReg  = opCode >> kX86InstOpCode_O_Shift;
+  opX    = extendedInfo.getInstFlags() >> (15 - 3);
+
+  if (Arch == kArchX86) {
+    // AVX.W prefix.
+    opX &= 0x08;
+
+    // Check if one or more register operand is one of AH, BH, CH, or DH and
+    // patch them to ensure that the binary code with correct byte-index (4-7)
+    // is generated.
+    if (o0->isRegType(kX86RegTypeGpbHi))
+      o0 = reinterpret_cast<const Operand *>(&x86PatchedHiRegs[static_cast<const X86Reg*>(o0)->getRegIndex()]);
+
+    if (o1->isRegType(kX86RegTypeGpbHi))
+      o1 = reinterpret_cast<const Operand *>(&x86PatchedHiRegs[static_cast<const X86Reg*>(o1)->getRegIndex()]);
+  }
+  else {
+    ASMJIT_ASSERT(kX86InstOptionRex == 0x40);
+
+    // AVX.W prefix and REX prefix.
+    opX |= options;
+    opX &= 0x48;
+
+    // Check if one or more register operand is one of BPL, SPL, SIL, DIL and
+    // force a REX prefix in such case.
+    if (X86Reg::isGpbReg(*o0)) {
+      uint32_t index = static_cast<const X86Reg*>(o0)->getRegIndex();
+      if (static_cast<const X86Reg*>(o0)->isGpbLo()) {
+        opX |= (index >= 4) << kRexShift;
+      }
+      else {
+        opX |= kRexForbidden;
+        o0 = reinterpret_cast<const Operand*>(&x86PatchedHiRegs[index]);
+      }
+    }
+
+    if (X86Reg::isGpbReg(*o1)) {
+      uint32_t index = static_cast<const X86Reg*>(o1)->getRegIndex();
+      if (static_cast<const X86Reg*>(o1)->isGpbLo()) {
+        opX |= (index >= 4) << kRexShift;
+      }
+      else {
+        opX |= kRexForbidden;
+        o1 = reinterpret_cast<const Operand*>(&x86PatchedHiRegs[index]);
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // [Lock-Prefix]
+  // --------------------------------------------------------------------------
+
+  if (options & kX86InstOptionLock) {
+    if (!extendedInfo.isLockable())
+      goto _IllegalInst;
+    EMIT_BYTE(0xF0);
+  }
+
+  // --------------------------------------------------------------------------
+  // [Group]
+  // --------------------------------------------------------------------------
+
+  switch (info.getInstGroup()) {
+    // ------------------------------------------------------------------------
+    // [None]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroupNone:
+      goto _EmitDone;
+
+    // ------------------------------------------------------------------------
+    // [X86]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroupX86Op_66H:
+      ADD_66H_P(true);
+      // ... Fall through ...
+
+    case kX86InstGroupX86Op:
+      goto _EmitX86Op;
+
+    case kX86InstGroupX86Rm_B:
+      opCode += o0->getSize() != 1;
+      // ... Fall through ...
+
+    case kX86InstGroupX86Rm:
+      ADD_66H_P_BY_SIZE(o0->getSize());
+      ADD_REX_W_BY_SIZE(o0->getSize());
+
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86RmReg:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opCode += o0->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opCode += o1->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86RegRm:
+      ADD_66H_P_BY_SIZE(o0->getSize());
+      ADD_REX_W_BY_SIZE(o0->getSize());
+
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ASMJIT_ASSERT(o0->getSize() != 1);
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ASMJIT_ASSERT(o0->getSize() != 1);
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86M:
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Arith:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opCode +=(o0->getSize() != 1) + 2;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opCode +=(o0->getSize() != 1) + 2;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opCode += o1->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      // The remaining instructions use 0x80 opcode.
+      opCode = 0x80;
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = IntUtil::isInt8(imVal) ? static_cast<uint32_t>(1) : IntUtil::iMin<uint32_t>(o0->getSize(), 4);
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        // Alternate Form - AL, AX, EAX, RAX.
+        if (rmReg == 0 && (o0->getSize() == 1 || imLen != 1)) {
+          opCode = ((opReg << 3) | (0x04 + (o0->getSize() != 1)));
+          imLen = IntUtil::iMin<uint32_t>(o0->getSize(), 4);
+          goto _EmitX86OpI;
+        }
+
+        opCode += o0->getSize() != 1 ? (imLen != 1 ? 1 : 3) : 0;
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Imm, None)) {
+        uint32_t memSize = o0->getSize();
+
+        if (memSize == 0)
+          goto _IllegalInst;
+
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = IntUtil::isInt8(imVal) ? static_cast<uint32_t>(1) : IntUtil::iMin<uint32_t>(memSize, 4);
+
+        opCode += memSize != 1 ? (imLen != 1 ? 1 : 3) : 0;
+        ADD_66H_P_BY_SIZE(memSize);
+        ADD_REX_W_BY_SIZE(memSize);
+
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86BSwap:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        opCode += opReg & 0x7;
+
+        ADD_REX_W_BY_SIZE(o0->getSize());
+        ADD_REX_B(opReg);
+        goto _EmitX86Op;
+      }
+      break;
+
+    case kX86InstGroupX86BTest:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      // The remaining instructions use the secondary opcode/r.
+      imVal = static_cast<const Imm*>(o1)->getInt64();
+      imLen = 1;
+
+      opCode = extendedInfo.getSecondaryOpCode();
+      opReg = opCode >> kX86InstOpCode_O_Shift;
+
+      ADD_66H_P_BY_SIZE(o0->getSize());
+      ADD_REX_W_BY_SIZE(o0->getSize());
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Imm, None)) {
+        if (o0->getSize() == 0)
+          goto _IllegalInst;
+
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Call:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      // The following instructions use the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+
+      if (encoded == ENC_OPS(Imm, None, None)) {
+        imVal = static_cast<const Imm*>(o0)->getInt64();
+        goto _EmitJmpOrCallAbs;
+      }
+
+      if (encoded == ENC_OPS(Label, None, None)) {
+        label = self->getLabelData(static_cast<const Label*>(o0)->getId());
+        if (label->offset != -1) {
+          // Bound label.
+          static const intptr_t kRel32Size = 5;
+          intptr_t offs = label->offset - static_cast<intptr_t>(cursor - self->_buffer);
+
+          ASMJIT_ASSERT(offs <= 0);
+          EMIT_OP(opCode);
+          EMIT_DWORD(static_cast<int32_t>(offs - kRel32Size));
+        }
+        else {
+          // Non-bound label.
+          EMIT_OP(opCode);
+          dispOffset = -4;
+          dispSize = 4;
+          relocId = -1;
+          goto _EmitDisplacement;
+        }
+        goto _EmitDone;
+      }
+      break;
+
+    case kX86InstGroupX86Enter:
+      if (encoded == ENC_OPS(Imm, Imm, None)) {
+        EMIT_BYTE(0xC8);
+        EMIT_WORD(static_cast<const Imm*>(o1)->getUInt16());
+        EMIT_BYTE(static_cast<const Imm*>(o0)->getUInt8());
+        goto _EmitDone;
+      }
+      break;
+
+    case kX86InstGroupX86Imul:
+      ADD_66H_P_BY_SIZE(o0->getSize());
+      ADD_REX_W_BY_SIZE(o0->getSize());
+
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        opCode = 0xF6 + (o0->getSize() != 1);
+
+        opReg = 5;
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        opCode = 0xF6 + (o0->getSize() != 1);
+
+        opReg = 5;
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      // The following instructions use 0x0FAF opcode.
+      opCode &= kX86InstOpCode_PP_66;
+      opCode |= kX86InstOpCode_MM_0F | 0xAF;
+
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ASMJIT_ASSERT(o0->getSize() != 1);
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ASMJIT_ASSERT(o0->getSize() != 1);
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+
+        goto _EmitX86M;
+      }
+
+      // The following instructions use 0x69/0x6B opcode.
+      opCode &= kX86InstOpCode_PP_66;
+      opCode |= 0x6B;
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        ASMJIT_ASSERT(o0->getSize() != 1);
+
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = 1;
+
+        if (!IntUtil::isInt8(imVal)) {
+          opCode -= 2;
+          imLen = o0->getSize() == 2 ? 2 : 4;
+        }
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmReg = opReg;
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        ASMJIT_ASSERT(o0->getSize() != 1);
+
+        imVal = static_cast<const Imm*>(o2)->getInt64();
+        imLen = 1;
+
+        if (!IntUtil::isInt8(imVal)) {
+          opCode -= 2;
+          imLen = o0->getSize() == 2 ? 2 : 4;
+        }
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        ASMJIT_ASSERT(o0->getSize() != 1);
+
+        imVal = static_cast<const Imm*>(o2)->getInt64();
+        imLen = 1;
+
+        if (!IntUtil::isInt8(imVal)) {
+          opCode -= 2;
+          imLen = o0->getSize() == 2 ? 2 : 4;
+        }
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86IncDec:
+      ADD_66H_P_BY_SIZE(o0->getSize());
+      ADD_REX_W_BY_SIZE(o0->getSize());
+
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+
+        // INC r16|r32 is not encodable in 64-bit mode.
+        if (Arch == kArchX86 && (o0->getSize() == 2 || o0->getSize() == 4)) {
+          opCode &= kX86InstOpCode_PP_66;
+          opCode |= extendedInfo.getSecondaryOpCode() + (static_cast<uint32_t>(rmReg) & 0x7);
+          goto _EmitX86Op;
+        }
+        else {
+          opCode += o0->getSize() != 1;
+          goto _EmitX86R;
+        }
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        opCode += o0->getSize() != 1;
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Int:
+      if (encoded == ENC_OPS(Imm, None, None)) {
+        imVal = static_cast<const Imm*>(o0)->getInt64();
+        uint8_t imm8 = static_cast<uint8_t>(imVal & 0xFF);
+
+        if (imm8 == 0x03) {
+          EMIT_OP(opCode);
+        }
+        else {
+          EMIT_OP(opCode + 1);
+          EMIT_BYTE(imm8);
+        }
+        goto _EmitDone;
+      }
+      break;
+
+    case kX86InstGroupX86Jcc:
+      if (encoded == ENC_OPS(Label, None, None)) {
+        label = self->getLabelData(static_cast<const Label*>(o0)->getId());
+
+        if (self->hasFeature(kCodeGenPredictedJumps)) {
+          if (options & kInstOptionTaken)
+            EMIT_BYTE(0x3E);
+          if (options & kInstOptionNotTaken)
+            EMIT_BYTE(0x2E);
+        }
+
+        if (label->offset != -1) {
+          // Bound label.
+          static const intptr_t kRel8Size = 2;
+          static const intptr_t kRel32Size = 6;
+
+          intptr_t offs = label->offset - static_cast<intptr_t>(cursor - self->_buffer);
+          ASMJIT_ASSERT(offs <= 0);
+
+          if ((options & kInstOptionLongForm) == 0 && IntUtil::isInt8(offs - kRel8Size)) {
+            EMIT_OP(opCode);
+            EMIT_BYTE(offs - kRel8Size);
+
+            options |= kInstOptionShortForm;
+            goto _EmitDone;
+          }
+          else {
+            EMIT_BYTE(0x0F);
+            EMIT_OP(opCode + 0x10);
+            EMIT_DWORD(static_cast<int32_t>(offs - kRel32Size));
+
+            options &= ~kInstOptionShortForm;
+            goto _EmitDone;
+          }
+        }
+        else {
+          // Non-bound label.
+          if (options & kInstOptionShortForm) {
+            EMIT_OP(opCode);
+            dispOffset = -1;
+            dispSize = 1;
+            relocId = -1;
+            goto _EmitDisplacement;
+          }
+          else {
+            EMIT_BYTE(0x0F);
+            EMIT_OP(opCode + 0x10);
+            dispOffset = -4;
+            dispSize = 4;
+            relocId = -1;
+            goto _EmitDisplacement;
+          }
+        }
+      }
+      break;
+
+    case kX86InstGroupX86Jecxz:
+      if (encoded == ENC_OPS(Reg, Label, None)) {
+        ASMJIT_ASSERT(static_cast<const X86Reg*>(o0)->getRegIndex() == kX86RegIndexCx);
+
+        if ((Arch == kArchX86 && o0->getSize() == 2) ||
+            (Arch == kArchX64 && o0->getSize() == 4)) {
+          EMIT_BYTE(0x67);
+        }
+
+        EMIT_BYTE(0xE3);
+        label = self->getLabelData(static_cast<const Label*>(o1)->getId());
+
+        if (label->offset != -1) {
+          // Bound label.
+          intptr_t offs = label->offset - static_cast<intptr_t>(cursor - self->_buffer) - 1;
+          if (!IntUtil::isInt8(offs))
+            goto _IllegalInst;
+
+          EMIT_BYTE(offs);
+          goto _EmitDone;
+        }
+        else {
+          // Non-bound label.
+          dispOffset = -1;
+          dispSize = 1;
+          relocId = -1;
+          goto _EmitDisplacement;
+        }
+      }
+      break;
+
+    case kX86InstGroupX86Jmp:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      // The following instructions use the secondary opcode (0xE9).
+      opCode = 0xE9;
+
+      if (encoded == ENC_OPS(Imm, None, None)) {
+        imVal = static_cast<const Imm*>(o0)->getInt64();
+        goto _EmitJmpOrCallAbs;
+      }
+
+      if (encoded == ENC_OPS(Label, None, None)) {
+        label = self->getLabelData(static_cast<const Label*>(o0)->getId());
+        if (label->offset != -1) {
+          // Bound label.
+          const intptr_t kRel8Size = 2;
+          const intptr_t kRel32Size = 5;
+
+          intptr_t offs = label->offset - static_cast<intptr_t>(cursor - self->_buffer);
+
+          if ((options & kInstOptionLongForm) == 0 && IntUtil::isInt8(offs - kRel8Size)) {
+            options |= kInstOptionShortForm;
+
+            EMIT_BYTE(0xEB);
+            EMIT_BYTE(offs - kRel8Size);
+            goto _EmitDone;
+          }
+          else {
+            options &= ~kInstOptionShortForm;
+
+            EMIT_BYTE(0xE9);
+            EMIT_DWORD(static_cast<int32_t>(offs - kRel32Size));
+            goto _EmitDone;
+          }
+        }
+        else {
+          // Non-bound label.
+          if ((options & kInstOptionShortForm) != 0) {
+            EMIT_BYTE(0xEB);
+            dispOffset = -1;
+            dispSize = 1;
+            relocId = -1;
+            goto _EmitDisplacement;
+          }
+          else {
+            EMIT_BYTE(0xE9);
+            dispOffset = -4;
+            dispSize = 4;
+            relocId = -1;
+            goto _EmitDisplacement;
+          }
+        }
+      }
+      break;
+
+    case kX86InstGroupX86Lea:
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Mov:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+
+        // Sreg <- Reg
+        if (static_cast<const X86Reg*>(o0)->isSeg()) {
+          ASMJIT_ASSERT(static_cast<const X86Reg*>(o1)->isGpw() ||
+                        static_cast<const X86Reg*>(o1)->isGpd() ||
+                        static_cast<const X86Reg*>(o1)->isGpq() );
+          opCode = 0x8E;
+          ADD_66H_P_BY_SIZE(o1->getSize());
+          ADD_REX_W_BY_SIZE(o1->getSize());
+          goto _EmitX86R;
+        }
+
+        // Reg <- Sreg
+        if (static_cast<const X86Reg*>(o1)->isSeg()) {
+          ASMJIT_ASSERT(static_cast<const X86Reg*>(o0)->isGpw() ||
+                        static_cast<const X86Reg*>(o0)->isGpd() ||
+                        static_cast<const X86Reg*>(o0)->isGpq() );
+          opCode = 0x8C;
+          ADD_66H_P_BY_SIZE(o0->getSize());
+          ADD_REX_W_BY_SIZE(o0->getSize());
+          goto _EmitX86R;
+        }
+        // Reg <- Reg
+        else {
+          ASMJIT_ASSERT(static_cast<const X86Reg*>(o0)->isGpb() ||
+                        static_cast<const X86Reg*>(o0)->isGpw() ||
+                        static_cast<const X86Reg*>(o0)->isGpd() ||
+                        static_cast<const X86Reg*>(o0)->isGpq() );
+          opCode = 0x8A + (o0->getSize() != 1);
+          ADD_66H_P_BY_SIZE(o0->getSize());
+          ADD_REX_W_BY_SIZE(o0->getSize());
+          goto _EmitX86R;
+        }
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+
+        // Sreg <- Mem
+        if (static_cast<const X86Reg*>(o0)->isRegType(kX86RegTypeSeg)) {
+          opCode = 0x8E;
+          opReg--;
+          ADD_66H_P_BY_SIZE(o1->getSize());
+          ADD_REX_W_BY_SIZE(o1->getSize());
+          goto _EmitX86M;
+        }
+        // Reg <- Mem
+        else {
+          ASMJIT_ASSERT(static_cast<const X86Reg*>(o0)->isGpb() ||
+                        static_cast<const X86Reg*>(o0)->isGpw() ||
+                        static_cast<const X86Reg*>(o0)->isGpd() ||
+                        static_cast<const X86Reg*>(o0)->isGpq() );
+          opCode = 0x8A + (o0->getSize() != 1);
+          ADD_66H_P_BY_SIZE(o0->getSize());
+          ADD_REX_W_BY_SIZE(o0->getSize());
+          goto _EmitX86M;
+        }
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+
+        // X86Mem <- Sreg
+        if (static_cast<const X86Reg*>(o1)->isSeg()) {
+          opCode = 0x8C;
+          ADD_66H_P_BY_SIZE(o0->getSize());
+          ADD_REX_W_BY_SIZE(o0->getSize());
+          goto _EmitX86M;
+        }
+        // X86Mem <- Reg
+        else {
+          ASMJIT_ASSERT(static_cast<const X86Reg*>(o1)->isGpb() ||
+                        static_cast<const X86Reg*>(o1)->isGpw() ||
+                        static_cast<const X86Reg*>(o1)->isGpd() ||
+                        static_cast<const X86Reg*>(o1)->isGpq() );
+          opCode = 0x88 + (o1->getSize() != 1);
+          ADD_66H_P_BY_SIZE(o1->getSize());
+          ADD_REX_W_BY_SIZE(o1->getSize());
+          goto _EmitX86M;
+        }
+      }
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        // 64-bit immediate in 64-bit mode is allowed.
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = o0->getSize();
+
+        opReg = 0;
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+
+        // Optimize instruction size by using 32-bit immediate if possible.
+        if (Arch == kArchX64 && imLen == 8 && IntUtil::isInt32(imVal)) {
+          opCode = 0xC7;
+          ADD_REX_W(1);
+          imLen = 4;
+          goto _EmitX86R;
+        }
+        else {
+          opCode = 0xB0 + (static_cast<uint32_t>(o0->getSize() != 1) << 3) + (static_cast<uint32_t>(rmReg) & 0x7);
+          ADD_REX_W_BY_SIZE(imLen);
+          ADD_REX_B(rmReg);
+          goto _EmitX86OpI;
+        }
+      }
+
+      if (encoded == ENC_OPS(Mem, Imm, None)) {
+        uint32_t memSize = o0->getSize();
+
+        if (memSize == 0)
+          goto _IllegalInst;
+
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = IntUtil::iMin<uint32_t>(memSize, 4);
+
+        opCode = 0xC6 + (memSize != 1);
+        opReg = 0;
+        ADD_66H_P_BY_SIZE(memSize);
+        ADD_REX_W_BY_SIZE(memSize);
+
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86MovSxZx:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opCode += o1->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opCode += o1->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86MovSxd:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ADD_REX_W(true);
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ADD_REX_W(true);
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86MovPtr:
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        ASMJIT_ASSERT(static_cast<const X86GpReg*>(o0)->getRegIndex() == 0);
+
+        opCode += o0->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = self->_regSize;
+        goto _EmitX86OpI;
+      }
+
+      // The following instruction uses the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+
+      if (encoded == ENC_OPS(Imm, Reg, None)) {
+        ASMJIT_ASSERT(static_cast<const X86GpReg*>(o1)->getRegIndex() == 0);
+
+        opCode += o1->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        imVal = static_cast<const Imm*>(o0)->getInt64();
+        imLen = self->_regSize;
+        goto _EmitX86OpI;
+      }
+      break;
+
+    case kX86InstGroupX86Push:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        if (o0->isRegType(kX86RegTypeSeg)) {
+          uint32_t segment = static_cast<const X86SegReg*>(o0)->getRegIndex();
+          ASMJIT_ASSERT(segment < kX86SegCount);
+
+          if (segment >= kX86SegFs)
+            EMIT_BYTE(0x0F);
+
+          EMIT_BYTE(x86OpCodePushSeg[segment]);
+          goto _EmitDone;
+        }
+        else {
+          goto _GroupPop_Gp;
+        }
+      }
+
+      if (encoded == ENC_OPS(Imm, None, None)) {
+        imVal = static_cast<const Imm*>(o0)->getInt64();
+        imLen = IntUtil::isInt8(imVal) ? 1 : 4;
+
+        EMIT_BYTE(imLen == 1 ? 0x6A : 0x68);
+        goto _EmitImm;
+      }
+      // ... Fall through ...
+
+    case kX86InstGroupX86Pop:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        if (o0->isRegType(kX86RegTypeSeg)) {
+          uint32_t segment = static_cast<const X86SegReg*>(o0)->getRegIndex();
+          ASMJIT_ASSERT(segment < kX86SegCount);
+
+          if (segment >= kX86SegFs)
+            EMIT_BYTE(0x0F);
+
+          EMIT_BYTE(x86OpCodePopSeg[segment]);
+          goto _EmitDone;
+        }
+        else {
+_GroupPop_Gp:
+          ASMJIT_ASSERT(static_cast<const X86Reg*>(o0)->getSize() == 2 ||
+                        static_cast<const X86Reg*>(o0)->getSize() == self->_regSize);
+
+          opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+          opCode = extendedInfo.getSecondaryOpCode() + (opReg & 7);
+
+          ADD_66H_P_BY_SIZE(o0->getSize());
+          ADD_REX_B(opReg);
+
+          goto _EmitX86Op;
+        }
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        ADD_66H_P_BY_SIZE(o0->getSize());
+
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Rep:
+      // Emit REP 0xF2 or 0xF3 prefix first.
+      EMIT_BYTE(0xF2 + opReg);
+      goto _EmitX86Op;
+
+    case kX86InstGroupX86Ret:
+      if (encoded == ENC_OPS(None, None, None)) {
+        EMIT_BYTE(0xC3);
+        goto _EmitDone;
+      }
+
+      if (encoded == ENC_OPS(Imm, None, None)) {
+        imVal = static_cast<const Imm*>(o0)->getInt64();
+        if (imVal == 0) {
+          EMIT_BYTE(0xC3);
+          goto _EmitDone;
+        }
+        else {
+          EMIT_BYTE(0xC2);
+          imLen = 2;
+          goto _EmitImm;
+        }
+      }
+      break;
+
+    case kX86InstGroupX86Rot:
+      opCode += o0->getSize() != 1;
+      ADD_66H_P_BY_SIZE(o0->getSize());
+      ADD_REX_W_BY_SIZE(o0->getSize());
+
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ASMJIT_ASSERT(static_cast<const X86Reg*>(o1)->isRegCode(kX86RegTypeGpbLo, kX86RegIndexCx));
+        opCode += 2;
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        ASMJIT_ASSERT(static_cast<const X86Reg*>(o1)->isRegCode(kX86RegTypeGpbLo, kX86RegIndexCx));
+        opCode += 2;
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        imVal = static_cast<const Imm*>(o1)->getInt64() & 0xFF;
+        imLen = imVal != 1;
+        if (imLen)
+          opCode -= 0x10;
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Imm, None)) {
+        if (o0->getSize() == 0)
+          goto _IllegalInst;
+
+        imVal = static_cast<const Imm*>(o1)->getInt64() & 0xFF;
+        imLen = imVal != 1;
+        if (imLen)
+          opCode -= 0x10;
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Set:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        ASMJIT_ASSERT(o0->getSize() == 1);
+
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        ASMJIT_ASSERT(o0->getSize() <= 1);
+
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Shlrd:
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        ASMJIT_ASSERT(o0->getSize() == o1->getSize());
+
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        imVal = static_cast<const Imm*>(o2)->getInt64();
+        imLen = 1;
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, Imm)) {
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        imVal = static_cast<const Imm*>(o2)->getInt64();
+        imLen = 1;
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      // The following instructions use opCode + 1.
+      opCode++;
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        ASMJIT_ASSERT(static_cast<const X86Reg*>(o2)->isRegCode(kX86RegTypeGpbLo, kX86RegIndexCx));
+        ASMJIT_ASSERT(o0->getSize() == o1->getSize());
+
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, Reg)) {
+        ASMJIT_ASSERT(static_cast<const X86Reg*>(o2)->isRegCode(kX86RegTypeGpbLo, kX86RegIndexCx));
+
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Test:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ASMJIT_ASSERT(o0->getSize() == o1->getSize());
+
+        opCode += o0->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opCode += o1->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+
+      // The following instructions use the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode() + (o0->getSize() != 1);
+      opReg = opCode >> kX86InstOpCode_O_Shift;
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = IntUtil::iMin<uint32_t>(o0->getSize(), 4);
+
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        // Alternate Form - AL, AX, EAX, RAX.
+        if (static_cast<const X86GpReg*>(o0)->getRegIndex() == 0) {
+          opCode &= kX86InstOpCode_PP_66;
+          opCode |= 0xA8 + (o0->getSize() != 1);
+          goto _EmitX86OpI;
+        }
+
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Imm, None)) {
+        if (o0->getSize() == 0)
+          goto _IllegalInst;
+
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = IntUtil::iMin<uint32_t>(o0->getSize(), 4);
+
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupX86Xchg:
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opCode += o0->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      // ... fall through ...
+
+    case kX86InstGroupX86Xadd:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        // Special opcode for 'xchg ?ax, reg'.
+        if (code == kX86InstIdXchg && o0->getSize() > 1 && (opReg == 0 || rmReg == 0)) {
+          // One of them is zero, it doesn't matter if the instruction's form is
+          // 'xchg ?ax, reg' or 'xchg reg, ?ax'.
+          opReg += rmReg;
+
+          // Rex.B (0x01).
+          if (Arch == kArchX64) {
+            opX += opReg >> 3;
+            opReg &= 0x7;
+          }
+
+          opCode &= kX86InstOpCode_PP_66;
+          opCode |= 0x90 + opReg;
+          goto _EmitX86Op;
+        }
+
+        opCode += o0->getSize() != 1;
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opCode += o1->getSize() != 1;
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    // ------------------------------------------------------------------------
+    // [Fpu]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroupFpuOp:
+      goto _EmitFpuOp;
+
+    case kX86InstGroupFpuArith:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86FpReg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86FpReg*>(o1)->getRegIndex();
+        rmReg += opReg;
+
+        // We switch to the alternative opcode if the first operand is zero.
+        if (opReg == 0) {
+_EmitFpArith_Reg:
+          opCode = 0xD800 + ((opCode >> 8) & 0xFF) + static_cast<uint32_t>(rmReg);
+          goto _EmitFpuOp;
+        }
+        else {
+          opCode = 0xDC00 + ((opCode >> 0) & 0xFF) + static_cast<uint32_t>(rmReg);
+          goto _EmitFpuOp;
+        }
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        // 0xD8/0xDC, depends on the size of the memory operand; opReg has been
+        // set already.
+_EmitFpArith_Mem:
+        opCode = (o0->getSize() == 4) ? 0xD8 : 0xDC;
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupFpuCom:
+      if (encoded == ENC_OPS(None, None, None)) {
+        rmReg = 1;
+        goto _EmitFpArith_Reg;
+      }
+
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        rmReg = static_cast<const X86FpReg*>(o0)->getRegIndex();
+        goto _EmitFpArith_Reg;
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        goto _EmitFpArith_Mem;
+      }
+      break;
+
+    case kX86InstGroupFpuFldFst:
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+
+        if (o0->getSize() == 4 && info.hasInstFlag(kX86InstFlagMem4)) {
+          goto _EmitX86M;
+        }
+
+        if (o0->getSize() == 8 && info.hasInstFlag(kX86InstFlagMem8)) {
+          opCode += 4;
+          goto _EmitX86M;
+        }
+
+        if (o0->getSize() == 10 && info.hasInstFlag(kX86InstFlagMem10)) {
+          opCode = extendedInfo.getSecondaryOpCode();
+          opReg = opCode >> kX86InstOpCode_O_Shift;
+          goto _EmitX86M;
+        }
+      }
+
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        if (code == kX86InstIdFld) {
+          opCode = 0xD9C0 + static_cast<const X86FpReg*>(o0)->getRegIndex();
+          goto _EmitFpuOp;
+        }
+
+        if (code == kX86InstIdFst) {
+          opCode = 0xDDD0 + static_cast<const X86FpReg*>(o0)->getRegIndex();
+          goto _EmitFpuOp;
+        }
+
+        if (code == kX86InstIdFstp) {
+          opCode = 0xDDD8 + static_cast<const X86FpReg*>(o0)->getRegIndex();
+          goto _EmitFpuOp;
+        }
+      }
+      break;
+
+
+    case kX86InstGroupFpuM:
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+
+        if (o0->getSize() == 2 && info.hasInstFlag(kX86InstFlagMem2)) {
+          opCode += 4;
+          goto _EmitX86M;
+        }
+
+        if (o0->getSize() == 4 && info.hasInstFlag(kX86InstFlagMem4)) {
+          goto _EmitX86M;
+        }
+
+        if (o0->getSize() == 8 && info.hasInstFlag(kX86InstFlagMem8)) {
+          opCode = extendedInfo.getSecondaryOpCode();
+          opReg = opCode >> kX86InstOpCode_O_Shift;
+          goto _EmitX86M;
+        }
+      }
+      break;
+
+    case kX86InstGroupFpuRDef:
+      if (encoded == ENC_OPS(None, None, None)) {
+        opCode += 1;
+        goto _EmitFpuOp;
+      }
+      // ... Fall through ...
+
+    case kX86InstGroupFpuR:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        opCode += static_cast<const X86FpReg*>(o0)->getRegIndex();
+        goto _EmitFpuOp;
+      }
+      break;
+
+    case kX86InstGroupFpuStsw:
+      if (encoded == ENC_OPS(Reg, None, None)) {
+        if (static_cast<const X86GpReg*>(o0)->getRegIndex() != 0)
+          goto _IllegalInst;
+
+        opCode = extendedInfo.getSecondaryOpCode();
+        goto _EmitX86Op;
+      }
+
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    // ------------------------------------------------------------------------
+    // [Ext]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroupExtCrc:
+      ADD_66H_P_BY_SIZE(o0->getSize());
+      ADD_REX_W_BY_SIZE(o0->getSize());
+
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ASMJIT_ASSERT(static_cast<const Reg*>(o0)->getRegType() == kX86RegTypeGpd ||
+                      static_cast<const Reg*>(o0)->getRegType() == kX86RegTypeGpq);
+
+        opCode += o0->getSize() != 1;
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ASMJIT_ASSERT(static_cast<const Reg*>(o0)->getRegType() == kX86RegTypeGpd ||
+                      static_cast<const Reg*>(o0)->getRegType() == kX86RegTypeGpq);
+
+        opCode += o0->getSize() != 1;
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtExtract:
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o1)->isXmm());
+
+        imVal = static_cast<const Imm*>(o2)->getInt64();
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, Imm)) {
+        // Secondary opcode for 'pextrw' instruction (SSE2).
+        opCode = extendedInfo.getSecondaryOpCode();
+        ADD_66H_P(static_cast<const X86Reg*>(o1)->isXmm());
+
+        imVal = static_cast<const Imm*>(o2)->getInt64();
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtFence:
+      if (Arch == kArchX64 && opX) {
+        EMIT_BYTE(0x40 | opX);
+      }
+
+      EMIT_BYTE(0x0F);
+      EMIT_OP(opCode);
+      EMIT_BYTE(0xC0 | (opReg << 3));
+      goto _EmitDone;
+
+    case kX86InstGroupExtMov:
+    case kX86InstGroupExtMovNoRexW:
+      ASMJIT_ASSERT(extendedInfo._opFlags[0] != 0);
+      ASMJIT_ASSERT(extendedInfo._opFlags[1] != 0);
+
+      // Check parameters Gpd|Gpq|Mm|Xmm <- Gpd|Gpq|Mm|Xmm|X86Mem|Imm.
+      ASMJIT_ASSERT(!((o0->isMem()                   && (extendedInfo._opFlags[0] & kX86InstOpMem) == 0) ||
+                      (o0->isRegType(kX86RegTypeMm ) && (extendedInfo._opFlags[0] & kX86InstOpMm ) == 0) ||
+                      (o0->isRegType(kX86RegTypeXmm) && (extendedInfo._opFlags[0] & kX86InstOpXmm) == 0) ||
+                      (o0->isRegType(kX86RegTypeGpd) && (extendedInfo._opFlags[0] & kX86InstOpGd ) == 0) ||
+                      (o0->isRegType(kX86RegTypeGpq) && (extendedInfo._opFlags[0] & kX86InstOpGq ) == 0) ||
+                      (o1->isMem()                   && (extendedInfo._opFlags[1] & kX86InstOpMem) == 0) ||
+                      (o1->isRegType(kX86RegTypeMm ) && (extendedInfo._opFlags[1] & kX86InstOpMm ) == 0) ||
+                      (o1->isRegType(kX86RegTypeXmm) && (extendedInfo._opFlags[1] & kX86InstOpXmm) == 0) ||
+                      (o1->isRegType(kX86RegTypeGpd) && (extendedInfo._opFlags[1] & kX86InstOpGd ) == 0) ||
+                      (o1->isRegType(kX86RegTypeGpq) && (extendedInfo._opFlags[1] & kX86InstOpGq ) == 0) ));
+
+      // Gp|Mm|Xmm <- Gp|Mm|Xmm
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ADD_REX_W(static_cast<const X86Reg*>(o0)->isGpq() && (info.getInstGroup() != kX86InstGroupExtMovNoRexW));
+        ADD_REX_W(static_cast<const X86Reg*>(o1)->isGpq() && (info.getInstGroup() != kX86InstGroupExtMovNoRexW));
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      // Gp|Mm|Xmm <- Mem
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ADD_REX_W(static_cast<const X86Reg*>(o0)->isGpq() && (info.getInstGroup() != kX86InstGroupExtMovNoRexW));
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+
+      // The following instruction uses opCode[1].
+      opCode = extendedInfo.getSecondaryOpCode();
+
+      // X86Mem <- Gp|Mm|Xmm
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        ADD_REX_W(static_cast<const X86Reg*>(o1)->isGpq() && (info.getInstGroup() != kX86InstGroupExtMovNoRexW));
+
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtMovBe:
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ADD_66H_P_BY_SIZE(o0->getSize());
+        ADD_REX_W_BY_SIZE(o0->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+
+      // The following instruction uses the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        ADD_66H_P_BY_SIZE(o1->getSize());
+        ADD_REX_W_BY_SIZE(o1->getSize());
+
+        opReg = static_cast<const X86GpReg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtMovD:
+_EmitMmMovD:
+      opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+      ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm());
+
+      // Mm/Xmm <- Gp
+      if (encoded == ENC_OPS(Reg, Reg, None) && static_cast<const X86Reg*>(o1)->isGp()) {
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      // Mm/Xmm <- Mem
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+
+      // The following instructions use the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+      opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+      ADD_66H_P(static_cast<const X86Reg*>(o1)->isXmm());
+
+      // Gp <- Mm/Xmm
+      if (encoded == ENC_OPS(Reg, Reg, None) && static_cast<const X86Reg*>(o0)->isGp()) {
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      // X86Mem <- Mm/Xmm
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtMovQ:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+
+        // Mm <- Mm
+        if (static_cast<const X86Reg*>(o0)->isMm() && static_cast<const X86Reg*>(o1)->isMm()) {
+          opCode = kX86InstOpCode_PP_00 | kX86InstOpCode_MM_0F | 0x6F;
+          goto _EmitX86R;
+        }
+
+        // Xmm <- Xmm
+        if (static_cast<const X86Reg*>(o0)->isXmm() && static_cast<const X86Reg*>(o1)->isXmm()) {
+          opCode = kX86InstOpCode_PP_F3 | kX86InstOpCode_MM_0F | 0x7E;
+          goto _EmitX86R;
+        }
+
+        // Mm <- Xmm (Movdq2q)
+        if (static_cast<const X86Reg*>(o0)->isMm() && static_cast<const X86Reg*>(o1)->isXmm()) {
+          opCode = kX86InstOpCode_PP_F2 | kX86InstOpCode_MM_0F | 0xD6;
+          goto _EmitX86R;
+        }
+
+        // Xmm <- Mm (Movq2dq)
+        if (static_cast<const X86Reg*>(o0)->isXmm() && static_cast<const X86Reg*>(o1)->isMm()) {
+          opCode = kX86InstOpCode_PP_F3 | kX86InstOpCode_MM_0F | 0xD6;
+          goto _EmitX86R;
+        }
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+
+        // Mm <- Mem
+        if (static_cast<const X86Reg*>(o0)->isMm()) {
+          opCode = kX86InstOpCode_PP_00 | kX86InstOpCode_MM_0F | 0x6F;
+          goto _EmitX86M;
+        }
+
+        // Xmm <- Mem
+        if (static_cast<const X86Reg*>(o0)->isXmm()) {
+          opCode = kX86InstOpCode_PP_F3 | kX86InstOpCode_MM_0F | 0x7E;
+          goto _EmitX86M;
+        }
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+
+        // X86Mem <- Mm
+        if (static_cast<const X86Reg*>(o1)->isMm()) {
+          opCode = kX86InstOpCode_PP_00 | kX86InstOpCode_MM_0F | 0x7F;
+          goto _EmitX86M;
+        }
+
+        // X86Mem <- Xmm
+        if (static_cast<const X86Reg*>(o1)->isXmm()) {
+          opCode = kX86InstOpCode_PP_66 | kX86InstOpCode_MM_0F | 0xD6;
+          goto _EmitX86M;
+        }
+      }
+
+      if (Arch == kArchX64) {
+        // Movq in other case is simply a promoted MOVD instruction to 64-bit.
+        ADD_REX_W(true);
+
+        opCode = kX86InstOpCode_PP_00 | kX86InstOpCode_MM_0F | 0x6E;
+        goto _EmitMmMovD;
+      }
+      break;
+
+    case kX86InstGroupExtPrefetch:
+      if (encoded == ENC_OPS(Mem, Imm, None)) {
+        opReg = static_cast<const Imm*>(o1)->getUInt32() & 0x3;
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtRm_PQ:
+      ADD_66H_P(o0->isRegType(kX86RegTypeXmm) || o1->isRegType(kX86RegTypeXmm));
+      // ... Fall through ...
+
+    case kX86InstGroupExtRm_Q:
+      ADD_REX_W(o0->isRegType(kX86RegTypeGpq) || o1->isRegType(kX86RegTypeGpq) || (o1->isMem() && o1->getSize() == 8));
+      // ... Fall through ...
+
+    case kX86InstGroupExtRm:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtRm_P:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm() | static_cast<const X86Reg*>(o1)->isXmm());
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm());
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtRmRi:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+
+      // The following instruction uses the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+      opReg = opCode >> kX86InstOpCode_O_Shift;
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = 1;
+
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+      break;
+
+    case kX86InstGroupExtRmRi_P:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm() | static_cast<const X86Reg*>(o1)->isXmm());
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm());
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+
+      // The following instruction uses the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+      opReg = opCode >> kX86InstOpCode_O_Shift;
+
+      if (encoded == ENC_OPS(Reg, Imm, None)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm());
+
+        imVal = static_cast<const Imm*>(o1)->getInt64();
+        imLen = 1;
+
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitX86R;
+      }
+      break;
+
+    case kX86InstGroupExtRmi:
+      imVal = static_cast<const Imm*>(o2)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    case kX86InstGroupExtRmi_P:
+      imVal = static_cast<const Imm*>(o2)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm() | static_cast<const X86Reg*>(o1)->isXmm());
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        ADD_66H_P(static_cast<const X86Reg*>(o0)->isXmm());
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    // ------------------------------------------------------------------------
+    // [Group - 3dNow]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroup3dNow:
+      // Every 3dNow instruction starts with 0x0F0F and the actual opcode is
+      // stored as 8-bit immediate.
+      imVal = opCode & 0xFF;
+      imLen = 1;
+
+      opCode = kX86InstOpCode_MM_0F | 0x0F;
+      opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitX86R;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitX86M;
+      }
+      break;
+
+    // ------------------------------------------------------------------------
+    // [Avx]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroupAvxOp:
+      goto _EmitAvxOp;
+
+    case kX86InstGroupAvxM:
+      if (encoded == ENC_OPS(Mem, None, None)) {
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxMr_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxMr:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxMri_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxMri:
+      imVal = static_cast<const Imm*>(o2)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, Imm)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRm_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRm:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRmi_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRmi:
+      imVal = static_cast<const Imm*>(o2)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvm_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRvm:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+_EmitAvxRvm:
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvmr_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRvmr:
+      if (!o3->isReg())
+        goto _IllegalInst;
+
+      imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvmi_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRvmi:
+      if (!o3->isImm())
+        goto _IllegalInst;
+
+      imVal = static_cast<const Imm*>(o3)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRmv:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRmvi:
+      if (!o3->isImm())
+        goto _IllegalInst;
+
+      imVal = static_cast<const Imm*>(o3)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRmMr_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRmMr:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+
+      // The following instruction uses the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvmRmi_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRvmRmi:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitAvxM;
+      }
+
+      // The following instructions use the secondary opcode.
+      opCode &= kX86InstOpCode_L_Mask;
+      opCode |= extendedInfo.getSecondaryOpCode();
+
+      imVal = static_cast<const Imm*>(o2)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvmMr:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitAvxM;
+      }
+
+      // The following instructions use the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvmMvr_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRvmMvr:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitAvxM;
+      }
+
+      // The following instruction uses the secondary opcode.
+      opCode &= kX86InstOpCode_L_Mask;
+      opCode |= extendedInfo.getSecondaryOpCode();
+
+      if (encoded == ENC_OPS(Mem, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvmVmi_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRvmVmi:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitAvxM;
+      }
+
+      // The following instruction uses the secondary opcode.
+      opCode &= kX86InstOpCode_L_Mask;
+      opCode |= extendedInfo.getSecondaryOpCode();
+      opReg = opCode >> kX86InstOpCode_O_Shift;
+
+      imVal = static_cast<const Imm*>(o2)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        opX  |= static_cast<const X86Reg*>(o0)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        opX  |= static_cast<const X86Reg*>(o0)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxVm:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opX  |= static_cast<const X86Reg*>(o0)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opX  |= static_cast<const X86Reg*>(o0)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxVmi_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxVmi:
+      imVal = static_cast<const Imm*>(o3)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        opX  |= static_cast<const X86Reg*>(o0)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        opX  |= static_cast<const X86Reg*>(o0)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxRvrmRvmr_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupAvxRvrmRvmr:
+      if (encoded == ENC_OPS(Reg, Reg, Reg) && o3->isReg()) {
+        imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg) && o3->isMem()) {
+        imVal = static_cast<const X86Reg*>(o2)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o3);
+
+        ADD_VEX_W(true);
+        goto _EmitAvxM;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem) && o3->isReg()) {
+        imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxMovSsSd:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        goto _EmitAvxRvm;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opX  |= static_cast<const X86Reg*>(o0)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitAvxM;
+      }
+
+      if (encoded == ENC_OPS(Mem, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o0);
+        goto _EmitAvxM;
+      }
+      break;
+
+    case kX86InstGroupAvxGatherEx:
+      if (encoded == ENC_OPS(Reg, Mem, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+
+        uint32_t vSib = rmMem->getVSib();
+        if (vSib == kX86MemVSibGpz)
+          goto _IllegalInst;
+
+        ADD_VEX_L(vSib == kX86MemVSibYmm);
+        goto _EmitAvxV;
+      }
+      break;
+
+    case kX86InstGroupAvxGather:
+      if (encoded == ENC_OPS(Reg, Mem, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+
+        uint32_t vSib = rmMem->getVSib();
+        if (vSib == kX86MemVSibGpz)
+          goto _IllegalInst;
+
+        ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o2)->isYmm());
+        goto _EmitAvxV;
+      }
+      break;
+
+    // ------------------------------------------------------------------------
+    // [FMA4]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroupFma4_P:
+      // It's fine to just check the first operand, second is just for sanity.
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupFma4:
+      if (encoded == ENC_OPS(Reg, Reg, Reg) && o3->isReg()) {
+        imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+
+        goto _EmitAvxR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg) && o3->isMem()) {
+        imVal = static_cast<const X86Reg*>(o2)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o3);
+
+        ADD_VEX_W(true);
+        goto _EmitAvxM;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem) && o3->isReg()) {
+        imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+
+        goto _EmitAvxM;
+      }
+      break;
+
+    // ------------------------------------------------------------------------
+    // [XOP]
+    // ------------------------------------------------------------------------
+
+    case kX86InstGroupXopRm_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupXopRm:
+      if (encoded == ENC_OPS(Reg, Reg, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitXopR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, None)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitXopM;
+      }
+      break;
+
+    case kX86InstGroupXopRvmRmv:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+
+        goto _EmitXopR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+
+        goto _EmitXopM;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+
+        ADD_VEX_W(true);
+        goto _EmitXopM;
+      }
+
+      break;
+
+    case kX86InstGroupXopRvmRmi:
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitXopR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o2)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o1);
+
+        goto _EmitXopM;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+
+        ADD_VEX_W(true);
+        goto _EmitXopM;
+      }
+
+      // The following instructions use the secondary opcode.
+      opCode = extendedInfo.getSecondaryOpCode();
+
+      imVal = static_cast<const Imm*>(o2)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o1)->getRegIndex();
+        goto _EmitXopR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Mem, Imm)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmMem = static_cast<const X86Mem*>(o1);
+        goto _EmitXopM;
+      }
+      break;
+
+    case kX86InstGroupXopRvmr_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupXopRvmr:
+      if (!o3->isReg())
+        goto _IllegalInst;
+
+      imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitXopR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitXopM;
+      }
+      break;
+
+    case kX86InstGroupXopRvmi_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupXopRvmi:
+      if (!o3->isImm())
+        goto _IllegalInst;
+
+      imVal = static_cast<const Imm*>(o3)->getInt64();
+      imLen = 1;
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        goto _EmitXopR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem)) {
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+        goto _EmitXopM;
+      }
+      break;
+
+    case kX86InstGroupXopRvrmRvmr_P:
+      ADD_VEX_L(static_cast<const X86Reg*>(o0)->isYmm() | static_cast<const X86Reg*>(o1)->isYmm());
+      // ... Fall through ...
+
+    case kX86InstGroupXopRvrmRvmr:
+      if (encoded == ENC_OPS(Reg, Reg, Reg) && o3->isReg()) {
+        imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmReg = static_cast<const X86Reg*>(o2)->getRegIndex();
+
+        goto _EmitXopR;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Reg) && o3->isMem()) {
+        imVal = static_cast<const X86Reg*>(o2)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o3);
+
+        ADD_VEX_W(true);
+        goto _EmitXopM;
+      }
+
+      if (encoded == ENC_OPS(Reg, Reg, Mem) && o3->isReg()) {
+        imVal = static_cast<const X86Reg*>(o3)->getRegIndex() << 4;
+        imLen = 1;
+
+        opReg = static_cast<const X86Reg*>(o0)->getRegIndex();
+        opX  |= static_cast<const X86Reg*>(o1)->getRegIndex() << kVexVVVVShift;
+        rmMem = static_cast<const X86Mem*>(o2);
+
+        goto _EmitXopM;
+      }
+      break;
+  }
+
+  // --------------------------------------------------------------------------
+  // [Illegal]
+  // --------------------------------------------------------------------------
+
+_IllegalInst:
+  self->setError(kErrorIllegalInst);
+#ifdef ASMJIT_DEBUG
+  assertIllegal = true;
+#endif // ASMJIT_DEBUG
+  goto _EmitDone;
+
+_IllegalAddr:
+  self->setError(kErrorIllegalAddresing);
+#ifdef ASMJIT_DEBUG
+  assertIllegal = true;
+#endif // ASMJIT_DEBUG
+  goto _EmitDone;
+
+_IllegalDisp:
+  self->setError(kErrorIllegalDisplacement);
+#ifdef ASMJIT_DEBUG
+  assertIllegal = true;
+#endif // ASMJIT_DEBUG
+  goto _EmitDone;
+
+  // --------------------------------------------------------------------------
+  // [Emit - X86]
+  // --------------------------------------------------------------------------
+
+_EmitX86Op:
+  // Mandatory instruction prefix.
+  EMIT_PP(opCode);
+
+  // Rex prefix (64-bit only).
+  if (Arch == kArchX64 && opX) {
+    opX |= 0x40;
+    EMIT_BYTE(opX);
+    if (opX >= kRexForbidden)
+      goto _IllegalInst;
+  }
+
+  // Instruction opcodes.
+  EMIT_MM(opCode);
+  EMIT_OP(opCode);
+  goto _EmitDone;
+
+_EmitX86OpI:
+  // Mandatory instruction prefix.
+  EMIT_PP(opCode);
+
+  // Rex prefix (64-bit only).
+  if (Arch == kArchX64 && opX) {
+    opX |= 0x40;
+    EMIT_BYTE(opX);
+    if (opX >= kRexForbidden)
+      goto _IllegalInst;
+  }
+
+  // Instruction opcodes.
+  EMIT_MM(opCode);
+  EMIT_OP(opCode);
+  goto _EmitImm;
+
+_EmitX86R:
+  // Mandatory instruction prefix.
+  EMIT_PP(opCode);
+
+  // Rex prefix (64-bit only).
+  if (Arch == kArchX64) {
+    opX += static_cast<uint32_t>(opReg & 0x08) >> 1; // Rex.R (0x04).
+    opX += static_cast<uint32_t>(rmReg) >> 3;        // Rex.B (0x01).
+
+    if (opX) {
+      opX |= 0x40;
+      EMIT_BYTE(opX);
+
+      if (opX >= kRexForbidden)
+        goto _IllegalInst;
+
+      opReg &= 0x7;
+      rmReg &= 0x7;
+    }
+  }
+
+  // Instruction opcodes.
+  EMIT_MM(opCode);
+  EMIT_OP(opCode);
+
+  // ModR.
+  EMIT_BYTE(x86EncodeMod(3, opReg, static_cast<uint32_t>(rmReg)));
+
+  if (imLen != 0)
+    goto _EmitImm;
+  else
+    goto _EmitDone;
+
+_EmitX86M:
+  ASMJIT_ASSERT(rmMem);
+  ASMJIT_ASSERT(rmMem->getOp() == kOperandTypeMem);
+
+  mBase = rmMem->getBase();
+  mIndex = rmMem->getIndex();
+
+  // Size override prefix.
+  if (rmMem->hasBaseOrIndex() && rmMem->getMemType() != kMemTypeLabel) {
+    if (Arch == kArchX86) {
+      if (!rmMem->hasGpdBase())
+        EMIT_BYTE(0x67);
+    }
+    else {
+      if (rmMem->hasGpdBase())
+        EMIT_BYTE(0x67);
+    }
+  }
+
+  // Segment override prefix.
+  if (rmMem->hasSegment()) {
+    EMIT_BYTE(x86SegmentPrefix[rmMem->getSegment()]);
+  }
+
+  // Mandatory instruction prefix.
+  EMIT_PP(opCode);
+
+  // Rex prefix (64-bit only).
+  if (Arch == kArchX64) {
+    opX += static_cast<uint32_t>(opReg      & 8) >> 1; // Rex.R (0x04).
+    opX += static_cast<uint32_t>(mIndex - 8 < 8) << 1; // Rex.X (0x02).
+    opX += static_cast<uint32_t>(mBase  - 8 < 8);      // Rex.B (0x01).
+
+    if (opX) {
+      opX |= 0x40;
+      EMIT_BYTE(opX);
+
+      if (opX >= kRexForbidden)
+        goto _IllegalInst;
+
+      opReg &= 0x7;
+    }
+
+    mBase &= 0x7;
+  }
+
+  // Instruction opcodes.
+  EMIT_MM(opCode);
+  EMIT_OP(opCode);
+  // ... Fall through ...
+
+  // --------------------------------------------------------------------------
+  // [Emit - SIB]
+  // --------------------------------------------------------------------------
+
+_EmitSib:
+  dispOffset = rmMem->getDisplacement();
+  if (rmMem->isBaseIndexType()) {
+    if (mIndex >= kInvalidReg) {
+      if (mBase == kX86RegIndexSp) {
+        if (dispOffset == 0) {
+          // [Esp/Rsp/R12].
+          EMIT_BYTE(x86EncodeMod(0, opReg, 4));
+          EMIT_BYTE(x86EncodeSib(0, 4, 4));
+        }
+        else if (IntUtil::isInt8(dispOffset)) {
+          // [Esp/Rsp/R12 + Disp8].
+          EMIT_BYTE(x86EncodeMod(1, opReg, 4));
+          EMIT_BYTE(x86EncodeSib(0, 4, 4));
+          EMIT_BYTE(static_cast<int8_t>(dispOffset));
+        }
+        else {
+          // [Esp/Rsp/R12 + Disp32].
+          EMIT_BYTE(x86EncodeMod(2, opReg, 4));
+          EMIT_BYTE(x86EncodeSib(0, 4, 4));
+          EMIT_DWORD(static_cast<int32_t>(dispOffset));
+        }
+      }
+      else if (mBase != kX86RegIndexBp && dispOffset == 0) {
+        // [Base].
+        EMIT_BYTE(x86EncodeMod(0, opReg, mBase));
+      }
+      else if (IntUtil::isInt8(dispOffset)) {
+        // [Base + Disp8].
+        EMIT_BYTE(x86EncodeMod(1, opReg, mBase));
+        EMIT_BYTE(static_cast<int8_t>(dispOffset));
+      }
+      else {
+        // [Base + Disp32].
+        EMIT_BYTE(x86EncodeMod(2, opReg, mBase));
+        EMIT_DWORD(static_cast<int32_t>(dispOffset));
+      }
+    }
+    else {
+      uint32_t shift = rmMem->getShift();
+
+      // Esp/Rsp/R12 register can't be used as an index.
+      mIndex &= 0x7;
+      ASMJIT_ASSERT(mIndex != kX86RegIndexSp);
+
+      if (mBase != kX86RegIndexBp && dispOffset == 0) {
+        // [Base + Index * Scale].
+        EMIT_BYTE(x86EncodeMod(0, opReg, 4));
+        EMIT_BYTE(x86EncodeSib(shift, mIndex, mBase));
+      }
+      else if (IntUtil::isInt8(dispOffset)) {
+        // [Base + Index * Scale + Disp8].
+        EMIT_BYTE(x86EncodeMod(1, opReg, 4));
+        EMIT_BYTE(x86EncodeSib(shift, mIndex, mBase));
+        EMIT_BYTE(static_cast<int8_t>(dispOffset));
+      }
+      else {
+        // [Base + Index * Scale + Disp32].
+        EMIT_BYTE(x86EncodeMod(2, opReg, 4));
+        EMIT_BYTE(x86EncodeSib(shift, mIndex, mBase));
+        EMIT_DWORD(static_cast<int32_t>(dispOffset));
+      }
+    }
+  }
+  else if (Arch == kArchX86) {
+    if (mIndex >= kInvalidReg) {
+      // [Disp32].
+      EMIT_BYTE(x86EncodeMod(0, opReg, 5));
+    }
+    else {
+      // [Index * Scale + Disp32].
+      uint32_t shift = rmMem->getShift();
+      ASMJIT_ASSERT(mIndex != kX86RegIndexSp);
+
+      EMIT_BYTE(x86EncodeMod(0, opReg, 4));
+      EMIT_BYTE(x86EncodeSib(shift, mIndex, 5));
+    }
+
+    if (rmMem->getMemType() == kMemTypeLabel) {
+      // Relative->Absolute [x86 mode].
+      label = self->getLabelData(rmMem->_vmem.base);
+      relocId = self->_relocList.getLength();
+
+      RelocData reloc;
+      reloc.type = kRelocRelToAbs;
+      reloc.size = 4;
+      reloc.from = static_cast<Ptr>(static_cast<uintptr_t>(cursor - self->_buffer));
+      reloc.data = static_cast<SignedPtr>(dispOffset);
+
+      if (self->_relocList.append(reloc) != kErrorOk)
+        return self->setError(kErrorNoHeapMemory);
+
+      if (label->offset != -1) {
+        // Bound label.
+        reloc.data += static_cast<SignedPtr>(label->offset);
+        EMIT_DWORD(0);
+      }
+      else {
+        // Non-bound label.
+        dispOffset = -4 - imLen;
+        dispSize = 4;
+        goto _EmitDisplacement;
+      }
+    }
+    else {
+      // [Disp32].
+      EMIT_DWORD(static_cast<int32_t>(dispOffset));
+    }
+  }
+  else /* if (Arch === kArchX64) */ {
+    if (rmMem->getMemType() == kMemTypeLabel) {
+      // [RIP + Disp32].
+      label = self->getLabelData(rmMem->_vmem.base);
+
+      // Indexing is invalid.
+      if (mIndex < kInvalidReg)
+        goto _IllegalDisp;
+
+      EMIT_BYTE(x86EncodeMod(0, opReg, 5));
+      dispOffset -= (4 + imLen);
+
+      if (label->offset != -1) {
+        // Bound label.
+        dispOffset += label->offset - static_cast<int32_t>(static_cast<intptr_t>(cursor - self->_buffer));
+        EMIT_DWORD(static_cast<int32_t>(dispOffset));
+      }
+      else {
+        // Non-bound label.
+        dispSize = 4;
+        relocId = -1;
+        goto _EmitDisplacement;
+      }
+    }
+    else {
+      EMIT_BYTE(x86EncodeMod(0, opReg, 4));
+      if (mIndex >= kInvalidReg) {
+        // [Disp32].
+        EMIT_BYTE(x86EncodeSib(0, 4, 5));
+      }
+      else {
+        // [Disp32 + Index * Scale].
+        mIndex &= 0x7;
+        ASMJIT_ASSERT(mIndex != kX86RegIndexSp);
+
+        uint32_t shift = rmMem->getShift();
+        EMIT_BYTE(x86EncodeSib(shift, mIndex, 5));
+      }
+
+      EMIT_DWORD(static_cast<int32_t>(dispOffset));
+    }
+  }
+
+  if (imLen == 0)
+    goto _EmitDone;
+
+  // --------------------------------------------------------------------------
+  // [Emit - Imm]
+  // --------------------------------------------------------------------------
+
+_EmitImm:
+  switch (imLen) {
+    case 1: EMIT_BYTE (imVal & 0x000000FF); break;
+    case 2: EMIT_WORD (imVal & 0x0000FFFF); break;
+    case 4: EMIT_DWORD(imVal & 0xFFFFFFFF); break;
+    case 8: EMIT_QWORD(imVal             ); break;
+
+    default:
+      ASMJIT_ASSERT(!"Reached");
+  }
+  goto _EmitDone;
+
+  // --------------------------------------------------------------------------
+  // [Emit - Fpu]
+  // --------------------------------------------------------------------------
+
+_EmitFpuOp:
+  // Mandatory instruction prefix.
+  EMIT_PP(opCode);
+
+  // Instruction opcodes.
+  EMIT_OP(opCode >> 8);
+  EMIT_OP(opCode);
+  goto _EmitDone;
+
+  // --------------------------------------------------------------------------
+  // [Emit - Avx]
+  // --------------------------------------------------------------------------
+
+#define EMIT_AVX_M \
+  ASMJIT_ASSERT(rmMem); \
+  ASMJIT_ASSERT(rmMem->getOp() == kOperandTypeMem); \
+  \
+  if (rmMem->hasSegment()) { \
+    EMIT_BYTE(x86SegmentPrefix[rmMem->getSegment()]); \
+  } \
+  \
+  mBase = rmMem->getBase(); \
+  mIndex = rmMem->getIndex(); \
+  \
+  { \
+    uint32_t vex_XvvvvLpp; \
+    uint32_t vex_rxbmmmmm; \
+    \
+    vex_XvvvvLpp  = (opCode >> (kX86InstOpCode_L_Shift - 2)) & 0x04; \
+    vex_XvvvvLpp += (opCode >> (kX86InstOpCode_PP_Shift)) & 0x03; \
+    vex_XvvvvLpp += (opX >> (kVexVVVVShift - 3)); \
+    vex_XvvvvLpp += (opX << 4) & 0x80; \
+    \
+    vex_rxbmmmmm  = (opCode >> kX86InstOpCode_MM_Shift) & 0x1F; \
+    vex_rxbmmmmm += static_cast<uint32_t>(mBase  - 8 < 8) << 5; \
+    vex_rxbmmmmm += static_cast<uint32_t>(mIndex - 8 < 8) << 6; \
+    \
+    if (vex_rxbmmmmm != 0x01 || vex_XvvvvLpp >= 0x80 || (options & kX86InstOptionVex3) != 0) { \
+      vex_rxbmmmmm |= static_cast<uint32_t>(opReg << 4) & 0x80; \
+      vex_rxbmmmmm ^= 0xE0; \
+      vex_XvvvvLpp ^= 0x78; \
+      \
+      EMIT_BYTE(kVex3Byte); \
+      EMIT_BYTE(vex_rxbmmmmm); \
+      EMIT_BYTE(vex_XvvvvLpp); \
+      EMIT_OP(opCode); \
+    } \
+    else { \
+      vex_XvvvvLpp |= static_cast<uint32_t>(opReg << 4) & 0x80; \
+      vex_XvvvvLpp ^= 0xF8; \
+      \
+      EMIT_BYTE(kVex2Byte); \
+      EMIT_BYTE(vex_XvvvvLpp); \
+      EMIT_OP(opCode); \
+    } \
+  } \
+  \
+  mBase &= 0x7; \
+  opReg &= 0x7;
+
+_EmitAvxOp:
+  {
+    uint32_t vex_XvvvvLpp;
+
+    vex_XvvvvLpp  = (opCode >> (kX86InstOpCode_L_Shift - 2)) & 0x04;
+    vex_XvvvvLpp |= (opCode >> (kX86InstOpCode_PP_Shift));
+    vex_XvvvvLpp |= 0xF8;
+
+    // Encode 3-byte VEX prefix only if specified in options.
+    if ((options & kX86InstOptionVex3) != 0) {
+      uint32_t vex_rxbmmmmm = (opCode >> kX86InstOpCode_MM_Shift) | 0xE0;
+
+      EMIT_BYTE(kVex3Byte);
+      EMIT_OP(vex_rxbmmmmm);
+      EMIT_OP(vex_XvvvvLpp);
+      EMIT_OP(opCode);
+    }
+    else {
+      EMIT_BYTE(kVex2Byte);
+      EMIT_OP(vex_XvvvvLpp);
+      EMIT_OP(opCode);
+    }
+  }
+  goto _EmitDone;
+
+_EmitAvxR:
+  {
+    uint32_t vex_XvvvvLpp;
+    uint32_t vex_rxbmmmmm;
+
+    vex_XvvvvLpp  = (opCode >> (kX86InstOpCode_L_Shift - 2)) & 0x04;
+    vex_XvvvvLpp |= (opCode >> (kX86InstOpCode_PP_Shift));
+    vex_XvvvvLpp |= (opX    >> (kVexVVVVShift - 3));
+    vex_XvvvvLpp |= (opX << 4) & 0x80;
+
+    vex_rxbmmmmm  = (opCode >> kX86InstOpCode_MM_Shift) & 0x1F;
+    vex_rxbmmmmm |= (rmReg << 2) & 0x20;
+
+    if (vex_rxbmmmmm != 0x01 || vex_XvvvvLpp >= 0x80 || (options & kX86InstOptionVex3) != 0) {
+      vex_rxbmmmmm |= static_cast<uint32_t>(opReg & 0x08) << 4;
+      vex_rxbmmmmm ^= 0xE0;
+      vex_XvvvvLpp ^= 0x78;
+
+      EMIT_BYTE(kVex3Byte);
+      EMIT_OP(vex_rxbmmmmm);
+      EMIT_OP(vex_XvvvvLpp);
+      EMIT_OP(opCode);
+
+      rmReg &= 0x07;
+    }
+    else {
+      vex_XvvvvLpp += static_cast<uint32_t>(opReg & 0x08) << 4;
+      vex_XvvvvLpp ^= 0xF8;
+
+      EMIT_BYTE(kVex2Byte);
+      EMIT_OP(vex_XvvvvLpp);
+      EMIT_OP(opCode);
+    }
+  }
+
+  EMIT_BYTE(x86EncodeMod(3, opReg, static_cast<uint32_t>(rmReg)));
+
+  if (imLen == 0)
+    goto _EmitDone;
+
+  EMIT_BYTE(imVal & 0xFF);
+  goto _EmitDone;
+
+_EmitAvxM:
+  EMIT_AVX_M
+  goto _EmitSib;
+
+_EmitAvxV:
+  EMIT_AVX_M
+
+  if (mIndex >= kInvalidReg)
+    goto _IllegalInst;
+
+  if (Arch == kArchX64)
+    mIndex &= 0x7;
+
+  dispOffset = rmMem->getDisplacement();
+  if (rmMem->isBaseIndexType()) {
+    uint32_t shift = rmMem->getShift();
+
+    if (mBase != kX86RegIndexBp && dispOffset == 0) {
+      // [Base + Index * Scale].
+      EMIT_BYTE(x86EncodeMod(0, opReg, 4));
+      EMIT_BYTE(x86EncodeSib(shift, mIndex, mBase));
+    }
+    else if (IntUtil::isInt8(dispOffset)) {
+      // [Base + Index * Scale + Disp8].
+      EMIT_BYTE(x86EncodeMod(1, opReg, 4));
+      EMIT_BYTE(x86EncodeSib(shift, mIndex, mBase));
+      EMIT_BYTE(static_cast<int8_t>(dispOffset));
+    }
+    else {
+      // [Base + Index * Scale + Disp32].
+      EMIT_BYTE(x86EncodeMod(2, opReg, 4));
+      EMIT_BYTE(x86EncodeSib(shift, mIndex, mBase));
+      EMIT_DWORD(static_cast<int32_t>(dispOffset));
+    }
+  }
+  else {
+    // [Index * Scale + Disp32].
+    uint32_t shift = rmMem->getShift();
+
+    EMIT_BYTE(x86EncodeMod(0, opReg, 4));
+    EMIT_BYTE(x86EncodeSib(shift, mIndex, 5));
+
+    if (rmMem->getMemType() == kMemTypeLabel) {
+      if (Arch == kArchX64)
+        goto _IllegalAddr;
+
+      // Relative->Absolute [x86 mode].
+      label = self->getLabelData(rmMem->_vmem.base);
+      relocId = self->_relocList.getLength();
+
+      RelocData reloc;
+      reloc.type = kRelocRelToAbs;
+      reloc.size = 4;
+      reloc.from = static_cast<Ptr>(static_cast<uintptr_t>(cursor - self->_buffer));
+      reloc.data = static_cast<SignedPtr>(dispOffset);
+
+      if (self->_relocList.append(reloc) != kErrorOk)
+        return self->setError(kErrorNoHeapMemory);
+
+      if (label->offset != -1) {
+        // Bound label.
+        reloc.data += static_cast<SignedPtr>(label->offset);
+        EMIT_DWORD(0);
+      }
+      else {
+        // Non-bound label.
+        dispOffset = -4 - imLen;
+        dispSize = 4;
+        goto _EmitDisplacement;
+      }
+    }
+    else {
+      // [Disp32].
+      EMIT_DWORD(static_cast<int32_t>(dispOffset));
+    }
+  }
+  goto _EmitDone;
+
+  // --------------------------------------------------------------------------
+  // [Xop]
+  // --------------------------------------------------------------------------
+
+#define EMIT_XOP_M \
+  ASMJIT_ASSERT(rmMem); \
+  ASMJIT_ASSERT(rmMem->getOp() == kOperandTypeMem); \
+  \
+  if (rmMem->hasSegment()) { \
+    EMIT_BYTE(x86SegmentPrefix[rmMem->getSegment()]); \
+  } \
+  \
+  mBase = rmMem->getBase(); \
+  mIndex = rmMem->getIndex(); \
+  \
+  { \
+    uint32_t vex_XvvvvLpp; \
+    uint32_t vex_rxbmmmmm; \
+    \
+    vex_XvvvvLpp  = (opCode >> (kX86InstOpCode_L_Shift - 2)) & 0x04; \
+    vex_XvvvvLpp += (opCode >> (kX86InstOpCode_PP_Shift)) & 0x03; \
+    vex_XvvvvLpp += (opX >> (kVexVVVVShift - 3)); \
+    vex_XvvvvLpp += (opX << 4) & 0x80; \
+    \
+    vex_rxbmmmmm  = (opCode >> kX86InstOpCode_MM_Shift) & 0x1F; \
+    vex_rxbmmmmm += static_cast<uint32_t>(mBase  - 8 < 8) << 5; \
+    vex_rxbmmmmm += static_cast<uint32_t>(mIndex - 8 < 8) << 6; \
+    \
+    vex_rxbmmmmm |= static_cast<uint32_t>(opReg << 4) & 0x80; \
+    vex_rxbmmmmm ^= 0xE0; \
+    vex_XvvvvLpp ^= 0x78; \
+    \
+    EMIT_BYTE(kXopByte); \
+    EMIT_BYTE(vex_rxbmmmmm); \
+    EMIT_BYTE(vex_XvvvvLpp); \
+    EMIT_OP(opCode); \
+  } \
+  \
+  mBase &= 0x7; \
+  opReg &= 0x7;
+
+_EmitXopR:
+  {
+    uint32_t xop_XvvvvLpp;
+    uint32_t xop_rxbmmmmm;
+
+    xop_XvvvvLpp  = (opCode >> (kX86InstOpCode_L_Shift - 2)) & 0x04;
+    xop_XvvvvLpp |= (opCode >> (kX86InstOpCode_PP_Shift));
+    xop_XvvvvLpp |= (opX    >> (kVexVVVVShift - 3));
+    xop_XvvvvLpp |= (opX << 4) & 0x80;
+
+    xop_rxbmmmmm  = (opCode >> kX86InstOpCode_MM_Shift) & 0x1F;
+    xop_rxbmmmmm |= (rmReg << 2) & 0x20;
+
+    xop_rxbmmmmm |= static_cast<uint32_t>(opReg & 0x08) << 4;
+    xop_rxbmmmmm ^= 0xE0;
+    xop_XvvvvLpp ^= 0x78;
+
+    EMIT_BYTE(kXopByte);
+    EMIT_OP(xop_rxbmmmmm);
+    EMIT_OP(xop_XvvvvLpp);
+    EMIT_OP(opCode);
+
+    rmReg &= 0x07;
+  }
+
+  EMIT_BYTE(x86EncodeMod(3, opReg, static_cast<uint32_t>(rmReg)));
+
+  if (imLen == 0)
+    goto _EmitDone;
+
+  EMIT_BYTE(imVal & 0xFF);
+  goto _EmitDone;
+
+_EmitXopM:
+  EMIT_XOP_M
+  goto _EmitSib;
+
+  // --------------------------------------------------------------------------
+  // [Emit - Jump/Call to an Immediate]
+  // --------------------------------------------------------------------------
+
+  // 64-bit mode requires a trampoline if a relative displacement doesn't fit
+  // into a 32-bit address. Old version of AsmJit used to emit jump to a section
+  // which contained another jump followed by an address (it worked well for
+  // both `jmp` and `call`), but it required to reserve 14-bytes for a possible
+  // trampoline.
+  //
+  // Instead of using 5-byte `jmp/call` and reserving 14 bytes required by the
+  // trampoline, it's better to use 6-byte `jmp/call` (prefixing it with REX
+  // prefix) and to patch the `jmp/call` instruction to read the address from
+  // a memory in case the trampoline is needed.
+  //
+_EmitJmpOrCallAbs:
+  {
+    RelocData rd;
+    rd.type = kRelocAbsToRel;
+    rd.size = 4;
+    rd.from = static_cast<intptr_t>(cursor - self->_buffer) + 1;
+    rd.data = static_cast<SignedPtr>(imVal);
+
+    uint32_t trampolineSize = 0;
+
+    if (Arch == kArchX64) {
+      Ptr baseAddress = self->getBaseAddress();
+      //Ptr diff = rd.data - (baseAddress + rd.from + 4);
+
+      // If the base address of the output is known, it's possible to determine
+      // the need for a trampoline here. This saves possible REX prefix in
+      // 64-bit mode and prevents reserving space needed for an absolute address.
+      if (baseAddress == kNoBaseAddress || !x64IsRelative(rd.data, baseAddress + rd.from + 4)) {
+        // Emit REX prefix so the instruction can be patched later on. The REX
+        // prefix does nothing if not patched after, but allows to patch the
+        // instruction in case where the trampoline is needed.
+        rd.type = kRelocTrampoline;
+        rd.from++;
+
+        EMIT_OP(0x40);
+        trampolineSize = 8;
+      }
+    }
+
+    // Both `jmp` and `call` instructions have a single-byte opcode and are
+    // followed by a 32-bit displacement.
+    EMIT_OP(opCode);
+    EMIT_DWORD(0);
+
+    if (self->_relocList.append(rd) != kErrorOk)
+      return self->setError(kErrorNoHeapMemory);
+
+    // Reserve space for a possible trampoline.
+    self->_trampolineSize += trampolineSize;
+  }
+  goto _EmitDone;
+
+  // --------------------------------------------------------------------------
+  // [Emit - Displacement]
+  // --------------------------------------------------------------------------
+
+_EmitDisplacement:
+  {
+    ASMJIT_ASSERT(label->offset == -1);
+    ASMJIT_ASSERT(dispSize == 1 || dispSize == 4);
+
+    // Chain with label.
+    LabelLink* link = self->_newLabelLink();
+    link->prev = label->links;
+    link->offset = static_cast<intptr_t>(cursor - self->_buffer);
+    link->displacement = dispOffset;
+    link->relocId = relocId;
+    label->links = link;
+
+    // Emit label size as dummy data.
+    if (dispSize == 1)
+      EMIT_BYTE(0x01);
+    else // if (dispSize == 4)
+      EMIT_DWORD(0x04040404);
+  }
+
+  // --------------------------------------------------------------------------
+  // [Logging]
+  // --------------------------------------------------------------------------
+
+_EmitDone:
+#ifndef ASMJIT_DISABLE_LOGGER
+# ifdef ASMJIT_DEBUG
+  if (self->_logger || assertIllegal) {
+# else
+  if (self->_logger) {
+# endif // ASMJIT_DEBUG
+    StringBuilderT<512> sb;
+    uint32_t loggerOptions = 0;
+
+    if (self->_logger) {
+      sb.appendString(self->_logger->getIndentation());
+      loggerOptions = self->_logger->getOptions();
+    }
+
+    X86Assembler_dumpInstruction(sb, Arch, code, options, o0, o1, o2, o3, loggerOptions);
+
+    if ((loggerOptions & (1 << kLoggerOptionBinaryForm)) != 0)
+      X86Assembler_dumpComment(sb, sb.getLength(), self->_cursor, static_cast<intptr_t>(cursor - self->_cursor), dispSize, self->_comment);
+    else
+      X86Assembler_dumpComment(sb, sb.getLength(), nullptr, 0, 0, self->_comment);
+
+# ifdef ASMJIT_DEBUG
+    if (self->_logger)
+# endif // ASMJIT_DEBUG
+      self->_logger->logString(kLoggerStyleDefault, sb.getData(), sb.getLength());
+
+# ifdef ASMJIT_DEBUG
+    // Raise an assertion failure, because this situation shouldn't happen.
+    if (assertIllegal)
+      assertionFailed(sb.getData(), __FILE__, __LINE__);
+# endif // ASMJIT_DEBUG
+  }
 #else
-	uint32_t forceRexPrefix = this->_emitOptions & kX86EmitOptionRex;
-#endif
-	uint32_t memRegType = kX86RegTypeGpz;
-
-#ifdef ASMJIT_DEBUG
-	bool assertIllegal = false;
-#endif // ASMJIT_DEBUG
-
-	const Imm *immOperand = nullptr;
-	uint32_t immSize = 0;
-
-#define _FINISHED() \
-	goto _End
-
-#define _FINISHED_IMMEDIATE(_Operand_, _Size_) \
-	do \
-	{ \
-		immOperand = reinterpret_cast<const Imm *>(_Operand_); \
-		immSize = (_Size_); \
-		goto _EmitImmediate; \
-	} while (0)
-
-	// Convert operands to kOperandNone if needed.
-	if (o0->isReg())
-		bLoHiUsed |= o0->_reg.code & (kX86RegTypeGpbLo | kX86RegTypeGpbHi);
-	if (o1->isReg())
-		bLoHiUsed |= o1->_reg.code & (kX86RegTypeGpbLo | kX86RegTypeGpbHi);
-	if (o2->isReg())
-		bLoHiUsed |= o2->_reg.code & (kX86RegTypeGpbLo | kX86RegTypeGpbHi);
-
-	size_t beginOffset = this->getOffset();
-	const X86InstInfo *id = &x86InstInfo[code];
-
-	if (code >= _kX86InstCount)
-	{
-		this->setError(kErrorUnknownInstruction);
-		goto _Cleanup;
-	}
-
-	// Check if register operand is BPL, SPL, SIL, DIL and do action that depends
-	// to current mode:
-	//   - 64-bit: - Force REX prefix.
-	//
-	// Check if register operand is AH, BH, CH or DH and do action that depends
-	// to current mode:
-	//   - 32-bit: - Patch operand index (index += 4), because we are using
-	//               different index what is used in opcode.
-	//   - 64-bit: - Check whether there is REX prefix and raise error if it is.
-	//             - Do the same as in 32-bit mode - patch register index.
-	//
-	// NOTE: This is a hit hacky, but I added this to older code-base and I have
-	// no energy to rewrite it. Maybe in future all of this can be cleaned up!
-	if (bLoHiUsed | forceRexPrefix)
-	{
-		_loggerOperands[0] = o0;
-		_loggerOperands[1] = o1;
-		_loggerOperands[2] = o2;
-
-#ifdef ASMJIT_X64
-		// Check if there is register that makes this instruction un-encodable.
-
-		forceRexPrefix |= static_cast<uint32_t>(X86Assembler_isExtRegisterUsed(*o0));
-		forceRexPrefix |= static_cast<uint32_t>(X86Assembler_isExtRegisterUsed(*o1));
-		forceRexPrefix |= static_cast<uint32_t>(X86Assembler_isExtRegisterUsed(*o2));
-
-		if (o0->isRegType(kX86RegTypeGpbLo) && (o0->_reg.code & kRegIndexMask) >= 4)
-			forceRexPrefix = true;
-		else if (o1->isRegType(kX86RegTypeGpbLo) && (o1->_reg.code & kRegIndexMask) >= 4)
-			forceRexPrefix = true;
-		else if (o2->isRegType(kX86RegTypeGpbLo) && (o2->_reg.code & kRegIndexMask) >= 4)
-			forceRexPrefix = true;
-
-		if ((bLoHiUsed & kX86RegTypeGpbHi) && forceRexPrefix)
-			goto _IllegalInstruction;
-#endif // ASMJIT_X64
-
-		// Patch GPB.HI operand index.
-		if (bLoHiUsed & kX86RegTypeGpbHi)
-		{
-			if (o0->isRegType(kX86RegTypeGpbHi))
-				o0 = reinterpret_cast<const Operand *>(&_patchedHiRegs[o0->_reg.code & kRegIndexMask]);
-			if (o1->isRegType(kX86RegTypeGpbHi))
-				o1 = reinterpret_cast<const Operand *>(&_patchedHiRegs[o1->_reg.code & kRegIndexMask]);
-			if (o2->isRegType(kX86RegTypeGpbHi))
-				o2 = reinterpret_cast<const Operand *>(&_patchedHiRegs[o2->_reg.code & kRegIndexMask]);
-		}
-	}
-
-	// Check for buffer space (and grow if needed).
-	if (!this->canEmit())
-		goto _Cleanup;
-
-	if (this->_emitOptions & kX86EmitOptionLock)
-	{
-		if (!id->isLockable())
-			goto _IllegalInstruction;
-		this->_emitByte(0xF0);
-	}
-
-	switch (id->getGroup())
-	{
-		case kX86InstGroupNone:
-			_FINISHED();
-
-		case kX86InstGroupEmit:
-			this->_emitOpCode(id->_opCode[0]);
-			_FINISHED();
-
-		case kX86InstGroupArith:
-		{
-			uint32_t opCode = id->_opCode[0];
-			uint8_t opReg = static_cast<uint8_t>(id->_opCodeR);
-
-			// Mem <- Reg
-			if (o0->isMem() && o1->isReg())
-			{
-				this->_emitX86RM(opCode + (o1->getSize() != 1), o1->getSize() == 2, o1->getSize() == 8, reinterpret_cast<const GpReg &>(*o1).getRegCode(), reinterpret_cast<const Operand &>(*o0), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			// Reg <- Reg|Mem
-			if (o0->isReg() && o1->isRegMem())
-			{
-				this->_emitX86RM(opCode + 2 + (o0->getSize() != 1), o0->getSize() == 2, o0->getSize() == 8, reinterpret_cast<const GpReg &>(*o0).getRegCode(), reinterpret_cast<const Operand &>(*o1), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			// Alternate Form - AL, AX, EAX, RAX.
-			if (o0->isRegIndex(0) && o1->isImm())
-			{
-				if (o0->getSize() == 1 || !IntUtil::isInt8(static_cast<const Imm *>(o1)->getValue()))
-				{
-					if (o0->getSize() == 2)
-						this->_emitByte(0x66); // 16-bit.
-					else if (o0->getSize() == 8)
-						this->_emitByte(0x48); // REX.W.
-
-					this->_emitByte((opReg << 3) | (0x04 + (o0->getSize() != 1)));
-					_FINISHED_IMMEDIATE(o1, IntUtil::_min<uint32_t>(o0->getSize(), 4));
-				}
-			}
-
-			if (o0->isRegMem() && o1->isImm())
-			{
-				const Imm &imm = reinterpret_cast<const Imm &>(*o1);
-				immSize = IntUtil::isInt8(imm.getValue()) ? 1 : IntUtil::_min(o0->getSize(), 4u);
-
-				this->_emitX86RM(id->_opCode[1] + (o0->getSize() != 1 ? (immSize != 1 ? 1 : 3) : 0), o0->getSize() == 2, o0->getSize() == 8, opReg, reinterpret_cast<const Operand &>(*o0), immSize, forceRexPrefix);
-				_FINISHED_IMMEDIATE(&imm, immSize);
-			}
-
-			break;
-		}
-
-		case kX86InstGroupBSwap:
-			if (o0->isReg())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-
-#ifdef ASMJIT_X64
-				this->_emitRexR(dst.getRegType() == kX86RegTypeGpq, 1, dst.getRegCode(), forceRexPrefix);
-#endif // ASMJIT_X64
-				this->_emitByte(0x0F);
-				this->_emitModR(1, dst.getRegCode());
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupBTest:
-			if (o0->isRegMem() && o1->isReg())
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-				const GpReg &src = reinterpret_cast<const GpReg &>(*o1);
-
-				this->_emitX86RM(id->_opCode[0], src.isRegType(kX86RegTypeGpw), src.isRegType(kX86RegTypeGpq), src.getRegCode(), dst, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			if (o0->isRegMem() && o1->isImm())
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-
-				this->_emitX86RM(id->_opCode[1], dst.getSize() == 2, dst.getSize() == 8, static_cast<uint8_t>(id->_opCodeR), dst, 1, forceRexPrefix);
-				_FINISHED_IMMEDIATE(o1, 1);
-			}
-
-			break;
-
-		case kX86InstGroupCall:
-			if (o0->isRegTypeMem(kX86RegTypeGpz))
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-				this->_emitX86RM(0xFF, 0, 0, 2, dst, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			if (o0->isImm())
-			{
-				const Imm &imm = reinterpret_cast<const Imm &>(*o0);
-				this->_emitByte(0xE8);
-				this->_emitJmpOrCallReloc(kX86InstGroupCall, reinterpret_cast<void *>(imm.getValue()));
-				_FINISHED();
-			}
-
-			if (o0->isLabel())
-			{
-				LabelData &l_data = this->_labels[reinterpret_cast<const Label *>(o0)->getId() & kOperandIdValueMask];
-
-				if (l_data.offset != -1)
-				{
-					// Bound label.
-					static const sysint_t rel32_size = 5;
-					sysint_t offs = l_data.offset - this->getOffset();
-
-					ASMJIT_ASSERT(offs <= 0);
-
-					this->_emitByte(0xE8);
-					this->_emitInt32(static_cast<int32_t>(offs - rel32_size));
-				}
-				else
-				{
-					// Non-bound label.
-					this->_emitByte(0xE8);
-					this->_emitDisplacement(l_data, -4, 4);
-				}
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupCrc32:
-			if (o0->isReg() && o1->isRegMem())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-				const Operand &src = reinterpret_cast<const Operand &>(*o1);
-				ASMJIT_ASSERT(dst.getRegType() == kX86RegTypeGpd || dst.getRegType() == kX86RegTypeGpq);
-
-				this->_emitX86RM(id->_opCode[0] + (src.getSize() != 1), src.getSize() == 2, dst.getRegType() == 8, dst.getRegCode(), src, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupEnter:
-			if (o0->isImm() && o1->isImm())
-			{
-				this->_emitByte(0xC8);
-				this->_emitWord(static_cast<uint16_t>(static_cast<uintptr_t>(reinterpret_cast<const Imm &>(*o2).getValue())));
-				this->_emitByte(static_cast<uint8_t>(static_cast<uintptr_t>(reinterpret_cast<const Imm &>(*o1).getValue())));
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupIMul:
-			// 1 operand
-			if (o0->isRegMem() && o1->isNone() && o2->isNone())
-			{
-				const Operand &src = reinterpret_cast<const Operand &>(*o0);
-				this->_emitX86RM(0xF6 + (src.getSize() != 1), src.getSize() == 2, src.getSize() == 8, 5, src, 0, forceRexPrefix);
-				_FINISHED();
-			}
-			// 2 operands
-			else if (o0->isReg() && !o1->isNone() && o2->isNone())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-				ASMJIT_ASSERT(!dst.isRegType(kX86RegTypeGpw));
-
-				if (o1->isRegMem())
-				{
-					const Operand &src = reinterpret_cast<const Operand &>(*o1);
-
-					this->_emitX86RM(0x0FAF, dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), src, 0, forceRexPrefix);
-					_FINISHED();
-				}
-				else if (o1->isImm())
-				{
-					const Imm &imm = reinterpret_cast<const Imm &>(*o1);
-
-					if (IntUtil::isInt8(imm.getValue()))
-					{
-						this->_emitX86RM(0x6B, dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), dst, 1, forceRexPrefix);
-						_FINISHED_IMMEDIATE(&imm, 1);
-					}
-					else
-					{
-						immSize = dst.isRegType(kX86RegTypeGpw) ? 2 : 4;
-						this->_emitX86RM(0x69, dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), dst, immSize, forceRexPrefix);
-						_FINISHED_IMMEDIATE(&imm, immSize);
-					}
-				}
-			}
-			// 3 operands
-			else if (o0->isReg() && o1->isRegMem() && o2->isImm())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-				const Operand &src = reinterpret_cast<const Operand &>(*o1);
-				const Imm &imm = reinterpret_cast<const Imm &>(*o2);
-
-				if (IntUtil::isInt8(imm.getValue()))
-				{
-					this->_emitX86RM(0x6B, dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), src, 1, forceRexPrefix);
-					_FINISHED_IMMEDIATE(&imm, 1);
-				}
-				else
-				{
-					immSize = dst.isRegType(kX86RegTypeGpw) ? 2 : 4;
-					this->_emitX86RM(0x69, dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), src, immSize, forceRexPrefix);
-					_FINISHED_IMMEDIATE(&imm, immSize);
-				}
-			}
-
-			break;
-
-		case kX86InstGroupIncDec:
-			if (o0->isRegMem())
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-
-				// INC [r16|r32] in 64-bit mode is not encodable.
-#ifdef ASMJIT_X86
-				if (dst.isReg() && (dst.isRegType(kX86RegTypeGpw) || dst.isRegType(kX86RegTypeGpd)))
-				{
-					this->_emitX86Inl(id->_opCode[0], dst.isRegType(kX86RegTypeGpw), 0, reinterpret_cast<const Reg&>(dst).getRegCode(), false);
-					_FINISHED();
-				}
-#endif // ASMJIT_X86
-
-				this->_emitX86RM(id->_opCode[1] + (dst.getSize() != 1), dst.getSize() == 2, dst.getSize() == 8, static_cast<uint8_t>(id->_opCodeR), dst, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupJcc:
-			if (o0->isLabel())
-			{
-				LabelData &l_data = this->_labels[reinterpret_cast<const Label *>(o0)->getId() & kOperandIdValueMask];
-
-				uint32_t hint = static_cast<uint32_t>(o1->isImm() ? reinterpret_cast<const Imm &>(*o1).getValue() : 0);
-				bool isShortJump = !!(_emitOptions & kX86EmitOptionShortJump);
-
-				// Emit jump hint if configured for that.
-				if ((hint & (kCondHintLikely | kCondHintUnlikely)) && (this->_properties & (1 << kX86PropertyJumpHints)))
-				{
-					if (hint & kCondHintLikely)
-						this->_emitByte(kX86CondPrefixLikely);
-					else if (hint & kCondHintUnlikely)
-						this->_emitByte(kX86CondPrefixUnlikely);
-				}
-
-				if (l_data.offset != -1)
-				{
-					// Bound label.
-					static const sysint_t rel8_size = 2;
-					static const sysint_t rel32_size = 6;
-					sysint_t offs = l_data.offset - this->getOffset();
-
-					ASMJIT_ASSERT(offs <= 0);
-
-					if (IntUtil::isInt8(offs - rel8_size))
-					{
-						this->_emitByte(0x70 | static_cast<uint8_t>(id->_opCode[0]));
-						this->_emitByte(static_cast<uint8_t>(static_cast<int8_t>(offs - rel8_size)));
-
-						// Change the emit options so logger can log instruction correctly.
-						this->_emitOptions |= kX86EmitOptionShortJump;
-					}
-					else
-					{
-						if (isShortJump && this->_logger)
-						{
-							this->_logger->logString("*** ASSEMBLER WARNING: Emitting long conditional jump, but short jump instruction forced!\n");
-							this->_emitOptions &= ~kX86EmitOptionShortJump;
-						}
-
-						this->_emitByte(0x0F);
-						this->_emitByte(0x80 | static_cast<uint8_t>(id->_opCode[0]));
-						this->_emitInt32(static_cast<int32_t>(offs - rel32_size));
-					}
-				}
-				else
-				{
-					// Non-bound label.
-					if (isShortJump)
-					{
-						this->_emitByte(0x70 | static_cast<uint8_t>(id->_opCode[0]));
-						this->_emitDisplacement(l_data, -1, 1);
-					}
-					else
-					{
-						this->_emitByte(0x0F);
-						this->_emitByte(0x80 | static_cast<uint8_t>(id->_opCode[0]));
-						this->_emitDisplacement(l_data, -4, 4);
-					}
-				}
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupJmp:
-			if (o0->isRegMem())
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-
-				this->_emitX86RM(0xFF, 0, 0, 4, dst, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			if (o0->isImm())
-			{
-				const Imm &imm = reinterpret_cast<const Imm &>(*o0);
-				this->_emitByte(0xE9);
-				this->_emitJmpOrCallReloc(kX86InstGroupJmp, reinterpret_cast<void *>(imm.getValue()));
-				_FINISHED();
-			}
-
-			if (o0->isLabel())
-			{
-				LabelData &l_data = this->_labels[reinterpret_cast<const Label *>(o0)->getId() & kOperandIdValueMask];
-				bool isShortJump = !!(this->_emitOptions & kX86EmitOptionShortJump);
-
-				if (l_data.offset != -1)
-				{
-					// Bound label.
-					static const sysint_t rel8_size = 2;
-					static const sysint_t rel32_size = 5;
-					sysint_t offs = l_data.offset - this->getOffset();
-
-					if (IntUtil::isInt8(offs - rel8_size))
-					{
-						this->_emitByte(0xEB);
-						this->_emitByte(static_cast<uint8_t>(static_cast<int8_t>(offs - rel8_size)));
-
-						// Change the emit options so logger can log instruction correctly.
-						this->_emitOptions |= kX86EmitOptionShortJump;
-					}
-					else
-					{
-						if (isShortJump && this->_logger)
-						{
-							this->_logger->logString("*** ASSEMBLER WARNING: Emitting long jump, but short jump instruction forced!\n");
-							this->_emitOptions &= ~kX86EmitOptionShortJump;
-						}
-
-						this->_emitByte(0xE9);
-						this->_emitInt32(static_cast<int32_t>(offs - rel32_size));
-					}
-				}
-				else
-				{
-					// Non-bound label.
-					if (isShortJump)
-					{
-						this->_emitByte(0xEB);
-						this->_emitDisplacement(l_data, -1, 1);
-					}
-					else
-					{
-						this->_emitByte(0xE9);
-						this->_emitDisplacement(l_data, -4, 4);
-					}
-				}
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupLea:
-			if (o0->isReg() && o1->isMem())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-				const Mem &src = reinterpret_cast<const Mem &>(*o1);
-
-				// Size override prefix support.
-				if (src.getSizePrefix())
-				{
-					this->_emitByte(0x67);
-#ifdef ASMJIT_X86
-					memRegType = kX86RegTypeGpw;
+# ifdef ASMJIT_DEBUG
+  ASMJIT_ASSERT(!assertIllegal);
+# endif // ASMJIT_DEBUG
+#endif // !ASMJIT_DISABLE_LOGGER
+
+  self->_comment = nullptr;
+  self->setCursor(cursor);
+
+  return kErrorOk;
+
+_GrowBuffer:
+  ASMJIT_PROPAGATE_ERROR(self->_grow(16));
+
+  cursor = self->getCursor();
+  goto _Prepare;
+}
+
+Error X86Assembler::_emit(uint32_t code, const Operand& o0, const Operand& o1, const Operand& o2, const Operand& o3) {
+#if defined(ASMJIT_BUILD_X86) && !defined(ASMJIT_BUILD_X64)
+  return X86Assembler_emit<kArchX86>(this, code, &o0, &o1, &o2, &o3);
+#elif !defined(ASMJIT_BUILD_X86) && defined(ASMJIT_BUILD_X64)
+  return X86Assembler_emit<kArchX64>(this, code, &o0, &o1, &o2, &o3);
 #else
-					memRegType = kX86RegTypeGpd;
+  if (_arch == kArchX86)
+    return X86Assembler_emit<kArchX86>(this, code, &o0, &o1, &o2, &o3);
+  else
+    return X86Assembler_emit<kArchX64>(this, code, &o0, &o1, &o2, &o3);
 #endif
-				}
-
-				this->_emitX86RM(0x8D, dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), src, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupMem:
-			if (o0->isMem())
-			{
-				this->_emitX86RM(id->_opCode[0], 0, static_cast<uint8_t>(id->_opCode[1]), (uint8_t)id->_opCodeR, reinterpret_cast<const Mem &>(*o0), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupMov:
-		{
-			const Operand &dst = *o0;
-			const Operand &src = *o1;
-
-			switch ((dst.getType() << 4) | src.getType())
-			{
-				// Reg <- Reg/Mem
-				case (kOperandReg << 4) | kOperandReg:
-					// Reg <- Sreg
-					if (src.isRegType(kX86RegTypeSeg))
-					{
-						ASMJIT_ASSERT(dst.isRegType(kX86RegTypeGpw) || dst.isRegType(kX86RegTypeGpd) || dst.isRegType(kX86RegTypeGpq));
-
-						this->_emitX86RM(0x8C, dst.getSize() == 2, dst.getSize() == 8, reinterpret_cast<const SegmentReg &>(src).getRegCode(), reinterpret_cast<const Operand &>(dst), 0, forceRexPrefix);
-						_FINISHED();
-					}
-
-					// Sreg <- Reg/Mem
-					if (dst.isRegType(kX86RegTypeSeg))
-					{
-						ASMJIT_ASSERT(src.isRegType(kX86RegTypeGpw) || src.isRegType(kX86RegTypeGpd) || src.isRegType(kX86RegTypeGpq));
-
-					_Emit_Mov_Sreg_RM:
-						this->_emitX86RM(0x8E, src.getSize() == 2, src.getSize() == 8, reinterpret_cast<const SegmentReg &>(dst).getRegCode(), reinterpret_cast<const Operand &>(src), 0, forceRexPrefix);
-						_FINISHED();
-					}
-
-					ASMJIT_ASSERT(src.isRegType(kX86RegTypeGpbLo) || src.isRegType(kX86RegTypeGpbHi) || src.isRegType(kX86RegTypeGpw) || src.isRegType(kX86RegTypeGpd) || src.isRegType(kX86RegTypeGpq));
-					// ... fall through ...
-				case (kOperandReg << 4) | kOperandMem:
-					// Sreg <- Mem
-					if (dst.isRegType(kX86RegTypeSeg))
-						goto _Emit_Mov_Sreg_RM;
-
-					ASMJIT_ASSERT(dst.isRegType(kX86RegTypeGpbLo) || dst.isRegType(kX86RegTypeGpbHi) || dst.isRegType(kX86RegTypeGpw) || dst.isRegType(kX86RegTypeGpd) || dst.isRegType(kX86RegTypeGpq));
-
-					this->_emitX86RM(0x0000008A + (dst.getSize() != 1), dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), reinterpret_cast<const GpReg &>(dst).getRegCode(),
-						reinterpret_cast<const Operand &>(src), 0, forceRexPrefix);
-					_FINISHED();
-
-				// Reg <- Imm
-				case (kOperandReg << 4) | kOperandImm:
-				{
-					const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-					const Imm &src = reinterpret_cast<const Imm &>(*o1);
-
-					// In 64-bit mode the immediate can be 64-bits long if the
-					// destination operand type is register (otherwise 32-bits).
-					immSize = dst.getSize();
-
-#ifdef ASMJIT_X64
-					// Optimize instruction size by using 32-bit immediate if value can
-					// fit into it.
-					if (immSize == 8 && IntUtil::isInt32(src.getValue()))
-					{
-						this->_emitX86RM(0xC7,
-							0, // 16BIT
-							1, // REX.W
-							0, // O
-							dst, 0, forceRexPrefix);
-						immSize = 4;
-					}
-					else
-#endif // ASMJIT_X64
-						this->_emitX86Inl(dst.getSize() == 1 ? 0xB0 : 0xB8, dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), forceRexPrefix);
-
-					_FINISHED_IMMEDIATE(&src, immSize);
-				}
-
-				// Mem <- Reg/Sreg
-				case (kOperandMem << 4) | kOperandReg:
-					if (src.isRegType(kX86RegTypeSeg))
-					{
-						// Mem <- Sreg
-						this->_emitX86RM(0x8C, dst.getSize() == 2, dst.getSize() == 8, reinterpret_cast<const SegmentReg &>(src).getRegCode(), reinterpret_cast<const Operand &>(dst), 0, forceRexPrefix);
-					}
-					else
-					{
-						// Mem <- Reg
-						ASMJIT_ASSERT(src.isRegType(kX86RegTypeGpbLo) || src.isRegType(kX86RegTypeGpbHi) || src.isRegType(kX86RegTypeGpw) || src.isRegType(kX86RegTypeGpd) || src.isRegType(kX86RegTypeGpq));
-
-						this->_emitX86RM(0x88 + (src.getSize() != 1), src.isRegType(kX86RegTypeGpw), src.isRegType(kX86RegTypeGpq), reinterpret_cast<const GpReg &>(src).getRegCode(),
-							reinterpret_cast<const Operand &>(dst), 0, forceRexPrefix);
-					}
-
-					_FINISHED();
-
-				// Mem <- Imm
-				case (kOperandMem << 4) | kOperandImm:
-					immSize = IntUtil::_min(dst.getSize(), 4u);
-
-					this->_emitX86RM(0xC6 + (dst.getSize() != 1), dst.getSize() == 2, dst.getSize() == 8, 0, reinterpret_cast<const Operand &>(dst), immSize, forceRexPrefix);
-					_FINISHED_IMMEDIATE(&src, immSize);
-			}
-
-			break;
-		}
-
-		case kX86InstGroupMovPtr:
-			if ((o0->isReg() && o1->isImm()) || (o0->isImm() && o1->isReg()))
-			{
-				bool reverse = o1->getType() == kOperandReg;
-				uint8_t opCode = !reverse ? 0xA0 : 0xA2;
-				const GpReg &reg = reinterpret_cast<const GpReg &>(!reverse ? *o0 : *o1);
-				const Imm &imm = reinterpret_cast<const Imm &>(!reverse ? *o1 : *o0);
-
-				if (reg.getRegIndex())
-					goto _IllegalInstruction;
-
-				if (reg.isRegType(kX86RegTypeGpw))
-					this->_emitByte(0x66);
-#ifdef ASMJIT_X64
-				this->_emitRexR(reg.getSize() == 8, 0, 0, forceRexPrefix);
-#endif // ASMJIT_X64
-				this->_emitByte(opCode + (reg.getSize() != 1));
-				_FINISHED_IMMEDIATE(&imm, sizeof(sysint_t));
-			}
-
-			break;
-
-		case kX86InstGroupMovSxMovZx:
-			if (o0->isReg() && o1->isRegMem())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-				const Operand &src = reinterpret_cast<const Operand &>(*o1);
-
-				if (dst.getSize() == 1)
-					goto _IllegalInstruction;
-
-				if (src.getSize() != 1 && src.getSize() != 2)
-					goto _IllegalInstruction;
-
-				if (src.getSize() == 2 && dst.getSize() == 2)
-					goto _IllegalInstruction;
-
-				this->_emitX86RM(id->_opCode[0] + (src.getSize() != 1), dst.isRegType(kX86RegTypeGpw), dst.isRegType(kX86RegTypeGpq), dst.getRegCode(), src, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-#ifdef ASMJIT_X64
-		case kX86InstGroupMovSxD:
-			if (o0->isReg() && o1->isRegMem())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-				const Operand &src = reinterpret_cast<const Operand &>(*o1);
-				this->_emitX86RM(0x00000063, 0, 1, dst.getRegCode(), src, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-#endif // ASMJIT_X64
-
-		case kX86InstGroupPush:
-			if (o0->isRegType(kX86RegTypeSeg))
-			{
-				static const uint32_t opcodeList[] =
-				{
-					0x06, // ES.
-					0x0E, // CS.
-					0x16, // SS.
-					0x1E, // DS.
-					0x0FA0, // FS.
-					0x0FA8  // GS.
-				};
-
-				unsigned segment = reinterpret_cast<const SegmentReg *>(o0)->getRegIndex();
-				ASMJIT_ASSERT(segment < kX86SegCount);
-
-				unsigned opcode = opcodeList[segment];
-
-				if (opcode > 0xFF)
-					this->_emitByte(opcode >> 8);
-				this->_emitByte(opcode & 0xFF);
-
-				_FINISHED();
-			}
-
-			// This section is only for immediates, memory/register operands are handled in kX86InstGroupPop.
-			if (o0->isImm())
-			{
-				const Imm &imm = reinterpret_cast<const Imm &>(*o0);
-
-				if (IntUtil::isInt8(imm.getValue()))
-				{
-					this->_emitByte(0x6A);
-					_FINISHED_IMMEDIATE(&imm, 1);
-				}
-				else
-				{
-					this->_emitByte(0x68);
-					_FINISHED_IMMEDIATE(&imm, 4);
-				}
-			}
-
-			// ... goto kX86InstGroupPop ...
-
-		case kX86InstGroupPop:
-			if (o0->isRegType(kX86RegTypeSeg))
-			{
-				static const uint32_t opcodeList[] =
-				{
-					0x07, // ES.
-					0, // CS.
-					0x17, // SS.
-					0x1F, // DS.
-					0x0FA1, // FS.
-					0x0FA9  // GS.
-				};
-
-				unsigned segment = reinterpret_cast<const SegmentReg *>(o0)->getRegIndex();
-				ASMJIT_ASSERT(segment < kX86SegCount);
-
-				unsigned opcode = opcodeList[segment];
-				ASMJIT_ASSERT(opcode);
-
-				if (opcode > 0xFF)
-					this->_emitByte(opcode >> 8);
-				this->_emitByte(opcode & 0xFF);
-
-				_FINISHED();
-			}
-
-			if (o0->isReg())
-			{
-				ASMJIT_ASSERT(o0->isRegType(kX86RegTypeGpw) || o0->isRegType(kX86RegTypeGpz));
-				this->_emitX86Inl(id->_opCode[0], o0->isRegType(kX86RegTypeGpw), 0, reinterpret_cast<const GpReg &>(*o0).getRegCode(), forceRexPrefix);
-				_FINISHED();
-			}
-
-			if (o0->isMem())
-			{
-				this->_emitX86RM(id->_opCode[1], o0->getSize() == 2, 0, static_cast<uint8_t>(id->_opCodeR), reinterpret_cast<const Operand &>(*o0), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupRegRm:
-			if (o0->isReg() && o1->isRegMem())
-			{
-				const GpReg &dst = reinterpret_cast<const GpReg &>(*o0);
-				const Operand &src = reinterpret_cast<const Operand &>(*o1);
-				ASMJIT_ASSERT(dst.getSize() != 1);
-
-				this->_emitX86RM(id->_opCode[0], dst.getRegType() == kX86RegTypeGpw, dst.getRegType() == kX86RegTypeGpq, dst.getRegCode(), src, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupRm:
-			if (o0->isRegMem())
-			{
-				const Operand &op = reinterpret_cast<const Operand &>(*o0);
-				this->_emitX86RM(id->_opCode[0] + (op.getSize() != 1), op.getSize() == 2, op.getSize() == 8, static_cast<uint8_t>(id->_opCodeR), op, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupRmByte:
-			if (o0->isRegMem())
-			{
-				const Operand &op = reinterpret_cast<const Operand &>(*o0);
-
-				// Only BYTE register or BYTE/TYPELESS memory location can be used.
-				ASMJIT_ASSERT(op.getSize() <= 1);
-
-				this->_emitX86RM(id->_opCode[0], false, false, 0, op, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupRmReg:
-			if (o0->isRegMem() && o1->isReg())
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-				const GpReg &src = reinterpret_cast<const GpReg &>(*o1);
-				this->_emitX86RM(id->_opCode[0] + (src.getSize() != 1), src.getRegType() == kX86RegTypeGpw, src.getRegType() == kX86RegTypeGpq, src.getRegCode(), dst, 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupRep:
-		{
-			uint32_t opCode = id->_opCode[0];
-			uint32_t opSize = id->_opCode[1];
-
-			// Emit REP prefix (1 BYTE).
-			this->_emitByte(opCode >> 24);
-
-			if (opSize != 1)
-				++opCode; // D, Q and W form.
-			if (opSize == 2)
-				this->_emitByte(0x66); // 16-bit prefix.
-#ifdef ASMJIT_X64
-			else if (opSize == 8)
-				this->_emitByte(0x48); // REX.W prefix.
-#endif // ASMJIT_X64
-
-			// Emit opcode (1 BYTE).
-			this->_emitByte(opCode & 0xFF);
-			_FINISHED();
-		}
-
-		case kX86InstGroupRet:
-			if (o0->isNone())
-			{
-				this->_emitByte(0xC3);
-				_FINISHED();
-			}
-			else if (o0->isImm())
-			{
-				const Imm &imm = reinterpret_cast<const Imm &>(*o0);
-				ASMJIT_ASSERT(IntUtil::isUInt16(imm.getValue()));
-
-				if (!imm.getValue())
-				{
-					this->_emitByte(0xC3);
-					_FINISHED();
-				}
-				else
-				{
-					this->_emitByte(0xC2);
-					_FINISHED_IMMEDIATE(&imm, 2);
-				}
-			}
-
-			break;
-
-		case kX86InstGroupRot:
-			if (o0->isRegMem() && (o1->isRegCode(kX86RegCl) || o1->isImm()))
-			{
-				// generate opcode. For these operations is base 0xC0 or 0xD0.
-				bool useImm8 = o1->isImm() && reinterpret_cast<const Imm &>(*o1).getValue() != 1;
-				uint32_t opCode = useImm8 ? 0xC0 : 0xD0;
-
-				// size and operand type modifies the opcode
-				if (o0->getSize() != 1)
-					opCode |= 0x01;
-				if (o1->getType() == kOperandReg)
-					opCode |= 0x02;
-
-				this->_emitX86RM(opCode, o0->getSize() == 2, o0->getSize() == 8, static_cast<uint8_t>(id->_opCodeR), reinterpret_cast<const Operand &>(*o0), useImm8 ? 1 : 0, forceRexPrefix);
-
-				if (useImm8)
-					_FINISHED_IMMEDIATE(o1, 1);
-				else
-					_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupShldShrd:
-			if (o0->isRegMem() && o1->isReg() && (o2->isImm() || (o2->isReg() && o2->isRegCode(kX86RegCl))))
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-				const GpReg &src1 = reinterpret_cast<const GpReg &>(*o1);
-				const Operand &src2 = reinterpret_cast<const Operand &>(*o2);
-
-				ASMJIT_ASSERT(dst.getSize() == src1.getSize());
-
-				this->_emitX86RM(id->_opCode[0] + src2.isReg(), src1.isRegType(kX86RegTypeGpw), src1.isRegType(kX86RegTypeGpq), src1.getRegCode(), dst, src2.isImm() ? 1 : 0, forceRexPrefix);
-				if (src2.isImm())
-					_FINISHED_IMMEDIATE(&src2, 1);
-				else
-					_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupTest:
-			if (o0->isRegMem() && o1->isReg())
-			{
-				ASMJIT_ASSERT(o0->getSize() == o1->getSize());
-				this->_emitX86RM(0x84 + (o1->getSize() != 1), o1->getSize() == 2, o1->getSize() == 8, reinterpret_cast<const Reg &>(*o1).getRegCode(), reinterpret_cast<const Operand &>(*o0), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			// Alternate Form - AL, AX, EAX, RAX.
-			if (o0->isRegIndex(0) && o1->isImm())
-			{
-				immSize = IntUtil::_min(o0->getSize(), 4u);
-
-				if (o0->getSize() == 2)
-					this->_emitByte(0x66); // 16-bit.
-#ifdef ASMJIT_X64
-				this->_emitRexRM(o0->getSize() == 8, 0, reinterpret_cast<const Operand &>(*o0), forceRexPrefix);
-#endif // ASMJIT_X64
-				this->_emitByte(0xA8 + (o0->getSize() != 1));
-				_FINISHED_IMMEDIATE(o1, immSize);
-			}
-
-			if (o0->isRegMem() && o1->isImm())
-			{
-				immSize = IntUtil::_min(o0->getSize(), 4u);
-
-				if (o0->getSize() == 2)
-					this->_emitByte(0x66); // 16-bit.
-				this->_emitSegmentPrefix(reinterpret_cast<const Operand &>(*o0)); // Segment prefix.
-#ifdef ASMJIT_X64
-				this->_emitRexRM(o0->getSize() == 8, 0, reinterpret_cast<const Operand &>(*o0), forceRexPrefix);
-#endif // ASMJIT_X64
-				this->_emitByte(0xF6 + (o0->getSize() != 1));
-				this->_emitModRM(0, reinterpret_cast<const Operand &>(*o0), immSize);
-				_FINISHED_IMMEDIATE(o1, immSize);
-			}
-
-			break;
-
-		case kX86InstGroupXchg:
-			if (o0->isRegMem() && o1->isReg())
-			{
-				const Operand &dst = reinterpret_cast<const Operand &>(*o0);
-				const GpReg &src = reinterpret_cast<const GpReg &>(*o1);
-
-				if (src.isRegType(kX86RegTypeGpw))
-					this->_emitByte(0x66); // 16-bit.
-				this->_emitSegmentPrefix(dst); // segment prefix
-#ifdef ASMJIT_X64
-				this->_emitRexRM(src.isRegType(kX86RegTypeGpq), src.getRegCode(), dst, forceRexPrefix);
-#endif // ASMJIT_X64
-
-				// Special opcode for index 0 registers (AX, EAX, RAX vs register).
-				if ((dst.getType() == kOperandReg && dst.getSize() > 1) && (!reinterpret_cast<const GpReg &>(dst).getRegCode() || !reinterpret_cast<const GpReg &>(src).getRegCode()))
-				{
-					uint8_t index = reinterpret_cast<const GpReg &>(dst).getRegCode() | src.getRegCode();
-					this->_emitByte(0x90 + index);
-					_FINISHED();
-				}
-
-				this->_emitByte(0x86 + (src.getSize() != 1));
-				this->_emitModRM(src.getRegCode(), dst, 0);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupMovBE:
-			if (o0->isReg() && o1->isMem())
-			{
-				this->_emitX86RM(0x000F38F0, o0->isRegType(kX86RegTypeGpw), o0->isRegType(kX86RegTypeGpq), reinterpret_cast<const GpReg &>(*o0).getRegCode(), reinterpret_cast<const Mem &>(*o1), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			if (o0->isMem() && o1->isReg())
-			{
-				this->_emitX86RM(0x000F38F1, o1->isRegType(kX86RegTypeGpw), o1->isRegType(kX86RegTypeGpq), reinterpret_cast<const GpReg &>(*o1).getRegCode(), reinterpret_cast<const Mem &>(*o0), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupX87StM:
-			if (o0->isRegType(kX86RegTypeX87))
-			{
-				uint8_t i1 = reinterpret_cast<const X87Reg &>(*o0).getRegIndex();
-				uint8_t i2 = 0;
-
-				if (code != kX86InstFCom && code != kX86InstFComP)
-				{
-					if (!o1->isRegType(kX86RegTypeX87))
-						goto _IllegalInstruction;
-					i2 = reinterpret_cast<const X87Reg &>(*o1).getRegIndex();
-				}
-				else if (i1 && i2)
-					goto _IllegalInstruction;
-
-				this->_emitByte(!i1 ? ((id->_opCode[0] & 0xFF000000) >> 24) : ((id->_opCode[0] & 0x00FF0000) >> 16));
-				this->_emitByte(!i1 ? ((id->_opCode[0] & 0x0000FF00) >> 8) + i2 : (id->_opCode[0] & 0x000000FF) + i1);
-				_FINISHED();
-			}
-
-			if (o0->isMem() && (o0->getSize() == 4 || o0->getSize() == 8) && o1->isNone())
-			{
-				const Mem &m = reinterpret_cast<const Mem &>(*o0);
-
-				// Segment prefix.
-				this->_emitSegmentPrefix(m);
-
-				this->_emitByte(o0->getSize() == 4 ? ((id->_opCode[0] & 0xFF000000) >> 24) : ((id->_opCode[0] & 0x00FF0000) >> 16));
-				this->_emitModM(static_cast<uint8_t>(id->_opCodeR), m, 0);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupX87StI:
-			if (o0->isRegType(kX86RegTypeX87))
-			{
-				uint8_t i = reinterpret_cast<const X87Reg &>(*o0).getRegIndex();
-				this->_emitByte(static_cast<uint8_t>((id->_opCode[0] & 0x0000FF00) >> 8));
-				this->_emitByte(static_cast<uint8_t>((id->_opCode[0] & 0x000000FF) + i));
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupX87Status:
-			if (o0->isReg() && reinterpret_cast<const Reg &>(*o0).getRegType() <= kX86RegTypeGpq && !reinterpret_cast<const Reg &>(*o0).getRegIndex())
-			{
-				this->_emitOpCode(id->_opCode[1]);
-				_FINISHED();
-			}
-
-			if (o0->isMem())
-			{
-				this->_emitX86RM(id->_opCode[0], 0, 0, static_cast<uint8_t>(id->_opCodeR), reinterpret_cast<const Mem &>(*o0), 0, forceRexPrefix);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupX87FldFst:
-			if (o0->isRegType(kX86RegTypeX87))
-			{
-				this->_emitByte(static_cast<uint8_t>((id->_opCode[1] & 0xFF000000) >> 24));
-				this->_emitByte(static_cast<uint8_t>((id->_opCode[1] & 0x00FF0000) >> 16) + reinterpret_cast<const X87Reg &>(*o0).getRegIndex());
-				_FINISHED();
-			}
-
-			// ... fall through to kX86InstGroupX87Mem ...
-
-		case kX86InstGroupX87Mem:
-		{
-			if (!o0->isMem())
-				goto _IllegalInstruction;
-			const Mem &m = reinterpret_cast<const Mem &>(*o0);
-
-			uint8_t opCode = 0x00, mod = 0;
-
-			if (o0->getSize() == 2 && (id->_opFlags[0] & kX86InstOpStM2))
-			{
-				opCode = static_cast<uint8_t>((id->_opCode[0] & 0xFF000000) >> 24);
-				mod = static_cast<uint8_t>(id->_opCodeR);
-			}
-			if (o0->getSize() == 4 && (id->_opFlags[0] & kX86InstOpStM4))
-			{
-				opCode = static_cast<uint8_t>((id->_opCode[0] & 0x00FF0000) >> 16);
-				mod = static_cast<uint8_t>(id->_opCodeR);
-			}
-			if (o0->getSize() == 8 && (id->_opFlags[0] & kX86InstOpStM8))
-			{
-				opCode = static_cast<uint8_t>((id->_opCode[0] & 0x0000FF00) >> 8);
-				mod = static_cast<uint8_t>(id->_opCode[0] & 0x000000FF);
-			}
-
-			if (opCode)
-			{
-				this->_emitSegmentPrefix(m);
-				this->_emitByte(opCode);
-				this->_emitModM(mod, m, 0);
-				_FINISHED();
-			}
-
-			break;
-		}
-
-		case kX86InstGroupMmuMov:
-		{
-			ASMJIT_ASSERT(id->_opFlags[0]);
-			ASMJIT_ASSERT(id->_opFlags[1]);
-
-			// Check parameters (X)MM|GP32_64 <- (X)MM|GP32_64|Mem|Imm
-			if ((o0->isMem() && !(id->_opFlags[0] & kX86InstOpMem)) || (o0->isRegType(kX86RegTypeMm) && !(id->_opFlags[0] & kX86InstOpMm)) || (o0->isRegType(kX86RegTypeXmm) && !(id->_opFlags[0] & kX86InstOpXmm)) ||
-				(o0->isRegType(kX86RegTypeGpd) && !(id->_opFlags[0] & kX86InstOpGd)) || (o0->isRegType(kX86RegTypeGpq) && !(id->_opFlags[0] & kX86InstOpGq)) ||
-				(o1->isRegType(kX86RegTypeMm) && !(id->_opFlags[1] & kX86InstOpMm)) || (o1->isRegType(kX86RegTypeXmm) && !(id->_opFlags[1] & kX86InstOpXmm)) ||
-				(o1->isRegType(kX86RegTypeGpd) && !(id->_opFlags[1] & kX86InstOpGd)) || (o1->isRegType(kX86RegTypeGpq) && !(id->_opFlags[1] & kX86InstOpGq)) ||
-				(o1->isMem() && !(id->_opFlags[1] & kX86InstOpMem)))
-				goto _IllegalInstruction;
-
-			// Illegal.
-			if (o0->isMem() && o1->isMem())
-				goto _IllegalInstruction;
-
-			uint8_t rexw = ((id->_opFlags[0] | id->_opFlags[1]) & kX86InstOpNoRex) ? 0 : o0->isRegType(kX86RegTypeGpq) | o1->isRegType(kX86RegTypeGpq);
-
-			// (X)MM|Reg <- (X)MM|Reg
-			if (o0->isReg() && o1->isReg())
-			{
-				this->_emitMmu(id->_opCode[0], rexw, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Reg &>(*o1), 0);
-				_FINISHED();
-			}
-
-			// (X)MM|Reg <- Mem
-			if (o0->isReg() && o1->isMem())
-			{
-				this->_emitMmu(id->_opCode[0], rexw, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Mem &>(*o1), 0);
-				_FINISHED();
-			}
-
-			// Mem <- (X)MM|Reg
-			if (o0->isMem() && o1->isReg())
-			{
-				this->_emitMmu(id->_opCode[1], rexw, reinterpret_cast<const Reg &>(*o1).getRegCode(), reinterpret_cast<const Mem &>(*o0), 0);
-				_FINISHED();
-			}
-
-			break;
-		}
-
-		case kX86InstGroupMmuMovD:
-			if ((o0->isRegType(kX86RegTypeMm) || o0->isRegType(kX86RegTypeXmm)) && (o1->isRegType(kX86RegTypeGpd) || o1->isMem()))
-			{
-				this->_emitMmu(o0->isRegType(kX86RegTypeXmm) ? 0x66000F6E : 0x00000F6E, 0, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Operand &>(*o1), 0);
-				_FINISHED();
-			}
-
-			if ((o0->isRegType(kX86RegTypeGpd) || o0->isMem()) && (o1->isRegType(kX86RegTypeMm) || o1->isRegType(kX86RegTypeXmm)))
-			{
-				this->_emitMmu(o1->isRegType(kX86RegTypeXmm) ? 0x66000F7E : 0x00000F7E, 0, reinterpret_cast<const Reg &>(*o1).getRegCode(), reinterpret_cast<const Operand &>(*o0), 0);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupMmuMovQ:
-			if (o0->isRegType(kX86RegTypeMm) && o1->isRegType(kX86RegTypeMm))
-			{
-				this->_emitMmu(0x00000F6F, 0, reinterpret_cast<const MmReg &>(*o0).getRegCode(), reinterpret_cast<const MmReg &>(*o1), 0);
-				_FINISHED();
-			}
-
-			if (o0->isRegType(kX86RegTypeXmm) && o1->isRegType(kX86RegTypeXmm))
-			{
-				this->_emitMmu(0xF3000F7E, 0, reinterpret_cast<const XmmReg &>(*o0).getRegCode(), reinterpret_cast<const XmmReg &>(*o1), 0);
-				_FINISHED();
-			}
-
-			// Convenience - movdq2q
-			if (o0->isRegType(kX86RegTypeMm) && o1->isRegType(kX86RegTypeXmm))
-			{
-				this->_emitMmu(0xF2000FD6, 0, reinterpret_cast<const MmReg &>(*o0).getRegCode(), reinterpret_cast<const XmmReg &>(*o1), 0);
-				_FINISHED();
-			}
-
-			// Convenience - movq2dq
-			if (o0->isRegType(kX86RegTypeXmm) && o1->isRegType(kX86RegTypeMm))
-			{
-				this->_emitMmu(0xF3000FD6, 0, reinterpret_cast<const XmmReg &>(*o0).getRegCode(), reinterpret_cast<const MmReg &>(*o1), 0);
-				_FINISHED();
-			}
-
-			if (o0->isRegType(kX86RegTypeMm) && o1->isMem())
-			{
-				this->_emitMmu(0x00000F6F, 0, reinterpret_cast<const MmReg &>(*o0).getRegCode(), reinterpret_cast<const Mem &>(*o1), 0);
-				_FINISHED();
-			}
-
-			if (o0->isRegType(kX86RegTypeXmm) && o1->isMem())
-			{
-				this->_emitMmu(0xF3000F7E, 0, reinterpret_cast<const XmmReg &>(*o0).getRegCode(), reinterpret_cast<const Mem &>(*o1), 0);
-				_FINISHED();
-			}
-
-			if (o0->isMem() && o1->isRegType(kX86RegTypeMm))
-			{
-				this->_emitMmu(0x00000F7F, 0, reinterpret_cast<const MmReg &>(*o1).getRegCode(), reinterpret_cast<const Mem &>(*o0), 0);
-				_FINISHED();
-			}
-
-			if (o0->isMem() && o1->isRegType(kX86RegTypeXmm))
-			{
-				this->_emitMmu(0x66000FD6, 0, reinterpret_cast<const XmmReg &>(*o1).getRegCode(), reinterpret_cast<const Mem &>(*o0), 0);
-				_FINISHED();
-			}
-
-#ifdef ASMJIT_X64
-			if ((o0->isRegType(kX86RegTypeMm) || o0->isRegType(kX86RegTypeXmm)) && (o1->isRegType(kX86RegTypeGpq) || o1->isMem()))
-			{
-				this->_emitMmu(o0->isRegType(kX86RegTypeXmm) ? 0x66000F6E : 0x00000F6E, 1, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Operand &>(*o1), 0);
-				_FINISHED();
-			}
-
-			if ((o0->isRegType(kX86RegTypeGpq) || o0->isMem()) && (o1->isRegType(kX86RegTypeMm) || o1->isRegType(kX86RegTypeXmm)))
-			{
-				this->_emitMmu(o1->isRegType(kX86RegTypeXmm) ? 0x66000F7E : 0x00000F7E, 1, reinterpret_cast<const Reg &>(*o1).getRegCode(), reinterpret_cast<const Operand &>(*o0), 0);
-				_FINISHED();
-			}
-#endif // ASMJIT_X64
-
-			break;
-
-		case kX86InstGroupMmuExtract:
-		{
-			if (!(o0->isRegMem() && (o1->isRegType(kX86RegTypeXmm) || (code == kX86InstPExtrW && o1->isRegType(kX86RegTypeMm))) && o2->isImm()))
-				goto _IllegalInstruction;
-
-			uint32_t opCode = id->_opCode[0];
-			uint8_t isGpdGpq = o0->isRegType(kX86RegTypeGpd) | o0->isRegType(kX86RegTypeGpq);
-
-			if (code == kX86InstPExtrB && (o0->getSize() && o0->getSize() != 1) && !isGpdGpq)
-				goto _IllegalInstruction;
-			if (code == kX86InstPExtrW && (o0->getSize() && o0->getSize() != 2) && !isGpdGpq)
-				goto _IllegalInstruction;
-			if (code == kX86InstPExtrD && (o0->getSize() && o0->getSize() != 4) && !isGpdGpq)
-				goto _IllegalInstruction;
-			if (code == kX86InstPExtrQ && (o0->getSize() && o0->getSize() != 8) && !isGpdGpq)
-				goto _IllegalInstruction;
-
-			if (o1->isRegType(kX86RegTypeXmm))
-				opCode |= 0x66000000;
-
-			if (o0->isReg())
-			{
-				this->_emitMmu(opCode, id->_opCodeR | static_cast<uint8_t>(o0->isRegType(kX86RegTypeGpq)), reinterpret_cast<const Reg &>(*o1).getRegCode(), reinterpret_cast<const Reg &>(*o0), 1);
-				_FINISHED_IMMEDIATE(o2, 1);
-			}
-
-			if (o0->isMem())
-			{
-				this->_emitMmu(opCode, static_cast<uint8_t>(id->_opCodeR), reinterpret_cast<const Reg &>(*o1).getRegCode(), reinterpret_cast<const Mem &>(*o0), 1);
-				_FINISHED_IMMEDIATE(o2, 1);
-			}
-
-			break;
-		}
-
-		case kX86InstGroupMmuPrefetch:
-			if (o0->isMem() && o1->isImm())
-			{
-				const Mem &mem = reinterpret_cast<const Mem &>(*o0);
-				const Imm &hint = reinterpret_cast<const Imm &>(*o1);
-
-				this->_emitMmu(0x00000F18, 0, static_cast<uint8_t>(hint.getValue()), mem, 0);
-				_FINISHED();
-			}
-
-			break;
-
-		case kX86InstGroupMmuRmI:
-		{
-			ASMJIT_ASSERT(id->_opFlags[0]);
-			ASMJIT_ASSERT(id->_opFlags[1]);
-
-			// Check parameters (X)MM|GP32_64 <- (X)MM|GP32_64|Mem|Imm
-			if (!o0->isReg() || (o0->isRegType(kX86RegTypeMm) && !(id->_opFlags[0] & kX86InstOpMm)) || (o0->isRegType(kX86RegTypeXmm) && !(id->_opFlags[0] & kX86InstOpXmm)) ||
-				(o0->isRegType(kX86RegTypeGpd) && !(id->_opFlags[0] & kX86InstOpGd)) || (o0->isRegType(kX86RegTypeGpq) && !(id->_opFlags[0] & kX86InstOpGq)) ||
-				(o1->isRegType(kX86RegTypeMm) && !(id->_opFlags[1] & kX86InstOpMm)) || (o1->isRegType(kX86RegTypeXmm) && !(id->_opFlags[1] & kX86InstOpXmm)) ||
-				(o1->isRegType(kX86RegTypeGpd) && !(id->_opFlags[1] & kX86InstOpGd)) || (o1->isRegType(kX86RegTypeGpq) && !(id->_opFlags[1] & kX86InstOpGq)) ||
-				(o1->isMem() && !(id->_opFlags[1] & kX86InstOpMem)) || (o1->isImm() && !(id->_opFlags[1] & kX86InstOpImm)))
-				goto _IllegalInstruction;
-
-			uint32_t prefix = ((id->_opFlags[0] & kX86InstOpMmXmm) == kX86InstOpMmXmm && o0->isRegType(kX86RegTypeXmm)) ||
-				((id->_opFlags[1] & kX86InstOpMmXmm) == kX86InstOpMmXmm && o1->isRegType(kX86RegTypeXmm)) ? 0x66000000 : 0x00000000;
-
-			uint8_t rexw = ((id->_opFlags[0] | id->_opFlags[1]) & kX86InstOpNoRex) ? 0 : o0->isRegType(kX86RegTypeGpq) | o1->isRegType(kX86RegTypeGpq);
-
-			// (X)MM <- (X)MM (opcode0)
-			if (o1->isReg())
-			{
-				if (!(id->_opFlags[1] & (kX86InstOpMmXmm | kX86InstOpGqd)))
-					goto _IllegalInstruction;
-				this->_emitMmu(id->_opCode[0] | prefix, rexw, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Reg &>(*o1), 0);
-				_FINISHED();
-			}
-			// (X)MM <- Mem (opcode0)
-			if (o1->isMem())
-			{
-				if (!(id->_opFlags[1] & kX86InstOpMem))
-					goto _IllegalInstruction;
-				this->_emitMmu(id->_opCode[0] | prefix, rexw, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Mem &>(*o1), 0);
-				_FINISHED();
-			}
-			// (X)MM <- Imm (opcode1+opcodeR)
-			if (o1->isImm())
-			{
-				if (!(id->_opFlags[1] & kX86InstOpImm))
-					goto _IllegalInstruction;
-				this->_emitMmu(id->_opCode[1] | prefix, rexw, static_cast<uint8_t>(id->_opCodeR), reinterpret_cast<const Reg &>(*o0), 1);
-				_FINISHED_IMMEDIATE(o1, 1);
-			}
-
-			break;
-		}
-
-		case kX86InstGroupMmuRmImm8:
-		{
-			ASMJIT_ASSERT(id->_opFlags[0]);
-			ASMJIT_ASSERT(id->_opFlags[1]);
-
-			// Check parameters (X)MM|GP32_64 <- (X)MM|GP32_64|Mem|Imm
-			if (!o0->isReg() || (o0->isRegType(kX86RegTypeMm ) && !(id->_opFlags[0] & kX86InstOpMm)) || (o0->isRegType(kX86RegTypeXmm) && !(id->_opFlags[0] & kX86InstOpXmm)) ||
-				(o0->isRegType(kX86RegTypeGpd) && !(id->_opFlags[0] & kX86InstOpGd)) || (o0->isRegType(kX86RegTypeGpq) && !(id->_opFlags[0] & kX86InstOpGq)) ||
-				(o1->isRegType(kX86RegTypeMm) && !(id->_opFlags[1] & kX86InstOpMm)) || (o1->isRegType(kX86RegTypeXmm) && !(id->_opFlags[1] & kX86InstOpXmm)) ||
-				(o1->isRegType(kX86RegTypeGpd) && !(id->_opFlags[1] & kX86InstOpGd)) || (o1->isRegType(kX86RegTypeGpq) && !(id->_opFlags[1] & kX86InstOpGq)) ||
-				(o1->isMem() && !(id->_opFlags[1] & kX86InstOpMem)) || !o2->isImm())
-				goto _IllegalInstruction;
-
-			uint32_t prefix = ((id->_opFlags[0] & kX86InstOpMmXmm) == kX86InstOpMmXmm && o0->isRegType(kX86RegTypeXmm)) ||
-				((id->_opFlags[1] & kX86InstOpMmXmm) == kX86InstOpMmXmm && o1->isRegType(kX86RegTypeXmm)) ? 0x66000000 : 0x00000000;
-
-			uint8_t rexw = ((id->_opFlags[0]|id->_opFlags[1]) & kX86InstOpNoRex) ? 0 : o0->isRegType(kX86RegTypeGpq) | o1->isRegType(kX86RegTypeGpq);
-
-			// (X)MM <- (X)MM (opcode0)
-			if (o1->isReg())
-			{
-				if (!(id->_opFlags[1] & (kX86InstOpMmXmm | kX86InstOpGqd)))
-					goto _IllegalInstruction;
-				this->_emitMmu(id->_opCode[0] | prefix, rexw, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Reg &>(*o1), 1);
-				_FINISHED_IMMEDIATE(o2, 1);
-			}
-			// (X)MM <- Mem (opcode0)
-			if (o1->isMem())
-			{
-				if (!(id->_opFlags[1] & kX86InstOpMem))
-					goto _IllegalInstruction;
-				this->_emitMmu(id->_opCode[0] | prefix, rexw, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Mem &>(*o1), 1);
-				_FINISHED_IMMEDIATE(o2, 1);
-			}
-
-			break;
-		}
-
-		case kX86InstGroupMmuRm3dNow:
-			if (o0->isRegType(kX86RegTypeMm) && (o1->isRegType(kX86RegTypeMm) || o1->isMem()))
-			{
-				this->_emitMmu(id->_opCode[0], 0, reinterpret_cast<const Reg &>(*o0).getRegCode(), reinterpret_cast<const Mem &>(*o1), 1);
-				this->_emitByte(static_cast<uint8_t>(id->_opCode[1]));
-				_FINISHED();
-			}
-
-			break;
-	}
-
-_IllegalInstruction:
-	// Set an error. If we run in release mode assertion will be not used, so we
-	// must inform about invalid state.
-	this->setError(kErrorIllegalInstruction);
-
-#ifdef ASMJIT_DEBUG
-	assertIllegal = true;
-#endif // ASMJIT_DEBUG
-	goto _End;
-
-_EmitImmediate:
-	sysint_t value = immOperand->getValue();
-	switch (immSize)
-	{
-		case 1:
-			this->_emitByte(static_cast<uint8_t>(static_cast<sysuint_t>(value)));
-			break;
-		case 2:
-			this->_emitWord(static_cast<uint16_t>(static_cast<sysuint_t>(value)));
-			break;
-		case 4:
-			this->_emitDWord(static_cast<uint32_t>(static_cast<sysuint_t>(value)));
-			break;
-#ifdef ASMJIT_X64
-		case 8:
-			this->_emitQWord(static_cast<uint64_t>(static_cast<sysuint_t>(value)));
-			break;
-#endif // ASMJIT_X64
-		default:
-			ASMJIT_ASSERT(0);
-	}
-
-_End:
-	if (this->_logger
-#ifdef ASMJIT_DEBUG
-		|| assertIllegal
-#endif // ASMJIT_DEBUG
-		)
-	{
-		char bufStorage[512];
-		char *buf = bufStorage;
-
-		// Detect truncated operand.
-		Imm immTemporary(0);
-		uint32_t loggerFlags = 0;
-
-		// Use the original operands, because BYTE some of them were replaced.
-		if (bLoHiUsed)
-		{
-			o0 = _loggerOperands[0];
-			o1 = _loggerOperands[1];
-			o2 = _loggerOperands[2];
-		}
-
-		if (immOperand)
-		{
-			sysint_t value = immOperand->getValue();
-			bool isUnsigned = immOperand->isUnsigned();
-
-			switch (immSize)
-			{
-				case 1:
-					if (isUnsigned && !IntUtil::isUInt8(value))
-					{
-						immTemporary.setValue(static_cast<uint8_t>(static_cast<sysuint_t>(value)), true);
-						break;
-					}
-					if (!isUnsigned && !IntUtil::isInt8(value))
-					{
-						immTemporary.setValue(static_cast<uint8_t>(static_cast<sysuint_t>(value)), false);
-						break;
-					}
-					break;
-				case 2:
-					if (isUnsigned && !IntUtil::isUInt16(value))
-					{
-						immTemporary.setValue(static_cast<uint16_t>(static_cast<sysuint_t>(value)), true);
-						break;
-					}
-					if (!isUnsigned && !IntUtil::isInt16(value))
-					{
-						immTemporary.setValue(static_cast<uint16_t>(static_cast<sysuint_t>(value)), false);
-						break;
-					}
-					break;
-				case 4:
-					if (isUnsigned && !IntUtil::isUInt32(value))
-					{
-						immTemporary.setValue(static_cast<uint32_t>(static_cast<sysuint_t>(value)), true);
-						break;
-					}
-					if (!isUnsigned && !IntUtil::isInt32(value))
-					{
-						immTemporary.setValue(static_cast<uint32_t>(static_cast<sysuint_t>(value)), false);
-						break;
-					}
-					break;
-			}
-
-			if (immTemporary.getValue())
-			{
-				if (o0 == immOperand)
-					o0 = &immTemporary;
-				if (o1 == immOperand)
-					o1 = &immTemporary;
-				if (o2 == immOperand)
-					o2 = &immTemporary;
-			}
-		}
-
-		if (this->_logger)
-		{
-			buf = StringUtil::copy(buf, this->_logger->getInstructionPrefix());
-			loggerFlags = this->_logger->getFlags();
-		}
-
-		buf = X86Assembler_dumpInstruction(buf, code, this->_emitOptions, o0, o1, o2, memRegType, loggerFlags);
-
-		if (loggerFlags & kLoggerOutputBinary)
-			buf = X86Assembler_dumpComment(buf, static_cast<size_t>(buf - bufStorage), this->getCode() + beginOffset, this->getOffset() - beginOffset, this->_inlineComment);
-		else
-			buf = X86Assembler_dumpComment(buf, static_cast<size_t>(buf - bufStorage), nullptr, 0, this->_inlineComment);
-
-		// We don't need to NULL terminate the resulting string.
-#ifdef ASMJIT_DEBUG
-		if (this->_logger)
-#endif // ASMJIT_DEBUG
-			this->_logger->logString(bufStorage, static_cast<size_t>(buf - bufStorage));
-
-#ifdef ASMJIT_DEBUG
-		if (assertIllegal)
-		{
-			// Here we need to NULL terminate.
-			buf[0] = '\0';
-
-			// Raise an assertion failure, because this situation shouldn't happen.
-			assertionFailure(__FILE__, __LINE__, bufStorage);
-		}
-#endif // ASMJIT_DEBUG
-	}
-
-_Cleanup:
-	this->_inlineComment = nullptr;
-	this->_emitOptions = 0;
 }
 
-void X86Assembler::_emitJcc(uint32_t code, const Label *label, uint32_t hint)
-{
-	if (hint == kCondHintNone)
-		this->_emitInstruction(code, label);
-	else
-	{
-		Imm imm(hint);
-		this->_emitInstruction(code, label, &imm);
-	}
-}
-
-// ============================================================================
-// [AsmJit::Assembler - Relocation helpers]
-// ============================================================================
-
-size_t X86Assembler::relocCode(void *_dst, sysuint_t addressBase) const
-{
-	// Copy code to virtual memory (this is a given _dst pointer).
-	uint8_t *dst = reinterpret_cast<uint8_t *>(_dst);
-
-	size_t coff = this->_buffer.getOffset();
-
-	// We are copying the exact size of the generated code. Extra code for trampolines
-	// is generated on-the-fly by relocator (this code doesn't exist at the moment).
-	memcpy(dst, this->_buffer.getData(), coff);
-
-#ifdef ASMJIT_X64
-	// Trampoline pointer.
-	uint8_t *tramp = dst + coff;
-#endif // ASMJIT_X64
-
-	// Relocate all recorded locations.
-	size_t i;
-	size_t len = this->_relocData.size();
-
-	for (i = 0; i < len; ++i)
-	{
-		const RelocData &r = this->_relocData[i];
-		sysint_t val = 0;
-
-#ifdef ASMJIT_X64
-		// Whether to use trampoline, can be only used if relocation type is
-		// kRelocAbsToRel.
-		bool useTrampoline = false;
-#endif // ASMJIT_X64
-
-		// Be sure that reloc data structure is correct.
-		//ASMJIT_ASSERT((size_t)(r.offset + r.size) <= csize);
-
-		switch (r.type)
-		{
-			case kRelocAbsToAbs:
-				val = reinterpret_cast<sysint_t>(r.address);
-				break;
-
-			case kRelocRelToAbs:
-				val = static_cast<sysint_t>(addressBase + r.destination);
-				break;
-
-			case kRelocAbsToRel:
-			case kRelocTrampoline:
-				val = static_cast<sysint_t>(reinterpret_cast<sysuint_t>(r.address) - (addressBase + static_cast<sysuint_t>(r.offset) + 4));
-
-#ifdef ASMJIT_X64
-				if (r.type == kRelocTrampoline && !IntUtil::isInt32(val))
-				{
-					val = static_cast<sysint_t>(reinterpret_cast<sysuint_t>(tramp) - (reinterpret_cast<sysuint_t>(_dst) + static_cast<sysuint_t>(r.offset) + 4));
-					useTrampoline = true;
-				}
-#endif // ASMJIT_X64
-				break;
-
-			default:
-				ASMJIT_ASSERT(0);
-		}
-
-		switch (r.size)
-		{
-			case 4:
-				*reinterpret_cast<int32_t *>(dst + r.offset) = static_cast<int32_t>(val);
-				break;
-
-			case 8:
-				*reinterpret_cast<int64_t *>(dst + r.offset) = static_cast<int64_t>(val);
-				break;
-
-			default:
-				ASMJIT_ASSERT(0);
-		}
-
-#ifdef ASMJIT_X64
-		if (useTrampoline)
-		{
-			if (this->getLogger())
-				this->getLogger()->logFormat("; Trampoline from %p -> %p\n", reinterpret_cast<int8_t *>(addressBase) + r.offset, r.address);
-
-			X64TrampolineWriter::writeTrampoline(tramp, reinterpret_cast<uint64_t>(r.address));
-			tramp += X64TrampolineWriter::kSizeTotal;
-		}
-#endif // ASMJIT_X64
-	}
-
-#ifdef ASMJIT_X64
-	return static_cast<size_t>(tramp - dst);
-#else
-	return coff;
-#endif // ASMJIT_X64
-}
-
-// ============================================================================
-// [AsmJit::Assembler - EmbedLabel]
-// ============================================================================
-
-void X86Assembler::embedLabel(const Label &label)
-{
-	ASMJIT_ASSERT(label.getId() != kInvalidValue);
-	if (!this->canEmit())
-		return;
-
-	LabelData &l_data = this->_labels[label.getId() & kOperandIdValueMask];
-	RelocData r_data;
-
-	if (this->_logger)
-		this->_logger->logFormat(sizeof(sysint_t) == 4 ? ".dd L.%u\n" : ".dq L.%u\n", static_cast<uint32_t>(label.getId()) & kOperandIdValueMask);
-
-	r_data.type = kRelocRelToAbs;
-	r_data.size = sizeof(sysint_t);
-	r_data.offset = this->getOffset();
-	r_data.destination = 0;
-
-	if (l_data.offset != -1)
-		// Bound label.
-		r_data.destination = l_data.offset;
-	else
-	{
-		// Non-bound label. Need to chain.
-		LabelLink *link = this->_newLabelLink();
-
-		link->prev = l_data.links;
-		link->offset = this->getOffset();
-		link->displacement = 0;
-		link->relocId = this->_relocData.size();
-
-		l_data.links = link;
-	}
-
-	this->_relocData.push_back(r_data);
-
-	// Emit dummy intptr_t (4 or 8 bytes that depends on address size).
-	this->_emitIntPtrT(0);
-}
-
-// ============================================================================
-// [AsmJit::Assembler - Align]
-// ============================================================================
-
-void X86Assembler::align(uint32_t m)
-{
-	if (!this->canEmit())
-		return;
-
-	if (this->_logger)
-		this->_logger->logFormat("%s.align %u\n", this->_logger->getInstructionPrefix(), static_cast<unsigned>(m));
-
-	if (!m)
-		return;
-
-	if (m > 64)
-	{
-		ASMJIT_ASSERT(0);
-		return;
-	}
-
-	sysint_t i = m - (this->getOffset() % m);
-	if (static_cast<uint32_t>(i) == m)
-		return;
-
-	if (this->_properties & (1 << kX86PropertyOptimizedAlign))
-	{
-		const X86CpuInfo *ci = X86CpuInfo::getGlobal();
-
-		// NOPs optimized for Intel:
-		//   Intel 64 and IA-32 Architectures Software Developer's Manual
-		//   - Volume 2B 
-		//   - Instruction Set Reference N-Z
-		//     - NOP
-
-		// NOPs optimized for AMD:
-		//   Software Optimization Guide for AMD Family 10h Processors (Quad-Core)
-		//   - 4.13 - Code Padding with Operand-Size Override and Multibyte NOP
-
-		// Intel and AMD.
-		static const uint8_t nop1[] = { 0x90 };
-		static const uint8_t nop2[] = { 0x66, 0x90 };
-		static const uint8_t nop3[] = { 0x0F, 0x1F, 0x00 };
-		static const uint8_t nop4[] = { 0x0F, 0x1F, 0x40, 0x00 };
-		static const uint8_t nop5[] = { 0x0F, 0x1F, 0x44, 0x00, 0x00 };
-		static const uint8_t nop6[] = { 0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00 };
-		static const uint8_t nop7[] = { 0x0F, 0x1F, 0x80, 0x00, 0x00, 0x00, 0x00 };
-		static const uint8_t nop8[] = { 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
-		static const uint8_t nop9[] = { 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-		// AMD.
-		static const uint8_t nop10[] = { 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
-		static const uint8_t nop11[] = { 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-		const uint8_t *p;
-		sysint_t n;
-
-		if (ci->getVendorId() == kCpuIntel && ((ci->getFamily() & 0x0F) == 6 || (ci->getFamily() & 0x0F) == 15))
-		{
-			do
-			{
-				switch (i)
-				{
-					case 1:
-						p = nop1;
-						n = 1;
-						break;
-					case 2:
-						p = nop2;
-						n = 2;
-						break;
-					case 3:
-						p = nop3;
-						n = 3;
-						break;
-					case 4:
-						p = nop4;
-						n = 4;
-						break;
-					case 5:
-						p = nop5;
-						n = 5;
-						break;
-					case 6:
-						p = nop6;
-						n = 6;
-						break;
-					case 7:
-						p = nop7;
-						n = 7;
-						break;
-					case 8:
-						p = nop8;
-						n = 8;
-						break;
-					default:
-						p = nop9;
-						n = 9;
-				}
-
-				i -= n;
-				do
-				{
-					this->_emitByte(*p++);
-				} while (--n);
-			} while (i);
-
-			return;
-		}
-
-		if (ci->getVendorId() == kCpuAmd && ci->getFamily() >= 0x0F)
-		{
-			do
-			{
-				switch (i)
-				{
-					case 1:
-						p = nop1;
-						n = 1;
-						break;
-					case 2:
-						p = nop2;
-						n = 2;
-						break;
-					case 3:
-						p = nop3;
-						n = 3;
-						break;
-					case 4:
-						p = nop4;
-						n = 4;
-						break;
-					case 5:
-						p = nop5;
-						n = 5;
-						break;
-					case 6:
-						p = nop6; n = 6;
-						break;
-					case 7:
-						p = nop7;
-						n = 7;
-						break;
-					case 8:
-						p = nop8;
-						n = 8;
-						break;
-					case 9:
-						p = nop9;
-						n = 9;
-						break;
-					case 10:
-						p = nop10;
-						n = 10;
-						break;
-					default:
-						p = nop11;
-						n = 11;
-				}
-
-				i -= n;
-				do
-				{
-					this->_emitByte(*p++);
-				} while (--n);
-			} while (i);
-
-			return;
-		}
-#ifdef ASMJIT_X86
-		// Legacy NOPs, 0x90 with 0x66 prefix.
-		do
-		{
-			switch (i)
-			{
-				default:
-					this->_emitByte(0x66);
-					--i;
-				case 3:
-					this->_emitByte(0x66);
-					--i;
-				case 2:
-					this->_emitByte(0x66);
-					--i;
-				case 1:
-					this->_emitByte(0x90);
-					--i;
-			}
-		} while(i);
-#endif
-	}
-
-	// Legacy NOPs, only 0x90. In 64-bit mode, we can't use 0x66 prefix.
-	do
-	{
-		this->_emitByte(0x90);
-	} while (--i);
-}
-
-// ============================================================================
-// [AsmJit::Assembler - Label]
-// ============================================================================
-
-Label X86Assembler::newLabel()
-{
-	Label label;
-	label._base.id = static_cast<uint32_t>(this->_labels.size()) | kOperandIdTypeLabel;
-
-	LabelData l_data;
-	l_data.offset = -1;
-	l_data.links = nullptr;
-	this->_labels.push_back(l_data);
-
-	return label;
-}
-
-void X86Assembler::registerLabels(size_t count)
-{
-	// Duplicated newLabel() code, but we are not creating Label instances.
-	LabelData l_data;
-	l_data.offset = -1;
-	l_data.links = nullptr;
-
-	for (size_t i = 0; i < count; ++i)
-		this->_labels.push_back(l_data);
-}
-
-void X86Assembler::bind(const Label &label)
-{
-	// Only labels created by newLabel() can be used by Assembler.
-	ASMJIT_ASSERT(label.getId() != kInvalidValue);
-	// Never go out of bounds.
-	ASMJIT_ASSERT((label.getId() & kOperandIdValueMask) < this->_labels.size());
-
-	// Get label data based on label id.
-	LabelData &l_data = this->_labels[label.getId() & kOperandIdValueMask];
-
-	// Label can be bound only once.
-	ASMJIT_ASSERT(l_data.offset == -1);
-
-	// Log.
-	if (this->_logger)
-		this->_logger->logFormat("L.%u:\n", static_cast<uint32_t>(label.getId()) & kOperandIdValueMask);
-
-	sysint_t pos = this->getOffset();
-
-	LabelLink *link = l_data.links;
-	LabelLink *prev = nullptr;
-
-	while (link)
-	{
-		sysint_t offset = link->offset;
-
-		if (link->relocId != -1)
-			// If linked label points to RelocData then instead of writing relative
-			// displacement to assembler stream, we will write it to RelocData.
-			this->_relocData[link->relocId].destination += pos;
-		else
-		{
-			// Not using relocId, this means that we overwriting real displacement
-			// in assembler stream.
-			int32_t patchedValue = static_cast<int32_t>(pos - offset + link->displacement);
-			uint32_t size = this->getByteAt(offset);
-
-			// Only these size specifiers are allowed.
-			ASMJIT_ASSERT(size == 1 || size == 4);
-
-			if (size == 4)
-				this->setInt32At(offset, patchedValue);
-			else // if (size == 1)
-			{
-				if (IntUtil::isInt8(patchedValue))
-					this->setByteAt(offset, static_cast<uint8_t>(static_cast<int8_t>(patchedValue)));
-				else
-					// Fatal error.
-					this->setError(kErrorIllegalShortJump);
-			}
-		}
-
-		prev = link->prev;
-		link = prev;
-	}
-
-	// Chain unused links.
-	link = l_data.links;
-	if (link)
-	{
-		if (!prev)
-			prev = link;
-
-		prev->prev = this->_unusedLinks;
-		this->_unusedLinks = link;
-	}
-
-	// Unlink label if it was linked.
-	l_data.offset = pos;
-	l_data.links = nullptr;
-}
-
-// ============================================================================
-// [AsmJit::Assembler - Make]
-// ============================================================================
-
-void *X86Assembler::make()
-{
-	// Do nothing on error state or when no instruction was emitted.
-	if (this->_error || !this->getCodeSize())
-		return nullptr;
-
-	void *p;
-	this->_error = this->_context->generate(&p, this);
-	return p;
-}
-
-} // AsmJit namespace
+} // asmjit namespace
 
 // [Api-End]
-#include "../core/apiend.h"
+#include "../apiend.h"
+
+// [Guard]
+#endif // ASMJIT_BUILD_X86 || ASMJIT_BUILD_X64

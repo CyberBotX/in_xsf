@@ -57,5 +57,5 @@ public:
 	 */
 	virtual void write(uint16_t *finalWave, int length) = 0;
 
-	virtual void setThrottle(unsigned short throttle) { }
+	virtual void setThrottle(unsigned short) { }
 };

@@ -207,9 +207,9 @@ public:
 
 	/// allow trimming (downwards) amount of samples in pipeline.
 	/// Returns adjusted amount of samples
-	virtual uint32_t adjustAmountOfSamples(uint32_t numSamples)
+	virtual uint32_t adjustAmountOfSamples(uint32_t numSmpls)
 	{
-		return this->output->adjustAmountOfSamples(numSamples);
+		return this->output->adjustAmountOfSamples(numSmpls);
 	}
 };
 

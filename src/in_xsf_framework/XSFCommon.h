@@ -1,7 +1,7 @@
 /*
  * xSF - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  */
@@ -60,7 +60,7 @@ template<typename T> inline T NextHighestPowerOf2(T value)
 	if (value < 1)
 		return 1;
 	--value;
-	for (size_t i = 1; i < sizeof(T) * CHAR_BIT; i <<= 1)
+	for (size_t i = 1; i < sizeof(T) * std::numeric_limits<unsigned char>::digits; i <<= 1)
 		value |= value >> i;
 	return value + 1;
 }
@@ -80,7 +80,7 @@ inline bool FileExists(const std::string &filename)
 	return !!file;
 }
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 inline bool FileExists(const std::wstring &filename)
 {
 	std::ifstream file(filename.c_str());

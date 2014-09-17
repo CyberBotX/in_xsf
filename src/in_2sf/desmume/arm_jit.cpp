@@ -34,7 +34,7 @@
 #include "instruction_attributes.h"
 #include "MMU.h"
 #include "MMU_timing.h"
-#include "utils/AsmJit/AsmJit.h"
+#include "utils/AsmJit/asmjit.h"
 #include "arm_jit.h"
 #include "bios.h"
 
@@ -42,10 +42,10 @@
 #define PROFILER_JIT_LEVEL 0
 
 #if PROFILER_JIT_LEVEL > 0
-#include <algorithm>
+# include <algorithm>
 #endif
 
-using namespace AsmJit;
+using namespace asmjit;
 
 #if LOG_JIT_LEVEL > 0
 #define LOG_JIT 1
@@ -53,20 +53,18 @@ using namespace AsmJit;
 #define printJIT(buf, val) \
 { \
 	JIT_COMMENT("printJIT(\""##buf"\", val);"); \
-	GpVar txt = c.newGpVar(kX86VarTypeGpz); \
-	GpVar data = c.newGpVar(kX86VarTypeGpz); \
-	GpVar io = c.newGpVar(kX86VarTypeGpd); \
-	c.lea(io, dword_ptr_abs(stdout)); \
-	c.lea(txt, dword_ptr_abs(&buf)); \
+	GpVar txt = c.newGpVar(kVarTypeIntPtr); \
+	GpVar data = c.newGpVar(kVarTypeIntPtr); \
+	GpVar io = c.newGpVar(kVarTypeInt32); \
+	c.lea(io, x86::dword_ptr_abs(stdout)); \
+	c.lea(txt, x86::dword_ptr_abs(&buf)); \
 	c.mov(data, *reinterpret_cast<GpVar *>(&val)); \
-	X86CompilerFuncCall* prn = c.call(reinterpret_cast<uintptr_t>(fprintf)); \
-	prn->setPrototype(ASMJIT_CALL_CONV, FuncBuilder3<void, void *, void *, uint32_t>()); \
-	prn->setArgument(0, io); \
-	prn->setArgument(1, txt); \
-	prn->setArgument(2, data); \
-	X86CompilerFuncCall *prn_flush = c.call(reinterpret_cast<uintptr_t>(fflush)); \
-	prn_flush->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<void, void *>()); \
-	prn_flush->setArgument(0, io); \
+	auto prn = c.addCall(imm_ptr(fprintf), ASMJIT_CALL_CONV, FuncBuilder3<void, void *, void *, uint32_t>()); \
+	prn->setArg(0, io); \
+	prn->setArg(1, txt); \
+	prn->setArg(2, data); \
+	auto prn_flush = c.addCall(imm_ptr(fflush), ASMJIT_CALL_CONV, FuncBuilder1<void, void *>()); \
+	prn_flush->setArg(0, io); \
 }
 #else
 #define LOG_JIT 0
@@ -237,7 +235,8 @@ struct ASMJIT_API StaticCodeGenerator : public Context
 static StaticCodeGenerator codegen;
 static X86Compiler c(&codegen);
 #else
-static X86Compiler c;
+static JitRuntime runtime;
+static X86Compiler c(&runtime);
 #endif
 
 static void emit_branch(int cond, Label to);
@@ -259,19 +258,19 @@ static uint32_t bb_constant_cycles;
 #define bb_next_instruction (bb_adr + bb_opcodesize)
 #define bb_r15 (bb_adr + 2 * bb_opcodesize)
 
-#define cpu_ptr(x) dword_ptr(bb_cpu, offsetof(armcpu_t, x))
-#define cpu_ptr_byte(x, y) byte_ptr(bb_cpu, offsetof(armcpu_t, x) + y)
+#define cpu_ptr(x) x86::dword_ptr(bb_cpu, offsetof(armcpu_t, x))
+#define cpu_ptr_byte(x, y) x86::byte_ptr(bb_cpu, offsetof(armcpu_t, x) + y)
 #define flags_ptr cpu_ptr_byte(CPSR.val, 3)
-#define reg_ptr(x) dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * (x))
-#define reg_pos_ptr(x) dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)))
-#define reg_pos_ptrL(x) word_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)))
-#define reg_pos_ptrH(x) word_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)) + 2)
-#define reg_pos_ptrB(x) byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)))
-#define reg_pos_thumb(x) dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * ((i >> (x)) & 0x7))
-#define reg_pos_thumbB(x) byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * ((i >> (x)) & 0x7))
-#define cp15_ptr(x) dword_ptr(bb_cp15, offsetof(armcp15_t, x))
-#define mmu_ptr(x) dword_ptr(bb_mmu, offsetof(MMU_struct, x))
-#define mmu_ptr_byte(x) byte_ptr(bb_mmu, offsetof(MMU_struct, x))
+#define reg_ptr(x) x86::dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * (x))
+#define reg_pos_ptr(x) x86::dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)))
+#define reg_pos_ptrL(x) x86::word_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)))
+#define reg_pos_ptrH(x) x86::word_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)) + 2)
+#define reg_pos_ptrB(x) x86::byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * REG_POS(i, (x)))
+#define reg_pos_thumb(x) x86::dword_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * ((i >> (x)) & 0x7))
+#define reg_pos_thumbB(x) x86::byte_ptr(bb_cpu, offsetof(armcpu_t, R) + 4 * ((i >> (x)) & 0x7))
+#define cp15_ptr(x) x86::dword_ptr(bb_cp15, offsetof(armcp15_t, x))
+#define mmu_ptr(x) x86::dword_ptr(bb_mmu, offsetof(MMU_struct, x))
+#define mmu_ptr_byte(x) x86::byte_ptr(bb_mmu, offsetof(MMU_struct, x))
 static inline uint32_t _REG_NUM(uint32_t i, uint32_t n) { return (i >> n) & 0x7; }
 
 #ifndef ASMJIT_X64
@@ -281,8 +280,7 @@ static inline uint32_t _REG_NUM(uint32_t i, uint32_t n) { return (i >> n) & 0x7;
 // sequencer.reschedule = true;
 #define changeCPSR \
 { \
-	X86CompilerFuncCall *ctxCPSR = c.call(reinterpret_cast<void *>(NDS_Reschedule)); \
-	ctxCPSR->setPrototype(ASMJIT_CALL_CONV, FuncBuilder0<void>()); \
+	auto ctxCPSR = c.addCall(imm_ptr(NDS_Reschedule), ASMJIT_CALL_CONV, FuncBuilder0<void>()); \
 }
 
 #if PROFILER_JIT_LEVEL > 0
@@ -306,8 +304,8 @@ struct JIT_PROFILER
 
 static GpVar bb_profiler;
 
-#define profiler_counter_arm(opcode) qword_ptr(bb_profiler, offsetof(JIT_PROFILER, arm_count[INSTRUCTION_INDEX(opcode)]))
-#define profiler_counter_thumb(opcode) qword_ptr(bb_profiler, offsetof(JIT_PROFILER, thumb_count[opcode>>6]))
+#define profiler_counter_arm(opcode) x86::qword_ptr(bb_profiler, offsetof(JIT_PROFILER, arm_count[INSTRUCTION_INDEX(opcode)]))
+#define profiler_counter_thumb(opcode) x86::qword_ptr(bb_profiler, offsetof(JIT_PROFILER, thumb_count[opcode>>6]))
 
 #if PROFILER_JIT_LEVEL > 1
 struct PROFILER_ENTRY
@@ -327,18 +325,18 @@ static GpVar bb_profiler_entry;
 #define SET_NZCV(sign) \
 { \
 	JIT_COMMENT("SET_NZCV"); \
-	GpVar x = c.newGpVar(kX86VarTypeGpd); \
-	GpVar y = c.newGpVar(kX86VarTypeGpd); \
+	GpVar x = c.newGpVar(kVarTypeInt32); \
+	GpVar y = c.newGpVar(kVarTypeInt32); \
 	c.sets(x.r8Lo()); \
 	c.setz(y.r8Lo()); \
-	c.lea(x, ptr(y.r64(), x.r64(), kScale2Times)); \
+	c.lea(x, x86::ptr(y.r64(), x.r64(), 1)); \
 	if (sign) \
 		c.setnc(y.r8Lo()); \
 	else \
 		c.setc(y.r8Lo()); \
-	c.lea(x, ptr(y.r64(), x.r64(), kScale2Times)); \
+	c.lea(x, x86::ptr(y.r64(), x.r64(), 1)); \
 	c.seto(y.r8Lo()); \
-	c.lea(x, ptr(y.r64(), x.r64(), kScale2Times)); \
+	c.lea(x, x86::ptr(y.r64(), x.r64(), 1)); \
 	c.movzx(y, flags_ptr); \
 	c.shl(x, 4); \
 	c.and_(y, 0xF); \
@@ -352,14 +350,14 @@ static GpVar bb_profiler_entry;
 #define SET_NZC \
 { \
 	JIT_COMMENT("SET_NZC"); \
-	GpVar x = c.newGpVar(kX86VarTypeGpd); \
-	GpVar y = c.newGpVar(kX86VarTypeGpd); \
+	GpVar x = c.newGpVar(kVarTypeInt32); \
+	GpVar y = c.newGpVar(kVarTypeInt32); \
 	c.sets(x.r8Lo()); \
 	c.setz(y.r8Lo()); \
-	c.lea(x, ptr(y.r64(), x.r64(), kScale2Times)); \
+	c.lea(x, x86::ptr(y.r64(), x.r64(), 1)); \
 	if (cf_change) \
 	{ \
-		c.lea(x, ptr(rcf.r64(), x.r64(), kScale2Times)); \
+		c.lea(x, x86::ptr(rcf.r64(), x.r64(), 1)); \
 		c.unuse(rcf); \
 	} \
 	c.movzx(y, flags_ptr); \
@@ -388,11 +386,11 @@ static GpVar bb_profiler_entry;
 #define SET_NZ(clear_cv) \
 { \
 	JIT_COMMENT("SET_NZ"); \
-	GpVar x = c.newGpVar(kX86VarTypeGpz); \
-	GpVar y = c.newGpVar(kX86VarTypeGpz); \
+	GpVar x = c.newGpVar(kVarTypeIntPtr); \
+	GpVar y = c.newGpVar(kVarTypeIntPtr); \
 	c.sets(x.r8Lo()); \
 	c.setz(y.r8Lo()); \
-	c.lea(x, ptr(y.r64(), x.r64(), kScale2Times)); \
+	c.lea(x, x86::ptr(y.r64(), x.r64(), 1)); \
 	c.movzx(y, flags_ptr); \
 	c.and_(y, clear_cv?0x0F:0x3F); \
 	c.shl(x, 6); \
@@ -404,7 +402,7 @@ static GpVar bb_profiler_entry;
 #define SET_Q \
 { \
 	JIT_COMMENT("SET_Q"); \
-	GpVar x = c.newGpVar(kX86VarTypeGpz); \
+	GpVar x = c.newGpVar(kVarTypeIntPtr); \
 	c.seto(x.r8Lo()); \
 	c.shl(x, 3); \
 	c.or_(flags_ptr, x.r8Lo()); \
@@ -414,19 +412,18 @@ static GpVar bb_profiler_entry;
 #define S_DST_R15 \
 { \
 	JIT_COMMENT("S_DST_R15"); \
-	GpVar SPSR = c.newGpVar(kX86VarTypeGpd); \
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd); \
+	GpVar SPSR = c.newGpVar(kVarTypeInt32); \
+	GpVar tmp = c.newGpVar(kVarTypeInt32); \
 	c.mov(SPSR, cpu_ptr(SPSR.val)); \
 	c.mov(tmp, SPSR); \
 	c.and_(tmp, 0x1F); \
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(armcpu_switchMode)); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>()); \
-	ctx->setArgument(0, bb_cpu); \
-	ctx->setArgument(1, tmp); \
+	auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>()); \
+	ctx->setArg(0, bb_cpu); \
+	ctx->setArg(1, tmp); \
 	c.mov(cpu_ptr(CPSR.val), SPSR); \
 	c.and_(SPSR, 1 << 5); \
 	c.shr(SPSR, 5); \
-	c.lea(tmp, ptr_abs(reinterpret_cast<void *>(0xFFFFFFFC), SPSR.r64(), kScale2Times)); \
+	c.lea(tmp, x86::ptr_abs(0xFFFFFFFC, SPSR.r64(), 1)); \
 	c.and_(tmp, reg_ptr(15)); \
 	c.mov(cpu_ptr(next_instruction), tmp); \
 	c.unuse(tmp); \
@@ -438,7 +435,7 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("LSL_IMM"); \
 	bool rhs_is_imm = false; \
 	uint32_t imm = (i >> 7) & 0x1F; \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (imm) \
 		c.shl(rhs, imm); \
@@ -449,14 +446,14 @@ static GpVar bb_profiler_entry;
 	bool rhs_is_imm = false; \
 	uint8_t cf_change = 0; \
 	GpVar rcf; \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	uint32_t imm = (i >> 7)&0x1F; \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (imm)  \
 	{ \
 		cf_change = 1; \
 		c.shl(rhs, imm); \
-		rcf = c.newGpVar(kX86VarTypeGpd); \
+		rcf = c.newGpVar(kVarTypeInt32); \
 		c.setc(rcf.r8Lo()); \
 	}
 
@@ -464,7 +461,7 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("LSR_IMM"); \
 	bool rhs_is_imm = false; \
 	uint32_t imm = (i >> 7) & 0x1F; \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	if (imm) \
 	{ \
 		c.mov(rhs, reg_pos_ptr(0)); \
@@ -478,8 +475,8 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("S_LSR_IMM"); \
 	bool rhs_is_imm = false; \
 	uint8_t cf_change = 1; \
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rcf = c.newGpVar(kVarTypeInt32); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	uint32_t imm = (i >> 7) & 0x1F; \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (!imm) \
@@ -498,7 +495,7 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("ASR_IMM"); \
 	bool rhs_is_imm = false; \
 	uint32_t imm = (i >> 7) & 0x1F; \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (!imm) \
 		imm = 31; \
@@ -509,8 +506,8 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("S_ASR_IMM"); \
 	bool rhs_is_imm = false; \
 	uint8_t cf_change = 1; \
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rcf = c.newGpVar(kVarTypeInt32); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	uint32_t imm = (i >> 7) & 0x1F; \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (!imm) \
@@ -522,7 +519,7 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("ROR_IMM"); \
 	bool rhs_is_imm = false; \
 	uint32_t imm = (i >> 7) & 0x1F; \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (!imm) \
 	{ \
@@ -537,8 +534,8 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("S_ROR_IMM"); \
 	bool rhs_is_imm = false; \
 	uint8_t cf_change = 1; \
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rcf = c.newGpVar(kVarTypeInt32); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	uint32_t imm = (i >> 7) & 0x1F; \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	if (!imm) \
@@ -571,7 +568,7 @@ static GpVar bb_profiler_entry;
 	if ((i >> 8) & 0xF) \
 	{ \
 		cf_change = 1; \
-		rcf = c.newGpVar(kX86VarTypeGpd); \
+		rcf = c.newGpVar(kVarTypeInt32); \
 		c.mov(rcf, BIT31(rhs)); \
 	} \
 	uint32_t rhs_first = rhs;
@@ -592,9 +589,9 @@ static GpVar bb_profiler_entry;
 #define LSX_REG(name, x86inst, sign) \
 	JIT_COMMENT(#name); \
 	bool rhs_is_imm = false; \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar imm = c.newGpVar(kX86VarTypeGpz); \
-	GpVar tmp = c.newGpVar(kX86VarTypeGpz); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
+	GpVar imm = c.newGpVar(kVarTypeIntPtr); \
+	GpVar tmp = c.newGpVar(kVarTypeIntPtr); \
 	if (sign) \
 		c.mov(tmp, 31); \
 	else \
@@ -613,9 +610,9 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT(#name); \
 	bool rhs_is_imm = false; \
 	uint8_t cf_change = 1; \
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar imm = c.newGpVar(kX86VarTypeGpz); \
+	GpVar rcf = c.newGpVar(kVarTypeInt32); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
+	GpVar imm = c.newGpVar(kVarTypeIntPtr); \
 	Label __zero = c.newLabel(); \
 	Label __lt32 = c.newLabel(); \
 	Label __done = c.newLabel(); \
@@ -662,8 +659,8 @@ static GpVar bb_profiler_entry;
 #define ROR_REG \
 	JIT_COMMENT("ROR_REG"); \
 	bool rhs_is_imm = false; \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar imm = c.newGpVar(kX86VarTypeGpz); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
+	GpVar imm = c.newGpVar(kVarTypeIntPtr); \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	c.mov(imm, reg_pos_ptrB(8)); \
 	c.ror(rhs, imm.r8Lo());
@@ -672,9 +669,9 @@ static GpVar bb_profiler_entry;
 	JIT_COMMENT("S_ROR_REG"); \
 	bool rhs_is_imm = false; \
 	bool cf_change = 1; \
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd); \
-	GpVar imm = c.newGpVar(kX86VarTypeGpz); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rcf = c.newGpVar(kVarTypeInt32); \
+	GpVar imm = c.newGpVar(kVarTypeIntPtr); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	Label __zero = c.newLabel(); \
 	Label __zero_1F = c.newLabel(); \
 	Label __done = c.newLabel(); \
@@ -707,7 +704,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 	{
 		if (population < alu_cycles)
 		{
-			GpVar x = c.newGpVar(kX86VarTypeGpd);
+			GpVar x = c.newGpVar(kVarTypeInt32);
 			c.mov(x, alu_cycles);
 			c.cmp(mem_cycles, alu_cycles);
 			c.cmovl(mem_cycles, x);
@@ -722,7 +719,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 // -----------------------------------------------------------------------------
 #define OP_ARITHMETIC(arg, x86inst, symmetric, flags) \
 	arg; \
-	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar lhs = c.newGpVar(kVarTypeInt32); \
 	if (REG_POS(i, 12) == REG_POS(i, 16)) \
 		c.x86inst(reg_pos_ptr(12), rhs); \
 	else if (symmetric && !rhs_is_imm) \
@@ -750,7 +747,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 	{ \
 		if (REG_POS(i, 12) == 15) \
 		{ \
-			GpVar tmp = c.newGpVar(kX86VarTypeGpd); \
+			GpVar tmp = c.newGpVar(kVarTypeInt32); \
 			c.mov(tmp, reg_ptr(15)); \
 			c.mov(cpu_ptr(next_instruction), tmp); \
 			bb_constant_cycles += 2; \
@@ -760,7 +757,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 
 #define OP_ARITHMETIC_R(arg, x86inst, flags) \
 	arg; \
-	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar lhs = c.newGpVar(kVarTypeInt32); \
 	c.mov(lhs, rhs); \
 	c.x86inst(lhs, reg_pos_ptr(16)); \
 	c.mov(reg_pos_ptr(12), lhs); \
@@ -778,7 +775,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 	{ \
 		if (REG_POS(i, 12) == 15) \
 		{ \
-			GpVar tmp = c.newGpVar(kX86VarTypeGpd); \
+			GpVar tmp = c.newGpVar(kVarTypeInt32); \
 			c.mov(cpu_ptr(next_instruction), lhs); \
 			bb_constant_cycles += 2; \
 		} \
@@ -796,7 +793,7 @@ static void emit_MMU_aluMemCycles(int alu_cycles, GpVar mem_cycles, int populati
 	} \
 	else \
 	{ \
-		GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
+		GpVar lhs = c.newGpVar(kVarTypeInt32); \
 		c.mov(lhs, reg_pos_ptr(16)); \
 		c.x86inst(lhs, rhs); \
 		c.mov(reg_pos_ptr(12), lhs); \
@@ -1046,7 +1043,7 @@ static int OP_TST_IMM_VAL(uint32_t i) { OP_TST_(S_IMM_VAL); }
 		c.xor_(*reinterpret_cast<GpVar *>(&rhs), reg_pos_ptr(16)); \
 	else \
 	{ \
-		GpVar x = c.newGpVar(kX86VarTypeGpd); \
+		GpVar x = c.newGpVar(kVarTypeInt32); \
 		c.mov(x, rhs); \
 		c.xor_(x, reg_pos_ptr(16)); \
 	} \
@@ -1095,7 +1092,7 @@ static int OP_CMP_IMM_VAL(uint32_t i) { OP_CMP(IMM_VAL); }
 		c.cmp(reg_pos_ptr(16), -rhs_imm); \
 	else \
 	{ \
-		GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
+		GpVar lhs = c.newGpVar(kVarTypeInt32); \
 		c.mov(lhs, reg_pos_ptr(16)); \
 		c.add(lhs, rhs); \
 	} \
@@ -1202,7 +1199,7 @@ static void MUL_Mxx_END(GpVar x, bool sign, int cycles)
 {
 	if (sign)
 	{
-		GpVar y = c.newGpVar(kX86VarTypeGpd);
+		GpVar y = c.newGpVar(kVarTypeInt32);
 		c.mov(y, x);
 		c.sar(x, 31);
 		c.xor_(x, y);
@@ -1214,12 +1211,12 @@ static void MUL_Mxx_END(GpVar x, bool sign, int cycles)
 }
 
 #define OP_MUL_(op, width, sign, accum, flags) \
-	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar lhs = c.newGpVar(kVarTypeInt32); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	GpVar hi; \
 	if (width) \
 	{ \
-		hi = c.newGpVar(kX86VarTypeGpd); \
+		hi = c.newGpVar(kVarTypeInt32); \
 		c.xor_(hi, hi); \
 	} \
 	c.mov(lhs, reg_pos_ptr(0)); \
@@ -1281,13 +1278,13 @@ static int OP_SMULL_S(uint32_t i) { OP_MUL_(c.imul(hi,lhs,rhs), 1, 1, 0, 1); }
 static int OP_SMLAL_S(uint32_t i) { OP_MUL_(c.imul(hi,lhs,rhs), 1, 1, 1, 1); }
 
 #define OP_MULxy_(op, x, y, width, accum, flags) \
-	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar lhs = c.newGpVar(kVarTypeInt32); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	GpVar hi; \
 	c.movsx(lhs, reg_pos_ptr##x(0)); \
 	c.movsx(rhs, reg_pos_ptr##y(8)); \
 	if (width) \
-		hi = c.newGpVar(kX86VarTypeGpd); \
+		hi = c.newGpVar(kVarTypeInt32); \
 	op; \
 	if (width && accum) \
 	{ \
@@ -1352,8 +1349,8 @@ static int OP_SMLAL_T_T(uint32_t i) { OP_MULxy_(c.imul(hi,lhs,rhs), H, H, 1, 1, 
 // -----------------------------------------------------------------------------
 #ifdef ASMJIT_X64
 #define OP_SMxxW_(x, accum, flags) \
-	GpVar lhs = c.newGpVar(kX86VarTypeGpz); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpz); \
+	GpVar lhs = c.newGpVar(kVarTypeIntPtr); \
+	GpVar rhs = c.newGpVar(kVarTypeIntPtr); \
 	c.movsx(lhs, reg_pos_ptr##x(8)); \
 	c.movsxd(rhs, reg_pos_ptr(0)); \
 	c.imul(lhs, rhs);  \
@@ -1366,9 +1363,9 @@ static int OP_SMLAL_T_T(uint32_t i) { OP_MULxy_(c.imul(hi,lhs,rhs), H, H, 1, 1, 
 	return 1;
 #else
 #define OP_SMxxW_(x, accum, flags) \
-	GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
-	GpVar hi = c.newGpVar(kX86VarTypeGpd); \
+	GpVar lhs = c.newGpVar(kVarTypeInt32); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
+	GpVar hi = c.newGpVar(kVarTypeInt32); \
 	c.movsx(lhs, reg_pos_ptr##x(8)); \
 	c.mov(rhs, reg_pos_ptr(0)); \
 	c.imul(hi, lhs, rhs);  \
@@ -1393,7 +1390,7 @@ static int OP_SMLAW_T(uint32_t i) { OP_SMxxW_(H, 1, 1); }
 // -----------------------------------------------------------------------------
 static int OP_MRS_CPSR(uint32_t i)
 {
-	GpVar x = c.newGpVar(kX86VarTypeGpd);
+	GpVar x = c.newGpVar(kVarTypeInt32);
 	c.mov(x, cpu_ptr(CPSR));
 	c.mov(reg_pos_ptr(12), x);
 	return 1;
@@ -1401,7 +1398,7 @@ static int OP_MRS_CPSR(uint32_t i)
 
 static int OP_MRS_SPSR(uint32_t i)
 {
-	GpVar x = c.newGpVar(kX86VarTypeGpd);
+	GpVar x = c.newGpVar(kVarTypeInt32);
 	c.mov(x, cpu_ptr(SPSR));
 	c.mov(reg_pos_ptr(12), x);
 	return 1;
@@ -1409,14 +1406,14 @@ static int OP_MRS_SPSR(uint32_t i)
 
 // TODO: SPSR: if(cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS) return 1;
 #define OP_MSR_(reg, args, sw) \
-	GpVar operand = c.newGpVar(kX86VarTypeGpd); \
+	GpVar operand = c.newGpVar(kVarTypeInt32); \
 	args; \
 	c.mov(operand, rhs); \
 	switch ((i >> 16) & 0xF) \
 	{ \
 		case 0x1: /* bit 16 */ \
 		{ \
-			GpVar mode = c.newGpVar(kX86VarTypeGpd); \
+			GpVar mode = c.newGpVar(kVarTypeInt32); \
 			Label __skip = c.newLabel(); \
 			c.mov(mode, cpu_ptr(CPSR)); \
 			c.and_(mode, 0x1F); \
@@ -1426,10 +1423,10 @@ static int OP_MRS_SPSR(uint32_t i)
 			{ \
 				c.mov(mode, rhs); \
 				c.and_(mode, 0x1F); \
-				X86CompilerFuncCall* ctx = c.call(reinterpret_cast<void *>(armcpu_switchMode)); \
-				ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>()); \
-				ctx->setArgument(0, bb_cpu); \
-				ctx->setArgument(1, mode); \
+				auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, \
+					FuncBuilder2<void, void *, uint8_t>()); \
+				ctx->setArg(0, bb_cpu); \
+				ctx->setArg(1, mode); \
 			} \
 			Mem xPSR_memB = cpu_ptr_byte(reg, 0); \
 			c.mov(xPSR_memB, operand.r8Lo()); \
@@ -1439,7 +1436,7 @@ static int OP_MRS_SPSR(uint32_t i)
 		} \
 		case 0x2: /* bit 17 */ \
 		{ \
-			GpVar mode = c.newGpVar(kX86VarTypeGpd); \
+			GpVar mode = c.newGpVar(kVarTypeInt32); \
 			Label __skip = c.newLabel(); \
 			c.mov(mode, cpu_ptr(CPSR)); \
 			c.and_(mode, 0x1F); \
@@ -1454,7 +1451,7 @@ static int OP_MRS_SPSR(uint32_t i)
 		} \
 		case 0x4: /* bit 18 */ \
 		{ \
-			GpVar mode = c.newGpVar(kX86VarTypeGpd); \
+			GpVar mode = c.newGpVar(kVarTypeInt32); \
 			Label __skip = c.newLabel(); \
 			c.mov(mode, cpu_ptr(CPSR)); \
 			c.and_(mode, 0x1F); \
@@ -1481,8 +1478,8 @@ static int OP_MRS_SPSR(uint32_t i)
 	static uint32_t byte_mask_USR = BIT19(i) ? 0xFF000000 : 0x00000000; \
 \
 	Mem xPSR_mem = cpu_ptr(reg.val); \
-	GpVar xPSR = c.newGpVar(kX86VarTypeGpd); \
-	GpVar mode = c.newGpVar(kX86VarTypeGpd); \
+	GpVar xPSR = c.newGpVar(kVarTypeInt32); \
+	GpVar mode = c.newGpVar(kVarTypeInt32); \
 	Label __USR = c.newLabel(); \
 	Label __done = c.newLabel(); \
 	c.mov(mode, cpu_ptr(CPSR.val)); \
@@ -1495,10 +1492,10 @@ static int OP_MRS_SPSR(uint32_t i)
 		/* armcpu_switchMode */ \
 		c.mov(mode, rhs); \
 		c.and_(mode, 0x1F); \
-		X86CompilerFuncCall* ctx = c.call(reinterpret_cast<void *>(armcpu_switchMode)); \
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>()); \
-		ctx->setArgument(0, bb_cpu); \
-		ctx->setArgument(1, mode); \
+		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, \
+			FuncBuilder2<void, void *, uint8_t>()); \
+		ctx->setArg(0, bb_cpu); \
+		ctx->setArg(1, mode); \
 	} \
 	/* cpu->CPSR.val = (cpu->CPSR.val & ~byte_mask) | (operand & byte_mask); */ \
 	c.mov(xPSR, xPSR_mem); \
@@ -1602,8 +1599,8 @@ static uint32_t add(uint32_t lhs, uint32_t rhs) { return lhs + rhs; }
 static uint32_t sub(uint32_t lhs, uint32_t rhs) { return lhs - rhs; }
 
 #define OP_LDR_(mem_op, arg, sign_op, writeback) \
-	GpVar adr = c.newGpVar(kX86VarTypeGpd); \
-	GpVar dst = c.newGpVar(kX86VarTypeGpz); \
+	GpVar adr = c.newGpVar(kVarTypeInt32); \
+	GpVar dst = c.newGpVar(kVarTypeIntPtr); \
 	c.mov(adr, reg_pos_ptr(16)); \
 	c.lea(dst, reg_pos_ptr(12)); \
 	arg; \
@@ -1618,25 +1615,25 @@ static uint32_t sub(uint32_t lhs, uint32_t rhs) { return lhs - rhs; }
 		} \
 		else if (writeback > 0) \
 		{ \
-			GpVar tmp_reg = c.newGpVar(kX86VarTypeGpd); \
+			GpVar tmp_reg = c.newGpVar(kVarTypeInt32); \
 			c.mov(tmp_reg, adr); \
 			c.sign_op(tmp_reg, rhs); \
 			c.mov(reg_pos_ptr(16), tmp_reg); \
 		} \
 	} \
-	uint32_t adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(mem_op##_tab[PROCNUM][classify_adr(adr_first, 0)])); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<uint32_t, uint32_t, uint32_t *>()); \
-	ctx->setArgument(0, adr); \
-	ctx->setArgument(1, dst); \
-	ctx->setReturn(bb_cycles); \
+	uint32_t adr_first = sign_op(cpu->R[REG_POS(i, 16)], rhs_first); \
+	auto ctx = c.addCall(imm_ptr(mem_op##_tab[PROCNUM][classify_adr(adr_first, 0)]), ASMJIT_CALL_CONV, \
+		FuncBuilder2<uint32_t, uint32_t, uint32_t *>()); \
+	ctx->setArg(0, adr); \
+	ctx->setArg(1, dst); \
+	ctx->setRet(0, bb_cycles); \
 	if (REG_POS(i, 12) == 15) \
 	{ \
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd); \
+		GpVar tmp = c.newGpVar(kVarTypeInt32); \
 		c.mov(tmp, reg_ptr(15)); \
 		if (!PROCNUM) \
 		{ \
-			GpVar thumb = c.newGpVar(kX86VarTypeGpz); \
+			GpVar thumb = c.newGpVar(kVarTypeIntPtr); \
 			c.movzx(thumb, reg_pos_ptrB(16)); \
 			c.and_(thumb, 1); \
 			c.shl(thumb, 5); \
@@ -1789,8 +1786,8 @@ static const OpSTR STRB_tab[2][3] = { T(OP_STRB) };
 #undef T
 
 #define OP_STR_(mem_op, arg, sign_op, writeback) \
-	GpVar adr = c.newGpVar(kX86VarTypeGpd); \
-	GpVar data = c.newGpVar(kX86VarTypeGpd); \
+	GpVar adr = c.newGpVar(kVarTypeInt32); \
+	GpVar data = c.newGpVar(kVarTypeInt32); \
 	c.mov(adr, reg_pos_ptr(16)); \
 	c.mov(data, reg_pos_ptr(12)); \
 	arg; \
@@ -1805,18 +1802,18 @@ static const OpSTR STRB_tab[2][3] = { T(OP_STRB) };
 		} \
 		else if (writeback > 0) \
 		{ \
-			GpVar tmp_reg = c.newGpVar(kX86VarTypeGpd); \
+			GpVar tmp_reg = c.newGpVar(kVarTypeInt32); \
 			c.mov(tmp_reg, adr); \
 			c.sign_op(tmp_reg, rhs); \
 			c.mov(reg_pos_ptr(16), tmp_reg); \
 		} \
 	} \
 	uint32_t adr_first = sign_op(cpu->R[REG_POS(i,16)], rhs_first); \
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(mem_op##_tab[PROCNUM][classify_adr(adr_first, 1)])); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<uint32_t, uint32_t, uint32_t>()); \
-	ctx->setArgument(0, adr); \
-	ctx->setArgument(1, data); \
-	ctx->setReturn(bb_cycles); \
+	auto ctx = c.addCall(imm_ptr(mem_op##_tab[PROCNUM][classify_adr(adr_first, 1)]), ASMJIT_CALL_CONV, \
+		FuncBuilder2<uint32_t, uint32_t, uint32_t>()); \
+	ctx->setArg(0, adr); \
+	ctx->setArg(1, data); \
+	ctx->setRet(0, bb_cycles); \
 	return 1;
 
 static int OP_STR_P_IMM_OFF(uint32_t i) { OP_STR_(STR, IMM_OFF_12, add, 0); }
@@ -1925,7 +1922,7 @@ static const LDRD_STRD_REG op_strd_tab[2][16] = { { T(OP_STRD_REG, 0) }, { T(OP_
 static int OP_LDRD_STRD_POST_INDEX(uint32_t i)
 {
 	uint8_t Rd_num = REG_POS(i, 12);
-	
+
 	if (Rd_num == 14)
 	{
 		printf("OP_LDRD_STRD_POST_INDEX: use R14!!!!\n");
@@ -1936,8 +1933,8 @@ static int OP_LDRD_STRD_POST_INDEX(uint32_t i)
 		printf("OP_LDRD_STRD_POST_INDEX: ERROR!!!!\n");
 		return 0; // TODO: exception
 	}
-	GpVar Rd = c.newGpVar(kX86VarTypeGpd);
-	GpVar addr = c.newGpVar(kX86VarTypeGpd);
+	GpVar Rd = c.newGpVar(kVarTypeInt32);
+	GpVar addr = c.newGpVar(kVarTypeInt32);
 
 	c.mov(Rd, reg_pos_ptr(16));
 	c.mov(addr, reg_pos_ptr(16));
@@ -1950,15 +1947,15 @@ static int OP_LDRD_STRD_POST_INDEX(uint32_t i)
 	}
 	else
 	{
-		GpVar idx = c.newGpVar(kX86VarTypeGpd);
+		GpVar idx = c.newGpVar(kVarTypeInt32);
 		c.mov(idx, reg_pos_ptr(0));
 		BIT23(i) ? c.add(reg_pos_ptr(16), idx) : c.sub(reg_pos_ptr(16), idx);
 	}
 
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(BIT5(i) ? op_strd_tab[PROCNUM][Rd_num] : op_ldrd_tab[PROCNUM][Rd_num]));
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<uint32_t, uint32_t>());
-	ctx->setArgument(0, addr);
-	ctx->setReturn(bb_cycles);
+	auto ctx = c.addCall(imm_ptr(BIT5(i) ? op_strd_tab[PROCNUM][Rd_num] : op_ldrd_tab[PROCNUM][Rd_num]),
+		ASMJIT_CALL_CONV, FuncBuilder1<uint32_t, uint32_t>());
+	ctx->setArg(0, addr);
+	ctx->setRet(0, bb_cycles);
 	emit_MMU_aluMemCycles(3, bb_cycles, 0);
 	return 1;
 }
@@ -1966,7 +1963,7 @@ static int OP_LDRD_STRD_POST_INDEX(uint32_t i)
 static int OP_LDRD_STRD_OFFSET_PRE_INDEX(uint32_t i)
 {
 	uint8_t Rd_num = REG_POS(i, 12);
-	
+
 	if (Rd_num == 14)
 	{
 		printf("OP_LDRD_STRD_OFFSET_PRE_INDEX: use R14!!!!\n");
@@ -1977,8 +1974,8 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(uint32_t i)
 		printf("OP_LDRD_STRD_OFFSET_PRE_INDEX: ERROR!!!!\n");
 		return 0; // TODO: exception
 	}
-	GpVar Rd = c.newGpVar(kX86VarTypeGpd);
-	GpVar addr = c.newGpVar(kX86VarTypeGpd);
+	GpVar Rd = c.newGpVar(kVarTypeInt32);
+	GpVar addr = c.newGpVar(kVarTypeInt32);
 
 	c.mov(Rd, reg_pos_ptr(16));
 	c.mov(addr, reg_pos_ptr(16));
@@ -1994,10 +1991,10 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(uint32_t i)
 
 	if (BIT5(i)) // Store
 	{
-		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(op_strd_tab[PROCNUM][Rd_num]));
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<uint32_t, uint32_t>());
-		ctx->setArgument(0, addr);
-		ctx->setReturn(bb_cycles);
+		auto ctx = c.addCall(imm_ptr(op_strd_tab[PROCNUM][Rd_num]), ASMJIT_CALL_CONV,
+			FuncBuilder1<uint32_t, uint32_t>());
+		ctx->setArg(0, addr);
+		ctx->setRet(0, bb_cycles);
 		if (BIT21(i)) // W bit - writeback
 			c.mov(reg_pos_ptr(16), addr);
 		emit_MMU_aluMemCycles(3, bb_cycles, 0);
@@ -2006,10 +2003,10 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(uint32_t i)
 	{
 		if (BIT21(i)) // W bit - writeback
 			c.mov(reg_pos_ptr(16), addr);
-		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(op_ldrd_tab[PROCNUM][Rd_num]));
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<uint32_t, uint32_t>());
-		ctx->setArgument(0, addr);
-		ctx->setReturn(bb_cycles);
+		auto ctx = c.addCall(imm_ptr(op_ldrd_tab[PROCNUM][Rd_num]), ASMJIT_CALL_CONV,
+			FuncBuilder1<uint32_t, uint32_t>());
+		ctx->setArg(0, addr);
+		ctx->setRet(0, bb_cycles);
 		emit_MMU_aluMemCycles(3, bb_cycles, 0);
 	}
 	return 1;
@@ -2039,21 +2036,21 @@ static const OP_SWP_SWPB op_swp_tab[2][2] = { { op_swp<0>, op_swp<1> }, { op_swp
 
 static int op_swp_(uint32_t i, int b)
 {
-	GpVar addr = c.newGpVar(kX86VarTypeGpd);
-	GpVar Rd = c.newGpVar(kX86VarTypeGpz);
-	GpVar Rs = c.newGpVar(kX86VarTypeGpd);
+	GpVar addr = c.newGpVar(kVarTypeInt32);
+	GpVar Rd = c.newGpVar(kVarTypeIntPtr);
+	GpVar Rs = c.newGpVar(kVarTypeInt32);
 	c.mov(addr, reg_pos_ptr(16));
 	c.lea(Rd, reg_pos_ptr(12));
 	if (b)
 		c.movzx(Rs, reg_pos_ptrB(0));
 	else
 		c.mov(Rs, reg_pos_ptr(0));
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(op_swp_tab[b][PROCNUM]));
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder3<uint32_t, uint32_t, uint32_t *, uint32_t>());
-	ctx->setArgument(0, addr);
-	ctx->setArgument(1, Rd);
-	ctx->setArgument(2, Rs);
-	ctx->setReturn(bb_cycles);
+	auto ctx = c.addCall(imm_ptr(op_swp_tab[b][PROCNUM]), ASMJIT_CALL_CONV,
+		FuncBuilder3<uint32_t, uint32_t, uint32_t *, uint32_t>());
+	ctx->setArg(0, addr);
+	ctx->setArg(1, Rd);
+	ctx->setArg(2, Rs);
+	ctx->setRet(0, bb_cycles);
 	emit_MMU_aluMemCycles(4, bb_cycles, 0);
 	return 1;
 }
@@ -2247,30 +2244,30 @@ static void call_ldm_stm(GpVar adr, uint32_t bitmask, bool store, int dir)
 {
 	if (bitmask)
 	{
-		GpVar n = c.newGpVar(kX86VarTypeGpd);
+		GpVar n = c.newGpVar(kVarTypeInt32);
 		c.mov(n, popcount(bitmask));
 #ifdef ASMJIT_X64
-		GpVar regs = c.newGpVar(kX86VarTypeGpz);
+		GpVar regs = c.newGpVar(kVarTypeIntPtr);
 		c.mov(regs, get_reg_list(bitmask, dir));
-		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(op_ldm_stm_tab[PROCNUM][store][dir > 0]));
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder3<uint32_t, uint32_t, uint64_t, int>());
-		ctx->setArgument(0, adr);
-		ctx->setArgument(1, regs);
-		ctx->setArgument(2, n);
+		auto ctx = c.addCall(imm_ptr(op_ldm_stm_tab[PROCNUM][store][dir > 0]), ASMJIT_CALL_CONV,
+			FuncBuilder3<uint32_t, uint32_t, uint64_t, int>());
+		ctx->setArg(0, adr);
+		ctx->setArg(1, regs);
+		ctx->setArg(2, n);
 #else
 		// same prototype, but we have to handle splitting of a u64 arg manually
-		GpVar regs_lo = c.newGpVar(kX86VarTypeGpd);
-		GpVar regs_hi = c.newGpVar(kX86VarTypeGpd);
+		GpVar regs_lo = c.newGpVar(kVarTypeInt32);
+		GpVar regs_hi = c.newGpVar(kVarTypeInt32);
 		c.mov(regs_lo, get_reg_list(bitmask, dir) & 0xFFFFFFFF);
 		c.mov(regs_hi, get_reg_list(bitmask, dir) >> 32);
-		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(op_ldm_stm_tab[PROCNUM][store][dir > 0]));
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder4<uint32_t, uint32_t, uint32_t, uint32_t, int>());
-		ctx->setArgument(0, adr);
-		ctx->setArgument(1, regs_lo);
-		ctx->setArgument(2, regs_hi);
-		ctx->setArgument(3, n);
+		auto ctx = c.addCall(imm_ptr(op_ldm_stm_tab[PROCNUM][store][dir > 0]), ASMJIT_CALL_CONV,
+			FuncBuilder4<uint32_t, uint32_t, uint32_t, uint32_t, int>());
+		ctx->setArg(0, adr);
+		ctx->setArg(1, regs_lo);
+		ctx->setArg(2, regs_hi);
+		ctx->setArg(3, n);
 #endif
-		ctx->setReturn(bb_cycles);
+		ctx->setRet(0, bb_cycles);
 	}
 	else
 		++bb_constant_cycles;
@@ -2284,7 +2281,7 @@ static int op_ldm_stm(uint32_t i, bool store, int dir, bool before, bool writeba
 	uint32_t bitmask = i & 0xFFFF;
 	uint32_t pop = popcount(bitmask);
 
-	GpVar adr = c.newGpVar(kX86VarTypeGpd);
+	GpVar adr = c.newGpVar(kVarTypeInt32);
 	c.mov(adr, reg_pos_ptr(16));
 	if (before)
 		c.add(adr, 4*dir);
@@ -2296,7 +2293,7 @@ static int op_ldm_stm(uint32_t i, bool store, int dir, bool before, bool writeba
 
 	if (writeback)
 	{
-		
+
 		if (store || !(i & (1 << REG_POS(i, 16))))
 		{
 			JIT_COMMENT("--- writeback");
@@ -2345,8 +2342,8 @@ static int op_ldm_stm2(uint32_t i, bool store, int dir, bool before, bool writeb
 	//printf("ARM%c: %s R%d:%08X, bitmask %02X\n", PROCNUM?'7':'9', (store?"STM":"LDM"), REG_POS(i, 16), cpu->R[REG_POS(i, 16)], bitmask);
 	uint32_t adr_first = cpu->R[REG_POS(i, 16)];
 
-	GpVar adr = c.newGpVar(kX86VarTypeGpd);
-	GpVar oldmode = c.newGpVar(kX86VarTypeGpd);
+	GpVar adr = c.newGpVar(kVarTypeInt32);
+	GpVar oldmode = c.newGpVar(kVarTypeInt32);
 
 	c.mov(adr, reg_pos_ptr(16));
 	if (before)
@@ -2357,11 +2354,11 @@ static int op_ldm_stm2(uint32_t i, bool store, int dir, bool before, bool writeb
 		//if((cpu->CPSR.bits.mode==USR)||(cpu->CPSR.bits.mode==SYS)) { printf("ERROR1\n"); return 1; }
 		//oldmode = armcpu_switchMode(cpu, SYS);
 		c.mov(oldmode, SYS);
-		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(armcpu_switchMode));
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<uint32_t, uint8_t *, uint8_t>());
-		ctx->setArgument(0, bb_cpu);
-		ctx->setArgument(1, oldmode);
-		ctx->setReturn(oldmode);
+		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV,
+			FuncBuilder2<uint32_t, uint8_t *, uint8_t>());
+		ctx->setArg(0, bb_cpu);
+		ctx->setArg(1, oldmode);
+		ctx->setRet(0, oldmode);
 	}
 
 	call_ldm_stm(adr, bitmask, store, dir);
@@ -2369,10 +2366,10 @@ static int op_ldm_stm2(uint32_t i, bool store, int dir, bool before, bool writeb
 	if (!bit15 || store)
 	{
 		//armcpu_switchMode(cpu, oldmode);
-		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(armcpu_switchMode));
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, uint8_t *, uint8_t>());
-		ctx->setArgument(0, bb_cpu);
-		ctx->setArgument(1, oldmode);
+		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV,
+			FuncBuilder2<void, uint8_t *, uint8_t>());
+		ctx->setArg(0, bb_cpu);
+		ctx->setArg(1, oldmode);
 	}
 	else
 		S_DST_R15;
@@ -2443,17 +2440,17 @@ static int OP_BL(uint32_t i) { return op_b(i, 1); }
 
 static int op_bx(Mem srcreg, bool blx, bool test_thumb)
 {
-	GpVar dst = c.newGpVar(kX86VarTypeGpd);
+	GpVar dst = c.newGpVar(kVarTypeInt32);
 	c.mov(dst, srcreg);
 
 	if (test_thumb)
 	{
-		GpVar mask = c.newGpVar(kX86VarTypeGpd);
+		GpVar mask = c.newGpVar(kVarTypeInt32);
 		GpVar thumb = dst;
-		dst = c.newGpVar(kX86VarTypeGpd);
+		dst = c.newGpVar(kVarTypeInt32);
 		c.mov(dst, thumb);
 		c.and_(thumb, 1);
-		c.lea(mask, ptr_abs(reinterpret_cast<void *>(0xFFFFFFFC), thumb.r64(), kScale2Times));
+		c.lea(mask, x86::ptr_abs(0xFFFFFFFC, thumb.r64(), 1));
 		c.shl(thumb, 5);
 		c.or_(cpu_ptr_byte(CPSR, 0), thumb.r8Lo());
 		c.and_(dst, mask);
@@ -2476,12 +2473,12 @@ static int OP_BLX_REG(uint32_t i) { return op_bx(reg_pos_ptr(0), 1, 1); }
 // -----------------------------------------------------------------------------
 static int OP_CLZ(uint32_t i)
 {
-	GpVar res = c.newGpVar(kX86VarTypeGpd);
+	GpVar res = c.newGpVar(kVarTypeInt32);
 	c.mov(res, 0x3F);
 	c.bsr(res, reg_pos_ptr(0));
 	c.xor_(res, 0x1F);
 	c.mov(reg_pos_ptr(12), res);
-	
+
 	return 1;
 }
 
@@ -2490,8 +2487,7 @@ static int OP_CLZ(uint32_t i)
 // -----------------------------------------------------------------------------
 #define maskPrecalc \
 { \
-	X86CompilerFuncCall *ctxM = c.call(reinterpret_cast<void *>(maskPrecalc)); \
-	ctxM->setPrototype(ASMJIT_CALL_CONV, FuncBuilder0<void>()); \
+	auto ctxM = c.addCall(imm_ptr(maskPrecalc), ASMJIT_CALL_CONV, FuncBuilder0<void>()); \
 }
 static int OP_MCR(uint32_t i)
 {
@@ -2516,8 +2512,8 @@ static int OP_MCR(uint32_t i)
 	uint8_t opcode1 = (i >> 21) & 0x7; // opcode1
 	uint8_t opcode2 = (i >> 5) & 0x7; // opcode2
 
-	GpVar bb_cp15 = c.newGpVar(kX86VarTypeGpz);
-	GpVar data = c.newGpVar(kX86VarTypeGpd);
+	GpVar bb_cp15 = c.newGpVar(kVarTypeIntPtr);
+	GpVar data = c.newGpVar(kVarTypeInt32);
 	c.mov(data, reg_pos_ptr(12));
 	c.mov(bb_cp15, reinterpret_cast<uintptr_t>(&cp15));
 
@@ -2527,17 +2523,17 @@ static int OP_MCR(uint32_t i)
 		case 1:
 			if (!opcode1 && !opcode2 && !CRm)
 			{
-				GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+				GpVar tmp = c.newGpVar(kVarTypeInt32);
 				// On the NDS bit0,2,7,12..19 are R/W, Bit3..6 are always set, all other bits are always zero.
 				//MMU.ARM9_RW_MODE = BIT7(val);
-				GpVar bb_mmu = c.newGpVar(kX86VarTypeGpz);
+				GpVar bb_mmu = c.newGpVar(kVarTypeIntPtr);
 				c.mov(bb_mmu, reinterpret_cast<uintptr_t>(&MMU));
 				Mem rwmode = mmu_ptr_byte(ARM9_RW_MODE);
 				Mem ldtbit = cpu_ptr_byte(LDTBit, 0);
 				c.test(data, 1 << 7);
 				c.setnz(rwmode);
 				//cpu->intVector = 0xFFFF0000 * (BIT13(val));
-				GpVar vec = c.newGpVar(kX86VarTypeGpd);
+				GpVar vec = c.newGpVar(kVarTypeInt32);
 				c.mov(tmp, 0xFFFF0000);
 				c.xor_(vec, vec);
 				c.test(data, 1 << 13);
@@ -2696,7 +2692,7 @@ static int OP_MCR(uint32_t i)
 							{
 								//MMU.DTCMRegion = DTCMRegion = val & 0x0FFFF000;
 								c.and_(data, 0x0FFFF000);
-								GpVar bb_mmu = c.newGpVar(kX86VarTypeGpz);
+								GpVar bb_mmu = c.newGpVar(kVarTypeIntPtr);
 								c.mov(bb_mmu, reinterpret_cast<uintptr_t>(&MMU));
 								c.mov(mmu_ptr(DTCMRegion), data);
 								c.mov(cp15_ptr(DTCMRegion), data);
@@ -2706,7 +2702,7 @@ static int OP_MCR(uint32_t i)
 							{
 								//ITCMRegion = val;
 								//ITCM base is not writeable!
-								GpVar bb_mmu = c.newGpVar(kX86VarTypeGpz);
+								GpVar bb_mmu = c.newGpVar(kVarTypeIntPtr);
 								c.mov(bb_mmu, reinterpret_cast<uintptr_t>(&MMU));
 								c.mov(mmu_ptr(ITCMRegion), 0);
 								c.mov(cp15_ptr(ITCMRegion), data);
@@ -2751,11 +2747,11 @@ static int OP_MRC(uint32_t i)
 	uint8_t opcode1 = (i >> 21) & 0x7; // opcode1
 	uint8_t opcode2 = (i >> 5) & 0x7; // opcode2
 
-	GpVar bb_cp15 = c.newGpVar(kX86VarTypeGpz);
-	GpVar data = c.newGpVar(kX86VarTypeGpd);
+	GpVar bb_cp15 = c.newGpVar(kVarTypeIntPtr);
+	GpVar data = c.newGpVar(kVarTypeInt32);
 
 	c.mov(bb_cp15, (uintptr_t)&cp15);
-	
+
 	bool bUnknown = false;
 	switch (CRn)
 	{
@@ -2960,32 +2956,30 @@ uint32_t op_swi(uint8_t swinum)
 		// TODO:
 		return 0;
 #else
-		X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(ARM_swi_tab[PROCNUM][swinum]));
-		ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder0<uint32_t>());
-		ctx->setReturn(bb_cycles);
+		auto ctx = c.addCall(imm_ptr(ARM_swi_tab[PROCNUM][swinum]), ASMJIT_CALL_CONV, FuncBuilder0<uint32_t>());
+		ctx->setRet(0, bb_cycles);
 		c.add(bb_cycles, 3);
 		return 1;
 #endif
 	}
 
-	GpVar oldCPSR = c.newGpVar(kX86VarTypeGpd);
-	GpVar mode = c.newGpVar(kX86VarTypeGpd);
+	GpVar oldCPSR = c.newGpVar(kVarTypeInt32);
+	GpVar mode = c.newGpVar(kVarTypeInt32);
 	Mem CPSR = cpu_ptr(CPSR.val);
 	JIT_COMMENT("store CPSR to x86 stack");
 	c.mov(oldCPSR, CPSR);
 	JIT_COMMENT("enter SVC mode");
 	c.mov(mode, imm(SVC));
-	X86CompilerFuncCall* ctx = c.call(reinterpret_cast<void *>(armcpu_switchMode));
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>());
-	ctx->setArgument(0, bb_cpu);
-	ctx->setArgument(1, mode);
+	auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>());
+	ctx->setArg(0, bb_cpu);
+	ctx->setArg(1, mode);
 	c.unuse(mode);
 	JIT_COMMENT("store next instruction address to R14");
 	c.mov(reg_ptr(14), bb_next_instruction);
 	JIT_COMMENT("save old CPSR as new SPSR");
 	c.mov(cpu_ptr(SPSR.val), oldCPSR);
 	JIT_COMMENT("CPSR: clear T, set I");
-	GpVar _cpsr = c.newGpVar(kX86VarTypeGpd);
+	GpVar _cpsr = c.newGpVar(kVarTypeInt32);
 	c.mov(_cpsr, CPSR);
 	c.and_(_cpsr, ~(1 << 5)); /* clear T */
 	c.or_(_cpsr, 1 << 7); /* set I */
@@ -2993,7 +2987,7 @@ uint32_t op_swi(uint8_t swinum)
 	c.unuse(_cpsr);
 	JIT_COMMENT("set next instruction");
 	c.mov(cpu_ptr(next_instruction), imm(cpu->intVector + 0x08));
-	
+
 	return 1;
 }
 
@@ -3008,14 +3002,14 @@ static int OP_BKPT(uint32_t i) { printf("JIT: unimplemented OP_BKPT\n"); return 
 //   THUMB
 // -----------------------------------------------------------------------------
 #define OP_SHIFTS_IMM(x86inst) \
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rcf = c.newGpVar(kVarTypeInt32); \
 	uint8_t cf_change = 1; \
 	uint32_t rhs = (i >> 6) & 0x1F; \
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3)) \
 		c.x86inst(reg_pos_thumb(0), rhs); \
 	else \
 	{ \
-		GpVar lhs = c.newGpVar(kX86VarTypeGpd); \
+		GpVar lhs = c.newGpVar(kVarTypeInt32); \
 		c.mov(lhs, reg_pos_thumb(3)); \
 		c.x86inst(lhs, rhs); \
 		c.mov(reg_pos_thumb(0), lhs); \
@@ -3027,8 +3021,8 @@ static int OP_BKPT(uint32_t i) { printf("JIT: unimplemented OP_BKPT\n"); return 
 
 #define OP_SHIFTS_REG(x86inst, bit) \
 	uint8_t cf_change = 1; \
-	GpVar imm = c.newGpVar(kX86VarTypeGpz); \
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd); \
+	GpVar imm = c.newGpVar(kVarTypeIntPtr); \
+	GpVar rcf = c.newGpVar(kVarTypeInt32); \
 	Label __eq32 = c.newLabel(); \
 	Label __ls32 = c.newLabel(); \
 	Label __zero = c.newLabel(); \
@@ -3065,7 +3059,7 @@ static int OP_BKPT(uint32_t i) { printf("JIT: unimplemented OP_BKPT\n"); return 
 	return 1;
 
 #define OP_LOGIC(x86inst, _conv) \
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd); \
+	GpVar rhs = c.newGpVar(kVarTypeInt32); \
 	c.mov(rhs, reg_pos_thumb(3)); \
 	if (_conv == 1) \
 		c.not_(rhs); \
@@ -3082,7 +3076,7 @@ static int OP_LSL_0(uint32_t i)
 		c.cmp(reg_pos_thumb(0), 0);
 	else
 	{
-		GpVar rhs = c.newGpVar(kX86VarTypeGpd);
+		GpVar rhs = c.newGpVar(kVarTypeInt32);
 		c.mov(rhs, reg_pos_thumb(3));
 		c.mov(reg_pos_thumb(0), rhs);
 		c.cmp(rhs, 0);
@@ -3094,7 +3088,7 @@ static int OP_LSL(uint32_t i) { OP_SHIFTS_IMM(shl); }
 static int OP_LSL_REG(uint32_t i) { OP_SHIFTS_REG(shl, 0); }
 static int OP_LSR_0(uint32_t i)
 {
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd);
+	GpVar rcf = c.newGpVar(kVarTypeInt32);
 	c.test(reg_pos_thumb(3), 1 << 31);
 	c.setnz(rcf.r8Lo());
 	SET_NZC_SHIFTS_ZERO(1);
@@ -3106,8 +3100,8 @@ static int OP_LSR_REG(uint32_t i) { OP_SHIFTS_REG(shr, 31); }
 static int OP_ASR_0(uint32_t i)
 {
 	uint8_t cf_change = 1;
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd);
-	GpVar rhs = c.newGpVar(kX86VarTypeGpd);
+	GpVar rcf = c.newGpVar(kVarTypeInt32);
+	GpVar rhs = c.newGpVar(kVarTypeInt32);
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
 		c.sar(reg_pos_thumb(0), 31);
 	else
@@ -3121,15 +3115,15 @@ static int OP_ASR_0(uint32_t i)
 	return 1;
 }
 static int OP_ASR(uint32_t i) { OP_SHIFTS_IMM(sar); }
-static int OP_ASR_REG(uint32_t i) 
+static int OP_ASR_REG(uint32_t i)
 {
 	uint8_t cf_change = 1;
 	Label __gr0 = c.newLabel();
 	Label __lt32 = c.newLabel();
 	Label __done = c.newLabel();
 	Label __setFlags = c.newLabel();
-	GpVar imm = c.newGpVar(kX86VarTypeGpz);
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd);
+	GpVar imm = c.newGpVar(kVarTypeIntPtr);
+	GpVar rcf = c.newGpVar(kVarTypeInt32);
 	c.mov(imm, reg_pos_thumb(3));
 	c.and_(imm, 0xFF);
 	c.jnz(__gr0);
@@ -3161,8 +3155,8 @@ static int OP_ASR_REG(uint32_t i)
 static int OP_ROR_REG(uint32_t i)
 {
 	uint8_t cf_change = 1;
-	GpVar imm = c.newGpVar(kX86VarTypeGpz);
-	GpVar rcf = c.newGpVar(kX86VarTypeGpd);
+	GpVar imm = c.newGpVar(kVarTypeIntPtr);
+	GpVar rcf = c.newGpVar(kVarTypeInt32);
 	Label __zero = c.newLabel();
 	Label __zero_1F = c.newLabel();
 	Label __done = c.newLabel();
@@ -3208,7 +3202,7 @@ static int OP_NEG(uint32_t i)
 		c.neg(reg_pos_thumb(0));
 	else
 	{
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+		GpVar tmp = c.newGpVar(kVarTypeInt32);
 		c.mov(tmp, reg_pos_thumb(3));
 		c.neg(tmp);
 		c.mov(reg_pos_thumb(0), tmp);
@@ -3220,13 +3214,13 @@ static int OP_NEG(uint32_t i)
 //-----------------------------------------------------------------------------
 //   ADD
 //-----------------------------------------------------------------------------
-static int OP_ADD_IMM3(uint32_t i) 
+static int OP_ADD_IMM3(uint32_t i)
 {
 	uint32_t imm3 = (i >> 6) & 0x07;
 
 	if (!imm3) // mov 2
 	{
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+		GpVar tmp = c.newGpVar(kVarTypeInt32);
 		c.mov(tmp, reg_pos_thumb(3));
 		c.mov(reg_pos_thumb(0), tmp);
 		c.cmp(tmp, 0);
@@ -3237,7 +3231,7 @@ static int OP_ADD_IMM3(uint32_t i)
 		c.add(reg_pos_thumb(0), imm3);
 	else
 	{
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+		GpVar tmp = c.newGpVar(kVarTypeInt32);
 		c.mov(tmp, reg_pos_thumb(3));
 		c.add(tmp, imm3);
 		c.mov(reg_pos_thumb(0), tmp);
@@ -3250,14 +3244,14 @@ static int OP_ADD_IMM8(uint32_t i)
 	c.add(reg_pos_thumb(8), (i & 0xFF));
 	SET_NZCV(0);
 
-	return 1; 
+	return 1;
 }
-static int OP_ADD_REG(uint32_t i) 
+static int OP_ADD_REG(uint32_t i)
 {
 	//cpu->R[REG_NUM(i, 0)] = cpu->R[REG_NUM(i, 3)] + cpu->R[REG_NUM(i, 6)];
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
 	{
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+		GpVar tmp = c.newGpVar(kVarTypeInt32);
 		c.mov(tmp, reg_pos_thumb(6));
 		c.add(reg_pos_thumb(0), tmp);
 	}
@@ -3265,26 +3259,26 @@ static int OP_ADD_REG(uint32_t i)
 	{
 		if (_REG_NUM(i, 0) == _REG_NUM(i, 6))
 		{
-			GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+			GpVar tmp = c.newGpVar(kVarTypeInt32);
 			c.mov(tmp, reg_pos_thumb(3));
 			c.add(reg_pos_thumb(0), tmp);
 		}
 		else
 		{
-			GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+			GpVar tmp = c.newGpVar(kVarTypeInt32);
 			c.mov(tmp, reg_pos_thumb(3));
 			c.add(tmp, reg_pos_thumb(6));
 			c.mov(reg_pos_thumb(0), tmp);
 		}
 	}
 	SET_NZCV(0);
-	return 1; 
+	return 1;
 }
 static int OP_ADD_SPE(uint32_t i)
 {
 	uint32_t Rd = _REG_NUM(i, 0) | ((i >> 4) & 8);
 	//cpu->R[Rd] += cpu->R[REG_POS(i, 3)];
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_ptr(Rd));
 	c.add(tmp, reg_pos_ptr(3));
 	c.mov(reg_ptr(Rd), tmp);
@@ -3306,7 +3300,7 @@ static int OP_ADD_2SP(uint32_t i)
 {
 	uint32_t imm = (i & 0xFF) << 2;
 	//cpu->R[REG_NUM(i, 8)] = cpu->R[13] + ((i&0xFF)<<2);
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_ptr(13));
 	if (imm)
 		c.add(tmp, imm);
@@ -3327,7 +3321,7 @@ static int OP_SUB_IMM3(uint32_t i)
 		c.sub(reg_pos_thumb(0), imm3);
 	else
 	{
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+		GpVar tmp = c.newGpVar(kVarTypeInt32);
 		c.mov(tmp, reg_pos_thumb(3));
 		c.sub(tmp, imm3);
 		c.mov(reg_pos_thumb(0), tmp);
@@ -3340,26 +3334,26 @@ static int OP_SUB_IMM8(uint32_t i)
 	//cpu->R[REG_NUM(i, 8)] -= imm8;
 	c.sub(reg_pos_thumb(8), i & 0xFF);
 	SET_NZCV(1);
-	return 1; 
+	return 1;
 }
 static int OP_SUB_REG(uint32_t i)
 {
-	// cpu->R[REG_NUM(i, 0)] = cpu->R[REG_NUM(i, 3)] - cpu->R[REG_NUM(i, 6)];
+	//cpu->R[REG_NUM(i, 0)] = cpu->R[REG_NUM(i, 3)] - cpu->R[REG_NUM(i, 6)];
 	if (_REG_NUM(i, 0) == _REG_NUM(i, 3))
 	{
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+		GpVar tmp = c.newGpVar(kVarTypeInt32);
 		c.mov(tmp, reg_pos_thumb(6));
 		c.sub(reg_pos_thumb(0), tmp);
 	}
 	else
 	{
-		GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+		GpVar tmp = c.newGpVar(kVarTypeInt32);
 		c.mov(tmp, reg_pos_thumb(3));
 		c.sub(tmp, reg_pos_thumb(6));
 		c.mov(reg_pos_thumb(0), tmp);
 	}
 	SET_NZCV(1);
-	return 1; 
+	return 1;
 }
 
 // -----------------------------------------------------------------------------
@@ -3367,7 +3361,7 @@ static int OP_SUB_REG(uint32_t i)
 // -----------------------------------------------------------------------------
 static int OP_ADC_REG(uint32_t i)
 {
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_thumb(3));
 	GET_CARRY(0);
 	c.adc(reg_pos_thumb(0), tmp);
@@ -3380,7 +3374,7 @@ static int OP_ADC_REG(uint32_t i)
 // -----------------------------------------------------------------------------
 static int OP_SBC_REG(uint32_t i)
 {
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_thumb(3));
 	GET_CARRY(1);
 	c.sbb(reg_pos_thumb(0), tmp);
@@ -3403,7 +3397,7 @@ static int OP_MOV_SPE(uint32_t i)
 {
 	uint32_t Rd = _REG_NUM(i, 0) | ((i >> 4) & 8);
 	//cpu->R[Rd] = cpu->R[REG_POS(i, 3)];
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_ptr(3));
 	c.mov(reg_ptr(Rd), tmp);
 	if (Rd == 15)
@@ -3411,13 +3405,13 @@ static int OP_MOV_SPE(uint32_t i)
 		c.mov(cpu_ptr(next_instruction), tmp);
 		bb_constant_cycles += 2;
 	}
-	
+
 	return 1;
 }
 
 static int OP_MVN(uint32_t i)
 {
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_thumb(3));
 	c.not_(tmp);
 	c.cmp(tmp, 0);
@@ -3431,7 +3425,7 @@ static int OP_MVN(uint32_t i)
 // -----------------------------------------------------------------------------
 static int OP_MUL_REG(uint32_t i)
 {
-	GpVar lhs = c.newGpVar(kX86VarTypeGpd);
+	GpVar lhs = c.newGpVar(kVarTypeInt32);
 	c.mov(lhs, reg_pos_thumb(0));
 	c.imul(lhs, reg_pos_thumb(3));
 	c.cmp(lhs, 0);
@@ -3456,7 +3450,7 @@ static int OP_CMP_IMM8(uint32_t i)
 
 static int OP_CMP(uint32_t i)
 {
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_thumb(3));
 	c.cmp(reg_pos_thumb(0), tmp);
 	SET_NZCV(1);
@@ -3466,7 +3460,7 @@ static int OP_CMP(uint32_t i)
 static int OP_CMP_SPE(uint32_t i)
 {
 	uint32_t Rn = (i & 7) | ((i >> 4) & 8);
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_ptr(3));
 	c.cmp(reg_ptr(Rn), tmp);
 	SET_NZCV(1);
@@ -3475,7 +3469,7 @@ static int OP_CMP_SPE(uint32_t i)
 
 static int OP_CMN(uint32_t i)
 {
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_thumb(0));
 	c.add(tmp, reg_pos_thumb(3));
 	SET_NZCV(0);
@@ -3487,7 +3481,7 @@ static int OP_CMN(uint32_t i)
 // -----------------------------------------------------------------------------
 static int OP_TST(uint32_t i)
 {
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd);
+	GpVar tmp = c.newGpVar(kVarTypeInt32);
 	c.mov(tmp, reg_pos_thumb(3));
 	c.test(reg_pos_thumb(0), tmp);
 	SET_NZ(0);
@@ -3498,8 +3492,8 @@ static int OP_TST(uint32_t i)
 //   STR / LDR / STRB / LDRB
 // -----------------------------------------------------------------------------
 #define STR_THUMB(mem_op, offset) \
-	GpVar addr = c.newGpVar(kX86VarTypeGpd); \
-	GpVar data = c.newGpVar(kX86VarTypeGpd); \
+	GpVar addr = c.newGpVar(kVarTypeInt32); \
+	GpVar data = c.newGpVar(kVarTypeInt32); \
 	uint32_t adr_first = cpu->R[_REG_NUM(i, 3)]; \
 \
 	c.mov(addr, reg_pos_thumb(3)); \
@@ -3517,16 +3511,16 @@ static int OP_TST(uint32_t i)
 		adr_first += cpu->R[_REG_NUM(i, 6)]; \
 	} \
 	c.mov(data, reg_pos_thumb(0)); \
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(mem_op##_tab[PROCNUM][classify_adr(adr_first, 1)])); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, uint32_t, uint32_t>()); \
-	ctx->setArgument(0, addr); \
-	ctx->setArgument(1, data); \
-	ctx->setReturn(bb_cycles); \
+	auto ctx = c.addCall(imm_ptr(mem_op##_tab[PROCNUM][classify_adr(adr_first, 1)]), ASMJIT_CALL_CONV, \
+		FuncBuilder2<void, uint32_t, uint32_t>()); \
+	ctx->setArg(0, addr); \
+	ctx->setArg(1, data); \
+	ctx->setRet(0, bb_cycles); \
 	return 1;
 
 #define LDR_THUMB(mem_op, offset) \
-	GpVar addr = c.newGpVar(kX86VarTypeGpd); \
-	GpVar data = c.newGpVar(kX86VarTypeGpz); \
+	GpVar addr = c.newGpVar(kVarTypeInt32); \
+	GpVar data = c.newGpVar(kVarTypeIntPtr); \
 	uint32_t adr_first = cpu->R[_REG_NUM(i, 3)]; \
 \
 	c.mov(addr, reg_pos_thumb(3)); \
@@ -3544,16 +3538,16 @@ static int OP_TST(uint32_t i)
 		adr_first += cpu->R[_REG_NUM(i, 6)]; \
 	} \
 	c.lea(data, reg_pos_thumb(0)); \
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(mem_op##_tab[PROCNUM][classify_adr(adr_first, 0)])); \
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, uint32_t, uint32_t *>()); \
-	ctx->setArgument(0, addr); \
-	ctx->setArgument(1, data); \
-	ctx->setReturn(bb_cycles); \
+	auto ctx = c.addCall(imm_ptr(mem_op##_tab[PROCNUM][classify_adr(adr_first, 0)]), ASMJIT_CALL_CONV, \
+		FuncBuilder2<void, uint32_t, uint32_t *>()); \
+	ctx->setArg(0, addr); \
+	ctx->setArg(1, data); \
+	ctx->setRet(0, bb_cycles); \
 	return 1;
 
 static int OP_STRB_IMM_OFF(uint32_t i) { STR_THUMB(STRB, (i >> 6) & 0x1F); }
 static int OP_LDRB_IMM_OFF(uint32_t i) { LDR_THUMB(LDRB, (i >> 6) & 0x1F); }
-static int OP_STRB_REG_OFF(uint32_t i) { STR_THUMB(STRB, -1); } 
+static int OP_STRB_REG_OFF(uint32_t i) { STR_THUMB(STRB, -1); }
 static int OP_LDRB_REG_OFF(uint32_t i) { LDR_THUMB(LDRB, -1); }
 static int OP_LDRSB_REG_OFF(uint32_t i) { LDR_THUMB(LDRSB, -1); }
 
@@ -3573,17 +3567,17 @@ static int OP_STR_SPREL(uint32_t i)
 	uint32_t imm = (i & 0xFF) << 2;
 	uint32_t adr_first = cpu->R[13] + imm;
 
-	GpVar addr = c.newGpVar(kX86VarTypeGpd);
+	GpVar addr = c.newGpVar(kVarTypeInt32);
 	c.mov(addr, reg_ptr(13));
 	if (imm)
 		c.add(addr, imm);
-	GpVar data = c.newGpVar(kX86VarTypeGpd);
+	GpVar data = c.newGpVar(kVarTypeInt32);
 	c.mov(data, reg_pos_thumb(8));
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(STR_tab[PROCNUM][classify_adr(adr_first, 1)]));
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, uint32_t, uint32_t>());
-	ctx->setArgument(0, addr);
-	ctx->setArgument(1, data);
-	ctx->setReturn(bb_cycles);
+	auto ctx = c.addCall(imm_ptr(STR_tab[PROCNUM][classify_adr(adr_first, 1)]), ASMJIT_CALL_CONV,
+		FuncBuilder2<void, uint32_t, uint32_t>());
+	ctx->setArg(0, addr);
+	ctx->setArg(1, data);
+	ctx->setRet(0, bb_cycles);
 	return 1;
 }
 
@@ -3591,18 +3585,18 @@ static int OP_LDR_SPREL(uint32_t i)
 {
 	uint32_t imm = (i & 0xFF) << 2;
 	uint32_t adr_first = cpu->R[13] + imm;
-	
-	GpVar addr = c.newGpVar(kX86VarTypeGpd);
+
+	GpVar addr = c.newGpVar(kVarTypeInt32);
 	c.mov(addr, reg_ptr(13));
 	if (imm)
 		c.add(addr, imm);
-	GpVar data = c.newGpVar(kX86VarTypeGpz);
+	GpVar data = c.newGpVar(kVarTypeIntPtr);
 	c.lea(data, reg_pos_thumb(8));
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(LDR_tab[PROCNUM][classify_adr(adr_first, 0)]));
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, uint32_t, uint32_t *>());
-	ctx->setArgument(0, addr);
-	ctx->setArgument(1, data);
-	ctx->setReturn(bb_cycles);
+	auto ctx = c.addCall(imm_ptr(LDR_tab[PROCNUM][classify_adr(adr_first, 0)]), ASMJIT_CALL_CONV,
+		FuncBuilder2<void, uint32_t, uint32_t *>());
+	ctx->setArg(0, addr);
+	ctx->setArg(1, data);
+	ctx->setRet(0, bb_cycles);
 	return 1;
 }
 
@@ -3610,15 +3604,15 @@ static int OP_LDR_PCREL(uint32_t i)
 {
 	uint32_t imm = (i & 0xFF) << 2;
 	uint32_t adr_first = (bb_r15 & 0xFFFFFFFC) + imm;
-	GpVar addr = c.newGpVar(kX86VarTypeGpd);
-	GpVar data = c.newGpVar(kX86VarTypeGpz);
+	GpVar addr = c.newGpVar(kVarTypeInt32);
+	GpVar data = c.newGpVar(kVarTypeIntPtr);
 	c.mov(addr, adr_first);
 	c.lea(data, reg_pos_thumb(8));
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(LDR_tab[PROCNUM][classify_adr(adr_first, 0)]));
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder2<void, uint32_t, uint32_t *>());
-	ctx->setArgument(0, addr);
-	ctx->setArgument(1, data);
-	ctx->setReturn(bb_cycles);
+	auto ctx = c.addCall(imm_ptr(LDR_tab[PROCNUM][classify_adr(adr_first, 0)]), ASMJIT_CALL_CONV,
+		FuncBuilder2<void, uint32_t, uint32_t *>());
+	ctx->setArg(0, addr);
+	ctx->setArg(1, data);
+	ctx->setRet(0, bb_cycles);
 	return 1;
 }
 
@@ -3633,7 +3627,7 @@ static int op_ldm_stm_thumb(uint32_t i, bool store)
 	//if (BIT_N(i, _REG_NUM(i, 8)))
 	//	printf("WARNING - %sIA with Rb in Rlist (THUMB)\n", store?"STM":"LDM");
 
-	GpVar adr = c.newGpVar(kX86VarTypeGpd);
+	GpVar adr = c.newGpVar(kVarTypeInt32);
 	c.mov(adr, reg_pos_thumb(8));
 
 	call_ldm_stm(adr, bitmask, store, 1);
@@ -3672,7 +3666,7 @@ static int op_push_pop(uint32_t i, bool store, bool pc_lr)
 	uint32_t pop = popcount(bitmask);
 	int dir = store ? -1 : 1;
 
-	GpVar adr = c.newGpVar(kX86VarTypeGpd);
+	GpVar adr = c.newGpVar(kVarTypeInt32);
 	c.mov(adr, reg_ptr(13));
 	if (store)
 		c.sub(adr, 4);
@@ -3720,7 +3714,7 @@ static int OP_B_UNCOND(uint32_t i)
 
 static int OP_BLX(uint32_t i)
 {
-	GpVar dst = c.newGpVar(kX86VarTypeGpd);
+	GpVar dst = c.newGpVar(kVarTypeInt32);
 	c.mov(dst, reg_ptr(14));
 	c.add(dst, (i & 0x7FF) << 1);
 	c.and_(dst, 0xFFFFFFFC);
@@ -3738,9 +3732,9 @@ static int OP_BL_10( uint32_t i)
 	return 1;
 }
 
-static int OP_BL_11(uint32_t i) 
+static int OP_BL_11(uint32_t i)
 {
-	GpVar dst = c.newGpVar(kX86VarTypeGpd);
+	GpVar dst = c.newGpVar(kVarTypeInt32);
 	c.mov(dst, reg_ptr(14));
 	c.add(dst, (i & 0x7FF) << 1);
 	c.mov(cpu_ptr(instruct_adr), dst);
@@ -3750,8 +3744,8 @@ static int OP_BL_11(uint32_t i)
 
 static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 {
-	GpVar dst = c.newGpVar(kX86VarTypeGpd);
-	GpVar thumb = c.newGpVar(kX86VarTypeGpd);
+	GpVar dst = c.newGpVar(kVarTypeInt32);
+	GpVar thumb = c.newGpVar(kVarTypeInt32);
 	c.mov(dst, srcreg);
 	c.mov(thumb, dst); // * cpu->CPSR.bits.T = BIT0(Rm);
 	c.and_(thumb, 1); // *
@@ -3759,14 +3753,14 @@ static int op_bx_thumb(Mem srcreg, bool blx, bool test_thumb)
 		c.mov(reg_ptr(14), bb_next_instruction | 1);
 	if (test_thumb)
 	{
-		GpVar mask = c.newGpVar(kX86VarTypeGpd);
-		c.lea(mask, ptr_abs(reinterpret_cast<void *>(0xFFFFFFFC), thumb.r64(), kScale2Times));
+		GpVar mask = c.newGpVar(kVarTypeInt32);
+		c.lea(mask, x86::ptr_abs(0xFFFFFFFC, thumb.r64(), 1));
 		c.and_(dst, mask);
 	}
 	else
 		c.and_(dst, 0xFFFFFFFE);
-	
-	GpVar tmp = c.newGpVar(kX86VarTypeGpd); // *
+
+	GpVar tmp = c.newGpVar(kVarTypeInt32); // *
 	c.mov(tmp, cpu_ptr_byte(CPSR, 0)); // *
 	c.and_(tmp, ~(1 << 5)); // *
 	c.shl(thumb, 5); // *
@@ -3892,7 +3886,7 @@ static bool instr_is_conditional(uint32_t opcode)
 {
 	if (bb_thumb)
 		return false;
-	
+
 	return !(CONDITION(opcode) == 0xE || (CONDITION(opcode) == 0xF && CODE(opcode) == 5));
 }
 
@@ -3904,7 +3898,7 @@ static int instr_cycles(uint32_t opcode)
 	{
 		if ((x & BRANCH_SWI) && !cpu->swi_tab)
 			return 3;
-		
+
 		return 0;
 	}
 	if (instr_is_branch(opcode) && !(instr_attributes(opcode) & (BRANCH_ALWAYS | BRANCH_LDM)))
@@ -3968,14 +3962,14 @@ static void emit_branch(int cond, Label to)
 	}
 	else
 	{
-		GpVar x = c.newGpVar(kX86VarTypeGpz);
+		GpVar x = c.newGpVar(kVarTypeIntPtr);
 		c.movzx(x, flags_ptr);
 		c.and_(x, 0xF0);
 #if defined(_M_X64) || defined(__x86_64__)
 		c.add(x, offsetof(armcpu_t,cond_table) + cond);
-		c.test(byte_ptr(bb_cpu, x), 1);
+		c.test(x86::byte_ptr(bb_cpu, x), 1);
 #else
-		c.test(byte_ptr_abs((void *)(arm_cond_table + cond), x, kScaleNone), 1);
+		c.test(x86::byte_ptr_abs(reinterpret_cast<Ptr>(&arm_cond_table[0]) + cond, x, 0), 1);
 #endif
 		c.unuse(x);
 		c.jz(to);
@@ -3989,13 +3983,12 @@ static void emit_armop_call(uint32_t opcode)
 		return;
 
 	JIT_COMMENT("call interpreter");
-	GpVar arg = c.newGpVar(kX86VarTypeGpd);
+	GpVar arg = c.newGpVar(kVarTypeInt32);
 	c.mov(arg, opcode);
 	OpFunc f = bb_thumb ? thumb_instructions_set[PROCNUM][opcode >> 6] : arm_instructions_set[PROCNUM][INSTRUCTION_INDEX(opcode)];
-	X86CompilerFuncCall *ctx = c.call(reinterpret_cast<void *>(f));
-	ctx->setPrototype(ASMJIT_CALL_CONV, FuncBuilder1<uint32_t, uint32_t>());
-	ctx->setArgument(0, arg);
-	ctx->setReturn(bb_cycles);
+	auto ctx = c.addCall(imm_ptr(f), ASMJIT_CALL_CONV, FuncBuilder1<uint32_t, uint32_t>());
+	ctx->setArg(0, arg);
+	ctx->setRet(0, bb_cycles);
 }
 
 static void _armlog(uint8_t proc, uint32_t addr, uint32_t opcode)
@@ -4003,7 +3996,7 @@ static void _armlog(uint8_t proc, uint32_t addr, uint32_t opcode)
 #if 0
 #if 0
 	fprintf(stderr, "\t\t;R0:%08X R1:%08X R2:%08X R3:%08X R4:%08X R5:%08X R6:%08X R7:%08X R8:%08X R9:%08X\n\t\t;R10:%08X R11:%08X R12:%08X R13:%08X R14:%08X R15:%08X| next %08X, N:%i Z:%i C:%i V:%i\n",
-		cpu->R[0],  cpu->R[1],  cpu->R[2],  cpu->R[3],  cpu->R[4],  cpu->R[5],  cpu->R[6],  cpu->R[7], 
+		cpu->R[0],  cpu->R[1],  cpu->R[2],  cpu->R[3],  cpu->R[4],  cpu->R[5],  cpu->R[6],  cpu->R[7],
 		cpu->R[8],  cpu->R[9],  cpu->R[10],  cpu->R[11],  cpu->R[12],  cpu->R[13],  cpu->R[14],  cpu->R[15],
 		cpu->next_instruction, cpu->CPSR.bits.N, cpu->CPSR.bits.Z, cpu->CPSR.bits.C, cpu->CPSR.bits.V);
 #endif
@@ -4014,7 +4007,7 @@ static void _armlog(uint8_t proc, uint32_t addr, uint32_t opcode)
 	else
 		des_arm_instructions_set[INDEX22(opcode)](addr, opcode, dasmbuf);
 	#undef INDEX22
-	fprintf(stderr, "%s%c %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", proc?'7':'9', addr, opcode, dasmbuf); 
+	fprintf(stderr, "%s%c %08X\t%08X \t%s\n", cpu->CPSR.bits.T?"THUMB":"ARM", proc?'7':'9', addr, opcode, dasmbuf);
 #endif
 }
 
@@ -4026,7 +4019,7 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 	uint32_t interpreted_cycles = 0;
 	uint32_t start_adr = cpu->instruct_adr;
 	uint32_t opcode = 0;
-	
+
 	bb_thumb = cpu->CPSR.bits.T;
 	bb_opcodesize = bb_thumb ? 2 : 4;
 
@@ -4041,22 +4034,22 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 	fprintf(stderr, "adr %08Xh %s%c\n", start_adr, ARMPROC.CPSR.bits.T ? "THUMB":"ARM", PROCNUM?'7':'9');
 #endif
 
-	c.clear();
-	c.newFunc(ASMJIT_CALL_CONV, FuncBuilder0<int>());
+	c.reset();
+	c.addFunc(ASMJIT_CALL_CONV, FuncBuilder0<int>());
 	c.getFunc()->setHint(kFuncHintNaked, true);
 	c.getFunc()->setHint(kX86FuncHintPushPop, true);
-	
+
 	JIT_COMMENT("CPU ptr");
-	bb_cpu = c.newGpVar(kX86VarTypeGpz);
+	bb_cpu = c.newGpVar(kVarTypeIntPtr);
 	c.mov(bb_cpu, (uintptr_t)&ARMPROC);
 
 	JIT_COMMENT("reset bb_total_cycles");
-	bb_total_cycles = c.newGpVar(kX86VarTypeGpz);
+	bb_total_cycles = c.newGpVar(kVarTypeIntPtr);
 	c.mov(bb_total_cycles, 0);
 
-#if (PROFILER_JIT_LEVEL > 0)
+#if PROFILER_JIT_LEVEL > 0
 	JIT_COMMENT("Profiler ptr");
-	bb_profiler = c.newGpVar(kX86VarTypeGpz);
+	bb_profiler = c.newGpVar(kVarTypeIntPtr);
 	c.mov(bb_profiler, reinterpret_cast<uintptr_t>(&profiler_counter[PROCNUM]));
 #endif
 
@@ -4081,12 +4074,12 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 		uint32_t cycles = instr_cycles(opcode);
 
 		bEndBlock = i >= CommonSettings.jit_max_block_size - 1 || instr_is_branch(opcode);
-		
+
 #if LOG_JIT
 		if (instr_is_conditional(opcode) && cycles > 1 || !cycles)
 			has_variable_cycles = true;
 #endif
-		bb_cycles = c.newGpVar(kX86VarTypeGpz);
+		bb_cycles = c.newGpVar(kVarTypeIntPtr);
 
 		bb_constant_cycles += instr_is_conditional(opcode) ? 1 : cycles;
 
@@ -4111,11 +4104,11 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 			if (!bEndBlock)
 				sync_r15(opcode, 0, 0);
 			emit_armop_call(opcode);
-			
+
 			if (!cycles)
 			{
 				JIT_COMMENT("variable cycles");
-				c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), bb_cycles.r64(), kScaleNone));
+				c.lea(bb_total_cycles, x86::ptr(bb_total_cycles.r64(), bb_cycles.r64(), 0));
 			}
 			c.bind(skip);
 		}
@@ -4126,16 +4119,16 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 			if (!cycles)
 			{
 				JIT_COMMENT("variable cycles");
-				c.lea(bb_total_cycles, ptr(bb_total_cycles.r64(), bb_cycles.r64(), kScaleNone));
+				c.lea(bb_total_cycles, x86::ptr(bb_total_cycles.r64(), bb_cycles.r64(), 0));
 			}
 		}
 		interpreted_cycles += op_decode[PROCNUM][bb_thumb]();
 	}
-	
+
 	if (!instr_does_prefetch(opcode))
 	{
 		JIT_COMMENT("!instr_does_prefetch: copy next_instruction (%08X) to instruct_adr (%08X)", cpu->next_instruction, cpu->instruct_adr);
-		GpVar x = c.newGpVar(kX86VarTypeGpd);
+		GpVar x = c.newGpVar(kVarTypeInt32);
 		c.mov(x, cpu_ptr(next_instruction));
 		c.mov(cpu_ptr(instruct_adr), x);
 		c.unuse(x);
@@ -4151,9 +4144,9 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 #if PROFILER_JIT_LEVEL > 1
 	JIT_COMMENT("*** profiler - cycles");
 	uint32_t padr = (start_adr & 0x07FFFFFE) >> 1;
-	bb_profiler_entry = c.newGpVar(kX86VarTypeGpz);
+	bb_profiler_entry = c.newGpVar(kVarTypeIntPtr);
 	c.mov(bb_profiler_entry, reinterpret_cast<uintptr_t>(&profiler_entry[PROCNUM][padr]));
-	c.add(dword_ptr(bb_profiler_entry, offsetof(PROFILER_ENTRY, cycles)), bb_total_cycles);
+	c.add(X86Mem(bb_profiler_entry, offsetof(PROFILER_ENTRY, cycles), 4), bb_total_cycles);
 	profiler_entry[PROCNUM][padr].addr = start_adr;
 #endif
 
@@ -4164,9 +4157,9 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 	c.endFunc();
 
 	ArmOpCompiled f = static_cast<ArmOpCompiled>(c.make());
-	if(c.getError())
+	if (c.getError())
 	{
-		fprintf(stderr, "JIT error: %s\n", getErrorString(c.getError()));
+		fprintf(stderr, "JIT error: %s\n", ErrorUtil::asString(c.getError()));
 		f = op_decode[PROCNUM][bb_thumb];
 	}
 #if LOG_JIT
@@ -4174,7 +4167,7 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 	fprintf(stderr, "Block address %08lX\n\n", baddr);
 	fflush(stderr);
 #endif
-	
+
 	JIT_COMPILED_FUNC(start_adr, PROCNUM) = reinterpret_cast<uintptr_t>(f);
 	return interpreted_cycles;
 }
@@ -4219,7 +4212,7 @@ void arm_jit_reset(bool enable)
 		printf("JIT max block size %d instruction(s)\n", CommonSettings.jit_max_block_size);
 #ifdef MAPPED_JIT_FUNCS
 		// these pointers are allocated by asmjit and need freeing
-		#define JITFREE(x)  for (size_t iii = 0; iii < ARRAY_SIZE((x)); ++iii) if ((x)[iii]) AsmJit::MemoryManager::getGlobal()->free(reinterpret_cast<void *>((x)[iii])); memset((x), 0, sizeof((x)));
+		#define JITFREE(x)  for (size_t iii = 0; iii < ARRAY_SIZE((x)); ++iii) if ((x)[iii]) runtime.getMemMgr()->release(reinterpret_cast<void *>((x)[iii])); memset((x), 0, sizeof((x)));
 			JITFREE(JIT.MAIN_MEM);
 			JITFREE(JIT.SWIRAM);
 			JITFREE(JIT.ARM9_ITCM);
@@ -4243,7 +4236,7 @@ void arm_jit_reset(bool enable)
 #endif
 	}
 
-	c.clear();
+	c.reset();
 
 #if PROFILER_JIT_LEVEL > 0
 	reconstruct(&profiler_counter[0]);
@@ -4284,8 +4277,8 @@ void arm_jit_close()
 
 		auto arm_info = std::unique_ptr<PROFILER_COUNTER_INFO[]>(new PROFILER_COUNTER_INFO[4096]);
 		auto thumb_info = std::unique_ptr<PROFILER_COUNTER_INFO[]>(new PROFILER_COUNTER_INFO[1024]);
-		memset(arm_info, 0, sizeof(PROFILER_COUNTER_INFO) * 4096);
-		memset(thumb_info, 0, sizeof(PROFILER_COUNTER_INFO) * 1024);
+		memset(&arm_info[0], 0, sizeof(PROFILER_COUNTER_INFO) * 4096);
+		memset(&thumb_info[0], 0, sizeof(PROFILER_COUNTER_INFO) * 1024);
 
 		// ARM
 		last[0] = 0;
@@ -4331,8 +4324,8 @@ void arm_jit_close()
 			}
 		}
 
-		std::qsort(arm_info, last[0], sizeof(PROFILER_COUNTER_INFO), (int (*)(const void *, const void *))pcmp);
-		std::qsort(thumb_info, last[1], sizeof(PROFILER_COUNTER_INFO), (int (*)(const void *, const void *))pcmp);
+		std::qsort(&arm_info[0], last[0], sizeof(PROFILER_COUNTER_INFO), (int (*)(const void *, const void *))pcmp);
+		std::qsort(&thumb_info[0], last[1], sizeof(PROFILER_COUNTER_INFO), (int (*)(const void *, const void *))pcmp);
 
 		char buf[MAX_PATH] = { 0 };
 		sprintf(buf, "\\desmume_jit%c_counter.profiler", !proc ? '9' : '7');
@@ -4355,7 +4348,7 @@ void arm_jit_close()
 					fprintf(fp, "%30s: %20ld\n", arm_info[i].name, arm_info[i].count);
 				fprintf(fp, "\n");
 			}
-			
+
 			if (last[1])
 			{
 				fprintf(fp, "========================================== THUMB ==========================================\n");

@@ -73,6 +73,8 @@
 
 #include <memory>
 #include "FIFOSamplePipe.h"
+#include "RateTransposer.h"
+#include "TDStretch.h"
 
 namespace soundtouch
 {
@@ -114,31 +116,28 @@ const int32_t SETTING_SEEKWINDOW_MS = 4;
 const int32_t SETTING_OVERLAP_MS = 5;
 
 /// Call "getSetting" with this ID to query nominal average processing sequence
-/// size in samples. This value tells approcimate value how many input samples 
+/// size in samples. This value tells approcimate value how many input samples
 /// SoundTouch needs to gather before it does DSP processing run for the sample batch.
 ///
-/// Notices: 
+/// Notices:
 /// - This is read-only parameter, i.e. setSetting ignores this parameter
 /// - Returned value is approximate average value, exact processing batch
 ///   size may wary from time to time
-/// - This parameter value is not constant but may change depending on 
+/// - This parameter value is not constant but may change depending on
 ///   tempo/pitch/rate/samplerate settings.
 const int32_t SETTING_NOMINAL_INPUT_SEQUENCE = 6;
 
-/// Call "getSetting" with this ID to query nominal average processing output 
-/// size in samples. This value tells approcimate value how many output samples 
+/// Call "getSetting" with this ID to query nominal average processing output
+/// size in samples. This value tells approcimate value how many output samples
 /// SoundTouch outputs once it does DSP processing run for a batch of input samples.
-///	
-/// Notices: 
+///
+/// Notices:
 /// - This is read-only parameter, i.e. setSetting ignores this parameter
 /// - Returned value is approximate average value, exact processing batch
 ///   size may wary from time to time
-/// - This parameter value is not constant but may change depending on 
+/// - This parameter value is not constant but may change depending on
 ///   tempo/pitch/rate/samplerate settings.
 const int32_t SETTING_NOMINAL_OUTPUT_SEQUENCE = 7;
-
-class RateTransposer;
-class TDStretch;
 
 class SoundTouch : public FIFOProcessor
 {

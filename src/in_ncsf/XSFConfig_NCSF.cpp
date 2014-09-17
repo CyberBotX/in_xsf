@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-06-17
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  */
@@ -69,7 +69,7 @@ XSFConfig_NCSF::XSFConfig_NCSF() : XSFConfig(), interpolation(0), mutes()
 void XSFConfig_NCSF::LoadSpecificConfig()
 {
 	this->interpolation = this->configIO->GetValue(L"Interpolation", XSFConfig_NCSF::initInterpolation);
-	std::wstringstream mutesSS = std::wstringstream(this->configIO->GetValue(L"Mutes", XSFConfig_NCSF::initMutes));
+	std::wstringstream mutesSS(this->configIO->GetValue(L"Mutes", XSFConfig_NCSF::initMutes));
 	mutesSS >> this->mutes;
 }
 
@@ -141,6 +141,6 @@ void XSFConfig_NCSF::CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool)
 
 void XSFConfig_NCSF::About(HWND parent)
 {
-	MessageBox(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
+	MessageBoxW(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
 		L"Utilizes code adapted from the FeOS Sound System library by fincs, git revision 5204c55 on GitHub, for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }

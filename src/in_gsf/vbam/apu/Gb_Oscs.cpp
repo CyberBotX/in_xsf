@@ -533,7 +533,7 @@ void Gb_Noise::run(blip_time_t time, blip_time_t end_time)
 		else if (!vol)
 		{
 			// Maintain phase when not playing
-			int32_t count = (end_time - time + per - 1) / per;
+			count = (end_time - time + per - 1) / per;
 			time += static_cast<blip_time_t>(count) * per;
 			bits = run_lfsr(bits, ~mask, count);
 		}

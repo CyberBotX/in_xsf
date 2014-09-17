@@ -4,7 +4,7 @@
 /// while maintaining the original pitch by using a time domain WSOLA-like method
 /// with several performance-increasing tweaks.
 ///
-/// Note : MMX/SSE optimized functions reside in separate, platform-specific files 
+/// Note : MMX/SSE optimized functions reside in separate, platform-specific files
 /// 'mmx_optimized.cpp' and 'sse_optimized.cpp'
 ///
 /// Author        : Copyright (c) Olli Parviainen
@@ -44,13 +44,13 @@
 #pragma once
 
 #include <memory>
-#include "RateTransposer.h"
+#include "FIFOSampleBuffer.h"
 
 namespace soundtouch
 {
 
 /// Default values for sound processing parameters:
-/// Notice that the default parameters are tuned for contemporary popular music 
+/// Notice that the default parameters are tuned for contemporary popular music
 /// processing. For speech processing applications these parameters suit better:
 ///     #define DEFAULT_SEQUENCE_MS     40
 ///     #define DEFAULT_SEEKWINDOW_MS   15
@@ -76,26 +76,26 @@ const int32_t DEFAULT_SEQUENCE_MS = USE_AUTO_SEQUENCE_LEN;
 /// according to tempo setting (recommended)
 const int32_t USE_AUTO_SEEKWINDOW_LEN = 0;
 
-/// Seeking window default length in milliseconds for algorithm that finds the best possible 
-/// overlapping location. This determines from how wide window the algorithm may look for an 
-/// optimal joining location when mixing the sound sequences back together. 
+/// Seeking window default length in milliseconds for algorithm that finds the best possible
+/// overlapping location. This determines from how wide window the algorithm may look for an
+/// optimal joining location when mixing the sound sequences back together.
 ///
 /// The bigger this window setting is, the higher the possibility to find a better mixing
 /// position will become, but at the same time large values may cause a "drifting" artifact
 /// because consequent sequences will be taken at more uneven intervals.
 ///
-/// If there's a disturbing artifact that sounds as if a constant frequency was drifting 
+/// If there's a disturbing artifact that sounds as if a constant frequency was drifting
 /// around, try reducing this setting.
 ///
 /// Increasing this value increases computational burden & vice versa.
 //#define DEFAULT_SEEKWINDOW_MS       15
 const int32_t DEFAULT_SEEKWINDOW_MS = USE_AUTO_SEEKWINDOW_LEN;
 
-/// Overlap length in milliseconds. When the chopped sound sequences are mixed back together, 
-/// to form a continuous sound stream, this parameter defines over how long period the two 
-/// consecutive sequences are let to overlap each other. 
+/// Overlap length in milliseconds. When the chopped sound sequences are mixed back together,
+/// to form a continuous sound stream, this parameter defines over how long period the two
+/// consecutive sequences are let to overlap each other.
 ///
-/// This shouldn't be that critical parameter. If you reduce the DEFAULT_SEQUENCE_MS setting 
+/// This shouldn't be that critical parameter. If you reduce the DEFAULT_SEQUENCE_MS setting
 /// by a large amount, you might wish to try a smaller value on this.
 ///
 /// Increasing this value increases computational burden & vice versa.

@@ -9,7 +9,7 @@
 
 static int clockTicks;
 
-static INSN_REGPARM void thumbUnknownInsn(uint32_t opcode)
+static INSN_REGPARM void thumbUnknownInsn(uint32_t)
 {
 	CPUUndefinedException();
 }
@@ -1364,7 +1364,7 @@ static INSN_REGPARM void thumbDD(uint32_t opcode)
 // SWI #comment
 static INSN_REGPARM void thumbDF(uint32_t opcode)
 {
-	uint32_t address = 0;
+	//uint32_t address = 0;
 	//clockTicks = codeTicksAccessSeq16(address) * 2 + codeTicksAccess16(address) + 3;
 	clockTicks = 3;
 	busPrefetchCount = 0;

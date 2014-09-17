@@ -3009,7 +3009,7 @@ TEMPLATE static uint32_t FASTCALL OP_MSR_CPSR(uint32_t i)
 	}
 	else
 		mask = byte_mask & userMask;
-	
+
 	u32 new_val = (cpu->CPSR.val & ~mask) | (operand & mask);
 	cpu->CPSR.val = (cpu->CPSR.val & ~mask) | (operand & mask);
 	cpu->changeCPSR();
@@ -6084,13 +6084,13 @@ TEMPLATE static uint32_t FASTCALL OP_SWI(uint32_t i)
 //   BKPT
 // -----------------------------------------------------------------------------
 
-TEMPLATE static uint32_t FASTCALL OP_BKPT(uint32_t i)
+TEMPLATE static uint32_t FASTCALL OP_BKPT(uint32_t /*i*/)
 {
 	/* ARM-ref
 	if (not overridden by debug hardware)
 		R14_abt = address of BKPT instruction + 4
 		SPSR_abt = CPSR
-		CPSR[4:0] = 0b10111 // Enter Abort mode 
+		CPSR[4:0] = 0b10111 // Enter Abort mode
 		CPSR[5] = 0 // Execute in ARM state
 		// CPSR[6] is unchanged
 		CPSR[7] = 1 // Disable normal interrupts

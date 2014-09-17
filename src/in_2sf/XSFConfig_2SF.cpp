@@ -1,7 +1,7 @@
 /*
  * xSF - 2SF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-17
+ * Last modification on 2014-09-17
  *
  * Partially based on the vio*sf framework
  */
@@ -132,6 +132,6 @@ void XSFConfig_2SF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 
 void XSFConfig_2SF::About(HWND parent)
 {
-	MessageBox(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
+	MessageBoxW(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
 		L"Utilizes modified " + String(EMU_DESMUME_NAME_AND_VERSION()).GetWStr() + L" for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }

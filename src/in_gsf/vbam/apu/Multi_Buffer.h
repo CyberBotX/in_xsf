@@ -131,7 +131,6 @@ private:
 	buf_t bufs[bufs_size];
 	Stereo_Mixer mixer;
 	channel_t chan;
-	long samples_avail_;
 };
 
 inline void Multi_Buffer::set_sample_rate(long rate, long msec)

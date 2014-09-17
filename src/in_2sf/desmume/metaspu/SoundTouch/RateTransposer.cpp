@@ -40,7 +40,6 @@
 
 #include <stdexcept>
 #include "RateTransposer.h"
-#include "AAFilter.h"
 
 using namespace soundtouch;
 
@@ -137,7 +136,7 @@ AAFilter *RateTransposer::getAAFilter()
 	return this->pAAFilter.get();
 }
 
-// Sets new target iRate. Normal iRate = 1.0, smaller values represent slower 
+// Sets new target iRate. Normal iRate = 1.0, smaller values represent slower
 // iRate, larger faster iRates.
 void RateTransposer::setRate(float newRate)
 {
@@ -192,7 +191,7 @@ void RateTransposer::downsample(const SAMPLETYPE *src, uint32_t nSamples)
 	// If the parameter 'uRate' value is larger than 'SCALE', first apply the
 	// anti-alias filter to remove high frequencies (prevent them from folding
 	// over the lover frequencies), then transpose. */
-	
+
 	// Add the new samples to the end of the storeBuffer */
 	this->storeBuffer.putSamples(src, nSamples);
 
@@ -407,7 +406,7 @@ end:
 	return i;
 }
 
-// Sets new target iRate. Normal iRate = 1.0, smaller values represent slower 
+// Sets new target iRate. Normal iRate = 1.0, smaller values represent slower
 // iRate, larger faster iRates.
 void RateTransposerInteger::setRate(float newRate)
 {

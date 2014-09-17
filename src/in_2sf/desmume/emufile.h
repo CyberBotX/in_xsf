@@ -37,7 +37,6 @@ THE SOFTWARE.
 #include "types.h"
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
-# include "windowsh_wrapper.h"
 # include <io.h>
 #else
 # include <unistd.h>

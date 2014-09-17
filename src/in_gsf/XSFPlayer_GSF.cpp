@@ -1,7 +1,7 @@
 /*
  * xSF - GSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2014-09-17
  *
  * Based on a modified viogsf v0.08
  *
@@ -24,7 +24,9 @@ class XSFPlayer_GSF : public XSFPlayer
 {
 public:
 	XSFPlayer_GSF(const std::string &filename);
+#ifdef _MSC_VER
 	XSFPlayer_GSF(const std::wstring &filename);
+#endif
 	~XSFPlayer_GSF() { this->Terminate(); }
 	bool Load();
 	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
@@ -39,10 +41,12 @@ XSFPlayer *XSFPlayer::Create(const std::string &fn)
 	return new XSFPlayer_GSF(fn);
 }
 
+#ifdef _MSC_VER
 XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
 {
 	return new XSFPlayer_GSF(fn);
 }
+#endif
 
 static struct
 {
@@ -148,7 +152,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 {
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
-#ifdef _WIN32
+#ifdef _MSC_VER
 		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetWStr()) + xSF->GetTagValue("_lib").GetWStr(), 8, 12));
 #else
 		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetAnsi()) + xSF->GetTagValue("_lib").GetAnsi(), 8, 12));
@@ -169,7 +173,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 		if (xSF->GetTagExists(libTag))
 		{
 			found = true;
-#ifdef _WIN32
+#ifdef _MSC_VER
 			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetWStr()) + xSF->GetTagValue(libTag).GetWStr(), 8, 12));
 #else
 			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetAnsi()) + xSF->GetTagValue(libTag).GetAnsi(), 8, 12));
@@ -195,10 +199,12 @@ XSFPlayer_GSF::XSFPlayer_GSF(const std::string &filename) : XSFPlayer()
 	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
+#ifdef _MSC_VER
 XSFPlayer_GSF::XSFPlayer_GSF(const std::wstring &filename) : XSFPlayer()
 {
 	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
+#endif
 
 bool XSFPlayer_GSF::Load()
 {
