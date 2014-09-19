@@ -427,8 +427,6 @@ static int no_gba_unpackSAV(const uint8_t *in_buf, uint32_t fsize, uint8_t *out_
 			for (int t = 0; t < cc; ++t)
 				dst[dst_pos++] = src[src_pos++];
 		}
-		size = dst_pos;
-		return 0;
 	}
 	return 200;
 }

@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-18
  *
  * Partially based on the vio*sf framework
  */
@@ -422,10 +422,12 @@ extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
 	return 1;
 }
 
+#ifdef _MSC_VER
 extern "C" __declspec(dllexport) int winampClearExtendedFileInfoW(const wchar_t *)
 {
 	return 0;
 }
+#endif
 
 intptr_t wrapperWinampGetExtendedRead_open(std::unique_ptr<XSFPlayer> tmpxSFPlayer, int *size, int *bps, int *nch, int *srate)
 {
