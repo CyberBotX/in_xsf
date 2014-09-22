@@ -236,7 +236,7 @@
 
 //! Cross-platform solution to get offset of `_Field_` in `_Struct_`.
 #define ASMJIT_OFFSET_OF(_Struct_, _Field_) \
-  (reinterpret_cast<size_t>(reinterpret_cast<const uint8_t*>(&reinterpret_cast<const _Struct_*>(0x1)->_Field_)) - 1)
+  (reinterpret_cast<intptr_t>(reinterpret_cast<const uint8_t*>(&reinterpret_cast<const _Struct_*>(0x1)->_Field_)) - 1)
 
 // ============================================================================
 // [asmjit::build - ASMJIT_ARRAY_SIZE]
