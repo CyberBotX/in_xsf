@@ -1,7 +1,7 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  */
 
 #pragma once
@@ -12,8 +12,8 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cstdint>
+#include "XSFCommon.h"
 #include "windowsh_wrapper.h"
-#include "UtfConverter.h"
 
 template<typename T> struct Point
 {
@@ -621,7 +621,7 @@ class DialogTemplate
 					return;
 				}
 			}
-			throw std::runtime_error("Group " + UtfConverter::ToUtf8(groupBuilder.groupName) + " was not found.");
+			throw std::runtime_error("Group " + ConvertFuncs::WStringToString(groupBuilder.groupName) + " was not found.");
 		}
 	}
 	uint16_t GetTotalControlCount() const;

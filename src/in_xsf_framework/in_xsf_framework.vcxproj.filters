@@ -15,25 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BigSString.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="convert.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ConvertUTF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DialogBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="eqstr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UtfConverter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UTFEncodeDecode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="windowsh_wrapper.h">
@@ -59,19 +47,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ConvertUTF.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DialogBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="in_xsf.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UtfConverter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UTFEncodeDecode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="XSFConfig.cpp">

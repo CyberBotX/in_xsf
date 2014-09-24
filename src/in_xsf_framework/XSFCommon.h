@@ -1,7 +1,7 @@
 /*
  * xSF - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -10,10 +10,16 @@
 
 #include <limits>
 #include <fstream>
+#if defined(_WIN32) && !defined(_MSC_VER)
+# include "fstream_wfopen.h"
+#endif
 #include <string>
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <cstdint>
+#include <cwchar>
+#include <cstring>
+#include "convert.h"
 
 // Code from http://learningcppisfun.blogspot.com/2010/04/comparing-floating-point-numbers.html
 template<typename T> inline bool fEqual(T x, T y, int N = 1)
@@ -80,10 +86,34 @@ inline bool FileExists(const std::string &filename)
 	return !!file;
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 inline bool FileExists(const std::wstring &filename)
 {
+#ifdef _MSC_VER
 	std::ifstream file(filename.c_str());
+#else
+	ifstream_wfopen file(filename.c_str());
+#endif
 	return !!file;
 }
 #endif
+
+inline void CopyToString(const std::wstring &src, wchar_t *dst)
+{
+	wcscpy(dst, src.c_str());
+}
+
+inline void CopyToString(const std::string &src, wchar_t *dst)
+{
+	wcscpy(dst, ConvertFuncs::StringToWString(src).c_str());
+}
+
+inline void CopyToString(const std::string &src, char *dst)
+{
+	strcpy(dst, src.c_str());
+}
+
+inline void CopyToString(const std::wstring &src, char *dst)
+{
+	strcpy(dst, ConvertFuncs::WStringToString(src).c_str());
+}

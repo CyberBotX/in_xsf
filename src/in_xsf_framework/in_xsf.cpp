@@ -1,16 +1,22 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-18
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
 
 #include "XSFPlayer.h"
 #include "XSFConfig.h"
+#include "XSFCommon.h"
 #include "windowsh_wrapper.h"
 #include <winamp/in2.h>
 #include <winamp/wa_ipc.h>
+
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(_LIBCPP_VERSION)
+std::locale::id std::codecvt<char16_t, char, mbstate_t>::id;
+std::locale::id std::codecvt<char32_t, char, mbstate_t>::id;
+#endif
 
 extern In_Module inMod;
 const XSFFile *xSFFile = nullptr;
@@ -110,7 +116,7 @@ void getFileInfo(const in_char *file, in_char *title, int *length_in_ms)
 		catch (const std::exception &)
 		{
 			if (title)
-				String("").CopyToString(title);
+				CopyToString("", title);
 			if (length_in_ms)
 				*length_in_ms = -1000;
 			return;
@@ -118,10 +124,7 @@ void getFileInfo(const in_char *file, in_char *title, int *length_in_ms)
 		toFree = true;
 	}
 	if (title)
-	{
-		String formattedTitle = xSF->GetFormattedTitle(xSFConfig->GetTitleFormat()).Substring(0, GETFILEINFO_TITLE_LENGTH - 1);
-		formattedTitle.CopyToString(title);
-	}
+		CopyToString(xSF->GetFormattedTitle(xSFConfig->GetTitleFormat()).substr(0, GETFILEINFO_TITLE_LENGTH - 1), title);
 	if (length_in_ms)
 		*length_in_ms = xSF->GetLengthMS(xSFConfig->GetDefaultLength()) + xSF->GetFadeMS(xSFConfig->GetDefaultFade());
 	if (toFree)
@@ -148,17 +151,16 @@ int infoBox(const in_char *file, HWND hwndParent)
 	// TODO: Eventually make a dialog box for editing the info
 	/*xSFFileInInfo = xSF.get();
 	xSFConfig->CallInfoDialog(inMod.hDllInstance, hwndParent);*/
-	bool utf8 = xSF->GetTagExists("utf8");
 	auto tags = xSF->GetAllTags();
 	auto keys = tags.GetKeys();
-	String info;
+	std::wstring info;
 	for (unsigned x = 0, numTags = keys.size(); x < numTags; ++x)
 	{
 		if (x)
-			info += "\n";
-		info += String(keys[x] + "=") + String(tags[keys[x]], utf8);
+			info += L"\n";
+		info += ConvertFuncs::StringToWString(keys[x] + "=" + tags[keys[x]]);
 	}
-	MessageBoxW(hwndParent, info.GetWStrC(), xSF->GetFilenameWithoutPath().GetWStrC(), MB_OK);
+	MessageBoxW(hwndParent, info.c_str(), ConvertFuncs::StringToWString(xSF->GetFilenameWithoutPath()).c_str(), MB_OK);
 	return INFOBOX_EDITED;
 }
 
@@ -271,7 +273,7 @@ void eqSet(int, char [10], int)
 In_Module inMod =
 {
 	IN_VER,
-	const_cast<char *>(XSFConfig::CommonNameWithVersion().GetStrC()), /* Unsafe but Winamp's SDK requires this */
+	const_cast<char *>(XSFConfig::CommonNameWithVersion().c_str()), /* Unsafe but Winamp's SDK requires this */
 	nullptr, /* Filled by Winamp */
 	nullptr, /* Filled by Winamp */
 	const_cast<char *>(XSFPlayer::WinampExts), /* Unsafe but Winamp's SDK requires this */
@@ -317,9 +319,7 @@ template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, c
 		return 1;
 	}
 	else if (eqstr(data, "family"))
-	{
 		return 0;
-	}
 	else
 	{
 		try
@@ -327,6 +327,7 @@ template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, c
 			std::string tagToGet = data;
 			if (eqstr(data, "album"))
 				tagToGet = "game";
+			std::string tag = "";
 			if (!file.GetTagExists(tagToGet))
 			{
 				if (eqstr(tagToGet, "replaygain_track_gain"))
@@ -334,11 +335,10 @@ template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, c
 				return 0;
 			}
 			else if (eqstr(tagToGet, "length"))
-			{
-				String(stringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade()))).Substring(0, destlen - 1).CopyToString(dest, true);
-				return 1;
-			}
-			file.GetTagValue(tagToGet).Substring(0, destlen - 1).CopyToString(dest, true);
+				tag = stringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade()));
+			else
+				tag = file.GetTagValue(tagToGet);
+			CopyToString(tag.substr(0, destlen - 1), dest);
 			return 1;
 		}
 		catch (const std::exception &)
@@ -361,7 +361,6 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, c
 	}
 }
 
-#ifdef _MSC_VER
 extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *fn, const char *data, wchar_t *dest, size_t destlen)
 {
 	try
@@ -374,7 +373,6 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *f
 		return 0;
 	}
 }
-#endif
 
 std::unique_ptr<XSFFile> extendedXSFFile;
 
@@ -388,7 +386,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfo(const char *fn, c
 {
 	try
 	{
-		if (!extendedXSFFile || extendedXSFFile->GetFilename().GetStr() != fn)
+		if (!extendedXSFFile || extendedXSFFile->GetFilename() != fn)
 			extendedXSFFile.reset(new XSFFile(fn));
 		return wrapperWinampSetExtendedFileInfo(data, val);
 	}
@@ -398,12 +396,11 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfo(const char *fn, c
 	}
 }
 
-#ifdef _MSC_VER
 extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *fn, const char *data, const wchar_t *val)
 {
 	try
 	{
-		if (!extendedXSFFile || extendedXSFFile->GetFilename().GetWStr() != fn)
+		if (!extendedXSFFile || ConvertFuncs::StringToWString(extendedXSFFile->GetFilename()) != fn)
 			extendedXSFFile.reset(new XSFFile(fn));
 		return wrapperWinampSetExtendedFileInfo(data, val);
 	}
@@ -412,7 +409,6 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *f
 		return 0;
 	}
 }
-#endif
 
 extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
 {
@@ -422,12 +418,10 @@ extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
 	return 1;
 }
 
-#ifdef _MSC_VER
 extern "C" __declspec(dllexport) int winampClearExtendedFileInfoW(const wchar_t *)
 {
 	return 0;
 }
-#endif
 
 intptr_t wrapperWinampGetExtendedRead_open(std::unique_ptr<XSFPlayer> tmpxSFPlayer, int *size, int *bps, int *nch, int *srate)
 {
@@ -460,7 +454,6 @@ extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_open(const char 
 	}
 }
 
-#ifdef _MSC_VER
 extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wchar_t *fn, int *size, int *bps, int *nch, int *srate)
 {
 	try
@@ -473,7 +466,6 @@ extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wcha
 		return 0;
 	}
 }
-#endif
 
 int extendedSeekNeeded = -1;
 

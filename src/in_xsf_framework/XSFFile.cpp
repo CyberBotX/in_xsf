@@ -1,7 +1,7 @@
 /*
  * xSF - File structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -64,13 +64,13 @@ XSFFile::XSFFile(const std::string &filename, uint32_t programSizeOffset, uint32
 	this->ReadXSF(filename, programSizeOffset, programHeaderSize);
 }
 
-#ifdef _MSC_VER
-XSFFile::XSFFile(const std::wstring &filename) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(filename)
+#ifdef _WIN32
+XSFFile::XSFFile(const std::wstring &filename) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(ConvertFuncs::WStringToString(filename))
 {
 	this->ReadXSF(filename, 0, 0, true);
 }
 
-XSFFile::XSFFile(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(filename)
+XSFFile::XSFFile(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(ConvertFuncs::WStringToString(filename))
 {
 	this->ReadXSF(filename, programSizeOffset, programHeaderSize);
 }
@@ -86,19 +86,27 @@ void XSFFile::ReadXSF(const std::string &filename, uint32_t programSizeOffset, u
 	xSF.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 
 	this->ReadXSF(xSF, programSizeOffset, programHeaderSize, readTagsOnly);
+
+	xSF.close();
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 void XSFFile::ReadXSF(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly)
 {
 	if (!FileExists(filename))
-		throw std::logic_error("File " + String(filename).GetAnsi() + " does not exist.");
+		throw std::logic_error("File " + ConvertFuncs::WStringToString(filename) + " does not exist.");
 
+#if defined(_WIN32) && !defined(_MSC_VER)
+	ifstream_wfopen xSF;
+#else
 	std::ifstream xSF;
+#endif
 	xSF.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 	xSF.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 
 	this->ReadXSF(xSF, programSizeOffset, programHeaderSize, readTagsOnly);
+
+	xSF.close();
 }
 #endif
 
@@ -214,8 +222,6 @@ void XSFFile::ReadXSF(std::ifstream &xSF, uint32_t programSizeOffset, uint32_t p
 		}
 	}
 
-	xSF.close();
-
 	this->hasFile = true;
 }
 
@@ -268,9 +274,14 @@ void XSFFile::SetAllTags(const TagList &newTags)
 	this->tags = newTags;
 }
 
-void XSFFile::SetTag(const std::string &name, const String &value)
+void XSFFile::SetTag(const std::string &name, const std::string &value)
 {
-	this->tags[name] = value.GetStr();
+	this->tags[name] = value;
+}
+
+void XSFFile::SetTag(const std::string &name, const std::wstring &value)
+{
+	this->tags[name] = ConvertFuncs::WStringToString(value);
 }
 
 bool XSFFile::GetTagExists(const std::string &name) const
@@ -278,17 +289,17 @@ bool XSFFile::GetTagExists(const std::string &name) const
 	return this->tags.Exists(name);
 }
 
-String XSFFile::GetTagValue(const std::string &name) const
+std::string XSFFile::GetTagValue(const std::string &name) const
 {
-	return String(this->GetTagExists(name) ? this->tags[name] : "", this->GetTagExists("utf8"));
+	return this->GetTagExists(name) ? this->tags[name] : "";
 }
 
 unsigned long XSFFile::GetLengthMS(unsigned long defaultLength) const
 {
 	unsigned long length = 0;
-	String value = this->GetTagValue("length");
+	std::string value = this->GetTagValue("length");
 	if (!value.empty())
-		length = ConvertFuncs::StringToMS(value.GetAnsi());
+		length = ConvertFuncs::StringToMS(value);
 	if (!length)
 		length = defaultLength;
 	return length;
@@ -297,9 +308,9 @@ unsigned long XSFFile::GetLengthMS(unsigned long defaultLength) const
 unsigned long XSFFile::GetFadeMS(unsigned long defaultFade) const
 {
 	unsigned long fade = defaultFade;
-	String value = this->GetTagValue("fade");
+	std::string value = this->GetTagValue("fade");
 	if (!value.empty())
-		fade = ConvertFuncs::StringToMS(value.GetAnsi());
+		fade = ConvertFuncs::StringToMS(value);
 	return fade;
 }
 
@@ -307,49 +318,49 @@ double XSFFile::GetVolume(VolumeType preferredVolumeType, PeakType preferredPeak
 {
 	if (preferredVolumeType == VOLUMETYPE_NONE)
 		return 1.0;
-	String replaygain_album_gain = this->GetTagValue("replaygain_album_gain"), replaygain_album_peak = this->GetTagValue("replaygain_album_peak");
-	String replaygain_track_gain = this->GetTagValue("replaygain_track_gain"), replaygain_track_peak = this->GetTagValue("replaygain_track_peak");
-	String volume = this->GetTagValue("volume");
+	std::string replaygain_album_gain = this->GetTagValue("replaygain_album_gain"), replaygain_album_peak = this->GetTagValue("replaygain_album_peak");
+	std::string replaygain_track_gain = this->GetTagValue("replaygain_track_gain"), replaygain_track_peak = this->GetTagValue("replaygain_track_peak");
+	std::string volume = this->GetTagValue("volume");
 	double gain = 0.0;
 	bool hadReplayGain = false;
 	if (preferredVolumeType == VOLUMETYPE_REPLAYGAIN_ALBUM && !replaygain_album_gain.empty())
 	{
-		gain = convertTo<double>(replaygain_album_gain.GetAnsi(), false);
+		gain = convertTo<double>(replaygain_album_gain, false);
 		hadReplayGain = true;
 	}
 	if (!hadReplayGain && preferredVolumeType != VOLUMETYPE_VOLUME && !replaygain_track_gain.empty())
 	{
-		gain = convertTo<double>(replaygain_track_gain.GetAnsi(), false);
+		gain = convertTo<double>(replaygain_track_gain, false);
 		hadReplayGain = true;
 	}
 	if (hadReplayGain)
 	{
 		double vol = std::pow(10.0, gain / 20.0), peak = 1.0;
 		if (preferredPeakType == PEAKTYPE_REPLAYGAIN_ALBUM && !replaygain_album_peak.empty())
-			peak = convertTo<double>(replaygain_album_peak.GetAnsi(), false);
+			peak = convertTo<double>(replaygain_album_peak, false);
 		else if (preferredPeakType != PEAKTYPE_NONE && !replaygain_track_peak.empty())
-			peak = convertTo<double>(replaygain_track_peak.GetAnsi(), false);
+			peak = convertTo<double>(replaygain_track_peak, false);
 		return !fEqual(peak, 1.0) ? std::min(vol, 1.0 / peak) : vol;
 	}
-	return volume.empty() ? 1.0 : convertTo<double>(volume.GetAnsi(), false);
+	return volume.empty() ? 1.0 : convertTo<double>(volume, false);
 }
 
-String XSFFile::FormattedTitleOptionalBlock(const std::wstring &block, bool &hadReplacement, unsigned level) const
+std::string XSFFile::FormattedTitleOptionalBlock(const std::string &block, bool &hadReplacement, unsigned level) const
 {
-	String formattedBlock;
+	std::string formattedBlock;
 	for (size_t x = 0, len = block.length(); x < len; ++x)
 	{
-		wchar_t c = block[x];
-		if (c == L'%')
+		char c = block[x];
+		if (c == '%')
 		{
 			size_t origX = x;
 			for (++x; x < len; ++x)
-				if (block[x] == L'%')
+				if (block[x] == '%')
 					break;
 			if (x != len)
 			{
-				std::wstring tagname = block.substr(origX + 1, x - origX - 1);
-				String value = this->GetTagValue(String(tagname).GetAnsi());
+				std::string tagname = block.substr(origX + 1, x - origX - 1);
+				std::string value = this->GetTagValue(tagname);
 				if (!value.empty())
 				{
 					formattedBlock += value;
@@ -358,15 +369,15 @@ String XSFFile::FormattedTitleOptionalBlock(const std::wstring &block, bool &had
 			}
 			continue;
 		}
-		if (c == L'[' && level + 1 < 10)
+		if (c == '[' && level + 1 < 10)
 		{
 			size_t origX = x;
 			unsigned nests = 0;
 			for (++x; x < len; ++x)
 			{
-				if (block[x] == L'[')
+				if (block[x] == '[')
 					++nests;
-				else if (block[x] == L']')
+				else if (block[x] == ']')
 				{
 					if (!nests)
 						break;
@@ -375,9 +386,9 @@ String XSFFile::FormattedTitleOptionalBlock(const std::wstring &block, bool &had
 			}
 			if (x != len)
 			{
-				std::wstring innerBlock = block.substr(origX + 1, x - origX - 1);
+				std::string innerBlock = block.substr(origX + 1, x - origX - 1);
 				bool hadInnerReplacement = false;
-				String replacedBlock = this->FormattedTitleOptionalBlock(innerBlock, hadInnerReplacement, level + 1);
+				std::string replacedBlock = this->FormattedTitleOptionalBlock(innerBlock, hadInnerReplacement, level + 1);
 				if (hadInnerReplacement)
 					formattedBlock += replacedBlock;
 			}
@@ -388,37 +399,37 @@ String XSFFile::FormattedTitleOptionalBlock(const std::wstring &block, bool &had
 	return formattedBlock;
 }
 
-String XSFFile::GetFormattedTitle(const std::wstring &format) const
+std::string XSFFile::GetFormattedTitle(const std::string &format) const
 {
-	String formattedTitle;
+	std::string formattedTitle;
 	for (size_t x = 0, len = format.length(); x < len; ++x)
 	{
-		wchar_t c = format[x];
-		if (c == L'%')
+		char c = format[x];
+		if (c == '%')
 		{
 			size_t origX = x;
 			for (++x; x < len; ++x)
-				if (format[x] == L'%')
+				if (format[x] == '%')
 					break;
 			if (x != len)
 			{
-				std::wstring tagname = format.substr(origX + 1, x - origX - 1);
-				String value = this->GetTagValue(String(tagname).GetAnsi());
+				std::string tagname = format.substr(origX + 1, x - origX - 1);
+				std::string value = this->GetTagValue(tagname);
 				if (value.empty())
 					formattedTitle += "???";
 				else
 					formattedTitle += value;
 			}
 		}
-		else if (c == L'[')
+		else if (c == '[')
 		{
 			size_t origX = x;
 			unsigned nests = 0;
 			for (++x; x < len; ++x)
 			{
-				if (format[x] == L'[')
+				if (format[x] == '[')
 					++nests;
-				else if (format[x] == L']')
+				else if (format[x] == ']')
 				{
 					if (!nests)
 						break;
@@ -427,9 +438,9 @@ String XSFFile::GetFormattedTitle(const std::wstring &format) const
 			}
 			if (x != len)
 			{
-				std::wstring block = format.substr(origX + 1, x - origX - 1);
+				std::string block = format.substr(origX + 1, x - origX - 1);
 				bool hadReplacement = false;
-				String replacedBlock = this->FormattedTitleOptionalBlock(block, hadReplacement, 1);
+				std::string replacedBlock = this->FormattedTitleOptionalBlock(block, hadReplacement, 1);
 				if (hadReplacement)
 					formattedTitle += replacedBlock;
 			}
@@ -440,24 +451,28 @@ String XSFFile::GetFormattedTitle(const std::wstring &format) const
 	return formattedTitle;
 }
 
-String XSFFile::GetFilename() const
+std::string XSFFile::GetFilename() const
 {
 	return this->fileName;
 }
 
-String XSFFile::GetFilenameWithoutPath() const
+std::string XSFFile::GetFilenameWithoutPath() const
 {
-	return ExtractFilenameFromPath(this->fileName.GetStr());
+	return ExtractFilenameFromPath(this->fileName);
 }
 
 void XSFFile::SaveFile() const
 {
-	std::ofstream xSF;
-	xSF.exceptions(std::ofstream::failbit);
-#ifdef _MSC_VER
-	xSF.open(this->fileName.GetWStrC(), std::ofstream::out | std::ofstream::binary);
+#if defined(_WIN32) && !defined(_MSC_VER)
+	ofstream_wfopen xSF;
 #else
-	xSF.open(this->fileName.GetStrC(), std::ofstream::out | std::ofstream::binary);
+	std::ofstream xSF;
+#endif
+	xSF.exceptions(std::ofstream::failbit);
+#ifdef _WIN32
+	xSF.open(ConvertFuncs::StringToWString(this->fileName).c_str(), std::ofstream::out | std::ofstream::binary);
+#else
+	xSF.open(this->fileName.c_str(), std::ofstream::out | std::ofstream::binary);
 #endif
 
 	xSF.write(reinterpret_cast<const char *>(&this->rawData[0]), this->rawData.size());

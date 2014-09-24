@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Based on a modified in_snsf by Caitsith2
  * http://snsf.caitsith2.net/
@@ -33,7 +33,7 @@ class XSFPlayer_SNSF : public XSFPlayer
 {
 public:
 	XSFPlayer_SNSF(const std::string &filename);
-#ifdef _MSC_VER
+#ifdef _WIN32
 	XSFPlayer_SNSF(const std::wstring &filename);
 #endif
 	~XSFPlayer_SNSF() { this->Terminate(); }
@@ -52,7 +52,7 @@ XSFPlayer *XSFPlayer::Create(const std::string &fn)
 	return new XSFPlayer_SNSF(fn);
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
 {
 	return new XSFPlayer_SNSF(fn);
@@ -169,10 +169,10 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 {
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
-#ifdef _MSC_VER
-		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetWStr()) + xSF->GetTagValue("_lib").GetWStr(), 4, 8));
+#ifdef _WIN32
+		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib")), 4, 8));
 #else
-		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetAnsi()) + xSF->GetTagValue("_lib").GetAnsi(), 4, 8));
+		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib"), 4, 8));
 #endif
 		if (!RecursiveLoad2SF(libxSF.get(), level + 1))
 			return false;
@@ -190,10 +190,10 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 		if (xSF->GetTagExists(libTag))
 		{
 			found = true;
-#ifdef _MSC_VER
-			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetWStr()) + xSF->GetTagValue(libTag).GetWStr(), 4, 8));
+#ifdef _WIN32
+			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag)), 4, 8));
 #else
-			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename().GetAnsi()) + xSF->GetTagValue(libTag).GetAnsi(), 4, 8));
+			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag), 4, 8));
 #endif
 			if (!RecursiveLoad2SF(libxSF.get(), level + 1))
 				return false;
@@ -218,7 +218,7 @@ XSFPlayer_SNSF::XSFPlayer_SNSF(const std::string &filename) : XSFPlayer()
 	this->xSF.reset(new XSFFile(filename, 4, 8));
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 XSFPlayer_SNSF::XSFPlayer_SNSF(const std::wstring &filename) : XSFPlayer()
 {
 	this->xSF.reset(new XSFFile(filename, 4, 8));

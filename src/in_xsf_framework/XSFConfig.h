@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -24,12 +24,12 @@ public:
 	static XSFConfigIO *Create();
 
 	virtual ~XSFConfigIO() { }
-	virtual void SetValueString(const std::wstring &name, const std::wstring &value) = 0;
-	template<typename T> void SetValue(const std::wstring &name, const T &value) { this->SetValueString(name, wstringify(value)); }
-	void SetValue(const std::wstring &name, const std::wstring &value) { this->SetValueString(name, value); }
-	virtual std::wstring GetValueString(const std::wstring &name, const std::wstring &defaultValue) = 0;
-	template<typename T> T GetValue(const std::wstring &name, const T &defaultValue) { return convertTo<T>(this->GetValueString(name, wstringify(defaultValue))); }
-	std::wstring GetValue(const std::wstring &name, const std::wstring &defaultValue) { return this->GetValueString(name, defaultValue); }
+	virtual void SetValueString(const std::string &name, const std::string &value) = 0;
+	template<typename T> void SetValue(const std::string &name, const T &value) { this->SetValueString(name, stringify(value)); }
+	void SetValue(const std::string &name, const std::string &value) { this->SetValueString(name, value); }
+	virtual std::string GetValueString(const std::string &name, const std::string &defaultValue) = 0;
+	template<typename T> T GetValue(const std::string &name, const T &defaultValue) { return convertTo<T>(this->GetValueString(name, stringify(defaultValue))); }
+	std::string GetValue(const std::string &name, const std::string &defaultValue) { return this->GetValueString(name, defaultValue); }
 };
 
 class XSFConfig
@@ -41,7 +41,7 @@ protected:
 	VolumeType volumeType;
 	PeakType peakType;
 	unsigned sampleRate;
-	std::wstring titleFormat;
+	std::string titleFormat;
 	DialogTemplate configDialog, configDialogProperty, infoDialog;
 	std::vector<unsigned> supportedSampleRates;
 	std::unique_ptr<XSFConfigIO> configIO;
@@ -58,17 +58,17 @@ protected:
 	virtual void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) = 0;
 public:
 	static bool initPlayInfinitely;
-	static std::wstring initSkipSilenceOnStartSec, initDetectSilenceSec, initDefaultLength, initDefaultFade, initTitleFormat;
+	static std::string initSkipSilenceOnStartSec, initDetectSilenceSec, initDefaultLength, initDefaultFade, initTitleFormat;
 	static double initVolume;
 	static VolumeType initVolumeType;
 	static PeakType initPeakType;
 	// These are not defined in XSFConfig.cpp, they should be defined in your own config's source.
 	static unsigned initSampleRate;
-	static std::wstring commonName;
-	static std::wstring versionNumber;
+	static std::string commonName;
+	static std::string versionNumber;
 	// The Create function is not defined in XSFConfig.cpp, it should be defined in your own config's source and return a pointer to your config's class.
 	static XSFConfig *Create();
-	static const String &CommonNameWithVersion();
+	static const std::string &CommonNameWithVersion();
 
 	virtual ~XSFConfig() { }
 	void LoadConfig();
@@ -92,5 +92,5 @@ public:
 	double GetVolume() const;
 	VolumeType GetVolumeType() const;
 	PeakType GetPeakType() const;
-	const std::wstring &GetTitleFormat() const;
+	const std::string &GetTitleFormat() const;
 };

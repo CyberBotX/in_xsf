@@ -20,17 +20,11 @@ DLLS:=	$(sort $(addsuffix .dll,$(DLLS)))
 COMPILER:=	$(shell $(CXX) -v 2>/dev/stdout)
 
 CPPFLAGS+=	-std=gnu++11 -I$(SRCDIR)in_xsf_framework -I/g/Code/Winamp\ SDK -DWINAMP_PLUGIN -DUNICODE_INPUT_PLUGIN
-CXXFLAGS+=	-std=gnu++11 -pipe -Wall -Wctor-dtor-privacy -Wold-style-cast -Wextra -Wno-div-by-zero -Wfloat-equal -Wshadow -Winit-self -Wcast-qual -Wunreachable-code -Wabi -Woverloaded-virtual -Wno-long-long -I$(SRCDIR)in_xsf_framework -I/g/Code/Winamp\ SDK -DWINAMP_PLUGIN -DUNICODE_INPUT_PLUGIN
+CXXFLAGS+=	-std=gnu++11 -pipe -Wall -Wctor-dtor-privacy -Wold-style-cast -Wextra -Wno-div-by-zero -Wfloat-equal -Wshadow -Winit-self -Wcast-qual -Wunreachable-code -Wabi -Woverloaded-virtual -Wno-long-long -Wno-switch -I$(SRCDIR)in_xsf_framework -I/g/Code/Winamp\ SDK -DWINAMP_PLUGIN -DUNICODE_INPUT_PLUGIN
 ifeq (,$(findstring clang,$(COMPILER)))
 CXXFLAGS+=	-Wlogical-op
 endif
 LDFLAGS+=	-lz
-
-ifneq (,$(findstring MINGW,$(UNAME)))
-ifeq (,$(findstring clang,$(COMPILER)))
-LDFLAGS+=	-static-libgcc -static-libstdc++
-endif
-endif
 
 DLL_SRCS_template=	$(1)_SRCS:=	$$(sort $$($(1)_SRCS))
 DLL_OBJS_template=	$(1)_OBJS:=	$$(subst $(SRCDIR),,$$($(1)_SRCS:%.cpp=%.o))

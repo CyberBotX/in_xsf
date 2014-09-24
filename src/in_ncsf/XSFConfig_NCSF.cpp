@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -10,7 +10,6 @@
 #include "XSFPlayer_NCSF.h"
 #include "XSFConfig.h"
 #include "convert.h"
-#include "BigSString.h"
 
 enum
 {
@@ -22,7 +21,7 @@ class XSFConfig_NCSF : public XSFConfig
 {
 protected:
 	static unsigned initInterpolation;
-	static std::wstring initMutes;
+	static std::string initMutes;
 
 	friend class XSFConfig;
 	unsigned interpolation;
@@ -41,10 +40,10 @@ public:
 };
 
 unsigned XSFConfig::initSampleRate = 44100;
-std::wstring XSFConfig::commonName = L"NCSF Decoder";
-std::wstring XSFConfig::versionNumber = L"1.8.1";
+std::string XSFConfig::commonName = "NCSF Decoder";
+std::string XSFConfig::versionNumber = "1.8.1";
 unsigned XSFConfig_NCSF::initInterpolation = 5;
-std::wstring XSFConfig_NCSF::initMutes = L"0000000000000000";
+std::string XSFConfig_NCSF::initMutes = "0000000000000000";
 
 XSFConfig *XSFConfig::Create()
 {
@@ -68,15 +67,15 @@ XSFConfig_NCSF::XSFConfig_NCSF() : XSFConfig(), interpolation(0), mutes()
 
 void XSFConfig_NCSF::LoadSpecificConfig()
 {
-	this->interpolation = this->configIO->GetValue(L"Interpolation", XSFConfig_NCSF::initInterpolation);
-	std::wstringstream mutesSS(this->configIO->GetValue(L"Mutes", XSFConfig_NCSF::initMutes));
+	this->interpolation = this->configIO->GetValue("Interpolation", XSFConfig_NCSF::initInterpolation);
+	std::stringstream mutesSS(this->configIO->GetValue("Mutes", XSFConfig_NCSF::initMutes));
 	mutesSS >> this->mutes;
 }
 
 void XSFConfig_NCSF::SaveSpecificConfig()
 {
-	this->configIO->SetValue(L"Interpolation", this->interpolation);
-	this->configIO->SetValue(L"Mutes", this->mutes.to_string<wchar_t>());
+	this->configIO->SetValue("Interpolation", this->interpolation);
+	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
 
 void XSFConfig_NCSF::GenerateSpecificDialogs()
@@ -141,6 +140,6 @@ void XSFConfig_NCSF::CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool)
 
 void XSFConfig_NCSF::About(HWND parent)
 {
-	MessageBoxW(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
-		L"Utilizes code adapted from the FeOS Sound System library by fincs, git revision 5204c55 on GitHub, for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
+	MessageBoxW(parent, ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber + ", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
+		"Utilizes code adapted from the FeOS Sound System library by fincs, git revision 5204c55 on GitHub, for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }

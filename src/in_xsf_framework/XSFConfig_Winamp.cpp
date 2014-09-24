@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp-specification configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -21,8 +21,8 @@ protected:
 
 	XSFConfigIO_Winamp();
 public:
-	void SetValueString(const std::wstring &name, const std::wstring &value);
-	std::wstring GetValueString(const std::wstring &name, const std::wstring &defaultValue);
+	void SetValueString(const std::string &name, const std::string &value);
+	std::string GetValueString(const std::string &name, const std::string &defaultValue);
 };
 
 XSFConfigIO *XSFConfigIO::Create()
@@ -33,7 +33,7 @@ XSFConfigIO *XSFConfigIO::Create()
 XSFConfigIO_Winamp::XSFConfigIO_Winamp() : iniFilename(L"")
 {
 	if (SendMessage(inMod.hMainWindow, WM_WA_IPC, 0, IPC_GETVERSION) >= 0x2900)
-		this->iniFilename = String(reinterpret_cast<char *>(SendMessage(inMod.hMainWindow, WM_WA_IPC, 0, IPC_GETINIFILE))).GetWStr();
+		this->iniFilename = ConvertFuncs::StringToWString(reinterpret_cast<char *>(SendMessage(inMod.hMainWindow, WM_WA_IPC, 0, IPC_GETINIFILE)));
 	else
 	{
 		auto executablePath = std::vector<wchar_t>(MAX_PATH / 2);
@@ -52,12 +52,12 @@ XSFConfigIO_Winamp::XSFConfigIO_Winamp() : iniFilename(L"")
 	}
 }
 
-void XSFConfigIO_Winamp::SetValueString(const std::wstring &name, const std::wstring &value)
+void XSFConfigIO_Winamp::SetValueString(const std::string &name, const std::string &value)
 {
-	WritePrivateProfileStringW(XSFConfig::commonName.c_str(), name.c_str(), value.c_str(), this->iniFilename.c_str());
+	WritePrivateProfileStringW(ConvertFuncs::StringToWString(XSFConfig::commonName).c_str(), ConvertFuncs::StringToWString(name).c_str(), ConvertFuncs::StringToWString(value).c_str(), this->iniFilename.c_str());
 }
 
-std::wstring XSFConfigIO_Winamp::GetValueString(const std::wstring &name, const std::wstring &defaultValue)
+std::string XSFConfigIO_Winamp::GetValueString(const std::string &name, const std::string &defaultValue)
 {
 	auto value = std::vector<wchar_t>(MAX_PATH / 2);
 
@@ -65,11 +65,11 @@ std::wstring XSFConfigIO_Winamp::GetValueString(const std::wstring &name, const 
 	do
 	{
 		value.resize(value.size() * 2);
-		result = GetPrivateProfileStringW(XSFConfig::commonName.c_str(), name.c_str(), defaultValue.c_str(), &value[0], value.size(), this->iniFilename.c_str());
+		result = GetPrivateProfileStringW(ConvertFuncs::StringToWString(XSFConfig::commonName).c_str(), ConvertFuncs::StringToWString(name).c_str(), ConvertFuncs::StringToWString(defaultValue).c_str(), &value[0], value.size(), this->iniFilename.c_str());
 	} while (result + 1 == value.size());
 
 	if (!result)
 		throw std::runtime_error("Unable to get value from INI file.");
 
-	return std::wstring(value.begin(), value.begin() + result);
+	return ConvertFuncs::WStringToString(std::wstring(value.begin(), value.begin() + result));
 }

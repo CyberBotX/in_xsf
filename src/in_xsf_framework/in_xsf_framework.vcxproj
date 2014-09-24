@@ -71,15 +71,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BigSString.h" />
     <ClInclude Include="convert.h" />
-    <ClInclude Include="ConvertUTF.h" />
     <ClInclude Include="DialogBuilder.h" />
     <ClInclude Include="eqstr.h" />
     <ClInclude Include="ltstr.h" />
     <ClInclude Include="TagList.h" />
-    <ClInclude Include="UtfConverter.h" />
-    <ClInclude Include="UTFEncodeDecode.h" />
     <ClInclude Include="windowsh_wrapper.h" />
     <ClInclude Include="XSFCommon.h" />
     <ClInclude Include="XSFConfig.h" />
@@ -87,12 +83,9 @@
     <ClInclude Include="XSFPlayer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ConvertUTF.cpp" />
     <ClCompile Include="DialogBuilder.cpp" />
     <ClCompile Include="in_xsf.cpp" />
     <ClCompile Include="TagList.cpp" />
-    <ClCompile Include="UtfConverter.cpp" />
-    <ClCompile Include="UTFEncodeDecode.cpp" />
     <ClCompile Include="XSFConfig.cpp" />
     <ClCompile Include="XSFConfig_Winamp.cpp" />
     <ClCompile Include="XSFFile.cpp" />

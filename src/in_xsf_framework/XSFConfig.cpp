@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -9,7 +9,6 @@
 #include "XSFConfig.h"
 #include "XSFPlayer.h"
 #include "convert.h"
-#include "BigSString.h"
 
 enum
 {
@@ -34,23 +33,23 @@ enum
 };
 
 bool XSFConfig::initPlayInfinitely = false;
-std::wstring XSFConfig::initSkipSilenceOnStartSec = L"5";
-std::wstring XSFConfig::initDetectSilenceSec = L"5";
-std::wstring XSFConfig::initDefaultLength = L"1:55";
-std::wstring XSFConfig::initDefaultFade = L"5";
-std::wstring XSFConfig::initTitleFormat = L"%game%[ - [%disc%.]%track%] - %title%";
+std::string XSFConfig::initSkipSilenceOnStartSec = "5";
+std::string XSFConfig::initDetectSilenceSec = "5";
+std::string XSFConfig::initDefaultLength = "1:55";
+std::string XSFConfig::initDefaultFade = "5";
+std::string XSFConfig::initTitleFormat = "%game%[ - [%disc%.]%track%] - %title%";
 double XSFConfig::initVolume = 1.0;
 VolumeType XSFConfig::initVolumeType = VOLUMETYPE_REPLAYGAIN_ALBUM;
 PeakType XSFConfig::initPeakType = PEAKTYPE_REPLAYGAIN_TRACK;
 
 XSFConfig::XSFConfig() : playInfinitely(false), skipSilenceOnStartSec(0), detectSilenceSec(0), defaultLength(0), defaultFade(0), volume(0.0), volumeType(VOLUMETYPE_NONE), peakType(PEAKTYPE_NONE),
-	sampleRate(0), titleFormat(L""), configDialog(), configDialogProperty(), infoDialog(), supportedSampleRates(), configIO(XSFConfigIO::Create())
+	sampleRate(0), titleFormat(""), configDialog(), configDialogProperty(), infoDialog(), supportedSampleRates(), configIO(XSFConfigIO::Create())
 {
 }
 
-const String &XSFConfig::CommonNameWithVersion()
+const std::string &XSFConfig::CommonNameWithVersion()
 {
-	static const auto commonNameWithVersion = String(XSFConfig::commonName + L" v" + XSFConfig::versionNumber);
+	static const auto commonNameWithVersion = XSFConfig::commonName + " v" + XSFConfig::versionNumber;
 	return commonNameWithVersion;
 }
 
@@ -64,32 +63,32 @@ std::wstring XSFConfig::GetTextFromWindow(HWND hwnd)
 
 void XSFConfig::LoadConfig()
 {
-	this->playInfinitely = this->configIO->GetValue(L"PlayInfinitely", XSFConfig::initPlayInfinitely);
-	this->skipSilenceOnStartSec = ConvertFuncs::StringToMS(this->configIO->GetValue(L"SkipSilenceOnStartSec", XSFConfig::initSkipSilenceOnStartSec));
-	this->detectSilenceSec = ConvertFuncs::StringToMS(this->configIO->GetValue(L"DetectSilenceSec", XSFConfig::initDetectSilenceSec));
-	this->defaultLength = ConvertFuncs::StringToMS(this->configIO->GetValue(L"DefaultLength", XSFConfig::initDefaultLength));
-	this->defaultFade = ConvertFuncs::StringToMS(this->configIO->GetValue(L"DefaultFade", XSFConfig::initDefaultFade));
-	this->volume = this->configIO->GetValue(L"Volume", XSFConfig::initVolume);
-	this->volumeType = static_cast<VolumeType>(this->configIO->GetValue(L"VolumeType", static_cast<int>(XSFConfig::initVolumeType)));
-	this->peakType = static_cast<PeakType>(this->configIO->GetValue(L"PeakType", static_cast<int>(XSFConfig::initPeakType)));
-	this->sampleRate = this->configIO->GetValue(L"SampleRate", XSFConfig::initSampleRate);
-	this->titleFormat = this->configIO->GetValue(L"TitleFormat", XSFConfig::initTitleFormat);
+	this->playInfinitely = this->configIO->GetValue("PlayInfinitely", XSFConfig::initPlayInfinitely);
+	this->skipSilenceOnStartSec = ConvertFuncs::StringToMS(this->configIO->GetValue("SkipSilenceOnStartSec", XSFConfig::initSkipSilenceOnStartSec));
+	this->detectSilenceSec = ConvertFuncs::StringToMS(this->configIO->GetValue("DetectSilenceSec", XSFConfig::initDetectSilenceSec));
+	this->defaultLength = ConvertFuncs::StringToMS(this->configIO->GetValue("DefaultLength", XSFConfig::initDefaultLength));
+	this->defaultFade = ConvertFuncs::StringToMS(this->configIO->GetValue("DefaultFade", XSFConfig::initDefaultFade));
+	this->volume = this->configIO->GetValue("Volume", XSFConfig::initVolume);
+	this->volumeType = static_cast<VolumeType>(this->configIO->GetValue("VolumeType", static_cast<int>(XSFConfig::initVolumeType)));
+	this->peakType = static_cast<PeakType>(this->configIO->GetValue("PeakType", static_cast<int>(XSFConfig::initPeakType)));
+	this->sampleRate = this->configIO->GetValue("SampleRate", XSFConfig::initSampleRate);
+	this->titleFormat = this->configIO->GetValue("TitleFormat", XSFConfig::initTitleFormat);
 
 	this->LoadSpecificConfig();
 }
 
 void XSFConfig::SaveConfig()
 {
-	this->configIO->SetValue(L"PlayInfinitely", this->playInfinitely);
-	this->configIO->SetValue(L"SkipSilenceOnStartSec", ConvertFuncs::MSToWString(this->skipSilenceOnStartSec));
-	this->configIO->SetValue(L"DetectSilenceSec", ConvertFuncs::MSToWString(this->detectSilenceSec));
-	this->configIO->SetValue(L"DefaultLength", ConvertFuncs::MSToWString(this->defaultLength));
-	this->configIO->SetValue(L"DefaultFade", ConvertFuncs::MSToWString(this->defaultFade));
-	this->configIO->SetValue(L"Volume", this->volume);
-	this->configIO->SetValue(L"VolumeType", this->volumeType);
-	this->configIO->SetValue(L"PeakType", this->peakType);
-	this->configIO->SetValue(L"SampleRate", this->sampleRate);
-	this->configIO->SetValue(L"TitleFormat", this->titleFormat);
+	this->configIO->SetValue("PlayInfinitely", this->playInfinitely);
+	this->configIO->SetValue("SkipSilenceOnStartSec", ConvertFuncs::MSToString(this->skipSilenceOnStartSec));
+	this->configIO->SetValue("DetectSilenceSec", ConvertFuncs::MSToString(this->detectSilenceSec));
+	this->configIO->SetValue("DefaultLength", ConvertFuncs::MSToString(this->defaultLength));
+	this->configIO->SetValue("DefaultFade", ConvertFuncs::MSToString(this->defaultFade));
+	this->configIO->SetValue("Volume", this->volume);
+	this->configIO->SetValue("VolumeType", this->volumeType);
+	this->configIO->SetValue("PeakType", this->peakType);
+	this->configIO->SetValue("SampleRate", this->sampleRate);
+	this->configIO->SetValue("TitleFormat", this->titleFormat);
 
 	this->SaveSpecificConfig();
 }
@@ -119,7 +118,7 @@ void XSFConfig::GenerateDialogs()
 	this->infoDialog.AddEditBoxControl(DialogEditBoxBuilder().WithSize(200, 54).WithRelativePositionToSibling(RelativePosition::FROM_TOPRIGHT, Point<short>(5, -3)).IsLeftJustified().WithAutoVScroll().WithBorder().
 		WithTabStop().WithID(idInfoComment).WithVerticalScrollbar().WithWantReturn().IsMultiline());
 
-	this->configDialog = DialogBuilder().WithTitle(XSFConfig::commonName + L" v" + XSFConfig::versionNumber).IsPopup().WithBorder().WithDialogFrame().WithDialogModalFrame().WithSystemMenu().WithFont(L"MS Shell Dlg", 8);
+	this->configDialog = DialogBuilder().WithTitle(ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber)).IsPopup().WithBorder().WithDialogFrame().WithDialogModalFrame().WithSystemMenu().WithFont(L"MS Shell Dlg", 8);
 	this->configDialog.AddGroupControl(DialogGroupBuilder(L"General").WithRelativePositionToParent(RelativePositionToParent::FROM_TOPLEFT, Point<short>(7, 7)));
 	this->configDialog.AddCheckBoxControl(DialogCheckBoxBuilder(L"Play infinitely").WithSize(60, 10).InGroup(L"General").WithRelativePositionToParent(RelativePosition::FROM_TOPLEFT, Point<short>(6, 11)).WithTabStop().
 		WithID(idPlayInfinitely));
@@ -247,7 +246,7 @@ INT_PTR CALLBACK XSFConfig::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPa
 				if (this->sampleRate == rate)
 					SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_SETCURSEL, x, 0);
 			}
-			SetWindowTextW(GetDlgItem(hwndDlg, idTitleFormat), this->titleFormat.c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idTitleFormat), ConvertFuncs::StringToWString(this->titleFormat).c_str());
 			break;
 		case WM_COMMAND:
 			switch (GET_WM_COMMAND_ID(wParam, lParam))
@@ -283,14 +282,14 @@ INT_PTR CALLBACK XSFConfig::InfoDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
 			EndDialog(hwndDlg, IDCANCEL);
 			break;
 		case WM_INITDIALOG:
-			SetWindowTextW(hwndDlg, xSFFileInInfo->GetFilename().GetWStrC());
-			SetWindowTextW(GetDlgItem(hwndDlg, idInfoTitle), xSFFileInInfo->GetTagValue("title").GetWStrC());
-			SetWindowTextW(GetDlgItem(hwndDlg, idInfoArtist), xSFFileInInfo->GetTagValue("artist").GetWStrC());
-			SetWindowTextW(GetDlgItem(hwndDlg, idInfoGame), xSFFileInInfo->GetTagValue("game").GetWStrC());
-			SetWindowTextW(GetDlgItem(hwndDlg, idInfoYear), xSFFileInInfo->GetTagValue("year").GetWStrC());
-			SetWindowTextW(GetDlgItem(hwndDlg, idInfoGenre), xSFFileInInfo->GetTagValue("genre").GetWStrC());
-			SetWindowTextW(GetDlgItem(hwndDlg, idInfoCopyright), xSFFileInInfo->GetTagValue("copyright").GetWStrC());
-			SetWindowTextW(GetDlgItem(hwndDlg, idInfoComment), xSFFileInInfo->GetTagValue("comment").GetWStrC());
+			SetWindowTextW(hwndDlg, ConvertFuncs::StringToWString(xSFFileInInfo->GetFilename()).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idInfoTitle), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("title")).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idInfoArtist), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("artist")).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idInfoGame), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("game")).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idInfoYear), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("year")).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idInfoGenre), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("genre")).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idInfoCopyright), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("copyright")).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idInfoComment), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("comment")).c_str());
 			break;
 		case WM_COMMAND:
 			switch (GET_WM_COMMAND_ID(wParam, lParam))
@@ -333,16 +332,16 @@ void XSFConfig::CallInfoDialog(HINSTANCE hInstance, HWND hwndParent)
 void XSFConfig::ResetConfigDefaults(HWND hwndDlg)
 {
 	SendMessageW(GetDlgItem(hwndDlg, idPlayInfinitely), BM_SETCHECK, XSFConfig::initPlayInfinitely ? BST_CHECKED : BST_UNCHECKED, 0);
-	SetWindowTextW(GetDlgItem(hwndDlg, idDefaultLength), XSFConfig::initDefaultLength.c_str());
-	SetWindowTextW(GetDlgItem(hwndDlg, idDefaultFade), XSFConfig::initDefaultFade.c_str());
-	SetWindowTextW(GetDlgItem(hwndDlg, idSkipSilenceOnStartSec), XSFConfig::initSkipSilenceOnStartSec.c_str());
-	SetWindowTextW(GetDlgItem(hwndDlg, idDetectSilenceSec), XSFConfig::initDetectSilenceSec.c_str());
+	SetWindowTextW(GetDlgItem(hwndDlg, idDefaultLength), ConvertFuncs::StringToWString(XSFConfig::initDefaultLength).c_str());
+	SetWindowTextW(GetDlgItem(hwndDlg, idDefaultFade), ConvertFuncs::StringToWString(XSFConfig::initDefaultFade).c_str());
+	SetWindowTextW(GetDlgItem(hwndDlg, idSkipSilenceOnStartSec), ConvertFuncs::StringToWString(XSFConfig::initSkipSilenceOnStartSec).c_str());
+	SetWindowTextW(GetDlgItem(hwndDlg, idDetectSilenceSec), ConvertFuncs::StringToWString(XSFConfig::initDetectSilenceSec).c_str());
 	SetWindowTextW(GetDlgItem(hwndDlg, idVolume), wstringify(XSFConfig::initVolume).c_str());
 	SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_SETCURSEL, XSFConfig::initVolumeType, 0);
 	SendMessageW(GetDlgItem(hwndDlg, idClipProtect), CB_SETCURSEL, XSFConfig::initPeakType, 0);
 	auto found = std::find(this->supportedSampleRates.begin(), this->supportedSampleRates.end(), XSFConfig::initSampleRate);
 	SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_SETCURSEL, found - this->supportedSampleRates.begin(), 0);
-	SetWindowTextW(GetDlgItem(hwndDlg, idTitleFormat), XSFConfig::initTitleFormat.c_str());
+	SetWindowTextW(GetDlgItem(hwndDlg, idTitleFormat), ConvertFuncs::StringToWString(XSFConfig::initTitleFormat).c_str());
 
 	this->ResetSpecificConfigDefaults(hwndDlg);
 }
@@ -358,7 +357,7 @@ void XSFConfig::SaveConfigDialog(HWND hwndDlg)
 	this->volumeType = static_cast<VolumeType>(SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_GETCURSEL, 0, 0));
 	this->peakType = static_cast<PeakType>(SendMessageW(GetDlgItem(hwndDlg, idClipProtect), CB_GETCURSEL, 0, 0));
 	this->sampleRate = XSFConfig::supportedSampleRates[SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_GETCURSEL, 0, 0)];
-	this->titleFormat = this->GetTextFromWindow(GetDlgItem(hwndDlg, idTitleFormat));
+	this->titleFormat = ConvertFuncs::WStringToString(this->GetTextFromWindow(GetDlgItem(hwndDlg, idTitleFormat)));
 
 	this->SaveSpecificConfigDialog(hwndDlg);
 }
@@ -411,7 +410,7 @@ PeakType XSFConfig::GetPeakType() const
 	return this->peakType;
 }
 
-const std::wstring &XSFConfig::GetTitleFormat() const
+const std::string &XSFConfig::GetTitleFormat() const
 {
 	return this->titleFormat;
 }

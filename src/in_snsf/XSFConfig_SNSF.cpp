@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  *
@@ -12,7 +12,6 @@
 
 #include "XSFConfig_SNSF.h"
 #include "convert.h"
-#include "BigSString.h"
 #include "snes9x/apu/apu.h"
 
 enum
@@ -24,12 +23,12 @@ enum
 };
 
 unsigned XSFConfig::initSampleRate = 44100;
-std::wstring XSFConfig::commonName = L"SNSF Decoder";
-std::wstring XSFConfig::versionNumber = L"0.9b";
+std::string XSFConfig::commonName = "SNSF Decoder";
+std::string XSFConfig::versionNumber = "0.9b";
 //bool XSFConfig_SNSF::initSixteenBitSound = true;
 bool XSFConfig_SNSF::initReverseStereo = false;
 unsigned XSFConfig_SNSF::initResampler = 1;
-std::wstring XSFConfig_SNSF::initMutes = L"00000000";
+std::string XSFConfig_SNSF::initMutes = "00000000";
 
 XSFConfig *XSFConfig::Create()
 {
@@ -53,19 +52,19 @@ XSFConfig_SNSF::XSFConfig_SNSF() : XSFConfig(), /*sixteenBitSound(false), */reve
 
 void XSFConfig_SNSF::LoadSpecificConfig()
 {
-	//this->sixteenBitSound = this->configIO->GetValue(L"SixteenBitSound", XSFConfig_SNSF::initSixteenBitSound);
-	this->reverseStereo = this->configIO->GetValue(L"ReverseStereo", XSFConfig_SNSF::initReverseStereo);
-	this->resampler = this->configIO->GetValue(L"Resampler", XSFConfig_SNSF::initResampler);
-	std::wstringstream mutesSS(this->configIO->GetValue(L"Mutes", XSFConfig_SNSF::initMutes));
+	//this->sixteenBitSound = this->configIO->GetValue("SixteenBitSound", XSFConfig_SNSF::initSixteenBitSound);
+	this->reverseStereo = this->configIO->GetValue("ReverseStereo", XSFConfig_SNSF::initReverseStereo);
+	this->resampler = this->configIO->GetValue("Resampler", XSFConfig_SNSF::initResampler);
+	std::stringstream mutesSS(this->configIO->GetValue("Mutes", XSFConfig_SNSF::initMutes));
 	mutesSS >> this->mutes;
 }
 
 void XSFConfig_SNSF::SaveSpecificConfig()
 {
-	//this->configIO->SetValue(L"SixteenBitSound", this->sixteenBitSound);
-	this->configIO->SetValue(L"ReverseStereo", this->reverseStereo);
-	this->configIO->SetValue(L"Resampler", this->resampler);
-	this->configIO->SetValue(L"Mutes", this->mutes.to_string<wchar_t>());
+	//this->configIO->SetValue("SixteenBitSound", this->sixteenBitSound);
+	this->configIO->SetValue("ReverseStereo", this->reverseStereo);
+	this->configIO->SetValue("Resampler", this->resampler);
+	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
 
 void XSFConfig_SNSF::GenerateSpecificDialogs()
@@ -147,6 +146,6 @@ void XSFConfig_SNSF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 
 void XSFConfig_SNSF::About(HWND parent)
 {
-	MessageBoxW(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
-		L"Utilizes modified snes9x v1.53 for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
+	MessageBoxW(parent, ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber + ", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
+		"Utilizes modified snes9x v1.53 for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }

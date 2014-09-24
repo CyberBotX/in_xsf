@@ -1,7 +1,7 @@
 /*
  * xSF - Core Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -37,7 +37,7 @@ public:
 	static const char *WinampDescription;
 	static const char *WinampExts;
 	static XSFPlayer *Create(const std::string &fn);
-#ifdef _MSC_VER
+#ifdef _WIN32
 	static XSFPlayer *Create(const std::wstring &fn);
 #endif
 

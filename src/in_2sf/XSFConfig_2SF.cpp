@@ -1,7 +1,7 @@
 /*
  * xSF - 2SF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -10,7 +10,6 @@
 #include "XSFPlayer.h"
 #include "XSFConfig.h"
 #include "convert.h"
-#include "BigSString.h"
 #include "desmume/NDSSystem.h"
 #include "desmume/version.h"
 
@@ -24,7 +23,7 @@ class XSFConfig_2SF : public XSFConfig
 {
 protected:
 	static unsigned initInterpolation;
-	static std::wstring initMutes;
+	static std::string initMutes;
 
 	friend class XSFConfig;
 	unsigned interpolation;
@@ -43,10 +42,10 @@ public:
 };
 
 unsigned XSFConfig::initSampleRate = 44100;
-std::wstring XSFConfig::commonName = L"2SF Decoder";
-std::wstring XSFConfig::versionNumber = L"0.9b";
+std::string XSFConfig::commonName = "2SF Decoder";
+std::string XSFConfig::versionNumber = "0.9b";
 unsigned XSFConfig_2SF::initInterpolation = 2;
-std::wstring XSFConfig_2SF::initMutes = L"0000000000000000";
+std::string XSFConfig_2SF::initMutes = "0000000000000000";
 
 XSFConfig *XSFConfig::Create()
 {
@@ -60,15 +59,15 @@ XSFConfig_2SF::XSFConfig_2SF() : XSFConfig(), interpolation(0), mutes()
 
 void XSFConfig_2SF::LoadSpecificConfig()
 {
-	this->interpolation = this->configIO->GetValue(L"Interpolation", XSFConfig_2SF::initInterpolation);
-	std::wstringstream mutesSS(this->configIO->GetValue(L"Mutes", XSFConfig_2SF::initMutes));
+	this->interpolation = this->configIO->GetValue("Interpolation", XSFConfig_2SF::initInterpolation);
+	std::stringstream mutesSS(this->configIO->GetValue("Mutes", XSFConfig_2SF::initMutes));
 	mutesSS >> this->mutes;
 }
 
 void XSFConfig_2SF::SaveSpecificConfig()
 {
-	this->configIO->SetValue(L"Interpolation", this->interpolation);
-	this->configIO->SetValue(L"Mutes", this->mutes.to_string<wchar_t>());
+	this->configIO->SetValue("Interpolation", this->interpolation);
+	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
 
 void XSFConfig_2SF::GenerateSpecificDialogs()
@@ -132,6 +131,6 @@ void XSFConfig_2SF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 
 void XSFConfig_2SF::About(HWND parent)
 {
-	MessageBoxW(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
-		L"Utilizes modified " + String(EMU_DESMUME_NAME_AND_VERSION()).GetWStr() + L" for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
+	MessageBoxW(parent, ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber + ", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
+		"Utilizes modified " + EMU_DESMUME_NAME_AND_VERSION() + " for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }

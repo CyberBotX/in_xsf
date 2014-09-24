@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  *
@@ -21,7 +21,7 @@ class XSFConfig_SNSF : public XSFConfig
 protected:
 	static bool /*initSixteenBitSound, */initReverseStereo;
 	static unsigned initResampler;
-	static std::wstring initMutes;
+	static std::string initMutes;
 
 	friend class XSFConfig;
 	bool /*sixteenBitSound, */reverseStereo;

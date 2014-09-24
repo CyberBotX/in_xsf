@@ -1,7 +1,7 @@
 /*
  * xSF - GSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */
@@ -10,7 +10,6 @@
 #include "XSFPlayer.h"
 #include "XSFConfig.h"
 #include "convert.h"
-#include "BigSString.h"
 #include "vbam/gba/Sound.h"
 
 enum
@@ -23,7 +22,7 @@ class XSFConfig_GSF : public XSFConfig
 {
 protected:
 	static bool initLowPassFiltering;
-	static std::wstring initMutes;
+	static std::string initMutes;
 
 	friend class XSFConfig;
 	bool lowPassFiltering;
@@ -42,10 +41,10 @@ public:
 };
 
 unsigned XSFConfig::initSampleRate = 44100;
-std::wstring XSFConfig::commonName = L"GSF Decoder";
-std::wstring XSFConfig::versionNumber = L"0.9b";
+std::string XSFConfig::commonName = "GSF Decoder";
+std::string XSFConfig::versionNumber = "0.9b";
 bool XSFConfig_GSF::initLowPassFiltering = true;
-std::wstring XSFConfig_GSF::initMutes = L"000000";
+std::string XSFConfig_GSF::initMutes = "000000";
 
 XSFConfig *XSFConfig::Create()
 {
@@ -69,15 +68,15 @@ XSFConfig_GSF::XSFConfig_GSF() : XSFConfig(), lowPassFiltering(false), mutes()
 
 void XSFConfig_GSF::LoadSpecificConfig()
 {
-	this->lowPassFiltering = this->configIO->GetValue(L"LowPassFiltering", XSFConfig_GSF::initLowPassFiltering);
-	std::wstringstream mutesSS(this->configIO->GetValue(L"Mutes", XSFConfig_GSF::initMutes));
+	this->lowPassFiltering = this->configIO->GetValue("LowPassFiltering", XSFConfig_GSF::initLowPassFiltering);
+	std::stringstream mutesSS(this->configIO->GetValue("Mutes", XSFConfig_GSF::initMutes));
 	mutesSS >> this->mutes;
 }
 
 void XSFConfig_GSF::SaveSpecificConfig()
 {
-	this->configIO->SetValue(L"LowPassFiltering", this->lowPassFiltering);
-	this->configIO->SetValue(L"Mutes", this->mutes.to_string<wchar_t>());
+	this->configIO->SetValue("LowPassFiltering", this->lowPassFiltering);
+	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
 
 void XSFConfig_GSF::GenerateSpecificDialogs()
@@ -141,6 +140,6 @@ void XSFConfig_GSF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
 
 void XSFConfig_GSF::About(HWND parent)
 {
-	MessageBoxW(parent, (XSFConfig::commonName + L" v" + XSFConfig::versionNumber + L", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
-		L"Utilizes modified VBA-M, SVN revision 1231, for audio playback.").c_str(), (XSFConfig::commonName + L" v" + XSFConfig::versionNumber).c_str(), MB_OK);
+	MessageBoxW(parent, ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber + ", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
+		"Utilizes modified VBA-M, SVN revision 1231, for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }
