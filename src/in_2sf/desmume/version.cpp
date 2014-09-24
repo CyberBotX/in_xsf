@@ -19,7 +19,7 @@
 #include "types.h"
 
 // Helper macros to convert numerics to strings
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 // re: http://72.14.203.104/search?q=cache:HG-okth5NGkJ:mail.python.org/pipermail/python-checkins/2002-November/030704.html+_msc_ver+compiler+version+string&hl=en&gl=us&ct=clnk&cd=5
 # define _Py_STRINGIZE(X) _Py_STRINGIZE1((X))
 # define _Py_STRINGIZE1(X) _Py_STRINGIZE2 ## X
