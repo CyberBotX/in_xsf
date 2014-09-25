@@ -20,8 +20,8 @@
 #include "SndOut.h"
 
 //----------------
-int SndOutLatencyMS = 160;
-bool timeStretchDisabled = false;
+static const int SndOutLatencyMS = 160;
+static bool timeStretchDisabled = false;
 //----------------
 
 StereoOut32 StereoOut32::Empty;

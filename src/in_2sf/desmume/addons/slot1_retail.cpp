@@ -103,7 +103,6 @@ static uint32_t read32_GCDATAIN(uint8_t PROCNUM)
 				else
 					return 0;
 			}
-			break;
 
 		// Data read
 		case 0x00:
@@ -135,7 +134,6 @@ static uint32_t read32_GCDATAIN(uint8_t PROCNUM)
 
 				return T1ReadLong(MMU.CART_ROM, address);
 			}
-			break;
 		default:
 			return 0;
 	} //switch(card.command[0])

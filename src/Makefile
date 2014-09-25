@@ -19,12 +19,12 @@ DLLS:=	$(sort $(addsuffix .dll,$(DLLS)))
 
 COMPILER:=	$(shell $(CXX) -v 2>/dev/stdout)
 
-CPPFLAGS+=	-std=gnu++11 -I$(SRCDIR)in_xsf_framework -I/g/Code/Winamp\ SDK -DWINAMP_PLUGIN -DUNICODE_INPUT_PLUGIN
-CXXFLAGS+=	-std=gnu++11 -pipe -Wall -Wctor-dtor-privacy -Wold-style-cast -Wextra -Wno-div-by-zero -Wfloat-equal -Wshadow -Winit-self -Wcast-qual -Wunreachable-code -Wabi -Woverloaded-virtual -Wno-long-long -Wno-switch -I$(SRCDIR)in_xsf_framework -I/g/Code/Winamp\ SDK -DWINAMP_PLUGIN -DUNICODE_INPUT_PLUGIN
+MY_CPPFLAGS=	$(CPPFLAGS) -std=gnu++11 -I$(SRCDIR)in_xsf_framework -I/g/Code/Winamp\ SDK -DWINAMP_PLUGIN -DUNICODE_INPUT_PLUGIN
+MY_CXXFLAGS=	$(CXXFLAGS) -std=gnu++11 -pipe -Wall -Wctor-dtor-privacy -Wold-style-cast -Wextra -Wno-div-by-zero -Wfloat-equal -Wshadow -Winit-self -Wcast-qual -Wunreachable-code -Wabi -Woverloaded-virtual -Wno-long-long -Wno-switch -I$(SRCDIR)in_xsf_framework -I/g/Code/Winamp\ SDK -DWINAMP_PLUGIN -DUNICODE_INPUT_PLUGIN
 ifeq (,$(findstring clang,$(COMPILER)))
-CXXFLAGS+=	-Wlogical-op
+MY_CXXFLAGS+=	-Wlogical-op
 endif
-LDFLAGS+=	-lz
+MY_LDFLAGS=	$(LDFLAGS) -lz
 
 DLL_SRCS_template=	$(1)_SRCS:=	$$(sort $$($(1)_SRCS))
 DLL_OBJS_template=	$(1)_OBJS:=	$$(subst $(SRCDIR),,$$($(1)_SRCS:%.cpp=%.o))
@@ -42,24 +42,24 @@ DEPS:=	$(OBJS:%.o=%.d)
 .SUFFIXES: .cpp .o .d .a .dll
 
 all: $(DLLS)
-debug: CXXFLAGS+=	-g -D_DEBUG
+debug: MY_CXXFLAGS+=	-g -D_DEBUG
 debug: all
 
 define DLL_template
 $(1): $$(FRAMEWORK_OBJS) $$($$(basename $$(notdir $(1)))_OBJS)
 	@echo "Linking $$@..."
-	@$$(CXX) -shared -fPIC $$(CXXFLAGS) -o $$@ $$^ $$(LDFLAGS)
+	@$$(CXX) -shared -fPIC $$(MY_CXXFLAGS) -o $$@ $$^ $$(MY_LDFLAGS)
 endef
 define SRC_template
 $$(subst $(SRCDIR),,$(1:%.cpp=%.o)): $(1)
 	@echo "Compiling $$<..."
-	@$$(CXX) $$(CXXFLAGS) -o $$(subst $(SRCDIR),,$$@) -c $$<
+	@$$(CXX) $$(MY_CXXFLAGS) -o $$(subst $(SRCDIR),,$$@) -c $$<
 endef
 define DEP_template
 $$(subst $(SRCDIR),,$(1:%.cpp=%.d)): $(1)
 	@echo "Calculating depends for $$<..."
 	-@mkdir -p $$(@D)
-	@$$(CXX) $$(CPPFLAGS) -MM -MF $$(subst $(SRCDIR),,$$@).tmp $$<
+	@$$(CXX) $$(MY_CPPFLAGS) -MM -MF $$(subst $(SRCDIR),,$$@).tmp $$<
 	@sed 's,$$(notdir $$*)\.o[ :]*,$$(subst /,\/,$$*).o $$(subst /,\/,$$@): ,g' < $$(subst $(SRCDIR),,$$@).tmp > $$(subst $(SRCDIR),,$$@)
 	@rm $$(subst $(SRCDIR),,$$@).tmp
 endef
@@ -68,24 +68,24 @@ $(foreach dll,$(DLLS),$(eval $(call DLL_template,$(dll))))
 $(foreach src,$(SRCS),$(eval $(call SRC_template,$(src))))
 $(foreach src,$(SRCS),$(eval $(call DEP_template,$(src))))
 
-$(subst $(SRCDIR),,$(in_2sf_SRCS:%.cpp=%.d)): CPPFLAGS+=	-msse
-$(in_2sf_OBJS): CXXFLAGS+=	-msse -DHAVE_LIBZ
+$(subst $(SRCDIR),,$(in_2sf_SRCS:%.cpp=%.d)): MY_CPPFLAGS+=	-msse
+$(in_2sf_OBJS): MY_CXXFLAGS+=	-msse -DHAVE_LIBZ
 
-in_2sf/desmume/MMU.o: CXXFLAGS+=	-Wno-shadow
-in_2sf/desmume/utils/AsmJit/base/codegen.o: CXXFLAGS+=	-Wno-unused-value
-in_2sf/desmume/utils/AsmJit/base/runtime.o: CXXFLAGS+=	-Wno-unused-parameter
-in_2sf/desmume/utils/AsmJit/base/vmem.o: CXXFLAGS+=	-Wno-missing-field-initializers -Wno-unused-function
+in_2sf/desmume/MMU.o: MY_CXXFLAGS+=	-Wno-shadow
+in_2sf/desmume/utils/AsmJit/base/codegen.o: MY_CXXFLAGS+=	-Wno-unused-value
+in_2sf/desmume/utils/AsmJit/base/runtime.o: MY_CXXFLAGS+=	-Wno-unused-parameter
+in_2sf/desmume/utils/AsmJit/base/vmem.o: MY_CXXFLAGS+=	-Wno-missing-field-initializers -Wno-unused-function
 ifneq (,$(findstring clang,$(COMPILER)))
-in_2sf/desmume/utils/AsmJit/base/vmem.o: CXXFLAGS+=	-Wno-missing-braces
+in_2sf/desmume/utils/AsmJit/base/vmem.o: MY_CXXFLAGS+=	-Wno-missing-braces
 endif
-in_2sf/desmume/utils/AsmJit/x86/x86assembler.o: CXXFLAGS+=	-Wno-unused-variable
+in_2sf/desmume/utils/AsmJit/x86/x86assembler.o: MY_CXXFLAGS+=	-Wno-unused-variable
 ifneq (,$(findstring clang,$(COMPILER)))
-in_2sf/desmume/utils/AsmJit/x86/x86assembler.o: CXXFLAGS+=	-Wno-missing-braces
+in_2sf/desmume/utils/AsmJit/x86/x86assembler.o: MY_CXXFLAGS+=	-Wno-missing-braces
 endif
-in_2sf/desmume/utils/AsmJit/x86/x86context.o: CXXFLAGS+=	-Wno-unused-parameter -Wno-unused-value -Wno-unused-variable
-in_gsf/vbam/gba/GBA-arm.o: CXXFLAGS+=	-Wno-unused-variable
+in_2sf/desmume/utils/AsmJit/x86/x86context.o: MY_CXXFLAGS+=	-Wno-unused-parameter -Wno-unused-value -Wno-unused-variable
+in_gsf/vbam/gba/GBA-arm.o: MY_CXXFLAGS+=	-Wno-unused-variable
 ifeq (,$(findstring clang,$(COMPILER)))
-in_gsf/vbam/gba/GBA-arm.o: CXXFLAGS+=	-Wno-unused-but-set-variable
+in_gsf/vbam/gba/GBA-arm.o: MY_CXXFLAGS+=	-Wno-unused-but-set-variable
 endif
 
 clean:

@@ -175,9 +175,9 @@ public:
 		return this->__byte_err_string_;
 	}
 
-	size_t converted() const throw() { return this->__cvtcount_; }
+	size_t converted() const noexcept { return this->__cvtcount_; }
 	state_type state() const { return this->__cvtstate_; }
 };
 
-};
+}
 #endif

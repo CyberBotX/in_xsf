@@ -167,8 +167,7 @@ void Blip_Synth_Fast_::volume_unit(double new_unit)
 	this->delta_factor = static_cast<int>(new_unit * (1L << blip_sample_bits) + 0.5);
 }
 
-#if !BLIP_BUFFER_FAST
-
+#ifndef BLIP_BUFFER_FAST
 Blip_Synth_::Blip_Synth_(short *p, int w) : impulses(p), width(w)
 {
 	this->volume_unit_ = 0.0;

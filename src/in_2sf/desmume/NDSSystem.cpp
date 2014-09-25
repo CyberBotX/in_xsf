@@ -36,9 +36,7 @@ TCommonSettings CommonSettings;
 
 GameInfo gameInfo;
 NDSSystem nds;
-std::unique_ptr<CFIRMWARE> firmware;
-
-bool singleStep;
+static std::unique_ptr<CFIRMWARE> firmware;
 
 namespace DLDI
 {
@@ -162,13 +160,15 @@ enum ESI_DISPCNT
 };
 
 uint64_t nds_timer;
-uint64_t nds_arm9_timer, nds_arm7_timer;
+static uint64_t nds_arm9_timer, nds_arm7_timer;
 
 struct TSequenceItem
 {
 	uint64_t timestamp;
 	uint32_t param;
 	bool enabled;
+
+	virtual ~TSequenceItem() { }
 
 	virtual bool isTriggered() const
 	{
@@ -330,7 +330,7 @@ struct TSequenceItem_sqrtunit : public TSequenceItem
 	}
 };
 
-struct Sequencer
+static struct Sequencer
 {
 	bool nds_vblankEnded;
 	bool reschedule;
@@ -1010,7 +1010,6 @@ static void PrepareBiosARM9()
 
 void NDS_Reset()
 {
-	singleStep = false;
 	bool fw_success = false;
 	auto header = NDS_getROMHeader();
 

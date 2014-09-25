@@ -1,7 +1,7 @@
 /*
  * xSF - SNSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
+ * Last modification on 2014-09-25
  *
  * Based on a modified in_snsf by Caitsith2
  * http://snsf.caitsith2.net/
@@ -58,8 +58,6 @@ XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
 	return new XSFPlayer_SNSF(fn);
 }
 #endif
-
-volatile bool execute = false;
 
 static struct
 {

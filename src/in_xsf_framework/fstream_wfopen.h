@@ -53,7 +53,7 @@ public:
 		if (!this->__file_)
 		{
 			__rt = this;
-			const char *__mdstr;
+			const char *__mdstr = nullptr;
 			switch (__mode & ~std::ios_base::ate)
 			{
 				case std::ios_base::out:
@@ -130,7 +130,7 @@ public:
 		if (!this->__file_)
 		{
 			__rt = this;
-			const wchar_t *__mdstr;
+			const wchar_t *__mdstr = nullptr;
 			switch (__mode & ~std::ios_base::ate)
 			{
 				case std::ios_base::out:

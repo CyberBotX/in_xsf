@@ -79,7 +79,7 @@ void SNES_SPC::set_tempo(int t)
 	static const int timer2_shift = 4; // 64 kHz
 	static const int other_shift = 3; //  8 kHz
 
-#if SPC_DISABLE_TEMPO
+#ifdef SPC_DISABLE_TEMPO
 	this->m.timers[2].prescaler = timer2_shift;
 	this->m.timers[1].prescaler = timer2_shift + other_shift;
 	this->m.timers[0].prescaler = timer2_shift + other_shift;

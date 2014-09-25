@@ -800,13 +800,11 @@ static inline int32_t Interpolate(int32_t a, int32_t b, double ratio, SPUInterpo
 			// ratio2 = (1 - cos(ratio * M_PI)) / 2
 			// sampleI = sampleA * (1 - ratio2) + sampleB * ratio2
 			return s32floor((cos_lut[static_cast<unsigned>(ratio * COSINE_INTERPOLATION_RESOLUTION)] * (sampleB - sampleA)) + sampleA);
-			break;
 
 		case SPUInterpolation_Linear:
 			// Linear Interpolation Formula:
 			// sampleI = sampleA * (1 - ratio) + sampleB * ratio
 			return s32floor((ratio * (sampleB - sampleA)) + sampleA);
-			break;
 
 		default:
 			break;
@@ -1128,8 +1126,6 @@ static inline void _SPU_ChanUpdate(bool actuallyMix, SPU_struct *const SPU, chan
 		case SPUInterpolation_Cosine:
 			__SPU_ChanUpdate(actuallyMix, SPU, chan, SPUInterpolation_Cosine);
 			break;
-		default:
-			assert(false);
 	}
 }
 

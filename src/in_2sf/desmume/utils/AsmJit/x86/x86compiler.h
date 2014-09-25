@@ -2941,7 +2941,7 @@ struct ASMJIT_VCLASS X86Compiler : public Compiler {
   INST_2x(mov, kX86InstIdMov, X86SegReg, X86Mem)
 
   //! Move (AL|AX|EAX|RAX <- absolute address in immediate).
-  INST_2x(mov_ptr, kX86InstIdMovPtr, X86GpReg, Imm);
+  INST_2x(mov_ptr, kX86InstIdMovPtr, X86GpReg, Imm)
   //! \overload
   ASMJIT_INLINE InstNode* mov_ptr(const X86GpReg& o0, Ptr o1) {
     ASMJIT_ASSERT(o0.getRegIndex() == 0);
@@ -2949,7 +2949,7 @@ struct ASMJIT_VCLASS X86Compiler : public Compiler {
   }
 
   //! Move (absolute address in immediate <- AL|AX|EAX|RAX).
-  INST_2x(mov_ptr, kX86InstIdMovPtr, Imm, X86GpReg);
+  INST_2x(mov_ptr, kX86InstIdMovPtr, Imm, X86GpReg)
   //! \overload
   ASMJIT_INLINE InstNode* mov_ptr(Ptr o0, const X86GpReg& o1) {
     ASMJIT_ASSERT(o1.getRegIndex() == 0);
@@ -2957,9 +2957,9 @@ struct ASMJIT_VCLASS X86Compiler : public Compiler {
   }
 
   //! Move data after swapping bytes (SSE3 - Atom).
-  INST_2x_(movbe, kX86InstIdMovbe, X86GpVar, X86Mem, !o0.isGpb());
+  INST_2x_(movbe, kX86InstIdMovbe, X86GpVar, X86Mem, !o0.isGpb())
   //! \overload
-  INST_2x_(movbe, kX86InstIdMovbe, X86Mem, X86GpVar, !o1.isGpb());
+  INST_2x_(movbe, kX86InstIdMovbe, X86Mem, X86GpVar, !o1.isGpb())
 
   //! Load BYTE from DS:`o1` to ES:`o0`.
   INST_2x(movsb, kX86InstIdMovsB, X86GpVar, X86GpVar)
@@ -5444,9 +5444,9 @@ struct ASMJIT_VCLASS X86Compiler : public Compiler {
   // --------------------------------------------------------------------------
 
   //! Packed QWORD to OWORD carry-less multiply (PCLMULQDQ).
-  INST_3i(pclmulqdq, kX86InstIdPclmulqdq, X86XmmVar, X86XmmVar, Imm);
+  INST_3i(pclmulqdq, kX86InstIdPclmulqdq, X86XmmVar, X86XmmVar, Imm)
   //! \overload
-  INST_3i(pclmulqdq, kX86InstIdPclmulqdq, X86XmmVar, X86Mem, Imm);
+  INST_3i(pclmulqdq, kX86InstIdPclmulqdq, X86XmmVar, X86Mem, Imm)
 
 #undef INST_0x
 

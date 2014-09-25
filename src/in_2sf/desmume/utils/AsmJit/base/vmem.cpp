@@ -226,7 +226,6 @@ Error VMemUtil::release(void* addr, size_t length) {
 // ============================================================================
 
 #define M_DIV(x, y) ((x) / (y))
-#define M_MOD(x, y) ((x) % (y))
 
 //! \internal
 enum {

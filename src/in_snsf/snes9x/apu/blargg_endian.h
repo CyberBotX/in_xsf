@@ -9,11 +9,17 @@
 #if defined(_M_IX86) || defined(_M_IA64) || defined(__i486__) || defined(__x86_64__) || defined(__ia64__) || defined(__i386__)
 # define BLARGG_CPU_X86 1
 # define BLARGG_CPU_CISC 1
+#else
+# define BLARGG_CPU_X86 0
+# define BLARGG_CPU_CISC 0
 #endif
 
 #if defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__powerc)
 # define BLARGG_CPU_POWERPC 1
 # define BLARGG_CPU_RISC 1
+#else
+# define BLARGG_CPU_POWERPC 0
+# define BLARGG_CPU_RISC 0
 #endif
 
 // BLARGG_BIG_ENDIAN, BLARGG_LITTLE_ENDIAN: Determined automatically, otherwise only
@@ -24,18 +30,22 @@
 #  include <endian.h>
 #  if __BYTE_ORDER == __LITTLE_ENDIAN
 #   define BLARGG_LITTLE_ENDIAN 1
+#   define BLARGG_BIG_ENDIAN 0
 #  elif __BYTE_ORDER == __BIG_ENDIAN
 #   define BLARGG_BIG_ENDIAN 1
+#   define BLARGG_LITTLE_ENDIAN 0
 #  endif
 # else
 #  if defined(LSB_FIRST) || defined(__LITTLE_ENDIAN__) || BLARGG_CPU_X86 || (defined(LITTLE_ENDIAN) && LITTLE_ENDIAN + 0 != 1234)
 #   define BLARGG_LITTLE_ENDIAN 1
-#  endif
-#  if defined(MSB_FIRST) || defined(__BIG_ENDIAN__) || defined(WORDS_BIGENDIAN) || defined (__sparc__) || BLARGG_CPU_POWERPC || (defined(BIG_ENDIAN) && BIG_ENDIAN + 0 != 4321)
+#   define BLARGG_BIG_ENDIAN 0
+#  elif defined(MSB_FIRST) || defined(__BIG_ENDIAN__) || defined(WORDS_BIGENDIAN) || defined(__sparc__) || BLARGG_CPU_POWERPC || (defined(BIG_ENDIAN) && BIG_ENDIAN + 0 != 4321)
 #   define BLARGG_BIG_ENDIAN 1
-#  elif !defined (__mips__)
+#   define BLARGG_LITTLE_ENDIAN 0
+#  else
 // No endian specified; assume little-endian, since it's most common
 #   define BLARGG_LITTLE_ENDIAN 1
+#   define BLARGG_BIG_ENDIAN 0
 #  endif
 # endif
 #endif

@@ -48,7 +48,7 @@ namespace soundtouch
 //#undef SOUNDTOUCH_INTEGER_SAMPLES
 //#undef SOUNDTOUCH_FLOAT_SAMPLES
 
-#if !(SOUNDTOUCH_INTEGER_SAMPLES || SOUNDTOUCH_FLOAT_SAMPLES)
+#if !defined(SOUNDTOUCH_INTEGER_SAMPLES) || !defined(SOUNDTOUCH_FLOAT_SAMPLES)
 /// Choose either 32bit floating point or 16bit integer sampletype
 /// by choosing one of the following defines, unless this selection
 /// has already been done in some other file.
@@ -67,7 +67,7 @@ namespace soundtouch
 # define SOUNDTOUCH_FLOAT_SAMPLES 1 //< 32bit float samples
 #endif
 
-#if (_M_IX86 || __i386__ || __x86_64__ || _M_X64)
+#if defined(_M_IX86) || defined(__i386__) || defined(__x86_64__) || defined(_M_X64)
 /// Define this to allow X86-specific assembler/intrinsic optimizations.
 /// Notice that library contains also usual C++ versions of each of these
 /// these routines, so if you're having difficulties getting the optimized

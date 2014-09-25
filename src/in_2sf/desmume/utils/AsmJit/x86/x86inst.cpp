@@ -32,7 +32,6 @@ namespace asmjit {
 #define G(_Group_) kX86InstGroup##_Group_
 #define F(_Flags_) kX86InstFlag##_Flags_
 #define O(_Op_) kX86InstOp##_Op_
-#define E(_Flags_) 0
 
 #define U 0
 #define L kX86InstOpCode_L_True
@@ -48,22 +47,17 @@ namespace asmjit {
 #define O_660F38(_OpCode_, _R_) (kX86InstOpCode_PP_66 | kX86InstOpCode_MM_0F38 | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_660F3A(_OpCode_, _R_) (kX86InstOpCode_PP_66 | kX86InstOpCode_MM_0F3A | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_9B0000(_OpCode_, _R_) (kX86InstOpCode_PP_9B | kX86InstOpCode_MM_00   | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
-#define O_F20000(_OpCode_, _R_) (kX86InstOpCode_PP_F2 | kX86InstOpCode_MM_00   | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_F20F00(_OpCode_, _R_) (kX86InstOpCode_PP_F2 | kX86InstOpCode_MM_0F   | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_F20F38(_OpCode_, _R_) (kX86InstOpCode_PP_F2 | kX86InstOpCode_MM_0F38 | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_F20F3A(_OpCode_, _R_) (kX86InstOpCode_PP_F2 | kX86InstOpCode_MM_0F3A | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_F30000(_OpCode_, _R_) (kX86InstOpCode_PP_F3 | kX86InstOpCode_MM_00   | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_F30F00(_OpCode_, _R_) (kX86InstOpCode_PP_F3 | kX86InstOpCode_MM_0F   | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_F30F38(_OpCode_, _R_) (kX86InstOpCode_PP_F3 | kX86InstOpCode_MM_0F38 | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
-#define O_F30F3A(_OpCode_, _R_) (kX86InstOpCode_PP_F3 | kX86InstOpCode_MM_0F3A | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 
-#define O_00_M03(_OpCode_, _R_) (kX86InstOpCode_PP_00 | kX86InstOpCode_MM_00011| (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_00_M08(_OpCode_, _R_) (kX86InstOpCode_PP_00 | kX86InstOpCode_MM_01000| (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_00_M09(_OpCode_, _R_) (kX86InstOpCode_PP_00 | kX86InstOpCode_MM_01001| (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 
 #define O_66_M03(_OpCode_, _R_) (kX86InstOpCode_PP_66 | kX86InstOpCode_MM_00011| (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
-#define O_66_M08(_OpCode_, _R_) (kX86InstOpCode_PP_66 | kX86InstOpCode_MM_01000| (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
-#define O_66_M09(_OpCode_, _R_) (kX86InstOpCode_PP_66 | kX86InstOpCode_MM_01001| (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 
 #define O_00_X(_OpCode_, _R_) (kX86InstOpCode_PP_00 | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
 #define O_9B_X(_OpCode_, _R_) (kX86InstOpCode_PP_9B | (0x##_OpCode_) | ((_R_) << kX86InstOpCode_O_Shift))
@@ -4632,22 +4626,17 @@ const X86InstInfo _x86InstInfo[] = {
 #undef O_00_X
 #undef O_9B_X
 
-#undef O_66_M09
-#undef O_66_M08
 #undef O_66_M03
 
 #undef O_00_M09
 #undef O_00_M08
-#undef O_00_M03
 
-#undef O_F30F3A
 #undef O_F30F38
 #undef O_F30F00
 #undef O_F30000
 #undef O_F20F3A
 #undef O_F20F38
 #undef O_F20F00
-#undef O_F20000
 #undef O_9B0000
 #undef O_660F3A
 #undef O_660F38

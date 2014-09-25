@@ -174,14 +174,14 @@ uint32_t MMU_struct::MMU_MASK[2][256] =
 static const uint8_t VRAM_PAGE_UNMAPPED = 41;
 
 static const unsigned VRAM_LCDC_PAGES = 41;
-uint8_t vram_lcdc_map[VRAM_LCDC_PAGES];
+static uint8_t vram_lcdc_map[VRAM_LCDC_PAGES];
 
 // in the range of 0x06000000 - 0x06800000 in 16KB pages (the ARM9 vram mappable area)
 // this maps to 16KB pages in the LCDC buffer which is what will actually contain the data
 uint8_t vram_arm9_map[VRAM_ARM9_PAGES];
 
 // this chooses which banks are mapped in the 128K banks starting at 0x06000000 in ARM7
-uint8_t vram_arm7_map[2];
+static uint8_t vram_arm7_map[2];
 
 struct TVramBankInfo
 {
@@ -1444,9 +1444,6 @@ template<int PROCNUM> void DmaController::doCopy()
 			break;
 		case EDMADestinationUpdate_IncrementReload:
 			dstinc = sz;
-			break;
-		default:
-			bogarted = true;
 	}
 	switch (this->sar)
 	{
@@ -1460,7 +1457,6 @@ template<int PROCNUM> void DmaController::doCopy()
 			srcinc = 0;
 			break;
 		case EDMASourceUpdate_Invalid:
-		default:
 			bogarted = true;
 	}
 

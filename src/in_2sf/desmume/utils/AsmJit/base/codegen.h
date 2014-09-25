@@ -263,7 +263,7 @@ struct ASMJIT_VCLASS CodeGen {
     uint32_t instOptions = _instOptions;
     _instOptions = 0;
     return instOptions;
-  };
+  }
 
   //! Set options of the next instruction.
   ASMJIT_INLINE void setInstOptions(uint32_t instOptions) {

@@ -1184,12 +1184,12 @@ public:
 		return this->do_in(__st, __frm, __frm_end, __frm_nxt, __to, __to_end, __to_nxt);
 	}
 
-	int encoding() const throw()
+	int encoding() const noexcept
 	{
 		return this->do_encoding();
 	}
 
-	bool always_noconv() const throw()
+	bool always_noconv() const noexcept
 	{
 		return this->do_always_noconv();
 	}
@@ -1199,7 +1199,7 @@ public:
 		return this->do_length(__st, __frm, __end, __mx);
 	}
 
-	int max_length() const throw()
+	int max_length() const noexcept
 	{
 		return this->do_max_length();
 	}
@@ -1242,15 +1242,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_utf16_length(_frm, _frm_end, mx);
 	}
-	virtual int do_max_length() const throw() { return 4; }
+	virtual int do_max_length() const noexcept { return 4; }
 };
 
 template<> class codecvt<char32_t, char, mbstate_t> : public locale::facet, public codecvt_base
@@ -1277,12 +1277,12 @@ public:
 		return this->do_in(__st, __frm, __frm_end, __frm_nxt, __to, __to_end, __to_nxt);
 	}
 
-	int encoding() const throw()
+	int encoding() const noexcept
 	{
 		return this->do_encoding();
 	}
 
-	bool always_noconv() const throw()
+	bool always_noconv() const noexcept
 	{
 		return this->do_always_noconv();
 	}
@@ -1292,7 +1292,7 @@ public:
 		return this->do_length(__st, __frm, __end, __mx);
 	}
 
-	int max_length() const throw()
+	int max_length() const noexcept
 	{
 		return this->do_max_length();
 	}
@@ -1335,15 +1335,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_ucs4_length(_frm, _frm_end, mx);
 	}
-	virtual int do_max_length() const throw() { return 4; }
+	virtual int do_max_length() const noexcept { return 4; }
 };
 
 template<class _Elem> class __codecvt_utf8;
@@ -1412,15 +1412,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_ucs4_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 7;
@@ -1470,15 +1470,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_ucs2_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 6;
@@ -1528,15 +1528,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_ucs4_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 7;
@@ -1596,15 +1596,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf16be_to_ucs4_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 6;
@@ -1654,15 +1654,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf16le_to_ucs4_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 6;
@@ -1712,15 +1712,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf16be_to_ucs2_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 4;
@@ -1770,15 +1770,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf16le_to_ucs2_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 4;
@@ -1828,15 +1828,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf16be_to_ucs4_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 6;
@@ -1886,15 +1886,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf16le_to_ucs4_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 6;
@@ -1954,15 +1954,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_utf16_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 7;
@@ -2012,15 +2012,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_utf16_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 7;
@@ -2070,15 +2070,15 @@ protected:
 		to_nxt = to;
 		return noconv;
 	}
-	virtual int do_encoding() const throw() { return 0; }
-	virtual bool do_always_noconv() const throw() { return false; }
+	virtual int do_encoding() const noexcept { return 0; }
+	virtual bool do_always_noconv() const noexcept { return false; }
 	virtual int do_length(state_type &, const extern_type *frm, const extern_type *frm_end, size_t mx) const
 	{
 		auto _frm = reinterpret_cast<const uint8_t *>(frm);
 		auto _frm_end = reinterpret_cast<const uint8_t *>(frm_end);
 		return UnicodeConverters::utf8_to_utf16_length(_frm, _frm_end, mx, this->_Maxcode_, this->_Mode_);
 	}
-	virtual int do_max_length() const throw()
+	virtual int do_max_length() const noexcept
 	{
 		if (this->_Mode_ & consume_header)
 			return 7;
@@ -2094,5 +2094,5 @@ public:
 	~codecvt_utf8_utf16() {}
 };
 
-};
+}
 #endif

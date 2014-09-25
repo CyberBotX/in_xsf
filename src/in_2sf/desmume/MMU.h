@@ -82,6 +82,8 @@ enum EDMADestinationUpdate
 class TRegister_32
 {
 public:
+	virtual ~TRegister_32() { }
+
 	virtual uint32_t read32() = 0;
 	virtual void write32(uint32_t val) = 0;
 	void write(int size, uint32_t adr, uint32_t val)
@@ -131,6 +133,7 @@ struct TGXSTAT : public TRegister_32
 		this->fifo_empty = true;
 		this->fifo_low = false;
 	}
+	virtual ~TGXSTAT() { }
 	uint8_t tb; // test busy
 	uint8_t tr; // test result
 	uint8_t se; // stack error
@@ -238,6 +241,7 @@ public:
 		DmaController *controller;
 		uint32_t *const ptr;
 		AddressRegister(uint32_t *_ptr) : ptr(_ptr) { }
+		virtual ~AddressRegister() { }
 		virtual uint32_t read32()
 		{
 			return *this->ptr;
@@ -254,6 +258,7 @@ public:
 		// we pass in a pointer to the controller here so we can alert it if anything changes
 		DmaController *controller;
 		ControlRegister() { }
+		virtual ~ControlRegister() { }
 		virtual uint32_t read32()
 		{
 			return this->controller->read32();

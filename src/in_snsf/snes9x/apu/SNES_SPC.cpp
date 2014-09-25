@@ -19,7 +19,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
 //// Timers
 
-#if SPC_DISABLE_TEMPO
+#ifdef SPC_DISABLE_TEMPO
 template<typename T> static inline T TIMER_DIV(SNES_SPC::Timer *t, const T &n) { return n >> t->prescaler; }
 template<typename T> static inline T TIMER_MUL(SNES_SPC::Timer *t, const T &n) { return n << t->prescaler; }
 #else

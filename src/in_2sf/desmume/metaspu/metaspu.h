@@ -27,6 +27,8 @@
 class ISynchronizingAudioBuffer
 {
 public:
+	virtual ~ISynchronizingAudioBuffer() { }
+
 	virtual void enqueue_samples(int16_t *buf, int samples_provided) = 0;
 
 	// returns the number of samples actually supplied, which may not match the number requested

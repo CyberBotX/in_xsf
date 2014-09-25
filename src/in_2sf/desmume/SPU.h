@@ -41,7 +41,7 @@ inline int32_t spumuldiv7(int32_t val, uint8_t multiplier)
 
 enum SPUInterpolationMode
 {
-	SPUInterpolation_None ,
+	SPUInterpolation_None,
 	SPUInterpolation_Linear,
 	SPUInterpolation_Cosine
 };

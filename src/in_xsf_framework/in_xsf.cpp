@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
+ * Last modification on 2014-09-25
  *
  * Partially based on the vio*sf framework
  */
@@ -19,15 +19,15 @@ std::locale::id std::codecvt<char32_t, char, mbstate_t>::id;
 #endif
 
 extern In_Module inMod;
-const XSFFile *xSFFile = nullptr;
+static const XSFFile *xSFFile = nullptr;
 XSFFile *xSFFileInInfo = nullptr;
-XSFPlayer *xSFPlayer = nullptr;
+static XSFPlayer *xSFPlayer = nullptr;
 XSFConfig *xSFConfig = nullptr;
-bool paused;
-int seek_needed;
-double decode_pos_ms;
-HANDLE thread_handle = INVALID_HANDLE_VALUE;
-bool killThread = false;
+static bool paused;
+static int seek_needed;
+static double decode_pos_ms;
+static HANDLE thread_handle = INVALID_HANDLE_VALUE;
+static bool killThread = false;
 
 static const unsigned NumChannels = 2;
 static const unsigned BitsPerSample = 16;
@@ -374,7 +374,7 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *f
 	}
 }
 
-std::unique_ptr<XSFFile> extendedXSFFile;
+static std::unique_ptr<XSFFile> extendedXSFFile;
 
 int wrapperWinampSetExtendedFileInfo(const char *data, const wchar_t *val)
 {
@@ -467,7 +467,7 @@ extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wcha
 	}
 }
 
-int extendedSeekNeeded = -1;
+static int extendedSeekNeeded = -1;
 
 extern "C" __declspec(dllexport) size_t winampGetExtendedRead_getData(intptr_t handle, char *dest, size_t len, int *killswitch)
 {

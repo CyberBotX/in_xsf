@@ -83,7 +83,7 @@ public:
 
 		this->putSamples(other.ptrBegin(), oNumSamples);
 		other.receiveSamples(oNumSamples);
-	};
+	}
 
 	/// Output samples from beginning of the sample buffer. Copies requested samples to
 	/// output buffer and removes them from the sample buffer. If there are less than

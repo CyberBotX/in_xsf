@@ -120,7 +120,7 @@ enum { BLIP_BUFFER_ACCURACY = 16 };
 // Affects size of Blip_Synth objects since they store the waveform directly.
 enum
 {
-#if BLIP_BUFFER_FAST
+#ifdef BLIP_BUFFER_FAST
 	BLIP_PHASE_BITS = 8
 #else
 	BLIP_PHASE_BITS = 6
@@ -218,7 +218,7 @@ public:
 	}
 
 private:
-#if BLIP_BUFFER_FAST
+#ifdef BLIP_BUFFER_FAST
 	Blip_Synth_Fast_ impl;
 #else
 	Blip_Synth_ impl;
@@ -316,7 +316,7 @@ template<int quality, int range> inline void Blip_Synth<quality, range>::offset_
 	auto buf = &blip_buf->buffer_[time >> BLIP_BUFFER_ACCURACY];
 	int phase = static_cast<int>(time >> (BLIP_BUFFER_ACCURACY - BLIP_PHASE_BITS) & (blip_res - 1));
 
-#if BLIP_BUFFER_FAST
+#ifdef BLIP_BUFFER_FAST
 	int32_t left = buf[0] + delta;
 
 	// Kind of crappy, but doing shift after multiply results in overflow.

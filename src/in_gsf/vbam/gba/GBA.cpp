@@ -31,36 +31,36 @@ uint32_t cpuPrefetch[2];
 
 int cpuTotalTicks = 0;
 
-int lcdTicks = 208;
-uint8_t timerOnOffDelay = 0;
-uint16_t timer0Value = 0;
+static int lcdTicks = 208;
+static uint8_t timerOnOffDelay = 0;
+static uint16_t timer0Value = 0;
 bool timer0On = false;
 int timer0Ticks = 0;
-int timer0Reload = 0;
+static int timer0Reload = 0;
 int timer0ClockReload  = 0;
-uint16_t timer1Value = 0;
+static uint16_t timer1Value = 0;
 bool timer1On = false;
 int timer1Ticks = 0;
-int timer1Reload = 0;
+static int timer1Reload = 0;
 int timer1ClockReload  = 0;
-uint16_t timer2Value = 0;
+static uint16_t timer2Value = 0;
 bool timer2On = false;
 int timer2Ticks = 0;
-int timer2Reload = 0;
+static int timer2Reload = 0;
 int timer2ClockReload  = 0;
-uint16_t timer3Value = 0;
+static uint16_t timer3Value = 0;
 bool timer3On = false;
 int timer3Ticks = 0;
-int timer3Reload = 0;
+static int timer3Reload = 0;
 int timer3ClockReload  = 0;
-uint32_t dma0Source = 0;
-uint32_t dma0Dest = 0;
-uint32_t dma1Source = 0;
-uint32_t dma1Dest = 0;
-uint32_t dma2Source = 0;
-uint32_t dma2Dest = 0;
-uint32_t dma3Source = 0;
-uint32_t dma3Dest = 0;
+static uint32_t dma0Source = 0;
+static uint32_t dma0Dest = 0;
+static uint32_t dma1Source = 0;
+static uint32_t dma1Dest = 0;
+static uint32_t dma2Source = 0;
+static uint32_t dma2Dest = 0;
+static uint32_t dma3Source = 0;
+static uint32_t dma3Dest = 0;
 
 static const int TIMER_TICKS[] = { 0, 6, 8, 10 };
 
@@ -83,14 +83,13 @@ uint8_t memoryWaitSeq32[] = { 0, 0, 5, 0, 0, 1, 1, 0, 5, 5, 9, 9, 17, 17, 4, 0 }
 //const u8 videoMemoryWait[16] =
 //  {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-
 uint8_t biosProtected[4];
 
 #ifdef WORDS_BIGENDIAN
-bool cpuBiosSwapped = false;
+static bool cpuBiosSwapped = false;
 #endif
 
-uint32_t myROM[] =
+static uint32_t myROM[] =
 {
 	0xEA000006,
 	0xEA000093,

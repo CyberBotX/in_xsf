@@ -946,7 +946,7 @@ struct ASMJIT_VCLASS X86Assembler : public Assembler {
   INST_2x(mov, kX86InstIdMov, X86SegReg, X86Mem)
 
   //! Move (AL|AX|EAX|RAX <- absolute address in immediate).
-  INST_2x_(mov_ptr, kX86InstIdMovPtr, X86GpReg, Imm, o0.getRegIndex() == 0);
+  INST_2x_(mov_ptr, kX86InstIdMovPtr, X86GpReg, Imm, o0.getRegIndex() == 0)
   //! \overload
   ASMJIT_INLINE Error mov_ptr(const X86GpReg& o0, Ptr o1) {
     ASMJIT_ASSERT(o0.getRegIndex() == 0);
@@ -954,7 +954,7 @@ struct ASMJIT_VCLASS X86Assembler : public Assembler {
   }
 
   //! Move (absolute address in immediate <- AL|AX|EAX|RAX).
-  INST_2x_(mov_ptr, kX86InstIdMovPtr, Imm, X86GpReg, o1.getRegIndex() == 0);
+  INST_2x_(mov_ptr, kX86InstIdMovPtr, Imm, X86GpReg, o1.getRegIndex() == 0)
   //! \overload
   ASMJIT_INLINE Error mov_ptr(Ptr o0, const X86GpReg& o1) {
     ASMJIT_ASSERT(o1.getRegIndex() == 0);
@@ -962,9 +962,9 @@ struct ASMJIT_VCLASS X86Assembler : public Assembler {
   }
 
   //! Move data after dwapping bytes (SSE3 - Atom).
-  INST_2x_(movbe, kX86InstIdMovbe, X86GpReg, X86Mem, !o0.isGpb());
+  INST_2x_(movbe, kX86InstIdMovbe, X86GpReg, X86Mem, !o0.isGpb())
   //! \overload
-  INST_2x_(movbe, kX86InstIdMovbe, X86Mem, X86GpReg, !o1.isGpb());
+  INST_2x_(movbe, kX86InstIdMovbe, X86Mem, X86GpReg, !o1.isGpb())
 
   //! Move BYTE from DS:[ESI/RSI] to ES:[EDI/RDI].
   INST_0x(movsb, kX86InstIdMovsB)
@@ -1027,7 +1027,7 @@ struct ASMJIT_VCLASS X86Assembler : public Assembler {
   //! Pop a segment register from the stack.
   //!
   //! \note There is no instruction to pop a cs segment register.
-  INST_1x_(pop, kX86InstIdPop, X86SegReg, o0.getRegIndex() != kX86SegCs);
+  INST_1x_(pop, kX86InstIdPop, X86SegReg, o0.getRegIndex() != kX86SegCs)
 
   //! Pop all Gp registers - EDI|ESI|EBP|Ign|EBX|EDX|ECX|EAX (X86 Only).
   INST_0x(popa, kX86InstIdPopa)

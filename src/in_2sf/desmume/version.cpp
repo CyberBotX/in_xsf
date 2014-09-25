@@ -18,19 +18,6 @@
 #include "version.h"
 #include "types.h"
 
-// Helper macros to convert numerics to strings
-#ifdef _MSC_VER
-// re: http://72.14.203.104/search?q=cache:HG-okth5NGkJ:mail.python.org/pipermail/python-checkins/2002-November/030704.html+_msc_ver+compiler+version+string&hl=en&gl=us&ct=clnk&cd=5
-# define _Py_STRINGIZE(X) _Py_STRINGIZE1((X))
-# define _Py_STRINGIZE1(X) _Py_STRINGIZE2 ## X
-# define _Py_STRINGIZE2(X) #X
-
-# define TOSTRING(X) _Py_STRINGIZE(X) // Alias _Py_STRINGIZE so that we have a common macro name
-#else
-# define STRINGIFY(x) #x
-# define TOSTRING(x) STRINGIFY(x)
-#endif
-
 #define DESMUME_NAME "DeSmuME"
 
 #if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_WIN64)
@@ -60,31 +47,6 @@
 #endif
 
 #define DESMUME_SUBVERSION_STRING " svn 4608"
-
-#ifdef __INTEL_COMPILER
-# define DESMUME_COMPILER " (Intel)"
-# define DESMUME_COMPILER_DETAIL " (Intel v" TOSTRING(__INTEL_COMPILER) ")"
-#elif defined(_MSC_VER)
-# define DESMUME_COMPILER " (MSVC)"
-# define DESMUME_COMPILER_DETAIL " (MSVC v" TOSTRING(_MSC_VER) ")"
-#elif defined(__clang__)
-# define DESMUME_COMPILER " (LLVM-Clang)"
-# define DESMUME_COMPILER_DETAIL " (LLVM-Clang v" TOSTRING(__clang_major__) "." TOSTRING(__clang_minor__) "." TOSTRING(__clang_patchlevel__) ")"
-#elif defined(__llvm__)
-# define DESMUME_COMPILER " (LLVM)"
-# define DESMUME_COMPILER_DETAIL " (LLVM)"
-#elif defined(__GNUC__) // Always make GCC the last check, since other compilers, such as Clang, may define __GNUC__ internally.
-# define DESMUME_COMPILER " (GCC)"
-
-# if defined(__GNUC_PATCHLEVEL__)
-#  define DESMUME_COMPILER_DETAIL " (GCC v" TOSTRING(__GNUC__) "." TOSTRING(__GNUC_MINOR__) "." TOSTRING(__GNUC_PATCHLEVEL__) ")"
-# else
-#  define DESMUME_COMPILER_DETAIL " (GCC v" TOSTRING(__GNUC__) "." TOSTRING(__GNUC_MINOR__) ")"
-# endif
-#else
-# define DESMUME_COMPILER ""
-# define DESMUME_COMPILER_DETAIL ""
-#endif
 
 #ifdef HAVE_JIT
 # define DESMUME_JIT "-JIT"

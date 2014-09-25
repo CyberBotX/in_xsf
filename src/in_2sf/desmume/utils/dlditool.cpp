@@ -76,21 +76,10 @@ namespace DLDI
 typedef int32_t addr_t;
 typedef unsigned char data_t;
 
-#define FEATURE_MEDIUM_CANREAD 0x00000001
-#define FEATURE_MEDIUM_CANWRITE 0x00000002
-#define FEATURE_SLOT_GBA 0x00000010
-#define FEATURE_SLOT_NDS 0x00000020
-
-#define MAGIC_TOKEN 0xBF8DA5ED
-
 #define FIX_ALL 0x01
 #define FIX_GLUE 0x02
 #define FIX_GOT 0x04
 #define FIX_BSS 0x08
-
-#define DLDI_VERSION 1
-
-#define EXIT_NO_DLDI_SECTION	2
 
 enum DldiOffsets
 {
@@ -291,7 +280,7 @@ FILE *openDLDIFile(const char *argv0, char *dldiFileName )
 //         Time: 6/14/2010 9:38 PM
 // Orig. Offset: 0 / 0x00000000
 //       Length: 1876 / 0x00000754 (bytes)
-data_t mpcf_dldi[] =
+static data_t mpcf_dldi[] =
 {
     0xED, 0xA5, 0x8D, 0xBF, 0x20, 0x43, 0x68, 0x69, 0x73, 0x68, 0x6D, 0x00, 0x01, 0x0B, 0x0C, 0x00,
     0x47, 0x42, 0x41, 0x20, 0x4D, 0x6F, 0x76, 0x69, 0x65, 0x20, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72,
