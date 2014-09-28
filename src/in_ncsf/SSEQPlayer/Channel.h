@@ -216,11 +216,9 @@ struct Channel
 	 * of the program.
 	 */
 	static bool initializedLUTs;
-	static const unsigned COSINE_RESOLUTION = 8192;
 	static const unsigned SINC_RESOLUTION = 8192;
 	static const unsigned SINC_WIDTH = 8;
 	static const unsigned SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH;
-	static double cosine_lut[COSINE_RESOLUTION];
 	static double sinc_lut[SINC_SAMPLES + 1];
 
 	RingBuffer<SINC_WIDTH * 2> ringBuffer;

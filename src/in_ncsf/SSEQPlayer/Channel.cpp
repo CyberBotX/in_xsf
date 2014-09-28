@@ -43,7 +43,6 @@ TempSndReg::TempSndReg() : CR(0), SOURCE(nullptr), TIMER(0), REPEAT_POINT(0), LE
 }
 
 bool Channel::initializedLUTs = false;
-double Channel::cosine_lut[Channel::COSINE_RESOLUTION];
 double Channel::sinc_lut[Channel::SINC_SAMPLES + 1];
 
 #ifndef M_PI
@@ -62,8 +61,6 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 {
 	if (!this->initializedLUTs)
 	{
-		for (unsigned i = 0; i < COSINE_RESOLUTION; ++i)
-			this->cosine_lut[i] = (1.0 - std::cos((static_cast<double>(i) / COSINE_RESOLUTION) * M_PI)) * 0.5;
 		double dx = static_cast<double>(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
 		for (unsigned i = 0; i <= SINC_SAMPLES; ++i, x += dx)
 			this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * sinc(x / SINC_WIDTH) : 0.0;
@@ -621,52 +618,33 @@ int32_t Channel::Interpolate()
 			sum += data[i - static_cast<int>(SINC_WIDTH) + 1] * kernel[i];
 		return static_cast<int32_t>(sum / kernel_sum);
 	}
-	else if (this->ply->interpolation > INTERPOLATION_COSINE)
+	else if (this->ply->interpolation > INTERPOLATION_LINEAR)
 	{
 		double c0, c1, c2, c3, c4, c5;
 
-		if (this->ply->interpolation > INTERPOLATION_4POINTBSPLINE)
+		if (this->ply->interpolation == INTERPOLATION_6POINTLEGRANGE)
 		{
-			if (this->ply->interpolation == INTERPOLATION_6POINTBSPLINE)
-			{
-				double ym2py2 = data[-2] + data[2], ym1py1 = data[-1] + data[1];
-				double y2mym2 = data[2] - data[-2], y1mym1 = data[1] - data[-1];
-				double sixthym1py1 = 1 / 6.0 * ym1py1;
-				c0 = 1 / 120.0 * ym2py2 + 13 / 60.0 * ym1py1 + 0.55 * data[0];
-				c1 = 1 / 24.0 * y2mym2 + 5 / 12.0 * y1mym1;
-				c2 = 1 / 12.0 * ym2py2 + sixthym1py1 - 0.5 * data[0];
-				c3 = 1 / 12.0 * y2mym2 - 1 / 6.0 * y1mym1;
-				c4 = 1 / 24.0 * ym2py2 - sixthym1py1 + 0.25 * data[0];
-				c5 = 1 / 120.0 * (data[3] - data[-2]) + 1 / 24.0 * (data[-1] - data[2]) + 1 / 12.0 * (data[1] - data[0]);
-				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
-			}
-			else // INTERPOLATION_6POINTOSCULATING
-			{
-				ratio -= 0.5;
-				double even1 = data[-2] + data[3], odd1 = data[-2] - data[3];
-				double even2 = data[-1] + data[2], odd2 = data[-1] - data[2];
-				double even3 = data[0] + data[1], odd3 = data[0] - data[1];
-				c0 = 0.01171875 * even1 - 0.09765625 * even2 + 0.5859375 * even3;
-				c1 = 0.2109375 * odd2 - 281 / 192.0 * odd3 - 13 / 384.0 * odd1;
-				c2 = 0.40625 * even2 - 17 / 48.0 * even3 - 5 / 96.0 * even1;
-				c3 = 0.1875 * odd1 - 53 / 48.0 * odd2 + 2.375 * odd3;
-				c4 = 1 / 48.0 * even1 - 0.0625 * even2 + 1 / 24.0 * even3;
-				c5 = 25 / 24.0 * odd2 - 25 / 12.0 * odd3 - 5 / 24.0 * odd1;
-				return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
-			}
+			ratio -= 0.5;
+			double even1 = data[-2] + data[3], odd1 = data[-2] - data[3];
+			double even2 = data[-1] + data[2], odd2 = data[-1] - data[2];
+			double even3 = data[0] + data[1], odd3 = data[0] - data[1];
+			c0 = 0.01171875 * even1 - 0.09765625 * even2 + 0.5859375 * even3;
+			c1 = 25 / 384.0 * odd2 - 1.171875 * odd3 - 0.0046875 * odd1;
+			c2 = 0.40625 * even2 - 17 / 48.0 * even3 - 5 / 96.0 * even1;
+			c3 = 1 / 48.0 * odd1 - 13 / 48.0 * odd2 + 17 / 24.0 * odd3;
+			c4 = 1 / 48.0 * even1 - 0.0625 * even2 + 1 / 24.0 * even3;
+			c5 = 1 / 24.0 * odd2 - 1 / 12.0 * odd3 - 1 / 120.0 * odd1;
+			return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 		}
-		else // INTERPOLATION_4POINTBSPLINE
+		else // INTERPOLATION_4POINTLEAGRANGE
 		{
-			double ym1py1 = data[-1] + data[1];
-			c0 = 1 / 6.0 * ym1py1 + 2 / 3.0 * data[0];
-			c1 = 0.5 * (data[1] - data[-1]);
-			c2 = 0.5 * ym1py1 - data[0];
-			c3 = 0.5 * (data[0] - data[1]) + 1 / 6.0 * (data[2] - data[-1]);
+			c0 = data[0];
+			c1 = data[1] - 1 / 3.0 * data[-1] - 0.5 * data[0] - 1 / 6.0 * data[2];
+			c2 = 0.5 * (data[-1] + data[1]) - data[0];
+			c3 = 1 / 6.0 * (data[2] - data[-1]) + 0.5 * (data[0] - data[1]);
 			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
 		}
 	}
-	else if (this->ply->interpolation == INTERPOLATION_COSINE)
-		return static_cast<int32_t>(data[0] + this->cosine_lut[static_cast<unsigned>(ratio * COSINE_RESOLUTION)] * (data[1] - data[0]));
 	else // INTERPOLATION_LINEAR
 		return static_cast<int32_t>(data[0] + ratio * (data[1] - data[0]));
 }
