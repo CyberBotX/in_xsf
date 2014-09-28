@@ -42,6 +42,9 @@ v1.7.1 - 2013-04-26 - Minor update to scale the phase offset, thanks to kode54.
                     - Corrected clamping issue which caused some clipping-like
                       effects.
 v1.8.1 - 2014-06-17 - Reverted Sinc interpolation back to the Lanczos window.
+  v1.9 - 2014-09-28 - Removed the Cosine, B-Spline, and Osculating
+                      interpolations, added 4-point and 6-point Legrange
+                      interpolations in their place.
 
 This is a Winamp plugin to play NCSF files. NCSF is a PSF-style music format that
 uses SDAT files from Nintendo DS ROMs as it's "program".
