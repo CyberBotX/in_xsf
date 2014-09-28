@@ -45,13 +45,14 @@ v1.8.1 - 2014-06-17 - Reverted Sinc interpolation back to the Lanczos window.
   v1.9 - 2014-09-28 - Removed the Cosine, B-Spline, and Osculating
                       interpolations, added 4-point and 6-point Legrange
                       interpolations in their place.
+                    - Updated zlib to v1.28.
 
 This is a Winamp plugin to play NCSF files. NCSF is a PSF-style music format that
 uses SDAT files from Nintendo DS ROMs as it's "program".
 
 Contains:
 *    in_ncsf.dll - The NCSF Winamp plugin
-* zlib DLL v1.25 - Required by the plugin
+* zlib DLL v1.28 - Required by the plugin
 
 To allow Winamp to use the plugin, place in_ncsf.dll into your Winamp plugins
 directory and zlib1.dll into your Winamp directory (NOTE: NOT the plugins
