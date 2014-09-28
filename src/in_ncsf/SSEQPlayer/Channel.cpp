@@ -592,8 +592,8 @@ static const int16_t wavedutytbl[8][8] =
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF }
 };
 
-// Linear and Cosine interpolation code originally from DeSmuME
-// B-spline and Osculating come from Olli Niemitalo:
+// Linear interpolation code originally from DeSmuME
+// Legrange comes from Olli Niemitalo:
 // http://www.student.oulu.fi/~oniemita/dsp/deip.pdf
 int32_t Channel::Interpolate()
 {
