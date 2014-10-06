@@ -45,14 +45,20 @@ v1.8.1 - 2014-06-17 - Reverted Sinc interpolation back to the Lanczos window.
   v1.9 - 2014-09-28 - Removed the Cosine, B-Spline, and Osculating
                       interpolations, added 4-point and 6-point Legrange
                       interpolations in their place.
-                    - Updated zlib to v1.28.
+                    - Updated zlib to v1.2.8.
+v1.9.1 - 2014-10-05 - Fixed volume issues that stemmed from how FeOS Sound
+                      System was handling volume. Utilized some code from the
+                      Nintendo DS SDK to help fix this.
+                    - Added a clone of DeSmuME's Sound View that only shows up
+                      in debug builds, was used to help me identify the above
+                      issue to fix it.
 
 This is a Winamp plugin to play NCSF files. NCSF is a PSF-style music format that
 uses SDAT files from Nintendo DS ROMs as it's "program".
 
 Contains:
-*    in_ncsf.dll - The NCSF Winamp plugin
-* zlib DLL v1.28 - Required by the plugin
+*     in_ncsf.dll - The NCSF Winamp plugin
+* zlib DLL v1.2.8 - Required by the plugin
 
 To allow Winamp to use the plugin, place in_ncsf.dll into your Winamp plugins
 directory and zlib1.dll into your Winamp directory (NOTE: NOT the plugins

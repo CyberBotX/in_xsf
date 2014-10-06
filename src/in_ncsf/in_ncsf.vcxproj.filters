@@ -113,8 +113,19 @@
     <ClInclude Include="SSEQPlayer\Track.h">
       <Filter>Header Files\SSEQPlayer</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XSFConfig_NCSF.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="XSFPlayer_NCSF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="in_ncsf.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

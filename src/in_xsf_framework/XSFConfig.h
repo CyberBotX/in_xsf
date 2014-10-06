@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
+ * Last modification on 2014-10-05
  *
  * Partially based on the vio*sf framework
  */
@@ -27,9 +27,11 @@ public:
 	virtual void SetValueString(const std::string &name, const std::string &value) = 0;
 	template<typename T> void SetValue(const std::string &name, const T &value) { this->SetValueString(name, stringify(value)); }
 	void SetValue(const std::string &name, const std::string &value) { this->SetValueString(name, value); }
-	virtual std::string GetValueString(const std::string &name, const std::string &defaultValue) = 0;
-	template<typename T> T GetValue(const std::string &name, const T &defaultValue) { return convertTo<T>(this->GetValueString(name, stringify(defaultValue))); }
-	std::string GetValue(const std::string &name, const std::string &defaultValue) { return this->GetValueString(name, defaultValue); }
+	virtual std::string GetValueString(const std::string &name, const std::string &defaultValue) const = 0;
+	template<typename T> T GetValue(const std::string &name, const T &defaultValue) const { return convertTo<T>(this->GetValueString(name, stringify(defaultValue))); }
+	std::string GetValue(const std::string &name, const std::string &defaultValue) const { return this->GetValueString(name, defaultValue); }
+	virtual void SetHInstance(HINSTANCE) { }
+	virtual HINSTANCE GetHInstance() const { return nullptr; }
 };
 
 class XSFConfig
@@ -81,6 +83,8 @@ public:
 	void ResetConfigDefaults(HWND hwndDlg);
 	void SaveConfigDialog(HWND hwndDlg);
 	void CopyConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad);
+	void SetHInstance(HINSTANCE hInstance);
+	HINSTANCE GetHInstance() const;
 
 	virtual void About(HWND parent) = 0;
 

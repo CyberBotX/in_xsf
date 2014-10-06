@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-06-17
+ * Last modification on 2014-10-05
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -71,10 +71,8 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 void Channel::UpdateVol(const Track &trk)
 {
 	int finalVol = trk.ply->masterVol;
-	finalVol += Cnv_Sust(trk.vol);
-	finalVol += Cnv_Sust(trk.expr);
-	if (finalVol < -AMPL_K)
-		finalVol = -AMPL_K;
+	finalVol += Cnv_Scale(trk.vol);
+	finalVol += Cnv_Scale(trk.expr);
 	this->extAmpl = finalVol;
 }
 
@@ -390,7 +388,7 @@ static inline uint16_t Timer_Adjust(uint16_t basetmr, int pitch)
 		tmr <<= shift;
 	}
 	else
-		return 0x10;
+		return 0xFFFF;
 
 	if (tmr < 0x10)
 		return 0x10;
@@ -539,18 +537,19 @@ void Channel::Update()
 			totalVol += this->velocity;
 			if (bModulation && this->modType == 1)
 				totalVol += modParam;
-			totalVol += AMPL_K;
-			if (totalVol < 0)
+			if (totalVol < -AMPL_K)
+				totalVol = -AMPL_K;
+			else if (totalVol > 0)
 				totalVol = 0;
 
 			cr &= ~(SOUND_VOL(0x7F) | SOUND_VOLDIV(3));
-			cr |= SOUND_VOL(static_cast<int>(getvoltbl[totalVol]));
+			cr |= SOUND_VOL(static_cast<int>(getvoltbl[totalVol + AMPL_K]));
 
-			if (totalVol < AMPL_K - 240)
+			if (totalVol < -240)
 				cr |= SOUND_VOLDIV(3);
-			else if (totalVol < AMPL_K - 120)
+			else if (totalVol < -120)
 				cr |= SOUND_VOLDIV(2);
-			else if (totalVol < AMPL_K - 60)
+			else if (totalVol < -60)
 				cr |= SOUND_VOLDIV(1);
 
 			this->vol = ((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8);

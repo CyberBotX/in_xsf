@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
+ * Last modification on 2014-10-05
  *
  * Partially based on the vio*sf framework
  *
@@ -13,12 +13,15 @@
 #include <zlib.h>
 #include "convert.h"
 #include "XSFPlayer_NCSF.h"
+#include "XSFConfig_NCSF.h"
 #include "XSFCommon.h"
 #include "SSEQPlayer/SDAT.h"
 #include "SSEQPlayer/Player.h"
 
 const char *XSFPlayer::WinampDescription = "NCSF Decoder";
 const char *XSFPlayer::WinampExts = "ncsf;minincsf\0DS Nitro Composer Sound Format files (*.ncsf;*.minincsf)\0";
+
+extern XSFConfig *xSFConfig;
 
 XSFPlayer *XSFPlayer::Create(const std::string &fn)
 {
@@ -115,10 +118,52 @@ XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer()
 }
 #endif
 
+#ifdef _DEBUG
+static HANDLE soundViewThreadHandle = INVALID_HANDLE_VALUE;
+static bool killSoundViewThread;
+
+static DWORD WINAPI soundViewThread(void *b)
+{
+	auto xSFConfig_NCSF = static_cast<XSFConfig_NCSF *>(xSFConfig);
+	xSFConfig_NCSF->CallSoundView(static_cast<XSFPlayer_NCSF *>(b), xSFConfig->GetHInstance(), nullptr);
+	MSG msg;
+	while (!killSoundViewThread)
+	{
+		xSFConfig_NCSF->RefreshSoundView();
+		if (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		}
+	}
+	xSFConfig_NCSF->CloseSoundView();
+	return 0;
+}
+#endif
+
+XSFPlayer_NCSF::~XSFPlayer_NCSF()
+{
+#ifdef _DEBUG
+	killSoundViewThread = true;
+	if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
+	{
+		TerminateThread(soundViewThreadHandle, 0);
+		static_cast<XSFConfig_NCSF *>(xSFConfig)->CloseSoundView();
+	}
+	CloseHandle(soundViewThreadHandle);
+	soundViewThreadHandle = INVALID_HANDLE_VALUE;
+#endif
+}
+
 bool XSFPlayer_NCSF::Load()
 {
 	if (!this->LoadNCSF())
 		return false;
+
+#ifdef _DEBUG
+	killSoundViewThread = false;
+	soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
+#endif
 
 	PseudoFile file;
 	file.data = &this->sdatData;
@@ -211,3 +256,10 @@ void XSFPlayer_NCSF::SetMutes(const std::bitset<16> &newMutes)
 {
 	this->mutes = newMutes;
 }
+
+#ifdef _DEBUG
+const Channel &XSFPlayer_NCSF::GetChannel(size_t chanNum) const
+{
+	return this->player.channels[chanNum];
+}
+#endif

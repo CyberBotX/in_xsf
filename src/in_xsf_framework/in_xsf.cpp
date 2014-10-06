@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp plugin
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-25
+ * Last modification on 2014-10-05
  *
  * Partially based on the vio*sf framework
  */
@@ -93,6 +93,7 @@ void init()
 	xSFConfig = XSFConfig::Create();
 	xSFConfig->LoadConfig();
 	xSFConfig->GenerateDialogs();
+	xSFConfig->SetHInstance(inMod.hDllInstance);
 }
 
 void quit()

@@ -97,6 +97,7 @@
     <ClCompile Include="XSFPlayer_NCSF.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="SSEQPlayer\Channel.h" />
     <ClInclude Include="SSEQPlayer\common.h" />
     <ClInclude Include="SSEQPlayer\consts.h" />
@@ -112,12 +113,18 @@
     <ClInclude Include="SSEQPlayer\SWAV.h" />
     <ClInclude Include="SSEQPlayer\SYMBSection.h" />
     <ClInclude Include="SSEQPlayer\Track.h" />
+    <ClInclude Include="XSFConfig_NCSF.h" />
     <ClInclude Include="XSFPlayer_NCSF.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\in_xsf_framework\in_xsf_framework.vcxproj">
       <Project>{9d6d2540-b3dc-462b-bbc0-5b7c32a4d581}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="in_ncsf.rc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ResourceCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

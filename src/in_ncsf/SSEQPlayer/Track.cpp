@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Track structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-01
+ * Last modification on 2014-10-05
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -187,7 +187,7 @@ int Track::NoteOn(int key, int vel, int len)
 	chn->prio = this->prio;
 	chn->key = key;
 	chn->orgKey = bIsPCM ? noteDef->noteNumber : 69;
-	chn->velocity = Cnv_Sust(vel);
+	chn->velocity = Cnv_Scale(vel);
 	chn->pan = static_cast<int>(noteDef->pan) - 64;
 	chn->modDelayCnt = 0;
 	chn->modCounter = 0;
@@ -229,7 +229,7 @@ int Track::NoteOnTie(int key, int vel)
 	chn->flags.reset();
 	chn->prio = this->prio;
 	chn->key = key;
-	chn->velocity = Cnv_Sust(vel);
+	chn->velocity = Cnv_Scale(vel);
 	chn->modDelayCnt = 0;
 	chn->modCounter = 0;
 

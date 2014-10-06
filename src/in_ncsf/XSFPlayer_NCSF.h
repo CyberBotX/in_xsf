@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
+ * Last modification on 2014-10-05
  *
  * Partially based on the vio*sf framework
  *
@@ -36,10 +36,14 @@ public:
 #ifdef _WIN32
 	XSFPlayer_NCSF(const std::wstring &filename);
 #endif
+	~XSFPlayer_NCSF();
 	bool Load();
 	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
 	void Terminate();
 
 	void SetInterpolation(unsigned interpolation);
 	void SetMutes(const std::bitset<16> &newMutes);
+#ifdef _DEBUG
+	const Channel &GetChannel(size_t chanNum) const;
+#endif
 };

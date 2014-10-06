@@ -1,7 +1,7 @@
 /*
  * xSF - Core configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
+ * Last modification on 2014-10-05
  *
  * Partially based on the vio*sf framework
  */
@@ -321,12 +321,12 @@ INT_PTR CALLBACK XSFConfig::InfoDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
 
 void XSFConfig::CallConfigDialog(HINSTANCE hInstance, HWND hwndParent)
 {
-	DialogBoxIndirectParam(hInstance, this->configDialog.GenerateTemplate(), hwndParent, XSFConfig::ConfigDialogProcStatic, reinterpret_cast<LPARAM>(this));
+	DialogBoxIndirectParamW(hInstance, this->configDialog.GenerateTemplate(), hwndParent, XSFConfig::ConfigDialogProcStatic, reinterpret_cast<LPARAM>(this));
 }
 
 void XSFConfig::CallInfoDialog(HINSTANCE hInstance, HWND hwndParent)
 {
-	DialogBoxIndirectParam(hInstance, this->infoDialog.GenerateTemplate(), hwndParent, XSFConfig::InfoDialogProcStatic, reinterpret_cast<LPARAM>(this));
+	DialogBoxIndirectParamW(hInstance, this->infoDialog.GenerateTemplate(), hwndParent, XSFConfig::InfoDialogProcStatic, reinterpret_cast<LPARAM>(this));
 }
 
 void XSFConfig::ResetConfigDefaults(HWND hwndDlg)
@@ -368,6 +368,16 @@ void XSFConfig::CopyConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad)
 		xSFPlayer->SetSampleRate(this->sampleRate);
 
 	this->CopySpecificConfigToMemory(xSFPlayer, preLoad);
+}
+
+void XSFConfig::SetHInstance(HINSTANCE hInstance)
+{
+	this->configIO->SetHInstance(hInstance);
+}
+
+HINSTANCE XSFConfig::GetHInstance() const
+{
+	return this->configIO->GetHInstance();
 }
 
 bool XSFConfig::GetPlayInfinitely() const

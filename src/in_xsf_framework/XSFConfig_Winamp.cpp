@@ -1,7 +1,7 @@
 /*
  * xSF - Winamp-specification configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
+ * Last modification on 2014-10-05
  *
  * Partially based on the vio*sf framework
  */
@@ -18,11 +18,14 @@ class XSFConfigIO_Winamp : public XSFConfigIO
 protected:
 	friend class XSFConfigIO;
 	std::wstring iniFilename;
+	HINSTANCE hInst;
 
 	XSFConfigIO_Winamp();
 public:
 	void SetValueString(const std::string &name, const std::string &value);
-	std::string GetValueString(const std::string &name, const std::string &defaultValue);
+	std::string GetValueString(const std::string &name, const std::string &defaultValue) const;
+	void SetHInstance(HINSTANCE hInstance);
+	HINSTANCE GetHInstance() const;
 };
 
 XSFConfigIO *XSFConfigIO::Create()
@@ -57,7 +60,7 @@ void XSFConfigIO_Winamp::SetValueString(const std::string &name, const std::stri
 	WritePrivateProfileStringW(ConvertFuncs::StringToWString(XSFConfig::commonName).c_str(), ConvertFuncs::StringToWString(name).c_str(), ConvertFuncs::StringToWString(value).c_str(), this->iniFilename.c_str());
 }
 
-std::string XSFConfigIO_Winamp::GetValueString(const std::string &name, const std::string &defaultValue)
+std::string XSFConfigIO_Winamp::GetValueString(const std::string &name, const std::string &defaultValue) const
 {
 	auto value = std::vector<wchar_t>(MAX_PATH / 2);
 
@@ -72,4 +75,14 @@ std::string XSFConfigIO_Winamp::GetValueString(const std::string &name, const st
 		throw std::runtime_error("Unable to get value from INI file.");
 
 	return ConvertFuncs::WStringToString(std::wstring(value.begin(), value.begin() + result));
+}
+
+void XSFConfigIO_Winamp::SetHInstance(HINSTANCE hInstance)
+{
+	this->hInst = hInstance;
+}
+
+HINSTANCE XSFConfigIO_Winamp::GetHInstance() const
+{
+	return this->hInst;
 }
