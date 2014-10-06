@@ -187,7 +187,7 @@ int Track::NoteOn(int key, int vel, int len)
 	chn->prio = this->prio;
 	chn->key = key;
 	chn->orgKey = bIsPCM ? noteDef->noteNumber : 69;
-	chn->velocity = Cnv_Scale(vel);
+	chn->velocity = Cnv_Sust(vel);
 	chn->pan = static_cast<int>(noteDef->pan) - 64;
 	chn->modDelayCnt = 0;
 	chn->modCounter = 0;
@@ -229,7 +229,7 @@ int Track::NoteOnTie(int key, int vel)
 	chn->flags.reset();
 	chn->prio = this->prio;
 	chn->key = key;
-	chn->velocity = Cnv_Scale(vel);
+	chn->velocity = Cnv_Sust(vel);
 	chn->modDelayCnt = 0;
 	chn->modCounter = 0;
 

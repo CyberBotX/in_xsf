@@ -71,8 +71,8 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 void Channel::UpdateVol(const Track &trk)
 {
 	int finalVol = trk.ply->masterVol;
-	finalVol += Cnv_Scale(trk.vol);
-	finalVol += Cnv_Scale(trk.expr);
+	finalVol += Cnv_Sust(trk.vol);
+	finalVol += Cnv_Sust(trk.expr);
 	this->extAmpl = finalVol;
 }
 
