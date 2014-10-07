@@ -222,8 +222,8 @@ void XSFPlayer_NCSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset,
 		leftChannel = muldiv7(leftChannel, 127 - this->player.masterVol);
 		rightChannel = muldiv7(rightChannel, 127 - this->player.masterVol);
 
-		leftChannel = muldiv7(leftChannel, this->sseqVol);
-		rightChannel = muldiv7(rightChannel, this->sseqVol);
+		//leftChannel = muldiv7(leftChannel, this->sseqVol);
+		//rightChannel = muldiv7(rightChannel, this->sseqVol);
 
 		buf[offset++] = leftChannel & 0xFF;
 		buf[offset++] = (leftChannel >> 8) & 0xFF;

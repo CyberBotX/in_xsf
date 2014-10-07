@@ -73,6 +73,8 @@ void Channel::UpdateVol(const Track &trk)
 	int finalVol = trk.ply->masterVol;
 	finalVol += Cnv_Sust(trk.vol);
 	finalVol += Cnv_Sust(trk.expr);
+	if (finalVol < -AMPL_K)
+		finalVol = -AMPL_K;
 	this->extAmpl = finalVol;
 }
 
@@ -440,7 +442,7 @@ void Channel::Update()
 			this->state = CS_ATTACK;
 			// Fall down
 		case CS_ATTACK:
-			this->ampl = (static_cast<int>(this->ampl) * static_cast<int>(this->attackLvl)) / 255;
+			this->ampl = (this->ampl * static_cast<int>(this->attackLvl)) / 255;
 			if (!this->ampl)
 				this->state = CS_DECAY;
 			break;
@@ -537,19 +539,17 @@ void Channel::Update()
 			totalVol += this->velocity;
 			if (bModulation && this->modType == 1)
 				totalVol += modParam;
-			if (totalVol < -AMPL_K)
-				totalVol = -AMPL_K;
-			else if (totalVol > 0)
-				totalVol = 0;
+			totalVol += AMPL_K;
+			clamp(totalVol, 0, AMPL_K);
 
 			cr &= ~(SOUND_VOL(0x7F) | SOUND_VOLDIV(3));
-			cr |= SOUND_VOL(static_cast<int>(getvoltbl[totalVol + AMPL_K]));
+			cr |= SOUND_VOL(static_cast<int>(getvoltbl[totalVol]));
 
-			if (totalVol < -240)
+			if (totalVol < AMPL_K - 240)
 				cr |= SOUND_VOLDIV(3);
-			else if (totalVol < -120)
+			else if (totalVol < AMPL_K - 120)
 				cr |= SOUND_VOLDIV(2);
-			else if (totalVol < -60)
+			else if (totalVol < AMPL_K - 60)
 				cr |= SOUND_VOLDIV(1);
 
 			this->vol = ((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8);
