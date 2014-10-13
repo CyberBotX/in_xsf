@@ -52,6 +52,9 @@ v1.9.1 - 2014-10-05 - Fixed volume issues that stemmed from how FeOS Sound
                     - Added a clone of DeSmuME's Sound View that only shows up
                       in debug builds, was used to help me identify the above
                       issue to fix it.
+ v1.10 - 2014-10-13 - Implemented the random, variable, and conditional
+                      commands.
+                    - Fixed loop counter.
 
 This is a Winamp plugin to play NCSF files. NCSF is a PSF-style music format that
 uses SDAT files from Nintendo DS ROMs as it's "program".

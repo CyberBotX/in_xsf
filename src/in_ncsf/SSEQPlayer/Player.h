@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-08
+ * Last modification on 2014-10-13
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -26,6 +26,7 @@ struct Player
 	uint8_t trackIds[FSS_TRACKCOUNT];
 	Track tracks[FSS_MAXTRACKS];
 	Channel channels[16];
+	int16_t variables[32];
 
 	uint32_t sampleRate;
 	Interpolation interpolation;

@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-05
+ * Last modification on 2014-10-13
  *
  * Partially based on the vio*sf framework
  *
@@ -10,6 +10,8 @@
  */
 
 #include <memory>
+#include <cstdlib>
+#include <ctime>
 #include <zlib.h>
 #include "convert.h"
 #include "XSFPlayer_NCSF.h"
@@ -164,6 +166,8 @@ bool XSFPlayer_NCSF::Load()
 	killSoundViewThread = false;
 	soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
 #endif
+
+	std::srand(static_cast<unsigned>(std::time(nullptr)));
 
 	PseudoFile file;
 	file.data = &this->sdatData;

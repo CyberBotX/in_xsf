@@ -1,13 +1,15 @@
 /*
  * SSEQ Player - Track structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-05
+ * Last modification on 2014-10-13
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
  * https://github.com/fincs/FSS
  */
 
+#include <functional>
+#include <cstdlib>
 #include "Track.h"
 #include "Player.h"
 #include "common.h"
@@ -35,9 +37,11 @@ void Track::Zero()
 	this->ply = nullptr;
 
 	this->startPos = this->pos = nullptr;
-	memset(this->stack, 0, sizeof(this->stack));
+	std::fill_n(&this->stack[0], FSS_TRACKSTACKSIZE, StackValue());
 	this->stackPos = 0;
 	memset(this->loopCount, 0, sizeof(this->loopCount));
+	this->overriding() = false;
+	this->lastComparisonResult = this->processCommand = true;
 
 	this->wait = 0;
 	this->patch = 0;
@@ -298,10 +302,94 @@ enum SseqCommand
 	SSEQ_CMD_RANDOM = 0xA0,
 	SSEQ_CMD_PRINTVAR = 0xD6,
 	SSEQ_CMD_IF = 0xA2,
-	SSEQ_CMD_UNSUP1 = 0xA1,
-	SSEQ_CMD_UNSUP2_LO = 0xB0,
-	SSEQ_CMD_UNSUP2_HI = 0xBD
+	SSEQ_CMD_FROMVAR = 0xA1,
+	SSEQ_CMD_SETVAR = 0xB0,
+	SSEQ_CMD_ADDVAR = 0xB1,
+	SSEQ_CMD_SUBVAR = 0xB2,
+	SSEQ_CMD_MULVAR = 0xB3,
+	SSEQ_CMD_DIVVAR = 0xB4,
+	SSEQ_CMD_SHIFTVAR = 0xB5,
+	SSEQ_CMD_RANDVAR = 0xB6,
+	SSEQ_CMD_CMP_EQ = 0xB8,
+	SSEQ_CMD_CMP_GE = 0xB9,
+	SSEQ_CMD_CMP_GT = 0xBA,
+	SSEQ_CMD_CMP_LE = 0xBB,
+	SSEQ_CMD_CMP_LT = 0xBC,
+	SSEQ_CMD_CMP_NE = 0xBD,
+
+	SSEQ_CMD_MUTE = 0xD7 // Unsupported
 };
+
+static auto varFuncSet = [](int16_t, int16_t value) { return value; };
+static auto varFuncAdd = [](int16_t var, int16_t value) -> int16_t { return var + value; };
+static auto varFuncSub = [](int16_t var, int16_t value) -> int16_t { return var - value; };
+static auto varFuncMul = [](int16_t var, int16_t value) -> int16_t { return var * value; };
+static auto varFuncDiv = [](int16_t var, int16_t value) -> int16_t { return var / value; };
+static auto varFuncShift = [](int16_t var, int16_t value) -> int16_t
+{
+	if (value < 0)
+		return var >> -value;
+	else
+		return var << value;
+};
+static auto varFuncRand = [](int16_t, int16_t value) -> int16_t
+{
+	if (value < 0)
+		return -(std::rand() % (-value + 1));
+	else
+		return std::rand() % (value + 1);
+};
+
+static inline std::function<int16_t (int16_t, int16_t)> VarFunc(int cmd)
+{
+	switch (cmd)
+	{
+		case SSEQ_CMD_SETVAR:
+			return varFuncSet;
+		case SSEQ_CMD_ADDVAR:
+			return varFuncAdd;
+		case SSEQ_CMD_SUBVAR:
+			return varFuncSub;
+		case SSEQ_CMD_MULVAR:
+			return varFuncMul;
+		case SSEQ_CMD_DIVVAR:
+			return varFuncDiv;
+		case SSEQ_CMD_SHIFTVAR:
+			return varFuncShift;
+		case SSEQ_CMD_RANDVAR:
+			return varFuncRand;
+		default:
+			return nullptr;
+	}
+}
+
+static auto compareFuncEq = [](int16_t a, int16_t b) { return a == b; };
+static auto compareFuncGe = [](int16_t a, int16_t b) { return a >= b; };
+static auto compareFuncGt = [](int16_t a, int16_t b) { return a > b; };
+static auto compareFuncLe = [](int16_t a, int16_t b) { return a <= b; };
+static auto compareFuncLt = [](int16_t a, int16_t b) { return a < b; };
+static auto compareFuncNe = [](int16_t a, int16_t b) { return a != b; };
+
+static inline std::function<bool (int16_t, int16_t)> CompareFunc(int cmd)
+{
+	switch (cmd)
+	{
+		case SSEQ_CMD_CMP_EQ:
+			return compareFuncEq;
+		case SSEQ_CMD_CMP_GE:
+			return compareFuncGe;
+		case SSEQ_CMD_CMP_GT:
+			return compareFuncGt;
+		case SSEQ_CMD_CMP_LE:
+			return compareFuncLe;
+		case SSEQ_CMD_CMP_LT:
+			return compareFuncLt;
+		case SSEQ_CMD_CMP_NE:
+			return compareFuncNe;
+		default:
+			return nullptr;
+	}
+}
 
 void Track::Run()
 {
@@ -323,21 +411,40 @@ void Track::Run()
 
 	while (!this->wait)
 	{
-		int cmd = read8(pData);
+		int cmd;
+		if (this->overriding())
+			cmd = this->overriding.cmd;
+		else
+			cmd = read8(pData);
 		if (cmd < 0x80)
 		{
 			// Note on
 			int key = cmd + this->transpose;
-			int vel = read8(pData);
-			int len = readvl(pData);
-			if (this->state[TS_NOTEWAIT])
-				this->wait = len;
-			if (this->state[TS_TIEBIT])
-				this->NoteOnTie(key, vel);
+			int vel;
+			int len;
+			if (this->overriding())
+			{
+				vel = this->overriding.extraValue;
+				len = this->overriding.value;
+			}
 			else
-				this->NoteOn(key, vel, len);
+			{
+				vel = read8(pData);
+				len = readvl(pData);
+			}
+			if (this->processCommand)
+			{
+				if (this->state[TS_NOTEWAIT])
+					this->wait = len;
+				if (this->state[TS_TIEBIT])
+					this->NoteOnTie(key, vel);
+				else
+					this->NoteOn(key, vel, len);
+			}
 		}
 		else
+		{
+			int value;
 			switch (cmd)
 			{
 				//-----------------------------------------------------------------
@@ -345,86 +452,156 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQ_CMD_REST:
-					this->wait = readvl(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = readvl(pData);
+					if (this->processCommand)
+						this->wait = value;
 					break;
 
 				case SSEQ_CMD_PATCH:
-					this->patch = readvl(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = readvl(pData);
+					if (this->processCommand)
+						this->patch = value;
 					break;
 
 				case SSEQ_CMD_GOTO:
-					*pData = &this->ply->sseq->data[read24(pData)];
+					value = read24(pData);
+					if (this->processCommand)
+						*pData = &this->ply->sseq->data[value];
 					break;
 
 				case SSEQ_CMD_CALL:
-				{
-					const uint8_t *dest = &this->ply->sseq->data[read24(pData)];
-					this->stack[this->stackPos++] = *pData;
-					*pData = dest;
+					value = read24(pData);
+					if (this->processCommand && this->stackPos < FSS_TRACKSTACKSIZE)
+					{
+						const uint8_t *dest = &this->ply->sseq->data[value];
+						this->stack[this->stackPos++] = StackValue(STACKTYPE_CALL, *pData);
+						*pData = dest;
+					}
 					break;
-				}
 
 				case SSEQ_CMD_RET:
-					*pData = this->stack[--this->stackPos];
+					if (this->processCommand && this->stackPos && this->stack[this->stackPos - 1].type == STACKTYPE_CALL)
+						*pData = this->stack[--this->stackPos].dest;
 					break;
 
 				case SSEQ_CMD_PAN:
-					this->pan = read8(pData) - 64;
-					this->updateFlags.set(TUF_PAN);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+					{
+						this->pan = value - 64;
+						this->updateFlags.set(TUF_PAN);
+					}
 					break;
 
 				case SSEQ_CMD_VOL:
-					this->vol = read8(pData);
-					this->updateFlags.set(TUF_VOL);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+					{
+						this->vol = value;
+						this->updateFlags.set(TUF_VOL);
+					}
 					break;
 
 				case SSEQ_CMD_MASTERVOL:
-					this->ply->masterVol = Cnv_Sust(read8(pData));
-					for (uint8_t i = 0; i < this->ply->nTracks; ++i)
-						this->ply->tracks[this->ply->trackIds[i]].updateFlags.set(TUF_VOL);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+					{
+						this->ply->masterVol = Cnv_Sust(value);
+						for (uint8_t i = 0; i < this->ply->nTracks; ++i)
+							this->ply->tracks[this->ply->trackIds[i]].updateFlags.set(TUF_VOL);
+					}
 					break;
 
 				case SSEQ_CMD_PRIO:
-					this->prio = this->ply->prio + read8(pData);
+					value = read8(pData);
+					if (this->processCommand)
+						this->prio = this->ply->prio + value;
 					// Update here?
 					break;
 
 				case SSEQ_CMD_NOTEWAIT:
-					this->state.set(TS_NOTEWAIT, !!read8(pData));
+					value = read8(pData);
+					if (this->processCommand)
+						this->state.set(TS_NOTEWAIT, !!value);
 					break;
 
 				case SSEQ_CMD_TIE:
-					this->state.set(TS_TIEBIT, !!read8(pData));
-					this->ReleaseAllNotes();
+					value = read8(pData);
+					if (this->processCommand)
+					{
+						this->state.set(TS_TIEBIT, !!value);
+						this->ReleaseAllNotes();
+					}
 					break;
 
 				case SSEQ_CMD_EXPR:
-					this->expr = read8(pData);
-					this->updateFlags.set(TUF_VOL);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+					{
+						this->expr = value;
+						this->updateFlags.set(TUF_VOL);
+					}
 					break;
 
 				case SSEQ_CMD_TEMPO:
-					this->ply->tempo = read16(pData);
+					value = read16(pData);
+					if (this->processCommand)
+						this->ply->tempo = value;
 					break;
 
 				case SSEQ_CMD_END:
-					this->state.set(TS_END);
-					return;
+					if (this->processCommand)
+					{
+						this->state.set(TS_END);
+						return;
+					}
+					break;
 
 				case SSEQ_CMD_LOOPSTART:
-					this->loopCount[this->stackPos] = read8(pData);
-					this->stack[this->stackPos++] = *pData;
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand && this->stackPos < FSS_TRACKSTACKSIZE)
+					{
+						this->loopCount[this->stackPos] = value;
+						this->stack[this->stackPos++] = StackValue(STACKTYPE_LOOP, *pData);
+					}
 					break;
 
 				case SSEQ_CMD_LOOPEND:
-					if (this->stackPos)
+					if (this->processCommand && this->stackPos && this->stack[this->stackPos - 1].type == STACKTYPE_LOOP)
 					{
-						const uint8_t *rPos = this->stack[this->stackPos - 1];
+						const uint8_t *rPos = this->stack[this->stackPos - 1].dest;
 						uint8_t &nR = this->loopCount[this->stackPos - 1];
 						uint8_t prevR = nR;
-						if (prevR && !--nR)
-							--this->stackPos;
-						*pData = rPos;
+						if (!prevR)
+							*pData = rPos;
+						else
+						{
+							if (--nR)
+								*pData = rPos;
+							else
+								--this->stackPos;
+						}
 					}
 					break;
 
@@ -433,17 +610,33 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQ_CMD_TRANSPOSE:
-					this->transpose = read8(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+						this->transpose = value;
 					break;
 
 				case SSEQ_CMD_PITCHBEND:
-					this->pitchBend = read8(pData);
-					this->updateFlags.set(TUF_TIMER);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+					{
+						this->pitchBend = value;
+						this->updateFlags.set(TUF_TIMER);
+					}
 					break;
 
 				case SSEQ_CMD_PITCHBENDRANGE:
-					this->pitchBendRange = read8(pData);
-					this->updateFlags.set(TUF_TIMER);
+					value = read8(pData);
+					if (this->processCommand)
+					{
+						this->pitchBendRange = value;
+						this->updateFlags.set(TUF_TIMER);
+					}
 					break;
 
 				//-----------------------------------------------------------------
@@ -451,19 +644,39 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQ_CMD_ATTACK:
-					this->a = read8(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+						this->a = value;
 					break;
 
 				case SSEQ_CMD_DECAY:
-					this->d = read8(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+						this->d = value;
 					break;
 
 				case SSEQ_CMD_SUSTAIN:
-					this->s = read8(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+						this->s = value;
 					break;
 
 				case SSEQ_CMD_RELEASE:
-					this->r = read8(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+						this->r = value;
 					break;
 
 				//-----------------------------------------------------------------
@@ -471,23 +684,41 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQ_CMD_PORTAKEY:
-					this->portaKey = read8(pData) + this->transpose;
-					this->state.set(TS_PORTABIT);
-					// Update here?
+					value = read8(pData);
+					if (this->processCommand)
+					{
+						this->portaKey = value + this->transpose;
+						this->state.set(TS_PORTABIT);
+						// Update here?
+					}
 					break;
 
 				case SSEQ_CMD_PORTAFLAG:
-					this->state.set(TS_PORTABIT, !!read8(pData));
-					// Update here?
+					value = read8(pData);
+					if (this->processCommand)
+					{
+						this->state.set(TS_PORTABIT, !!value);
+						// Update here?
+					}
 					break;
 
 				case SSEQ_CMD_PORTATIME:
-					this->portaTime = read8(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+						this->portaTime = value;
 					// Update here?
 					break;
 
 				case SSEQ_CMD_SWEEPPITCH:
-					this->sweepPitch = read16(pData);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read16(pData);
+					if (this->processCommand)
+						this->sweepPitch = value;
 					// Update here?
 					break;
 
@@ -496,57 +727,158 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQ_CMD_MODDEPTH:
-					this->modDepth = read8(pData);
-					this->updateFlags.set(TUF_MOD);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+					{
+						this->modDepth = value;
+						this->updateFlags.set(TUF_MOD);
+					}
 					break;
 
 				case SSEQ_CMD_MODSPEED:
-					this->modSpeed = read8(pData);
-					this->updateFlags.set(TUF_MOD);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read8(pData);
+					if (this->processCommand)
+					{
+						this->modSpeed = value;
+						this->updateFlags.set(TUF_MOD);
+					}
 					break;
 
 				case SSEQ_CMD_MODTYPE:
-					this->modType = read8(pData);
-					this->updateFlags.set(TUF_MOD);
+					value = read8(pData);
+					if (this->processCommand)
+					{
+						this->modType = value;
+						this->updateFlags.set(TUF_MOD);
+					}
 					break;
 
 				case SSEQ_CMD_MODRANGE:
-					this->modRange = read8(pData);
-					this->updateFlags.set(TUF_MOD);
+					value = read8(pData);
+					if (this->processCommand)
+					{
+						this->modRange = value;
+						this->updateFlags.set(TUF_MOD);
+					}
 					break;
 
 				case SSEQ_CMD_MODDELAY:
-					this->modDelay = read16(pData);
-					this->updateFlags.set(TUF_MOD);
+					if (this->overriding())
+						value = this->overriding.value;
+					else
+						value = read16(pData);
+					if (this->processCommand)
+					{
+						this->modDelay = value;
+						this->updateFlags.set(TUF_MOD);
+					}
 					break;
+
+				//-----------------------------------------------------------------
+				// Randomness-related commands
+				//-----------------------------------------------------------------
+
+				case SSEQ_CMD_RANDOM:
+				{
+					if (this->processCommand)
+						this->overriding() = true;
+					this->overriding.cmd = read8(pData);
+					if ((this->overriding.cmd >= SSEQ_CMD_SETVAR && this->overriding.cmd <= SSEQ_CMD_CMP_NE) || this->overriding.cmd < 0x80)
+						this->overriding.extraValue = read8(pData);
+					int16_t minVal = read16(pData);
+					int16_t maxVal = read16(pData);
+					this->overriding.value = (std::rand() % (maxVal - minVal + 1)) + minVal;
+					break;
+				}
 
 				//-----------------------------------------------------------------
 				// Variable-related commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_RANDOM: // TODO
-					*pData += 5;
+				case SSEQ_CMD_FROMVAR:
+					if (this->processCommand)
+						this->overriding() = true;
+					this->overriding.cmd = read8(pData);
+					if ((this->overriding.cmd >= SSEQ_CMD_SETVAR && this->overriding.cmd <= SSEQ_CMD_CMP_NE) || this->overriding.cmd < 0x80)
+						this->overriding.extraValue = read8(pData);
+					this->overriding.value = this->ply->variables[read8(pData)];
 					break;
 
-				case SSEQ_CMD_PRINTVAR: // TODO
-					*pData += 1;
-					break;
-
-				case SSEQ_CMD_UNSUP1: // TODO
+				case SSEQ_CMD_SETVAR:
+				case SSEQ_CMD_ADDVAR:
+				case SSEQ_CMD_SUBVAR:
+				case SSEQ_CMD_MULVAR:
+				case SSEQ_CMD_DIVVAR:
+				case SSEQ_CMD_SHIFTVAR:
+				case SSEQ_CMD_RANDVAR:
 				{
-					int t = read8(pData);
-					if (t >= SSEQ_CMD_UNSUP2_LO && t <= SSEQ_CMD_UNSUP2_HI)
-						*pData += 1;
-					*pData += 1;
+					int8_t varNo;
+					if (this->overriding())
+					{
+						varNo = this->overriding.extraValue;
+						value = this->overriding.value;
+					}
+					else
+					{
+						varNo = read8(pData);
+						value = read16(pData);
+					}
+					if (cmd == SSEQ_CMD_DIVVAR && !value) // Division by 0, skip it to prevent crashing
+						break;
+					if (this->processCommand)
+						this->ply->variables[varNo] = VarFunc(cmd)(this->ply->variables[varNo], value);
 					break;
 				}
 
-				case SSEQ_CMD_IF: // TODO
+				//-----------------------------------------------------------------
+				// Conditional-related commands
+				//-----------------------------------------------------------------
+
+				case SSEQ_CMD_CMP_EQ:
+				case SSEQ_CMD_CMP_GE:
+				case SSEQ_CMD_CMP_GT:
+				case SSEQ_CMD_CMP_LE:
+				case SSEQ_CMD_CMP_LT:
+				case SSEQ_CMD_CMP_NE:
+				{
+					int8_t varNo;
+					if (this->overriding())
+					{
+						varNo = this->overriding.extraValue;
+						value = this->overriding.value;
+					}
+					else
+					{
+						varNo = read8(pData);
+						value = read16(pData);
+					}
+					if (this->processCommand)
+						this->lastComparisonResult = CompareFunc(cmd)(this->ply->variables[varNo], value);
+					break;
+				}
+
+				case SSEQ_CMD_IF:
+					this->processCommand = this->lastComparisonResult;
 					break;
 
-				default:
-					if (cmd >= SSEQ_CMD_UNSUP2_LO && cmd <= SSEQ_CMD_UNSUP2_HI) // TODO
-						*pData += 3;
+				case SSEQ_CMD_PRINTVAR:
+					++*pData;
+					break;
+
+				case SSEQ_CMD_MUTE: // UNSUPPORTED
+					++*pData;
 			}
+		}
+
+		if (cmd != SSEQ_CMD_RANDOM && cmd != SSEQ_CMD_FROMVAR)
+			this->overriding() = false;
+		if (cmd != SSEQ_CMD_IF)
+			this->processCommand = true;
 	}
 }
