@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <functional>
 #include <bitset>
 #include "consts.h"
 
@@ -40,6 +41,13 @@ struct Override
 	Override() : overriding(false) { }
 	bool operator()() const { return this->overriding; }
 	bool &operator()() { return this->overriding; }
+	int val(const uint8_t **pData, std::function<int (const uint8_t **)> reader, bool returnExtra = false)
+	{
+		if (this->overriding)
+			return returnExtra ? this->extraValue : this->value;
+		else
+			return reader(pData);
+	}
 };
 
 struct Track
@@ -57,7 +65,6 @@ struct Track
 	uint8_t loopCount[FSS_TRACKSTACKSIZE];
 	Override overriding;
 	bool lastComparisonResult;
-	bool processCommand;
 
 	int wait;
 	uint16_t patch;
