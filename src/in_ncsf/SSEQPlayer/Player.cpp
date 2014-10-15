@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-13
+ * Last modification on 2014-10-15
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -31,21 +31,7 @@ bool Player::Setup(const SSEQ *sseqToPlay)
 	this->nTracks = 1;
 	this->trackIds[0] = firstTrack;
 
-	auto pData = &this->sseq->data[0];
-	if (*pData == 0xFE)
-		for (pData += 3; *pData == 0x93; ) // Prepare extra tracks
-		{
-			++pData;
-			int tNum = read8(&pData);
-			auto pos = &this->sseq->data[read24(&pData)];
-			int newTrack = this->TrackAlloc();
-			if (newTrack == -1)
-				continue;
-			this->tracks[newTrack].Init(newTrack, this, pos, tNum);
-			this->trackIds[this->nTracks++] = newTrack;
-		}
-
-	this->tracks[firstTrack].startPos = this->tracks[firstTrack].pos = pData;
+	this->tracks[firstTrack].startPos = this->tracks[firstTrack].pos = &this->sseq->data[0];
 
 	this->ClearState();
 

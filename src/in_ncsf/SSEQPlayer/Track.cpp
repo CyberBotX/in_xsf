@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Track structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-13
+ * Last modification on 2014-10-15
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -260,6 +260,9 @@ void Track::ReleaseAllNotes()
 
 enum SseqCommand
 {
+	SSEQ_CMD_ALLOCTRACK = 0xFE, // Silently ignored
+	SSEQ_CMD_OPENTRACK = 0x93,
+
 	SSEQ_CMD_REST = 0x80,
 	SSEQ_CMD_PATCH = 0x81,
 	SSEQ_CMD_PAN = 0xC0,
@@ -359,6 +362,7 @@ static inline uint8_t SseqCommandByteCount(int cmd)
 			case SSEQ_CMD_MUTE:
 				return 1;
 
+			case SSEQ_CMD_ALLOCTRACK:
 			case SSEQ_CMD_TEMPO:
 			case SSEQ_CMD_SWEEPPITCH:
 			case SSEQ_CMD_MODDELAY:
@@ -380,6 +384,9 @@ static inline uint8_t SseqCommandByteCount(int cmd)
 			case SSEQ_CMD_CMP_LT:
 			case SSEQ_CMD_CMP_NE:
 				return 3;
+
+			case SSEQ_CMD_OPENTRACK:
+				return 4;
 
 			case SSEQ_CMD_FROMVAR:
 				return 1 | ExtraByteOnNoteOrVarOrCmp; // Technically 2 bytes with an additional 1, leaving 1 off because we will be reading it to determine if the additional byte is needed
@@ -510,6 +517,19 @@ void Track::Run()
 				// Main commands
 				//-----------------------------------------------------------------
 
+				case SSEQ_CMD_OPENTRACK:
+				{
+					int tNum = read8(pData);
+					auto pos = &this->ply->sseq->data[read24(pData)];
+					int newTrack = this->ply->TrackAlloc();
+					if (newTrack != -1)
+					{
+						this->ply->tracks[newTrack].Init(newTrack, this->ply, pos, tNum);
+						this->ply->trackIds[this->ply->nTracks++] = newTrack;
+					}
+					break;
+				}
+
 				case SSEQ_CMD_REST:
 					this->wait = this->overriding.val(pData, readvl);
 					break;
@@ -595,15 +615,10 @@ void Track::Run()
 						const uint8_t *rPos = this->stack[this->stackPos - 1].dest;
 						uint8_t &nR = this->loopCount[this->stackPos - 1];
 						uint8_t prevR = nR;
-						if (!prevR)
+						if (!prevR || --nR)
 							*pData = rPos;
 						else
-						{
-							if (--nR)
-								*pData = rPos;
-							else
-								--this->stackPos;
-						}
+							--this->stackPos;
 					}
 					break;
 
