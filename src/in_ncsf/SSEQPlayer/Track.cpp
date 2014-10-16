@@ -520,11 +520,11 @@ void Track::Run()
 				case SSEQ_CMD_OPENTRACK:
 				{
 					int tNum = read8(pData);
-					auto startPos = &this->ply->sseq->data[read24(pData)];
+					auto trackPos = &this->ply->sseq->data[read24(pData)];
 					int newTrack = this->ply->TrackAlloc();
 					if (newTrack != -1)
 					{
-						this->ply->tracks[newTrack].Init(newTrack, this->ply, startPos, tNum);
+						this->ply->tracks[newTrack].Init(newTrack, this->ply, trackPos, tNum);
 						this->ply->trackIds[this->ply->nTracks++] = newTrack;
 					}
 					break;
