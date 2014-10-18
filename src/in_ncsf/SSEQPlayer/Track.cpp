@@ -74,8 +74,7 @@ void Track::ClearState()
 	this->portaKey = 60;
 	this->portaTime = 0;
 	this->sweepPitch = 0;
-	this->vol = 64;
-	this->expr = 127;
+	this->vol = this->expr = 127;
 	this->pan = 0;
 	this->pitchBendRange = 2;
 	this->pitchBend = this->transpose = 0;
