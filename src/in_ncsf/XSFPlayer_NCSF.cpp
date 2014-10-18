@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-13
+ * Last modification on 2014-10-18
  *
  * Partially based on the vio*sf framework
  *
@@ -173,10 +173,9 @@ bool XSFPlayer_NCSF::Load()
 	file.data = &this->sdatData;
 	this->sdat.reset(new SDAT(file, this->sseq));
 	auto *sseqToPlay = this->sdat->sseq.get();
-	this->sseqVol = sseqToPlay->info.vol;
+	this->player.sseqVol = Cnv_Scale(sseqToPlay->info.vol);
 	this->player.sampleRate = this->sampleRate;
 	this->player.Setup(sseqToPlay);
-	//this->player.masterVol = sseqToPlay->info.vol;
 	this->player.Timer();
 	this->secondsPerSample = 1.0 / this->sampleRate;
 	this->secondsIntoPlayback = 0;
@@ -222,12 +221,6 @@ void XSFPlayer_NCSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset,
 				rightChannel += muldiv7(sample, chn.reg.panning);
 			}
 		}
-
-		leftChannel = muldiv7(leftChannel, 127 - this->player.masterVol);
-		rightChannel = muldiv7(rightChannel, 127 - this->player.masterVol);
-
-		//leftChannel = muldiv7(leftChannel, this->sseqVol);
-		//rightChannel = muldiv7(rightChannel, this->sseqVol);
 
 		buf[offset++] = leftChannel & 0xFF;
 		buf[offset++] = (leftChannel >> 8) & 0xFF;

@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-05
+ * Last modification on 2014-10-18
  *
  * Partially based on the vio*sf framework
  *
@@ -23,7 +23,6 @@ class XSFPlayer_NCSF : public XSFPlayer
 	std::vector<uint8_t> sdatData;
 	std::unique_ptr<SDAT> sdat;
 	Player player;
-	uint8_t sseqVol;
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	std::bitset<16> mutes;
 

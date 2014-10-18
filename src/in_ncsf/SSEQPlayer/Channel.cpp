@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-05
+ * Last modification on 2014-10-18
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -71,6 +71,7 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 void Channel::UpdateVol(const Track &trk)
 {
 	int finalVol = trk.ply->masterVol;
+	finalVol += trk.ply->sseqVol;
 	finalVol += Cnv_Sust(trk.vol);
 	finalVol += Cnv_Sust(trk.expr);
 	if (finalVol < -AMPL_K)

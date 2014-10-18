@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-13
+ * Last modification on 2014-10-18
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -19,7 +19,7 @@ struct Player
 {
 	uint8_t prio, nTracks;
 	uint16_t tempo, tempoCount, tempoRate /* 8.8 fixed point */;
-	int16_t masterVol;
+	int16_t masterVol, sseqVol;
 
 	const SSEQ *sseq;
 
