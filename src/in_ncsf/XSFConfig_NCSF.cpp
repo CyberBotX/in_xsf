@@ -248,7 +248,7 @@ void XSFConfig_NCSF::RefreshSoundView()
 	std::wstring buf;
 	for (size_t chanId = 0; chanId < 16; ++chanId)
 	{
-		auto &chn = player->GetChannel(chanId);
+		auto chn = player->GetChannel(chanId);
 
 		if (chn.state > CS_START)
 		{
