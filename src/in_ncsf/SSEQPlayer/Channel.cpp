@@ -445,9 +445,10 @@ void Channel::Update()
 		case CS_ATTACK:
 		{
 			int newAmpl = this->ampl;
+			int oldAmpl = this->ampl >> 7;
 			do
 				newAmpl = (newAmpl * static_cast<int>(this->attackLvl)) / 256;
-			while (newAmpl == this->ampl);
+			while ((newAmpl >> 7) == oldAmpl);
 			this->ampl = newAmpl;
 			if (!this->ampl)
 				this->state = CS_DECAY;
