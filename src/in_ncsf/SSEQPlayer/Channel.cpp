@@ -443,10 +443,16 @@ void Channel::Update()
 			this->state = CS_ATTACK;
 			// Fall down
 		case CS_ATTACK:
-			this->ampl = (this->ampl * static_cast<int>(this->attackLvl)) / 255;
+		{
+			int newAmpl = this->ampl;
+			do
+				newAmpl = (newAmpl * static_cast<int>(this->attackLvl)) / 256;
+			while (newAmpl == this->ampl);
+			this->ampl = newAmpl;
 			if (!this->ampl)
 				this->state = CS_DECAY;
 			break;
+		}
 		case CS_DECAY:
 		{
 			this->ampl -= static_cast<int>(this->decayRate);
@@ -536,6 +542,8 @@ void Channel::Update()
 		if (bVolNeedUpdate)
 		{
 			int totalVol = this->ampl >> 7;
+			if (totalVol == -1)
+				this->ampl = 0;
 			totalVol += this->extAmpl;
 			totalVol += this->velocity;
 			if (bModulation && this->modType == 1)
