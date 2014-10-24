@@ -71,6 +71,7 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 	}
 }
 
+// Original FSS Function: Chn_UpdateVol
 void Channel::UpdateVol(const Track &trk)
 {
 	int finalVol = trk.ply->masterVol;
@@ -82,11 +83,13 @@ void Channel::UpdateVol(const Track &trk)
 	this->extAmpl = finalVol;
 }
 
+// Original FSS Function: Chn_UpdatePan
 void Channel::UpdatePan(const Track &trk)
 {
 	this->extPan = trk.pan;
 }
 
+// Original FSS Function: Chn_UpdateTune
 void Channel::UpdateTune(const Track &trk)
 {
 	int tune = (static_cast<int>(this->key) - static_cast<int>(this->orgKey)) * 64;
@@ -94,6 +97,7 @@ void Channel::UpdateTune(const Track &trk)
 	this->extTune = tune;
 }
 
+// Original FSS Function: Chn_UpdateMod
 void Channel::UpdateMod(const Track &trk)
 {
 	this->modType = trk.modType;
@@ -103,6 +107,7 @@ void Channel::UpdateMod(const Track &trk)
 	this->modDelay = trk.modDelay;
 }
 
+// Original FSS Function: Chn_UpdatePorta
 void Channel::UpdatePorta(const Track &trk)
 {
 	this->manualSweep = false;
@@ -130,6 +135,7 @@ void Channel::UpdatePorta(const Track &trk)
 	}
 }
 
+// Original FSS Function: Chn_Release
 void Channel::Release()
 {
 	this->noteLength = -1;
@@ -137,6 +143,7 @@ void Channel::Release()
 	this->state = CS_RELEASE;
 }
 
+// Original FSS Function: Chn_Kill
 void Channel::Kill()
 {
 	this->state = CS_NONE;
@@ -162,6 +169,7 @@ static inline int getModFlag(int type)
 	}
 }
 
+// Original FSS Function: Chn_UpdateTracks
 void Channel::UpdateTrack()
 {
 	if (!this->ply)
@@ -171,11 +179,11 @@ void Channel::UpdateTrack()
 	if (trkn == -1)
 		return;
 
-	auto &trackFlags = this->ply->tracks[trkn].updateFlags;
+	auto &trk = this->ply->tracks[trkn];
+	auto &trackFlags = trk.updateFlags;
 	if (trackFlags.none())
 		return;
 
-	auto &trk = this->ply->tracks[trkn];
 	if (trackFlags[TUF_LEN])
 	{
 		int st = this->state;
@@ -414,6 +422,7 @@ static inline int calcVolDivShift(int x)
 	return 4;
 }
 
+// Original FSS Function: Snd_UpdChannel
 void Channel::Update()
 {
 	// Kill active channels that aren't physically active
@@ -470,10 +479,11 @@ void Channel::Update()
 		}
 		case CS_RELEASE:
 			this->ampl -= static_cast<int>(this->releaseRate);
-			if (this->ampl > AMPL_THRESHOLD)
-				break;
-			this->Kill();
-			return;
+			if (this->ampl <= AMPL_THRESHOLD)
+			{
+				this->Kill();
+				return;
+			}
 	}
 
 	if (bModulation && this->modDelayCnt < this->modDelay)
@@ -575,10 +585,7 @@ void Channel::Update()
 			if (bModulation && this->modType == 2)
 				realPan += modParam;
 			realPan += 64;
-			if (realPan < 0)
-				realPan = 0;
-			else if (realPan > 127)
-				realPan = 127;
+			clamp(realPan, 0, 127);
 
 			cr &= ~SOUND_PAN(0x7F);
 			cr |= SOUND_PAN(realPan);

@@ -18,6 +18,7 @@ Track::Track()
 	this->Zero();
 }
 
+// Original FSS Function: Player_InitTrack
 void Track::Init(uint8_t handle, Player *player, const uint8_t *dataPos, int n)
 {
 	this->trackId = handle;
@@ -59,6 +60,7 @@ void Track::Zero()
 	this->updateFlags.reset();
 }
 
+// Original FSS Function: Track_ClearState
 void Track::ClearState()
 {
 	this->state.reset();
@@ -84,16 +86,18 @@ void Track::ClearState()
 	this->modType = 0;
 	this->modRange = 1;
 	this->modSpeed = 16;
-	this->modDelay = 10;
+	this->modDelay = 0;
 	this->modDepth = 0;
 }
 
+// Original FSS Function: Track_Free
 void Track::Free()
 {
 	this->state.reset();
 	this->updateFlags.reset();
 }
 
+// Original FSS Function: Note_On
 int Track::NoteOn(int key, int vel, int len)
 {
 	auto sbnk = this->ply->sseq->bank;
@@ -212,6 +216,7 @@ int Track::NoteOn(int key, int vel, int len)
 	return nCh;
 }
 
+// Original FSS Function: Note_On_Tie
 int Track::NoteOnTie(int key, int vel)
 {
 	// Find an existing note
@@ -247,6 +252,7 @@ int Track::NoteOnTie(int key, int vel)
 	return i;
 }
 
+// Original FSS Function: Track_ReleaseAllNotes
 void Track::ReleaseAllNotes()
 {
 	for (int i = 0; i < 16; ++i)
@@ -469,6 +475,7 @@ static inline std::function<bool (int16_t, int16_t)> CompareFunc(int cmd)
 	}
 }
 
+// Original FSS Function: Track_Run
 void Track::Run()
 {
 	// Indicate "heartbeat" for this track

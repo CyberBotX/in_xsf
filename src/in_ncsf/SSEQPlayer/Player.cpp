@@ -15,10 +15,14 @@ Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), m
 {
 	memset(this->trackIds, 0, sizeof(this->trackIds));
 	for (size_t i = 0; i < 16; ++i)
+	{
 		this->channels[i].chnId = i;
+		this->channels[i].ply = this;
+	}
 	memset(this->variables, -1, sizeof(this->variables));
 }
 
+// Original FSS Function: Player_Setup
 bool Player::Setup(const SSEQ *sseqToPlay)
 {
 	this->sseq = sseqToPlay;
@@ -38,6 +42,7 @@ bool Player::Setup(const SSEQ *sseqToPlay)
 	return true;
 }
 
+// Original FSS Function: Player_ClearState
 void Player::ClearState()
 {
 	this->tempo = 120;
@@ -47,6 +52,7 @@ void Player::ClearState()
 	memset(this->variables, -1, sizeof(this->variables));
 }
 
+// Original FSS Function: Player_FreeTracks
 void Player::FreeTracks()
 {
 	for (uint8_t i = 0; i < this->nTracks; ++i)
@@ -54,6 +60,7 @@ void Player::FreeTracks()
 	this->nTracks = 0;
 }
 
+// Original FSS Function: Player_Stop
 void Player::Stop(bool bKillSound)
 {
 	this->ClearState();
@@ -76,6 +83,7 @@ void Player::Stop(bool bKillSound)
 	this->FreeTracks();
 }
 
+// Original FSS Function: Chn_Alloc
 int Player::ChannelAlloc(int type, int priority)
 {
 	static const uint8_t pcmChnArray[] = { 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 };
@@ -105,12 +113,12 @@ int Player::ChannelAlloc(int type, int priority)
 
 	if (curChnNo == -1 || priority < this->channels[curChnNo].prio)
 		return -1;
-	this->channels[curChnNo].ply = this;
 	this->channels[curChnNo].noteLength = -1;
 	this->channels[curChnNo].vol = 0x7FF;
 	return curChnNo;
 }
 
+// Original FSS Function: Track_Alloc
 int Player::TrackAlloc()
 {
 	for (int i = 0; i < FSS_MAXTRACKS; ++i)
@@ -127,6 +135,7 @@ int Player::TrackAlloc()
 	return -1;
 }
 
+// Original FSS Function: Player_Run
 void Player::Run()
 {
 	while (this->tempoCount > 240)
@@ -146,6 +155,7 @@ void Player::UpdateTracks()
 		this->tracks[i].updateFlags.reset();
 }
 
+// Original FSS Function: Snd_Timer
 void Player::Timer()
 {
 	this->UpdateTracks();
