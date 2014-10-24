@@ -79,8 +79,8 @@ void Player::Stop(bool bKillSound)
 int Player::ChannelAlloc(int type, int priority)
 {
 	static const uint8_t pcmChnArray[] = { 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 };
-	static const uint8_t psgChnArray[] = { 13, 12, 11, 10, 9, 8 };
-	static const uint8_t noiseChnArray[] = { 15, 14 };
+	static const uint8_t psgChnArray[] = { 8, 9, 10, 11, 12, 13 };
+	static const uint8_t noiseChnArray[] = { 14, 15 };
 	static const uint8_t arraySizes[] = { sizeof(pcmChnArray), sizeof(psgChnArray), sizeof(noiseChnArray) };
 	static const uint8_t *const arrayArray[] = { pcmChnArray, psgChnArray, noiseChnArray };
 
@@ -107,7 +107,7 @@ int Player::ChannelAlloc(int type, int priority)
 		return -1;
 	this->channels[curChnNo].ply = this;
 	this->channels[curChnNo].noteLength = -1;
-	this->channels[curChnNo].vol = 0;
+	this->channels[curChnNo].vol = 0x7FF;
 	return curChnNo;
 }
 

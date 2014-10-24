@@ -194,7 +194,6 @@ int Track::NoteOn(int key, int vel, int len)
 	chn->modDelayCnt = 0;
 	chn->modCounter = 0;
 	chn->noteLength = len;
-	chn->vol = 0x7FF;
 	chn->reg.sampleIncrease = 0;
 
 	chn->attackLvl = Cnv_Attack(this->a == 0xFF ? noteDef->attackRate : this->a);
