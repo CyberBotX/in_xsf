@@ -543,8 +543,6 @@ void Channel::Update()
 		if (bVolNeedUpdate)
 		{
 			int totalVol = this->ampl >> 7;
-			if (totalVol == -1)
-				this->ampl = 0;
 			totalVol += this->extAmpl;
 			totalVol += this->velocity;
 			if (bModulation && this->modType == 1)
