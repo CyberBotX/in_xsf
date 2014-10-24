@@ -277,9 +277,6 @@ void XSFConfig_NCSF::RefreshSoundView()
 				buf = L"R" + wstringify(chn.reg.panning - 64);
 			SetDlgItemTextW(hDlg, IDC_SOUND0PAN + chanId, buf.c_str());
 
-			SetDlgItemTextW(hDlg, IDC_SOUND0HOLD + chanId, L"---");
-			SetDlgItemTextW(hDlg, IDC_SOUND0BUSY + chanId, L"---");
-
 			static const std::wstring modes[] = { L"Manual", L"Loop Infinite", L"One-Shot", L"Prohibited" };
 			SetDlgItemTextW(hDlg, IDC_SOUND0REPEATMODE + chanId, (wstringify(chn.reg.repeatMode) + L" (" + modes[chn.reg.repeatMode] + L")").c_str());
 
@@ -301,7 +298,8 @@ void XSFConfig_NCSF::RefreshSoundView()
 				SetDlgItemTextW(hDlg, IDC_SOUND0FORMAT + chanId, buf.c_str());
 			}
 
-			SetDlgItemTextW(hDlg, IDC_SOUND0SAD + chanId, L"---");
+			static const std::wstring states[] = { L"NONE", L"START", L"ATTACK", L"DECAY", L"SUSTAIN", L"RELEASE" };
+			SetDlgItemTextW(hDlg, IDC_SOUND0STATE + chanId, states[chn.state].c_str());
 
 			SetDlgItemTextW(hDlg, IDC_SOUND0PNT + chanId, (L"samp #" + wstringify(chn.reg.loopStart)).c_str());
 
@@ -321,11 +319,9 @@ void XSFConfig_NCSF::RefreshSoundView()
 			ProgressSetPosImmediate(hDlg, IDC_SOUND0VOLBAR + chanId, 0);
 			SetDlgItemTextW(hDlg, IDC_SOUND0VOL + chanId, L"---");
 			SetDlgItemTextW(hDlg, IDC_SOUND0PAN + chanId, L"---");
-			SetDlgItemTextW(hDlg, IDC_SOUND0HOLD + chanId, L"---");
-			SetDlgItemTextW(hDlg, IDC_SOUND0BUSY + chanId, L"---");
 			SetDlgItemTextW(hDlg, IDC_SOUND0REPEATMODE + chanId, L"---");
 			SetDlgItemTextW(hDlg, IDC_SOUND0FORMAT + chanId, L"---");
-			SetDlgItemTextW(hDlg, IDC_SOUND0SAD + chanId, L"---");
+			SetDlgItemTextW(hDlg, IDC_SOUND0STATE + chanId, L"NONE");
 			SetDlgItemTextW(hDlg, IDC_SOUND0PNT + chanId, L"---");
 			SetDlgItemTextW(hDlg, IDC_SOUND0TMR + chanId, L"---");
 			SetDlgItemTextW(hDlg, IDC_SOUND0POSLEN + chanId, L"---");
