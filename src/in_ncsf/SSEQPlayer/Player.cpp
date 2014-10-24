@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Player structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-18
+ * Last modification on 2014-10-23
  *
  * Adapted from source code of FeOS Sound System
  * By fincs

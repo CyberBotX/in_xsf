@@ -61,6 +61,11 @@ v1.10.1 - 2014-10-15 - Moved track allocation into the SSEQ command handler on a
                        allocated tracks later than expected originally.
 v1.10.2 - 2014-10-18 - Correctly handle SSEQ volume as well as fix other volume
                        issues.
+v1.10.3 - 2014-10-23 - Corrected attack rate calculation.
+                     - Corrected channel allocation causing sound cutoff, with
+                       lots of help from fincs.
+                     - Changed Sinc interpolation window to Nuttall 3-term on
+                       suggestion from kode54.
 
 This is a Winamp plugin to play NCSF files. NCSF is a PSF-style music format that
 uses SDAT files from Nintendo DS ROMs as it's "program".
