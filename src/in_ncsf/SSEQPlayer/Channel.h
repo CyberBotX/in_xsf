@@ -210,7 +210,7 @@ struct Channel
 	NDSSoundRegister reg;
 
 	/*
-	 * Lookup tables for the cosine and Lanczos Sinc interpolations, to
+	 * Lookup tables for the Sinc interpolation, to
 	 * avoid the need to call the sin/cos functions all the time.
 	 * These are static as they will not change between channels or runs
 	 * of the program.

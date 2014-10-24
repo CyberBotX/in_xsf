@@ -64,7 +64,7 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 		double dx = static_cast<double>(SINC_WIDTH) / SINC_SAMPLES, x = 0.0;
 		for (unsigned i = 0; i <= SINC_SAMPLES; ++i, x += dx)
 		{
-			float y = x / SINC_WIDTH;
+			double y = x / SINC_WIDTH;
 			this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * (0.40897 + 0.5 * std::cos(M_PI * y) + 0.09103 * std::cos(2 * M_PI * y)) : 0.0;
 		}
 		this->initializedLUTs = true;
