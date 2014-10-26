@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-23
+ * Last modification on 2014-10-25
  *
  * Partially based on the vio*sf framework
  */
@@ -21,7 +21,7 @@ enum
 
 unsigned XSFConfig::initSampleRate = 44100;
 std::string XSFConfig::commonName = "NCSF Decoder";
-std::string XSFConfig::versionNumber = "1.10.3";
+std::string XSFConfig::versionNumber = "1.11";
 unsigned XSFConfig_NCSF::initInterpolation = 4;
 std::string XSFConfig_NCSF::initMutes = "0000000000000000";
 

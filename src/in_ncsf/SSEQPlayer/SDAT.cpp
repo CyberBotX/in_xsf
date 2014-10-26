@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - SDAT structure
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-21
+ * Last modification on 2014-10-25
  *
  * Nintendo DS Nitro Composer (SDAT) Specification document found at
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
@@ -14,7 +14,7 @@
 #include "FATSection.h"
 #include "convert.h"
 
-SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk()
+SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk(), player()
 {
 	// Read sections
 	NDSStdHeader header;
@@ -89,5 +89,11 @@ SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk()
 			}
 			else
 				this->swar[i].release();
+
+		// Get PLAYER for this SSEQ, if it exists
+		if (!infoSection.PLAYERrecord.entries.empty())
+			this->player = infoSection.PLAYERrecord.entries[this->sseq->info.ply];
+		if (!this->player.channelMask)
+			this->player.channelMask = 0xFFFF;
 	}
 }

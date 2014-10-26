@@ -1,7 +1,7 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-18
+ * Last modification on 2014-10-25
  *
  * Partially based on the vio*sf framework
  *
@@ -173,6 +173,7 @@ bool XSFPlayer_NCSF::Load()
 	file.data = &this->sdatData;
 	this->sdat.reset(new SDAT(file, this->sseq));
 	auto *sseqToPlay = this->sdat->sseq.get();
+	this->player.allowedChannels = std::bitset<16>(this->sdat->player.channelMask);
 	this->player.sseqVol = Cnv_Scale(sseqToPlay->info.vol);
 	this->player.sampleRate = this->sampleRate;
 	this->player.Setup(sseqToPlay);

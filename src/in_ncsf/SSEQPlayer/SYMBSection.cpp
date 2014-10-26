@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - SDAT SYMB (Symbol/Filename) Section structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
+ * Last modification on 2014-10-25
  *
  * Nintendo DS Nitro Composer (SDAT) Specification document found at
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
@@ -27,7 +27,7 @@ void SYMBRecord::Read(PseudoFile &file, uint32_t startOffset)
 		}
 }
 
-SYMBSection::SYMBSection() : SEQrecord(), BANKrecord(), WAVEARCrecord()
+SYMBSection::SYMBSection() : SEQrecord(), BANKrecord(), WAVEARCrecord(), PLAYERrecord()
 {
 }
 
@@ -55,5 +55,10 @@ void SYMBSection::Read(PseudoFile &file)
 	{
 		file.pos = startOfSYMB + recordOffsets[REC_WAVEARC];
 		this->WAVEARCrecord.Read(file, startOfSYMB);
+	}
+	if (recordOffsets[REC_PLAYER])
+	{
+		file.pos = startOfSYMB + recordOffsets[REC_PLAYER];
+		this->PLAYERrecord.Read(file, startOfSYMB);
 	}
 }
