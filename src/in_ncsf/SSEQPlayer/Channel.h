@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-17
+ * Last modification on 2014-10-27
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -220,6 +220,7 @@ struct Channel
 	static const unsigned SINC_WIDTH = 8;
 	static const unsigned SINC_SAMPLES = SINC_RESOLUTION * SINC_WIDTH;
 	static double sinc_lut[SINC_SAMPLES + 1];
+	static double window_lut[SINC_SAMPLES + 1];
 
 	RingBuffer<SINC_WIDTH * 2> ringBuffer;
 

@@ -1,7 +1,7 @@
 /*
  * SSEQ Player - Channel structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-23
+ * Last modification on 2014-10-27
  *
  * Adapted from source code of FeOS Sound System
  * By fincs
@@ -44,6 +44,7 @@ TempSndReg::TempSndReg() : CR(0), SOURCE(nullptr), TIMER(0), REPEAT_POINT(0), LE
 
 bool Channel::initializedLUTs = false;
 double Channel::sinc_lut[Channel::SINC_SAMPLES + 1];
+double Channel::window_lut[Channel::SINC_SAMPLES + 1];
 
 #ifndef M_PI
 static const double M_PI = 3.14159265358979323846;
@@ -65,7 +66,8 @@ Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0),
 		for (unsigned i = 0; i <= SINC_SAMPLES; ++i, x += dx)
 		{
 			double y = x / SINC_WIDTH;
-			this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) * (0.40897 + 0.5 * std::cos(M_PI * y) + 0.09103 * std::cos(2 * M_PI * y)) : 0.0;
+			this->sinc_lut[i] = std::abs(x) < SINC_WIDTH ? sinc(x) : 0.0;
+			this->window_lut[i] = 0.40897 + 0.5 * std::cos(M_PI * y) + 0.09103 * std::cos(2 * M_PI * y);
 		}
 		this->initializedLUTs = true;
 	}
@@ -625,10 +627,12 @@ int32_t Channel::Interpolate()
 		int i = SINC_WIDTH, shift = static_cast<int>(std::floor(ratio * SINC_RESOLUTION));
 		int step = this->reg.sampleIncrease > 1.0 ? static_cast<int>(SINC_RESOLUTION / this->reg.sampleIncrease) : SINC_RESOLUTION;
 		int shift_adj = shift * step / SINC_RESOLUTION;
+		int window_step = SINC_RESOLUTION;
 		for (; i >= -static_cast<int>(SINC_WIDTH - 1); --i)
 		{
 			int pos = i * step;
-			kernel_sum += kernel[i + SINC_WIDTH - 1] = this->sinc_lut[std::abs(shift_adj - pos)];
+			int window_pos = i * window_step;
+			kernel_sum += kernel[i + SINC_WIDTH - 1] = this->sinc_lut[std::abs(shift_adj - pos)] * this->window_lut[std::abs(shift - window_pos)];
 		}
 		double sum = 0.0;
 		for (i = 0; i < static_cast<int>(SINC_WIDTH * 2); ++i)
