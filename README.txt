@@ -66,6 +66,9 @@ v1.10.3 - 2014-10-23 - Corrected attack rate calculation.
                        lots of help from fincs.
                      - Changed Sinc interpolation window to Nuttall 3-term on
                        suggestion from kode54.
+  v1.11 - 2014-10-27 - Utilize the PLAYER blocks in the SDAT if they exist.
+                     - Sinc modification from kode54, only the sinc pulse should
+                       scale, not the window.
 
 This is a Winamp plugin to play NCSF files. NCSF is a PSF-style music format that
 uses SDAT files from Nintendo DS ROMs as it's "program".
