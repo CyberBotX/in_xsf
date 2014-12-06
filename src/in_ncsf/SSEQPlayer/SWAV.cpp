@@ -96,8 +96,8 @@ void SWAV::Read(PseudoFile &file)
 	if (!this->waveType)
 	{
 		// PCM 8-bit -> PCM signed 16-bit
-		this->data.resize(origData.size(), 0);
-		for (size_t i = 0, len = origData.size(); i < len; ++i)
+		this->data.resize(size, 0);
+		for (size_t i = 0; i < size; ++i)
 			this->data[i] = origData[i] << 8;
 		this->loopOffset *= 4;
 		this->nonLoopLength *= 4;
@@ -105,8 +105,8 @@ void SWAV::Read(PseudoFile &file)
 	else if (this->waveType == 1)
 	{
 		// PCM signed 16-bit, no conversion
-		this->data.resize(origData.size() / 2, 0);
-		for (size_t i = 0, len = origData.size() / 2; i < len; ++i)
+		this->data.resize(size / 2, 0);
+		for (size_t i = 0; i < size / 2; ++i)
 			this->data[i] = ReadLE<int16_t>(&origData[2 * i]);
 		this->loopOffset *= 2;
 		this->nonLoopLength *= 2;
@@ -114,9 +114,10 @@ void SWAV::Read(PseudoFile &file)
 	else if (this->waveType == 2)
 	{
 		// IMA ADPCM -> PCM signed 16-bit
-		this->data.resize((origData.size() - 4) * 2, 0);
-		this->DecodeADPCM(&origData[0], origData.size() - 4);
-		--this->loopOffset;
+		this->data.resize((size - 4) * 2, 0);
+		this->DecodeADPCM(&origData[0], size - 4);
+		if (this->loopOffset)
+			--this->loopOffset;
 		this->loopOffset *= 8;
 		this->nonLoopLength *= 8;
 	}
