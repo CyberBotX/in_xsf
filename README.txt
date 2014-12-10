@@ -69,6 +69,8 @@ v1.10.3 - 2014-10-23 - Corrected attack rate calculation.
   v1.11 - 2014-10-27 - Utilize the PLAYER blocks in the SDAT if they exist.
                      - Sinc modification from kode54, only the sinc pulse should
                        scale, not the window.
+v1.11.1 - 2014-12-09 - Fixed unsigned underflow with a loop offset of 0 on an
+                       ADPCM SWAV.
 
 This is a Winamp plugin to play NCSF files. NCSF is a PSF-style music format that
 uses SDAT files from Nintendo DS ROMs as it's "program".
