@@ -211,7 +211,8 @@ bool XSFPlayer_2SF::Load()
 	if (NDS_Init())
 		return false;
 
-	SPU_ChangeSoundCore(SNDIFID_2SF, 737);
+	static const int BUFFERSIZE = DESMUME_SAMPLE_RATE / 59.837; //truncates to 737, the traditional value, for 44100
+	SPU_ChangeSoundCore(SNDIFID_2SF, BUFFERSIZE);
 
 	execute = false;
 
