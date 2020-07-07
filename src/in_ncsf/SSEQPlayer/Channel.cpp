@@ -509,25 +509,18 @@ void Channel::Update()
 		}
 
 		// Get the current modulation parameter
-		modParam = Cnv_Sine(this->modCounter >> 8) * this->modRange * this->modDepth;
+		modParam = Cnv_Sine(this->modCounter >> 8) * this->modRange * this->modDepth; // 7.14
 
-		if (!this->modType)
-			modParam = static_cast<int64_t>(modParam * 60) >> 14;
+		if (this->modType == 1)
+			modParam = static_cast<int64_t>(modParam * 60) >> 14; // vol: adjust range to 6dB = 60cB (no fractional bits)
 		else
-			// This ugly formula whose exact meaning and workings I cannot figure out is used for volume/pan modulation.
-			modParam = ((modParam & ~0xFC000000) >> 8) | ((((modParam < 0 ? -1 : 0) << 6) | (static_cast<uint32_t>(modParam) >> 26)) << 18);
+			modParam >>= 8; // tmr/pan: adjust to 7.6
 
 		// Update the modulation variables
-
-		uint16_t speed = static_cast<uint16_t>(this->modSpeed) << 6;
-		uint16_t counter = (this->modCounter + speed) >> 8;
-
-		while (counter >= 0x80)
-			counter -= 0x80;
-
-		this->modCounter += speed;
-		this->modCounter &= 0xFF;
-		this->modCounter |= counter << 8;
+		uint32_t counter = this->modCounter + (this->modSpeed << 6);
+		while (counter >= 0x8000)
+			counter -= 0x8000;
+		this->modCounter += counter;
 	}
 
 	if (bTmrNeedUpdate)
