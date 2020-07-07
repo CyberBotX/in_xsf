@@ -520,7 +520,7 @@ void Channel::Update()
 		uint32_t counter = this->modCounter + (this->modSpeed << 6);
 		while (counter >= 0x8000)
 			counter -= 0x8000;
-		this->modCounter += counter;
+		this->modCounter = counter;
 	}
 
 	if (bTmrNeedUpdate)
