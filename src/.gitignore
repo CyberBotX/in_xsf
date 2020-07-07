@@ -3,3 +3,4 @@ Release
 *.suo
 *.release
 *.aps
+.vs
