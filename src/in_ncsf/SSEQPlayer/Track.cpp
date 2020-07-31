@@ -165,8 +165,7 @@ int Track::NoteOn(int key, int vel, int len)
 			chn = &this->ply->channels[nCh];
 			chn->tempReg.CR = SOUND_FORMAT_PSG | SCHANNEL_ENABLE | SOUND_DUTY(noteDef->swav & 0x7);
 		}
-		// TODO: figure out what pNoteDef->tnote means for PSG channels
-		chn->tempReg.TIMER = -SOUND_FREQ(440 * 8); // key #69 (A4)
+		chn->tempReg.TIMER = -SOUND_FREQ(262 * 8); // key #60 (C4)
 		chn->reg.samplePosition = -1;
 		chn->reg.psgX = 0x7FFF;
 	}
@@ -192,7 +191,7 @@ int Track::NoteOn(int key, int vel, int len)
 	chn->flags.reset();
 	chn->prio = this->prio;
 	chn->key = key;
-	chn->orgKey = bIsPCM ? noteDef->noteNumber : 69;
+	chn->orgKey = noteDef->noteNumber;
 	chn->velocity = Cnv_Sust(vel);
 	chn->pan = static_cast<int>(noteDef->pan) - 64;
 	chn->modDelayCnt = 0;

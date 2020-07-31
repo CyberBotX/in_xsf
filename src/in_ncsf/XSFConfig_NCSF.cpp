@@ -305,7 +305,7 @@ void XSFConfig_NCSF::RefreshSoundView()
 
 			std::wstring tmpBuf = ConvertFuncs::StringToWString(NumToHexString(chn.reg.timer)).substr(2);
 			buf = L"$" + tmpBuf + L" (";
-			tmpBuf = wstringify((ARM7_CLOCK / 2) / static_cast<double>(0x10000 - chn.reg.timer));
+			tmpBuf = wstringify((ARM7_CLOCK / 2) / static_cast<double>(0x10000 - chn.reg.timer) / 8);
 			if (tmpBuf.find('.') != std::wstring::npos)
 				tmpBuf = tmpBuf.substr(0, tmpBuf.find('.') + 2);
 			buf += tmpBuf + L" Hz)";
