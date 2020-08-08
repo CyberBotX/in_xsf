@@ -744,9 +744,9 @@ void Channel::IncrementSample()
 
 			if (this->reg.repeatMode == 1)
 			{
-				if (loc >= this->reg.totalLength)
+				while (loc >= this->reg.totalLength)
 					loc -= this->reg.length;
-				if (newloc >= this->reg.totalLength)
+				while (newloc >= this->reg.totalLength)
 					newloc -= this->reg.length;
 			}
 
