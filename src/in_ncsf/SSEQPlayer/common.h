@@ -42,7 +42,7 @@ struct PseudoFile
 			arr[i] = this->ReadLE<T>();
 	}
 
-	template<size_t N> void ReadLE( uint8_t arr[N])
+	template<size_t N> void ReadLE(uint8_t arr[N])
 	{
 		memcpy(&arr[0], &(*this->data)[this->pos], N);
 		this->pos += N;
@@ -217,12 +217,12 @@ inline int Cnv_Sust(int sust)
 
 inline int Cnv_Sine(int arg)
 {
-	static const int lut_size = 32;
 	static const int8_t lut[] =
 	{
 		0, 6, 12, 19, 25, 31, 37, 43, 49, 54, 60, 65, 71, 76, 81, 85, 90, 94,
 		98, 102, 106, 109, 112, 115, 117, 120, 122, 123, 125, 126, 126, 127, 127
 	};
+	static const int lut_size = sizeof(lut) / sizeof(int8_t);
 
 	if (arg < lut_size)
 		return lut[arg];

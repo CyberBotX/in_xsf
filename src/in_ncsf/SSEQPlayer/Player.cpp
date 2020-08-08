@@ -15,7 +15,7 @@ Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), m
 	interpolation(INTERPOLATION_NONE)
 {
 	memset(this->trackIds, 0, sizeof(this->trackIds));
-	for (size_t i = 0; i < 16; ++i)
+	for (int8_t i = 0; i < 16; ++i)
 	{
 		this->channels[i].chnId = i;
 		this->channels[i].ply = this;
