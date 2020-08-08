@@ -38,7 +38,7 @@ Point<short> RelativePosition::CalculatePosition(const Rect<short> &child, const
 
 void DialogTemplate::DialogGroup::CalculatePositions(bool doRightAndBottom)
 {
-	short x = 0, num = this->controls.empty() ? 0 : this->controls.size();
+	short x = 0, num = this->controls.empty() ? 0 : static_cast<short>(this->controls.size());
 	for (; x < num; ++x)
 	{
 		auto &control = this->controls[x];
@@ -306,7 +306,7 @@ void DialogTemplate::CalculateSize()
 void DialogTemplate::AutoSize()
 {
 	// Step 1: Calculate positions of dialog controls (only if the controls's position is relative to a sibling or if it's relativeness to the parent is from the top, left, or top left)
-	short x = 0, num = this->controls.empty() ? 0 : this->controls.size(), maxGroupWidth = 0;
+	short x = 0, num = this->controls.empty() ? 0 : static_cast<short>(this->controls.size()), maxGroupWidth = 0;
 	for (; x < num; ++x)
 	{
 		auto &control = this->controls[x];
