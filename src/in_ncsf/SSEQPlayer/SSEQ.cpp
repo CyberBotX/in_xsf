@@ -7,6 +7,7 @@
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
  */
 
+#include <stdexcept>
 #include "SSEQ.h"
 #include "NDSStdHeader.h"
 
