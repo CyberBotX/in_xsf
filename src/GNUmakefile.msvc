@@ -1,18 +1,18 @@
 all: in_xsf_framework.lib in_2sf.dll in_gsf.dll in_ncsf.dll in_snsf.dll
 
-in_xsf_framework.lib:
+in_xsf_framework.lib: FORCE
 	$(MAKE) -C in_xsf_framework
 
-in_2sf.dll: in_xsf_framework.lib
+in_2sf.dll: in_xsf_framework.lib FORCE
 	$(MAKE) -C in_2sf
 
-in_gsf.dll: in_xsf_framework.lib
+in_gsf.dll: in_xsf_framework.lib FORCE
 	$(MAKE) -C in_gsf
 
-in_ncsf.dll: in_xsf_framework.lib
+in_ncsf.dll: in_xsf_framework.lib FORCE
 	$(MAKE) -C in_ncsf
 
-in_snsf.dll: in_xsf_framework.lib
+in_snsf.dll: in_xsf_framework.lib FORCE
 	$(MAKE) -C in_snsf
 
 clean: FORCE

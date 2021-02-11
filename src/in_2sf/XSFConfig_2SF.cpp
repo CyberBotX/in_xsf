@@ -89,6 +89,7 @@ INT_PTR CALLBACK XSFConfig_2SF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"No Interpolation"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Linear Interpolation"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Cosine Interpolation"));
+			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Sharp Interpolation"));
 			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_SETCURSEL, this->interpolation, 0);
 			// Mutes
 			for (size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
