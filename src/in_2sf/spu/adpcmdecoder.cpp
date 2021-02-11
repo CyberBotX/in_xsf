@@ -76,7 +76,7 @@ std::vector<int16_t> AdpcmDecoder::decode(const std::vector<char>& data, uint32_
   }
   std::vector<int16_t> sample;
   sample.reserve(length << 1);
-  for (int i = 0; i < length; i++) {
+  for (uint32_t i = 0; i < length; i++) {
     sample.push_back(getNextSample(data[offset + i] & 0x0f));
     sample.push_back(getNextSample(uint8_t(data[offset + i] & 0xf0) >> 4));
   }
