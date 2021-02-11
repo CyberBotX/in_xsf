@@ -96,7 +96,7 @@ static const s16 wavedutytbl[8][8] = {
 
 static const double ARM7_CLOCK = 33513982;
 
-double DESMUME_SAMPLE_RATE = 48000;
+double DESMUME_SAMPLE_RATE = 32728.498;
 static double samples_per_hline = (DESMUME_SAMPLE_RATE / 59.8261f) / 263.0f;
 static double sampleLength = DESMUME_SAMPLE_RATE / 32728.498;
 

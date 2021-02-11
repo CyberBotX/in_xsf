@@ -41,7 +41,7 @@ public:
 	void About(HWND parent);
 };
 
-unsigned XSFConfig::initSampleRate = 44100;
+unsigned XSFConfig::initSampleRate = DESMUME_SAMPLE_RATE;
 std::string XSFConfig::commonName = "2SF Decoder";
 std::string XSFConfig::versionNumber = "0.9b";
 unsigned XSFConfig_2SF::initInterpolation = 2;
@@ -54,7 +54,7 @@ XSFConfig *XSFConfig::Create()
 
 XSFConfig_2SF::XSFConfig_2SF() : XSFConfig(), interpolation(0), mutes()
 {
-	this->supportedSampleRates.push_back(44100);
+	this->supportedSampleRates.push_back(DESMUME_SAMPLE_RATE);
 }
 
 void XSFConfig_2SF::LoadSpecificConfig()
