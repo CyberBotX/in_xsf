@@ -324,7 +324,7 @@
 //! vendor[12] = '\0';
 //!
 //! // Print a CPU vendor retrieved from CPUID.
-//! ::printf("%s", cpuVendor);
+//! ::fprintf(stderr, "%s", cpuVendor);
 //! ~~~
 
 // ============================================================================

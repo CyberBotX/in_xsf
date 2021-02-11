@@ -1,6 +1,6 @@
 /*
 	Copyright 2006 Theo Berkau
-	Copyright (C) 2006-2010 DeSmuME team
+	Copyright (C) 2006-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,50 +16,58 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#ifndef SPU_H
+#define SPU_H
 
-#include <memory>
 #include <iosfwd>
 #include <string>
-#include <cassert>
+#include <assert.h>
+#include <stdio.h>
+#include <memory>
+
 #include "types.h"
 #include "matrix.h"
-#include "emufile.h"
 #include "metaspu/metaspu.h"
 
-const int SNDCORE_DEFAULT = -1;
-const int SNDCORE_DUMMY = 0;
+class EMUFILE;
 
-const uint8_t CHANSTAT_STOPPED = 0;
-const uint8_t CHANSTAT_PLAY = 1;
+#define SNDCORE_DEFAULT         -1
+#define SNDCORE_DUMMY           0
 
-inline int32_t spumuldiv7(int32_t val, uint8_t multiplier)
-{
+#define CHANSTAT_STOPPED          0
+#define CHANSTAT_PLAY             1
+
+
+//who made these static? theyre used in multiple places.
+FORCEINLINE u32 sputrunc(float f) { return u32floor(f); }
+FORCEINLINE u32 sputrunc(double d) { return u32floor(d); }
+FORCEINLINE s32 spumuldiv7(s32 val, u8 multiplier) {
 	assert(multiplier <= 127);
-	return multiplier == 127 ? val : ((val * multiplier) >> 7);
+	return (multiplier == 127) ? val : ((val * multiplier) >> 7);
 }
 
 enum SPUInterpolationMode
 {
-	SPUInterpolation_None,
-	SPUInterpolation_Linear,
-	SPUInterpolation_Cosine
+	SPUInterpolation_None   = 0,
+	SPUInterpolation_Linear = 1,
+	SPUInterpolation_Cosine = 2,
+	SPUInterpolation_Sharp  = 3
 };
 
 struct SoundInterface_struct
 {
-	int id;
-	const char *Name;
-	int (*Init)(int buffersize);
-	void (*DeInit)();
-	void (*UpdateAudio)(int16_t *buffer, uint32_t num_samples);
-	uint32_t (*GetAudioSpace)();
-	void (*MuteAudio)();
-	void (*UnMuteAudio)();
-	void (*SetVolume)(int volume);
-	void (*ClearBuffer)();
-	void (*FetchSamples)(int16_t *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-	size_t (*PostProcessSamples)(int16_t *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+   int id;
+   const char *Name;
+   int (*Init)(int buffersize);
+   void (*DeInit)();
+   void (*UpdateAudio)(s16 *buffer, u32 num_samples);
+   u32 (*GetAudioSpace)();
+   void (*MuteAudio)();
+   void (*UnMuteAudio)();
+   void (*SetVolume)(int volume);
+   void (*ClearBuffer)();
+   void (*FetchSamples)(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+   size_t (*PostProcessSamples)(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
 };
 
 extern SoundInterface_struct SNDDummy;
@@ -68,43 +76,69 @@ extern int SPU_currentCoreNum;
 
 struct channel_struct
 {
-	channel_struct() { }
-	uint32_t num;
-	uint8_t vol;
-	uint8_t datashift;
-	uint8_t hold;
-	uint8_t pan;
-	uint8_t waveduty;
-	uint8_t repeat;
-	uint8_t format;
-	uint8_t keyon;
-	uint8_t status;
-	uint32_t addr;
-	uint16_t timer;
-	uint16_t loopstart;
-	uint32_t length;
-	uint32_t totlength;
-	double double_totlength_shifted;
-	double sampcnt;
-	double sampinc;
-	// ADPCM specific
-	uint32_t lastsampcnt;
-	int16_t pcm16b, pcm16b_last;
-	int16_t loop_pcm16b;
-	int32_t index;
-	int loop_index;
-	uint16_t x;
-	int16_t psgnoise_last;
+	channel_struct() :	num(0),
+						vol(0),
+						volumeDiv(0),
+						hold(0),
+						pan(0),
+						waveduty(0),
+						repeat(0),
+						format(0),
+						keyon(0),
+						status(0),
+						addr(0),
+						timer(0),
+						loopstart(0),
+						length(0),
+						totlength(0),
+						double_totlength_shifted(0.0),
+						sampcnt(0.0),
+						sampinc(0.0),
+						lastsampcnt(0),
+						pcm16b(0),
+						pcm16b_last(0),
+						loop_pcm16b(0),
+						index(0),
+						loop_index(0),
+						x(0),
+						psgnoise_last(0)
+	{}
+	u32 num;
+   u8 vol;
+   u8 volumeDiv;
+   u8 hold;
+   u8 pan;
+   u8 waveduty;
+   u8 repeat;
+   u8 format;
+   u8 keyon;
+   u8 status;
+   u32 addr;
+   u16 timer;
+   u16 loopstart;
+   u32 length;
+   u32 totlength;
+   double double_totlength_shifted;
+   double sampcnt;
+   double sampinc;
+   // ADPCM specific
+   u32 lastsampcnt;
+   s16 pcm16b, pcm16b_last;
+   s16 loop_pcm16b;
+   s32 index;
+   int loop_index;
+   u16 x;
+   s16 psgnoise_last;
 };
 
 class SPUFifo
 {
 public:
 	SPUFifo();
-	void enqueue(int16_t val);
-	int16_t dequeue();
-	int16_t buffer[16];
-	int32_t head, tail, size;
+	void enqueue(s16 val);
+	s16 dequeue();
+	s16 buffer[16];
+	s32 head,tail,size;
 	void reset();
 };
 
@@ -112,98 +146,122 @@ class SPU_struct
 {
 public:
 	SPU_struct(int buffersize);
-	uint32_t bufpos;
-	uint32_t buflength;
-	std::unique_ptr<int32_t[]> sndbuf;
-	int32_t lastdata; //the last sample that a channel generated
-	std::unique_ptr<int16_t[]> outbuf;
-	uint32_t bufsize;
-	channel_struct channels[16];
+   u32 bufpos;
+   u32 buflength;
+   s32 *sndbuf;
+   s32 lastdata; //the last sample that a channel generated
+   s16 *outbuf;
+   u32 bufsize;
+   channel_struct channels[16];
 
-	// registers
-	struct REGS
-	{
-		REGS() : mastervol(0), ctl_left(0), ctl_right(0), ctl_ch1bypass(0), ctl_ch3bypass(0), masteren(0), soundbias(0) { }
+   //registers
+   struct REGS {
+	   REGS()
+			: mastervol(0)
+			, ctl_left(0)
+			, ctl_right(0)
+			, ctl_ch1bypass(0)
+			, ctl_ch3bypass(0)
+			, masteren(0)
+			, soundbias(0)
+	   {}
 
-		uint8_t mastervol;
-		uint8_t ctl_left, ctl_right;
-		uint8_t ctl_ch1bypass, ctl_ch3bypass;
-		uint8_t masteren;
-		uint16_t soundbias;
+	   u8 mastervol;
+	   u8 ctl_left, ctl_right;
+	   u8 ctl_ch1bypass, ctl_ch3bypass;
+	   u8 masteren;
+	   u16 soundbias;
 
-		enum LeftOutputMode
-		{
-			LOM_LEFT_MIXER,
-			LOM_CH1,
-			LOM_CH3,
-			LOM_CH1_PLUS_CH3
-		};
+	   enum LeftOutputMode
+	   {
+		   LOM_LEFT_MIXER=0, LOM_CH1=1, LOM_CH3=2, LOM_CH1_PLUS_CH3=3
+	   };
 
-		enum RightOutputMode
-		{
-			ROM_RIGHT_MIXER,
-			ROM_CH1,
-			ROM_CH3,
-			ROM_CH1_PLUS_CH3
-		};
+	   enum RightOutputMode
+	   {
+		   ROM_RIGHT_MIXER=0, ROM_CH1=1, ROM_CH3=2, ROM_CH1_PLUS_CH3=3
+	   };
 
-		struct CAP
-		{
-			CAP() : add(0), source(0), oneshot(0), bits8(0), active(0), dad(0), len(0) { }
-			uint8_t add, source, oneshot, bits8, active;
-			uint32_t dad;
-			uint16_t len;
-			struct Runtime
-			{
-				Runtime() : running(0), curdad(0), maxdad(0) { }
-				uint8_t running;
-				uint32_t curdad;
-				uint32_t maxdad;
-				double sampcnt;
-				SPUFifo fifo;
-			} runtime;
-		} cap[2];
-	} regs;
+	   struct CAP {
+		   CAP()
+			   : add(0), source(0), oneshot(0), bits8(0), active(0), dad(0), len(0)
+		   {}
+		   u8 add, source, oneshot, bits8, active;
+		   u32 dad;
+		   u16 len;
+		   struct Runtime {
+			   Runtime()
+				   : running(0), curdad(0), maxdad(0)
+			   {}
+			   u8 running;
+			   u32 curdad;
+			   u32 maxdad;
+			   double sampcnt;
+			   SPUFifo fifo;
+		   } runtime;
+	   } cap[2];
+   } regs;
 
-	void reset();
-	void KeyOff(int channel);
-	void KeyOn(int channel);
-	void KeyProbe(int channel);
-	void ProbeCapture(int which);
-	void WriteByte(uint32_t addr, uint8_t val);
-	uint8_t ReadByte(uint32_t addr);
-	uint16_t ReadWord(uint32_t addr);
-	uint32_t ReadLong(uint32_t addr);
-	void WriteWord(uint32_t addr, uint16_t val);
-	void WriteLong(uint32_t addr, uint32_t val);
+   void reset();
+   ~SPU_struct();
+   void KeyOff(int channel);
+   void KeyOn(int channel);
+   void KeyProbe(int channel);
+   void ProbeCapture(int which);
+   void WriteByte(u32 addr, u8 val);
+   void WriteWord(u32 addr, u16 val);
+   void WriteLong(u32 addr, u32 val);
+   u8 ReadByte(u32 addr);
+   u16 ReadWord(u32 addr);
+   u32 ReadLong(u32 addr);
+   bool isSPU(u32 addr) { return ((addr >= 0x04000400) && (addr < 0x04000520)); }
 
-	// kills all channels but leaves SPU otherwise running normally
-	void ShutUp();
+   //kills all channels but leaves SPU otherwise running normally
+   void ShutUp();
 };
 
-int SPU_ChangeSoundCore(int coreid, int buffersize);
-
-void SPU_ReInit();
-int SPU_Init(int coreid, int buffersize);
-void SPU_SetSynchMode(ESynchMode mode, ESynchMethod method);
-void SPU_Reset();
-void SPU_DeInit();
-void SPU_KeyOn(int channel);
-void SPU_WriteByte(uint32_t addr, uint8_t val);
-void SPU_WriteWord(uint32_t addr, uint16_t val);
-void SPU_WriteLong(uint32_t addr, uint32_t val);
-uint8_t SPU_ReadByte(uint32_t addr);
-uint16_t SPU_ReadWord(uint32_t addr);
-uint32_t SPU_ReadLong(uint32_t addr);
-void SPU_Emulate_core();
-void SPU_Emulate_user(bool mix = true);
-void SPU_DefaultFetchSamples(int16_t *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-size_t SPU_DefaultPostProcessSamples(int16_t *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
-
-extern std::unique_ptr<SPU_struct> SPU_core, SPU_user;
+extern SPU_struct *SPU_core;
 extern int spu_core_samples;
 
-// we should make this configurable eventually
-// but at least defining it somewhere is probably a step in the right direction
-const int DESMUME_SAMPLE_RATE = 44100;
-//#define DESMUME_SAMPLE_RATE 48000
+int SPU_ChangeSoundCore(int coreid, int buffersize);
+SoundInterface_struct *SPU_SoundCore();
+
+void SPU_ReInit(bool fakeBoot = false);
+int SPU_Init(int coreid, int buffersize);
+void SPU_Pause(int pause);
+void SPU_SetVolume(int volume);
+void SPU_SetSynchMode(int mode, int method);
+void SPU_ClearOutputBuffer(void);
+void SPU_Reset(void);
+void SPU_DeInit(void);
+void SPU_KeyOn(int channel);
+static FORCEINLINE void SPU_WriteByte(u32 addr, u8 val)
+{
+	addr &= 0xFFF;
+
+	SPU_core->WriteByte(addr,val);
+}
+static FORCEINLINE void SPU_WriteWord(u32 addr, u16 val)
+{
+	addr &= 0xFFF;
+
+	SPU_core->WriteWord(addr,val);
+}
+static FORCEINLINE void SPU_WriteLong(u32 addr, u32 val)
+{
+	addr &= 0xFFF;
+
+	SPU_core->WriteLong(addr,val);
+}
+static FORCEINLINE u8 SPU_ReadByte(u32 addr) { return SPU_core->ReadByte(addr & 0x0FFF); }
+static FORCEINLINE u16 SPU_ReadWord(u32 addr) { return SPU_core->ReadWord(addr & 0x0FFF); }
+static FORCEINLINE u32 SPU_ReadLong(u32 addr) { return SPU_core->ReadLong(addr & 0x0FFF); }
+void SPU_Emulate_core(void);
+void SPU_Emulate_user(bool mix = true);
+void SPU_DefaultFetchSamples(s16 *sampleBuffer, size_t sampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+size_t SPU_DefaultPostProcessSamples(s16 *postProcessBuffer, size_t requestedSampleCount, ESynchMode synchMode, ISynchronizingAudioBuffer *theSynchronizer);
+
+extern double DESMUME_SAMPLE_RATE;
+void SetDesmumeSampleRate(double rate);
+
+#endif

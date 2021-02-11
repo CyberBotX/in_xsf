@@ -201,7 +201,7 @@ static uint32_t X86FuncDecl_initConv(X86FuncDecl* self, uint32_t arch, uint32_t 
 
       case kX86FuncConvMsFastCall:
         self->_calleePopsStack = true;
-        self->_passed.set(kX86RegClassGp, IntUtil::mask(R(Cx), R(Cx)));
+        self->_passed.set(kX86RegClassGp, IntUtil::mask(R(Cx), R(Dx)));
         self->_passedOrderGp[0] = R(Cx);
         self->_passedOrderGp[1] = R(Dx);
         break;

@@ -24,6 +24,17 @@
 #define cpu (&ARMPROC)
 #define TEMPLATE template<int PROCNUM>
 
+struct CompressionHeader
+{
+public:
+	CompressionHeader(u32 _value) : value(_value) {}
+	u32 DataSize() const { return value&15; }
+	u32 Type() const { return (value>>4)&15; }
+	u32 DecompressedSize() const { return value>>24; }
+private:
+	u32 value;
+};
+
 static const uint16_t getsinetbl[] =
 {
 	0x0000, 0x0324, 0x0648, 0x096A, 0x0C8C, 0x0FAB, 0x12C8, 0x15E2,
@@ -673,7 +684,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 {
 	uint32_t source = cpu->R[0];
 	uint32_t dest = cpu->R[1];
-	uint32_t header = _MMU_read08<PROCNUM>(source);
+	uint32_t header = _MMU_read32<PROCNUM>(source);
 	source += 4;
 
 	if (!(source & 0xe000000) || !((source + ((header >> 8) & 0x1fffff)) & 0xe000000))
@@ -688,7 +699,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 	int len = header >> 8;
 
 	uint32_t mask = 0x80000000;
-	uint32_t data = _MMU_read08<PROCNUM>(source);
+	uint32_t data = _MMU_read32<PROCNUM>(source);
 	source += 4;
 
 	int pos = 0;
@@ -738,7 +749,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 				{
 					byteCount = 0;
 					byteShift = 0;
-					_MMU_write08<PROCNUM>(dest, writeValue & 0xFF);
+					_MMU_write32<PROCNUM>(dest, writeValue);
 					writeValue = 0;
 					dest += 4;
 					len -= 4;
@@ -748,7 +759,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 			if (!mask)
 			{
 				mask = 0x80000000;
-				data = _MMU_read08<PROCNUM>(source);
+				data = _MMU_read32<PROCNUM>(source);
 				source += 4;
 			}
 		}
@@ -801,7 +812,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 					{
 						byteCount = 0;
 						byteShift = 0;
-						_MMU_write08<PROCNUM>(dest, writeValue & 0xFF);
+						_MMU_write32<PROCNUM>(dest, writeValue);
 						dest += 4;
 						writeValue = 0;
 						len -= 4;
@@ -815,7 +826,7 @@ TEMPLATE static uint32_t UnCompHuffman()
 			if (!mask)
 			{
 				mask = 0x80000000;
-				data = _MMU_read08<PROCNUM>(source);
+				data = _MMU_read32<PROCNUM>(source);
 				source += 4;
 			}
 		}
@@ -856,7 +867,7 @@ TEMPLATE static uint32_t BitUnPack()
 	}
 
 	int revbits = 8 - bits;
-	uint32_t base = _MMU_read08<PROCNUM>(header + 4);
+	uint32_t base = _MMU_read32<PROCNUM>(header + 4);
 	int addBase = base & 0x80000000 ? 1 : 0;
 	base &= 0x7fffffff;
 
@@ -875,21 +886,21 @@ TEMPLATE static uint32_t BitUnPack()
 		{
 			if (bitcount >= 8)
 				break;
-			uint32_t d = b & mask;
-			uint32_t temp = d >> bitcount;
-			if (!temp && addBase)
-				temp += base;
+      uint32_t temp = b & mask;
+      if (temp || addBase) {
+        temp += base;
+      }
 			data |= temp << bitwritecount;
 			bitwritecount += dataSize;
 			if (bitwritecount >= 32)
 			{
-				_MMU_write08<PROCNUM>(dest, data);
+				_MMU_write32<PROCNUM>(dest, data);
 				dest += 4;
 				data = 0;
 				bitwritecount = 0;
 			}
-			mask <<= bits;
 			bitcount += bits;
+      b >>= bits;
 		}
 	}
 	return 1;
@@ -899,13 +910,15 @@ TEMPLATE static uint32_t Diff8bitUnFilterWram()
 {
 	uint32_t source = cpu->R[0];
 	uint32_t dest = cpu->R[1];
-	uint32_t header = _MMU_read08<PROCNUM>(source);
+	CompressionHeader header(_MMU_read32<PROCNUM>(source));
 	source += 4;
 
-	if (!(source & 0xe000000) || !((source + ((header >> 8) & 0x1fffff)) & 0xe000000))
-		return 0;
+	int len = header.DecompressedSize();
 
-	int len = header >> 8;
+  if (PROCNUM == ARMCPU_ARM7) {
+    if (!(source & 0xe000000) || !((source + (len & 0x1fffff)) & 0xe000000))
+      return 0;
+  }
 
 	uint8_t data = _MMU_read08<PROCNUM>(source++);
 	_MMU_write08<PROCNUM>(dest++, data);
@@ -925,13 +938,10 @@ TEMPLATE static uint32_t Diff16bitUnFilter()
 {
 	uint32_t source = cpu->R[0];
 	uint32_t dest = cpu->R[1];
-	uint32_t header = _MMU_read08<PROCNUM>(source);
+	CompressionHeader header(_MMU_read32<PROCNUM>(source));
 	source += 4;
 
-	if (!(source & 0xe000000) || !((source + ((header >> 8) & 0x1fffff)) & 0xe000000))
-		return 0;
-
-	int len = header >> 8;
+	int len = header.DecompressedSize();
 
 	uint16_t data = _MMU_read16<PROCNUM>(source);
 	source += 2;
@@ -957,9 +967,15 @@ TEMPLATE static uint32_t bios_sqrt()
 	return 1;
 }
 
-TEMPLATE static uint32_t setHaltCR()
+TEMPLATE static uint32_t CustomPost()
 {
-	_MMU_write08<PROCNUM>(0x4000300+cpu->proc_ID, cpu->R[0] & 0xFF);
+  _MMU_write08<PROCNUM>(REG_POSTFLG, cpu->R[0]);
+  return 1;
+}
+
+TEMPLATE static uint32_t CustomHalt()
+{
+	_MMU_write08<PROCNUM>(REG_HALTCNT, cpu->R[2]);
 	return 1;
 }
 
@@ -968,7 +984,7 @@ TEMPLATE static uint32_t getSineTab()
 	// ds returns garbage according to gbatek, but we must protect ourselves
 	if (cpu->R[0] >= ARRAY_SIZE(getsinetbl))
 	{
-		printf("Invalid SWI getSineTab: %08X\n", cpu->R[0]);
+		fprintf(stderr, "Invalid SWI getSineTab: %08X\n", cpu->R[0]);
 		return 1;
 	}
 
@@ -981,7 +997,7 @@ TEMPLATE static uint32_t getPitchTab()
 	// ds returns garbage according to gbatek, but we must protect ourselves
 	if (cpu->R[0] >= ARRAY_SIZE(getpitchtbl))
 	{
-		printf("Invalid SWI getPitchTab: %08X\n", cpu->R[0]);
+		fprintf(stderr, "Invalid SWI getPitchTab: %08X\n", cpu->R[0]);
 		return 1;
 	}
 
@@ -994,7 +1010,7 @@ TEMPLATE static uint32_t getVolumeTab()
 	// ds returns garbage according to gbatek, but we must protect ourselves
 	if (cpu->R[0] >= ARRAY_SIZE(getvoltbl))
 	{
-		printf("Invalid SWI getVolumeTab: %08X\n", cpu->R[0]);
+		fprintf(stderr, "Invalid SWI getVolumeTab: %08X\n", cpu->R[0]);
 		return 1;
 	}
 
@@ -1097,7 +1113,7 @@ uint32_t (*ARM_swi_tab[][32])() =
 		bios_nop<ARMCPU_ARM9>,             // 0x1C
 		bios_nop<ARMCPU_ARM9>,             // 0x1D
 		bios_nop<ARMCPU_ARM9>,             // 0x1E
-		setHaltCR<ARMCPU_ARM9>,            // 0x1F
+		CustomPost<ARMCPU_ARM9>,           // 0x1F
 	},
 	{
 		bios_nop<ARMCPU_ARM7>,             // 0x00
@@ -1122,7 +1138,7 @@ uint32_t (*ARM_swi_tab[][32])() =
 		UnCompHuffman<ARMCPU_ARM7>,        // 0x13
 		RLUnCompWram<ARMCPU_ARM7>,         // 0x14
 		RLUnCompVram<ARMCPU_ARM7>,         // 0x15
-		Diff8bitUnFilterWram<ARMCPU_ARM7>, // 0x16
+		bios_nop<ARMCPU_ARM7>,             // 0x16
 		bios_nop<ARMCPU_ARM7>,             // 0x17
 		bios_nop<ARMCPU_ARM7>,             // 0x18
 		bios_nop<ARMCPU_ARM7>,             // 0x19
@@ -1131,6 +1147,6 @@ uint32_t (*ARM_swi_tab[][32])() =
 		getVolumeTab<ARMCPU_ARM7>,         // 0x1C
 		getBootProcs<ARMCPU_ARM7>,         // 0x1D
 		bios_nop<ARMCPU_ARM7>,             // 0x1E
-		setHaltCR<ARMCPU_ARM7>,            // 0x1F
+		CustomHalt<ARMCPU_ARM7>,           // 0x1F
 	}
 };

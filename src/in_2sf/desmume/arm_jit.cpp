@@ -34,7 +34,7 @@
 #include "instruction_attributes.h"
 #include "MMU.h"
 #include "MMU_timing.h"
-#include "utils/AsmJit/asmjit.h"
+#include "utils/AsmJit/AsmJit.h"
 #include "arm_jit.h"
 #include "bios.h"
 
@@ -56,14 +56,14 @@ using namespace asmjit;
 	GpVar txt = c.newGpVar(kVarTypeIntPtr); \
 	GpVar data = c.newGpVar(kVarTypeIntPtr); \
 	GpVar io = c.newGpVar(kVarTypeInt32); \
-	c.lea(io, x86::dword_ptr_abs(stdout)); \
+	c.lea(io, x86::dword_ptr_abs(stderr)); \
 	c.lea(txt, x86::dword_ptr_abs(&buf)); \
 	c.mov(data, *reinterpret_cast<GpVar *>(&val)); \
-	auto prn = c.addCall(imm_ptr(fprintf), ASMJIT_CALL_CONV, FuncBuilder3<void, void *, void *, uint32_t>()); \
+	auto prn = c.addCall(imm_ptr(fprintf), ASMJIT_STDLIB_CALL_CONV, FuncBuilder3<void, void *, void *, uint32_t>()); \
 	prn->setArg(0, io); \
 	prn->setArg(1, txt); \
 	prn->setArg(2, data); \
-	auto prn_flush = c.addCall(imm_ptr(fflush), ASMJIT_CALL_CONV, FuncBuilder1<void, void *>()); \
+	auto prn_flush = c.addCall(imm_ptr(fflush), ASMJIT_STDLIB_CALL_CONV, FuncBuilder1<void, void *>()); \
 	prn_flush->setArg(0, io); \
 }
 #else
@@ -194,9 +194,9 @@ static uint8_t recompile_counts[(1 << 26) / 16];
 DS_ALIGN(4096) static uint8_t scratchpad[1 << 25];
 static uint8_t *scratchptr;
 
-struct ASMJIT_API StaticCodeGenerator : public Context
+struct StaticCodeSetup
 {
-	StaticCodeGenerator()
+	StaticCodeSetup()
 	{
 		scratchptr = scratchpad;
 		int align = reinterpret_cast<uintptr_t>(scratchpad) & (sysconf(_SC_PAGESIZE) - 1);
@@ -207,32 +207,10 @@ struct ASMJIT_API StaticCodeGenerator : public Context
 			abort();
 		}
 	}
-
-	uint32_t generate(void **dest, Assembler *assembler)
-	{
-		uintptr_t size = assembler->getCodeSize();
-		if (!size)
-		{
-			*dest = nullptr;
-			return kErrorNoFunction;
-		}
-		if (size > reinterpret_cast<uintptr_t>(scratchpad + sizeof(scratchpad) - scratchptr))
-		{
-			fprintf(stderr, "Out of memory for asmjit. Clearing code cache.\n");
-			arm_jit_reset(true);
-			// If arm_jit_reset didn't involve recompiling op_cmp, we could keep the current function.
-			*dest = nullptr;
-			return kErrorOk;
-		}
-		void *p = scratchptr;
-		size = assembler->relocCode(p);
-		scratchptr += size;
-		*dest = p;
-		return kErrorOk;
-	}
 };
 
-static StaticCodeGenerator codegen;
+static StaticCodeSetup setup;
+static StaticRuntime codegen(scratchpad, sizeof(scratchpad));
 static X86Compiler c(&codegen);
 #else
 static JitRuntime runtime;
@@ -280,7 +258,7 @@ static inline uint32_t _REG_NUM(uint32_t i, uint32_t n) { return (i >> n) & 0x7;
 // sequencer.reschedule = true;
 #define changeCPSR \
 { \
-	auto ctxCPSR = c.addCall(imm_ptr(NDS_Reschedule), ASMJIT_CALL_CONV, FuncBuilder0<void>()); \
+	auto ctxCPSR = c.addCall(imm_ptr(NDS_Reschedule), ASMJIT_STDLIB_CALL_CONV, FuncBuilder0<void>()); \
 }
 
 #if PROFILER_JIT_LEVEL > 0
@@ -417,7 +395,7 @@ static GpVar bb_profiler_entry;
 	c.mov(SPSR, cpu_ptr(SPSR.val)); \
 	c.mov(tmp, SPSR); \
 	c.and_(tmp, 0x1F); \
-	auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>()); \
+	auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_STDLIB_CALL_CONV, FuncBuilder2<void, void *, uint8_t>()); \
 	ctx->setArg(0, bb_cpu); \
 	ctx->setArg(1, tmp); \
 	c.mov(cpu_ptr(CPSR.val), SPSR); \
@@ -1187,10 +1165,10 @@ static int OP_MVN_S_IMM_VAL(uint32_t i) { OP_MOV_S(S_IMM_VAL; rhs = ~rhs); }
 //   QADD / QDADD / QSUB / QDSUB
 // -----------------------------------------------------------------------------
 // TODO
-static int OP_QADD(uint32_t i) { printf("JIT: unimplemented OP_QADD\n"); return 0; }
-static int OP_QSUB(uint32_t i) { printf("JIT: unimplemented OP_QSUB\n"); return 0; }
-static int OP_QDADD(uint32_t i) { printf("JIT: unimplemented OP_QDADD\n"); return 0; }
-static int OP_QDSUB(uint32_t i) { printf("JIT: unimplemented OP_QDSUB\n"); return 0; }
+static int OP_QADD(uint32_t i) { fprintf(stderr, "JIT: unimplemented OP_QADD\n"); return 0; }
+static int OP_QSUB(uint32_t i) { fprintf(stderr, "JIT: unimplemented OP_QSUB\n"); return 0; }
+static int OP_QDADD(uint32_t i) { fprintf(stderr, "JIT: unimplemented OP_QDADD\n"); return 0; }
+static int OP_QDSUB(uint32_t i) { fprintf(stderr, "JIT: unimplemented OP_QDSUB\n"); return 0; }
 
 // -----------------------------------------------------------------------------
 //   MUL
@@ -1423,7 +1401,7 @@ static int OP_MRS_SPSR(uint32_t i)
 			{ \
 				c.mov(mode, rhs); \
 				c.and_(mode, 0x1F); \
-				auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, \
+				auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_STDLIB_CALL_CONV, \
 					FuncBuilder2<void, void *, uint8_t>()); \
 				ctx->setArg(0, bb_cpu); \
 				ctx->setArg(1, mode); \
@@ -1492,7 +1470,7 @@ static int OP_MRS_SPSR(uint32_t i)
 		/* armcpu_switchMode */ \
 		c.mov(mode, rhs); \
 		c.and_(mode, 0x1F); \
-		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, \
+		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_STDLIB_CALL_CONV, \
 			FuncBuilder2<void, void *, uint8_t>()); \
 		ctx->setArg(0, bb_cpu); \
 		ctx->setArg(1, mode); \
@@ -1925,12 +1903,12 @@ static int OP_LDRD_STRD_POST_INDEX(uint32_t i)
 
 	if (Rd_num == 14)
 	{
-		printf("OP_LDRD_STRD_POST_INDEX: use R14!!!!\n");
+		fprintf(stderr, "OP_LDRD_STRD_POST_INDEX: use R14!!!!\n");
 		return 0; // TODO: exception
 	}
 	if (Rd_num & 0x1)
 	{
-		printf("OP_LDRD_STRD_POST_INDEX: ERROR!!!!\n");
+		fprintf(stderr, "OP_LDRD_STRD_POST_INDEX: ERROR!!!!\n");
 		return 0; // TODO: exception
 	}
 	GpVar Rd = c.newGpVar(kVarTypeInt32);
@@ -1966,12 +1944,12 @@ static int OP_LDRD_STRD_OFFSET_PRE_INDEX(uint32_t i)
 
 	if (Rd_num == 14)
 	{
-		printf("OP_LDRD_STRD_OFFSET_PRE_INDEX: use R14!!!!\n");
+		fprintf(stderr, "OP_LDRD_STRD_OFFSET_PRE_INDEX: use R14!!!!\n");
 		return 0; // TODO: exception
 	}
 	if (Rd_num & 0x1)
 	{
-		printf("OP_LDRD_STRD_OFFSET_PRE_INDEX: ERROR!!!!\n");
+		fprintf(stderr, "OP_LDRD_STRD_OFFSET_PRE_INDEX: ERROR!!!!\n");
 		return 0; // TODO: exception
 	}
 	GpVar Rd = c.newGpVar(kVarTypeInt32);
@@ -2089,7 +2067,7 @@ static uint64_t get_reg_list(uint32_t reg_mask, int dir)
 #define LDM_INLINE inline
 #endif
 
-template<int PROCNUM, bool store, int dir> static LDM_INLINE FASTCALL uint32_t OP_LDM_STM_generic(uint32_t adr, uint64_t regs, int n)
+template<int PROCNUM, bool store, int dir> static LDM_INLINE LDM_FASTCALL uint32_t OP_LDM_STM_generic(uint32_t adr, uint64_t regs, int n)
 {
 	uint32_t cycles = 0;
 	adr &= ~3;
@@ -2112,7 +2090,7 @@ template<int PROCNUM, bool store, int dir> static LDM_INLINE FASTCALL uint32_t O
 #define ADV_CYCLES
 #endif
 
-template<int PROCNUM, bool store, int dir> static LDM_INLINE FASTCALL uint32_t OP_LDM_STM_other(uint32_t adr, uint64_t regs, int n)
+template<int PROCNUM, bool store, int dir> static LDM_INLINE LDM_FASTCALL uint32_t OP_LDM_STM_other(uint32_t adr, uint64_t regs, int n)
 {
 	uint32_t cycles = 0;
 	adr &= ~3;
@@ -2142,7 +2120,7 @@ template<int PROCNUM, bool store, int dir> static LDM_INLINE FASTCALL uint32_t O
 	return cycles;
 }
 
-template<int PROCNUM, bool store, int dir, bool null_compiled> static FORCEINLINE FASTCALL uint32_t OP_LDM_STM_main(uint32_t adr, uint64_t regs, int n, uint8_t *ptr, uint32_t cycles)
+template<int PROCNUM, bool store, int dir, bool null_compiled> static FORCEINLINE LDM_FASTCALL uint32_t OP_LDM_STM_main(uint32_t adr, uint64_t regs, int n, uint8_t *ptr, uint32_t cycles)
 {
 #ifdef ENABLE_ADVANCED_TIMING
 	cycles = 0;
@@ -2188,7 +2166,7 @@ template<int PROCNUM, bool store, int dir, bool null_compiled> static FORCEINLIN
 #undef ADV_CYCLES
 }
 
-template<int PROCNUM, bool store, int dir> static uint32_t FASTCALL OP_LDM_STM(uint32_t adr, uint64_t regs, int n)
+template<int PROCNUM, bool store, int dir> static uint32_t LDM_FASTCALL OP_LDM_STM(uint32_t adr, uint64_t regs, int n)
 {
 	// TODO use classify_adr?
 	uint32_t cycles;
@@ -2227,7 +2205,8 @@ template<int PROCNUM, bool store, int dir> static uint32_t FASTCALL OP_LDM_STM(u
 	return OP_LDM_STM_main<PROCNUM, store, dir, store>(adr, regs, n, ptr, cycles);
 }
 
-typedef uint32_t FASTCALL (*LDMOpFunc)(uint32_t, uint64_t, int);
+typedef uint32_t LDM_FASTCALL (*LDMOpFunc)(uint32_t, uint64_t, int);
+
 static const LDMOpFunc op_ldm_stm_tab[2][2][2] =
 {
 	{
@@ -2260,7 +2239,7 @@ static void call_ldm_stm(GpVar adr, uint32_t bitmask, bool store, int dir)
 		GpVar regs_hi = c.newGpVar(kVarTypeInt32);
 		c.mov(regs_lo, get_reg_list(bitmask, dir) & 0xFFFFFFFF);
 		c.mov(regs_hi, get_reg_list(bitmask, dir) >> 32);
-		auto ctx = c.addCall(imm_ptr(op_ldm_stm_tab[PROCNUM][store][dir > 0]), ASMJIT_CALL_CONV,
+		auto ctx = c.addCall(imm_ptr(op_ldm_stm_tab[PROCNUM][store][dir > 0]), ASMJIT_STDLIB_CALL_CONV,
 			FuncBuilder4<uint32_t, uint32_t, uint32_t, uint32_t, int>());
 		ctx->setArg(0, adr);
 		ctx->setArg(1, regs_lo);
@@ -2339,7 +2318,7 @@ static int op_ldm_stm2(uint32_t i, bool store, int dir, bool before, bool writeb
 	uint32_t pop = popcount(bitmask);
 	bool bit15 = !!BIT15(i);
 
-	//printf("ARM%c: %s R%d:%08X, bitmask %02X\n", PROCNUM?'7':'9', (store?"STM":"LDM"), REG_POS(i, 16), cpu->R[REG_POS(i, 16)], bitmask);
+	//fprintf(stderr, "ARM%c: %s R%d:%08X, bitmask %02X\n", PROCNUM?'7':'9', (store?"STM":"LDM"), REG_POS(i, 16), cpu->R[REG_POS(i, 16)], bitmask);
 	uint32_t adr_first = cpu->R[REG_POS(i, 16)];
 
 	GpVar adr = c.newGpVar(kVarTypeInt32);
@@ -2351,10 +2330,10 @@ static int op_ldm_stm2(uint32_t i, bool store, int dir, bool before, bool writeb
 
 	if (!bit15 || store)
 	{
-		//if((cpu->CPSR.bits.mode==USR)||(cpu->CPSR.bits.mode==SYS)) { printf("ERROR1\n"); return 1; }
+		//if((cpu->CPSR.bits.mode==USR)||(cpu->CPSR.bits.mode==SYS)) { fprintf(stderr, "ERROR1\n"); return 1; }
 		//oldmode = armcpu_switchMode(cpu, SYS);
 		c.mov(oldmode, SYS);
-		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV,
+		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_STDLIB_CALL_CONV,
 			FuncBuilder2<uint32_t, uint8_t *, uint8_t>());
 		ctx->setArg(0, bb_cpu);
 		ctx->setArg(1, oldmode);
@@ -2366,7 +2345,7 @@ static int op_ldm_stm2(uint32_t i, bool store, int dir, bool before, bool writeb
 	if (!bit15 || store)
 	{
 		//armcpu_switchMode(cpu, oldmode);
-		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV,
+		auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_STDLIB_CALL_CONV,
 			FuncBuilder2<void, uint8_t *, uint8_t>());
 		ctx->setArg(0, bb_cpu);
 		ctx->setArg(1, oldmode);
@@ -2487,7 +2466,7 @@ static int OP_CLZ(uint32_t i)
 // -----------------------------------------------------------------------------
 #define maskPrecalc \
 { \
-	auto ctxM = c.addCall(imm_ptr(maskPrecalc), ASMJIT_CALL_CONV, FuncBuilder0<void>()); \
+	auto ctxM = c.addCall(imm_ptr(maskPrecalc), ASMJIT_STDLIB_CALL_CONV, FuncBuilder0<void>()); \
 }
 static int OP_MCR(uint32_t i)
 {
@@ -2498,12 +2477,12 @@ static int OP_MCR(uint32_t i)
 	if (cpnum != 15)
 	{
 		// TODO - exception?
-		printf("JIT: MCR P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n", cpnum, REG_POS(i, 12), REG_POS(i, 16), REG_POS(i, 0), (i >> 21) & 0x7, (i >> 5) & 0x7);
+		fprintf(stderr, "JIT: MCR P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n", cpnum, REG_POS(i, 12), REG_POS(i, 16), REG_POS(i, 0), (i >> 21) & 0x7, (i >> 5) & 0x7);
 		return 2;
 	}
 	if (REG_POS(i, 12) == 15)
 	{
-		printf("JIT: MCR Rd=R15\n");
+		fprintf(stderr, "JIT: MCR Rd=R15\n");
 		return 2;
 	}
 
@@ -2723,7 +2702,7 @@ static int OP_MCR(uint32_t i)
 
 	if (bUnknown)
 	{
-		//printf("Unknown MCR command: MRC P15, 0, R%i, C%i, C%i, %i, %i\n", REG_POS(i, 12), CRn, CRm, opcode1, opcode2);
+		//fprintf(stderr, "Unknown MCR command: MRC P15, 0, R%i, C%i, C%i, %i, %i\n", REG_POS(i, 12), CRn, CRm, opcode1, opcode2);
 		return 1;
 	}
 
@@ -2738,7 +2717,7 @@ static int OP_MRC(uint32_t i)
 	uint32_t cpnum = REG_POS(i, 8);
 	if (cpnum != 15)
 	{
-		printf("MRC P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n", cpnum, REG_POS(i, 12), REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
+		fprintf(stderr, "MRC P%i, 0, R%i, C%i, C%i, %i, %i (don't allocated coprocessor)\n", cpnum, REG_POS(i, 12), REG_POS(i, 16), REG_POS(i, 0), (i>>21)&0x7, (i>>5)&0x7);
 		return 2;
 	}
 
@@ -2928,7 +2907,7 @@ static int OP_MRC(uint32_t i)
 
 	if (bUnknown)
 	{
-		//printf("Unknown MRC command: MRC P15, 0, R%i, C%i, C%i, %i, %i\n", REG_POS(i, 12), CRn, CRm, opcode1, opcode2);
+		//fprintf(stderr, "Unknown MRC command: MRC P15, 0, R%i, C%i, C%i, %i, %i\n", REG_POS(i, 12), CRn, CRm, opcode1, opcode2);
 		return 1;
 	}
 
@@ -2956,7 +2935,7 @@ uint32_t op_swi(uint8_t swinum)
 		// TODO:
 		return 0;
 #else
-		auto ctx = c.addCall(imm_ptr(ARM_swi_tab[PROCNUM][swinum]), ASMJIT_CALL_CONV, FuncBuilder0<uint32_t>());
+		auto ctx = c.addCall(imm_ptr(ARM_swi_tab[PROCNUM][swinum]), ASMJIT_STDLIB_CALL_CONV, FuncBuilder0<uint32_t>());
 		ctx->setRet(0, bb_cycles);
 		c.add(bb_cycles, 3);
 		return 1;
@@ -2970,7 +2949,7 @@ uint32_t op_swi(uint8_t swinum)
 	c.mov(oldCPSR, CPSR);
 	JIT_COMMENT("enter SVC mode");
 	c.mov(mode, imm(SVC));
-	auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_CALL_CONV, FuncBuilder2<void, void *, uint8_t>());
+	auto ctx = c.addCall(imm_ptr(armcpu_switchMode), ASMJIT_STDLIB_CALL_CONV, FuncBuilder2<void, void *, uint8_t>());
 	ctx->setArg(0, bb_cpu);
 	ctx->setArg(1, mode);
 	c.unuse(mode);
@@ -2996,7 +2975,7 @@ static int OP_SWI(uint32_t i) { return op_swi((i >> 16) & 0x1F); }
 // -----------------------------------------------------------------------------
 //   BKPT
 // -----------------------------------------------------------------------------
-static int OP_BKPT(uint32_t i) { printf("JIT: unimplemented OP_BKPT\n"); return 0; }
+static int OP_BKPT(uint32_t i) { fprintf(stderr, "JIT: unimplemented OP_BKPT\n"); return 0; }
 
 // -----------------------------------------------------------------------------
 //   THUMB
@@ -3625,7 +3604,7 @@ static int op_ldm_stm_thumb(uint32_t i, bool store)
 	uint32_t pop = popcount(bitmask);
 
 	//if (BIT_N(i, _REG_NUM(i, 8)))
-	//	printf("WARNING - %sIA with Rb in Rlist (THUMB)\n", store?"STM":"LDM");
+	//	fprintf(stderr, "WARNING - %sIA with Rb in Rlist (THUMB)\n", store?"STM":"LDM");
 
 	GpVar adr = c.newGpVar(kVarTypeInt32);
 	c.mov(adr, reg_pos_thumb(8));
@@ -4025,7 +4004,7 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 
 	if (!JIT_MAPPED(start_adr & 0x0FFFFFFF, PROCNUM))
 	{
-		printf("JIT: use unmapped memory address %08X\n", start_adr);
+		fprintf(stderr, "JIT: use unmapped memory address %08X\n", start_adr);
 		execute = false;
 		return 1;
 	}
@@ -4156,7 +4135,7 @@ template<int PROCNUM> static uint32_t compile_basicblock()
 #endif
 	c.endFunc();
 
-	ArmOpCompiled f = static_cast<ArmOpCompiled>(c.make());
+	ArmOpCompiled f = (ArmOpCompiled)(c.make());
 	if (c.getError())
 	{
 		fprintf(stderr, "JIT error: %s\n", ErrorUtil::asString(c.getError()));
@@ -4205,13 +4184,14 @@ void arm_jit_reset(bool enable)
 #ifdef HAVE_STATIC_CODE_BUFFER
 	scratchptr = scratchpad;
 #endif
-	printf("CPU mode: %s\n", enable ? "JIT" : "Interpreter");
+	fprintf(stderr, "CPU mode: %s\n", enable ? "JIT" : "Interpreter");
 
 	if (enable)
 	{
-		printf("JIT max block size %d instruction(s)\n", CommonSettings.jit_max_block_size);
+		fprintf(stderr, "JIT max block size %d instruction(s)\n", CommonSettings.jit_max_block_size);
 #ifdef MAPPED_JIT_FUNCS
 		// these pointers are allocated by asmjit and need freeing
+#ifndef HAVE_STATIC_CODE_BUFFER
 		#define JITFREE(x)  for (size_t iii = 0; iii < ARRAY_SIZE((x)); ++iii) if ((x)[iii]) runtime.getMemMgr()->release(reinterpret_cast<void *>((x)[iii])); memset((x), 0, sizeof((x)));
 			JITFREE(JIT.MAIN_MEM);
 			JITFREE(JIT.SWIRAM);
@@ -4223,6 +4203,7 @@ void arm_jit_reset(bool enable)
 			JITFREE(JIT.ARM7_WIRAM);
 			JITFREE(JIT.ARM7_WRAM);
 		#undef JITFREE
+#endif
 
 		memset(recompile_counts, 0, sizeof(recompile_counts));
 		init_jit_mem();
@@ -4268,7 +4249,7 @@ static int pcmp_entry(PROFILER_ENTRY *info1, PROFILER_ENTRY *info2)
 void arm_jit_close()
 {
 #if PROFILER_JIT_LEVEL > 0
-	printf("Generating profile report...");
+	fprintf(stderr, "Generating profile report...");
 
 	for (uint8_t proc = 0; proc < 2; ++proc)
 	{
@@ -4393,7 +4374,7 @@ void arm_jit_close()
 		}
 #endif
 	}
-	printf(" done.\n");
+	fprintf(stderr, " done.\n");
 #endif
 }
 #endif // HAVE_JIT

@@ -10,6 +10,8 @@
 #include <algorithm>
 #include "TagList.h"
 
+using namespace std::placeholders;
+
 eq_str TagList::eqstr;
 
 auto TagList::GetKeys() const -> const TagsList &
@@ -27,7 +29,7 @@ auto TagList::GetTags() const -> TagsList
 
 bool TagList::Exists(const std::string &name) const
 {
-	return std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind2nd(TagList::eqstr, name)) != this->tagsOrder.end();
+	return std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind(TagList::eqstr, _1, name)) != this->tagsOrder.end();
 }
 
 std::string TagList::operator[](const std::string &name) const
@@ -40,7 +42,7 @@ std::string TagList::operator[](const std::string &name) const
 
 std::string &TagList::operator[](const std::string &name)
 {
-	auto tag = std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind2nd(TagList::eqstr, name));
+	auto tag = std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind(TagList::eqstr, _1, name));
 	if (tag == this->tagsOrder.end())
 	{
 		this->tagsOrder.push_back(name);
@@ -51,7 +53,7 @@ std::string &TagList::operator[](const std::string &name)
 
 void TagList::Remove(const std::string &name)
 {
-	auto tagOrder = std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind2nd(TagList::eqstr, name));
+	auto tagOrder = std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind(TagList::eqstr, _1, name));
 	if (tagOrder != this->tagsOrder.end())
 		this->tagsOrder.erase(tagOrder);
 	if (this->tags.count(name))

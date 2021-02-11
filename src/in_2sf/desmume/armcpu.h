@@ -209,7 +209,7 @@ struct armcpu_t
 	int stalled;
 
 #if defined(_M_X64) || defined(__x86_64__)
-	u8 cond_table[16 * 16];
+	uint8_t cond_table[16 * 16];
 #endif
 };
 

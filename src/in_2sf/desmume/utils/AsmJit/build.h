@@ -10,7 +10,7 @@
 #ifdef ASMJIT_CONFIG_FILE
 # include ASMJIT_CONFIG_FILE
 #else
-# include "./config.h"
+# include "./Config.h"
 #endif // ASMJIT_CONFIG_FILE
 
 // Turn off deprecation warnings when compiling AsmJit.
@@ -264,7 +264,7 @@
 namespace asmjit { static inline int disabledTrace(...) { return 0; } }
 # ifdef ASMJIT_TRACE
 #  define ASMJIT_TSEC(_Section_) _Section_
-#  define ASMJIT_TLOG ::printf(__VA_ARGS__)
+#  define ASMJIT_TLOG ::fprintf(stderr, __VA_ARGS__)
 # else
 #  define ASMJIT_TSEC(_Section_) do {} while(0)
 #  define ASMJIT_TLOG 0 && ::asmjit::disabledTrace

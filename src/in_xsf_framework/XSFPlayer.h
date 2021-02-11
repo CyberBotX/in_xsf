@@ -13,7 +13,7 @@
 
 #ifdef WINAMP_PLUGIN
 # include "windowsh_wrapper.h"
-# include <winamp/out.h>
+# include "winamp/out.h"
 #endif
 
 // This is a base class, a player for a specific type of xSF should inherit from this.

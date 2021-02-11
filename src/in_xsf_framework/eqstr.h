@@ -15,9 +15,9 @@
 #include <algorithm>
 #include <climits>
 
-struct eq_str : std::binary_function<std::string, std::string, bool>
+struct eq_str
 {
-	struct eq_char : std::binary_function<char, char, bool>
+	struct eq_char
 	{
 		const char *tab;
 		eq_char(const char *t) : tab(t) { }

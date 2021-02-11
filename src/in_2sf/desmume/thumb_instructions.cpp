@@ -928,7 +928,7 @@ TEMPLATE static uint32_t FASTCALL OP_STMIA_THUMB(uint32_t i)
 	// ------	* If <Rn> is the lowest-numbered register specified in <registers>, the original value of <Rn> is stored.
 	// ------	* Otherwise, the stored value of <Rn> is UNPREDICTABLE.
 	if (BIT_N(i, REG_NUM(i, 8)))
-		printf("STMIA with Rb in Rlist\n");
+		fprintf(stderr, "STMIA with Rb in Rlist\n");
 
 	for (uint32_t j = 0; j < 8; ++j)
 		if (BIT_N(i, j))
@@ -940,7 +940,7 @@ TEMPLATE static uint32_t FASTCALL OP_STMIA_THUMB(uint32_t i)
 		}
 
 	if (erList)
-		 printf("STMIA with Empty Rlist\n");
+		 fprintf(stderr, "STMIA with Empty Rlist\n");
 
 	cpu->R[REG_NUM(i, 8)] = adr;
 	return MMU_aluMemCycles<PROCNUM>(2, c);
@@ -954,7 +954,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMIA_THUMB(uint32_t i)
 	bool erList = true; //Empty Register List
 
 	//if (BIT_N(i, regIndex))
-	//	 printf("LDMIA with Rb in Rlist at %08X\n",cpu->instruct_adr);
+	//	 fprintf(stderr, "LDMIA with Rb in Rlist at %08X\n",cpu->instruct_adr);
 
 	for (uint32_t j = 0; j < 8; ++j)
 		if (BIT_N(i, j))
@@ -966,7 +966,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMIA_THUMB(uint32_t i)
 		}
 
 	if (erList)
-		 printf("LDMIA with Empty Rlist\n");
+		 fprintf(stderr, "LDMIA with Empty Rlist\n");
 
 	// ARM_REF:	THUMB: Causes base register write-back, and is not optional
 	// ARM_REF:	If the base register <Rn> is specified in <registers>, the final value of <Rn> is the loaded value
@@ -983,7 +983,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMIA_THUMB(uint32_t i)
 
 TEMPLATE static uint32_t FASTCALL OP_BKPT_THUMB(uint32_t)
 {
-	printf("THUMB%c: OP_BKPT triggered\n", PROCNUM?'7':'9');
+	fprintf(stderr, "THUMB%c: OP_BKPT triggered\n", PROCNUM?'7':'9');
 	Status_Reg tmp = cpu->CPSR;
 	armcpu_switchMode(cpu, ABT); // enter abt mode
 	cpu->R[14] = cpu->instruct_adr + 4;
@@ -1023,7 +1023,7 @@ TEMPLATE static uint32_t FASTCALL OP_SWI_THUMB(uint32_t i)
 		//zero 30-jun-2009 - but they say that the ideas 0xFF should crash the device...
 		//uint32_t swinum = cpu->instruction & 0xFF;
 		swinum &= 0x1F;
-		//printf("%d ARM SWI %d\n",PROCNUM,swinum);
+		//fprintf(stderr, "%d ARM SWI %d\n",PROCNUM,swinum);
 		return cpu->swi_tab[swinum]() + 3;
 	}
 	else
@@ -1120,7 +1120,7 @@ TEMPLATE static uint32_t FASTCALL OP_BX_THUMB(uint32_t i)
 	//----- the instruction are UNPREDICTABLE (because the value read for R15 has bits[1:0]==0b10).
 	if (Rm == 15)
 	{
-		printf("THUMB%c: BX using PC as operand\n", PROCNUM?'7':'9');
+		fprintf(stderr, "THUMB%c: BX using PC as operand\n", PROCNUM?'7':'9');
 		//emu_halt();
 	}
 	cpu->CPSR.bits.T = BIT0(Rm);

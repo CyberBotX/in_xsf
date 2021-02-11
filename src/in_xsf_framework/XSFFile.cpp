@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <functional>
 #include <stdexcept>
-#include <zlib.h>
+#include "zlib.h"
 #include "XSFFile.h"
 #include "XSFCommon.h"
 #include "convert.h"
@@ -25,8 +25,9 @@ static inline void Set32BitsLE(uint32_t input, uint8_t *output)
 // The whitespace trimming was modified from the following answer on Stack Overflow:
 // http://stackoverflow.com/a/217605
 
-struct IsWhitespace : std::unary_function<char, bool>
+struct IsWhitespace
 {
+  using argument_type = char;;
 	bool operator()(const char &x) const
 	{
 		return x >= 0x01 && x <= 0x20;

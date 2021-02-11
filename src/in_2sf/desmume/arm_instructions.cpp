@@ -2997,13 +2997,13 @@ TEMPLATE static uint32_t FASTCALL OP_MSR_CPSR(uint32_t i)
 	uint32_t stateMask = PROCNUM?v4T_STATE_MASK : v5TE_STATE_MASK;
 
 	if (operand & unallocMask)
-		printf("ARM%c: MSR_CPSR_REG UNPREDICTABLE UNALLOC (operand %08X)\n", PROCNUM ? '7' : '9', operand);
+		fprintf(stderr, "ARM%c: MSR_CPSR_REG UNPREDICTABLE UNALLOC (operand %08X)\n", PROCNUM ? '7' : '9', operand);
 	if (cpu->CPSR.bits.mode != USR) // Privileged mode
 	{
 		if (BIT16(i))
 			armcpu_switchMode(cpu, operand & 0x1F);
 		if (operand & stateMask)
-			printf("ARM%c: MSR_CPSR_REG UNPREDICTABLE STATE (operand %08X)\n", PROCNUM ? '7' : '9', operand);
+			fprintf(stderr, "ARM%c: MSR_CPSR_REG UNPREDICTABLE STATE (operand %08X)\n", PROCNUM ? '7' : '9', operand);
 		else
 			mask = byte_mask & (userMask | privMask);
 	}
@@ -3021,7 +3021,7 @@ TEMPLATE static uint32_t FASTCALL OP_MSR_CPSR(uint32_t i)
 
 TEMPLATE static uint32_t FASTCALL OP_MSR_SPSR(uint32_t i)
 {
-	//printf("OP_MSR_SPSR\n");
+	//fprintf(stderr, "OP_MSR_SPSR\n");
 	uint32_t operand = cpu->R[REG_POS(i, 0)];
 	OP_MSR_SPSR_(operand);
 	return 1;
@@ -3029,7 +3029,7 @@ TEMPLATE static uint32_t FASTCALL OP_MSR_SPSR(uint32_t i)
 
 TEMPLATE static uint32_t FASTCALL OP_MSR_CPSR_IMM_VAL(uint32_t i)
 {
-	//printf("OP_MSR_CPSR_IMM_VAL\n");
+	//fprintf(stderr, "OP_MSR_CPSR_IMM_VAL\n");
 	IMM_VALUE;
 	OP_MSR_CPSR_(shift_op);
 	return 1;
@@ -3037,7 +3037,7 @@ TEMPLATE static uint32_t FASTCALL OP_MSR_CPSR_IMM_VAL(uint32_t i)
 
 TEMPLATE static uint32_t FASTCALL OP_MSR_SPSR_IMM_VAL(uint32_t i)
 {
-	//printf("OP_MSR_SPSR_IMM_VAL\n");
+	//fprintf(stderr, "OP_MSR_SPSR_IMM_VAL\n");
 	IMM_VALUE;
 	OP_MSR_SPSR_(shift_op);
 	return 1;
@@ -3701,7 +3701,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDR_M_ROR_IMM_OFF_POSTIND(uint32_t i)
 // -----------------------------------------------------------------------------
 TEMPLATE static uint32_t FASTCALL OP_LDREX(uint32_t i)
 {
-	printf("LDREX\n");
+	fprintf(stderr, "LDREX\n");
 	uint32_t adr = cpu->R[REG_POS(i, 16)];
 	cpu->R[REG_POS(i, 12)] = ROR(READ32(cpu->mem_if->data, adr), 8 * (adr & 3));
 	return MMU_aluMemAccessCycles<PROCNUM,32, MMU_AD_READ>(3, adr);
@@ -4288,7 +4288,7 @@ TEMPLATE static uint32_t FASTCALL OP_STR_M_ROR_IMM_OFF_POSTIND(uint32_t i)
 // -----------------------------------------------------------------------------
 TEMPLATE static uint32_t FASTCALL OP_STREX(uint32_t i)
 {
-	printf("STREX\n");
+	fprintf(stderr, "STREX\n");
 	uint32_t adr = cpu->R[REG_POS(i, 16)];
 	WRITE32(cpu->mem_if->data, adr, cpu->R[REG_POS(i, 0)]);
 	cpu->R[REG_POS(i, 12)] = 0;
@@ -5012,7 +5012,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMIA2(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5064,7 +5064,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMIB2(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5116,7 +5116,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMDA2(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5174,7 +5174,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMDB2(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5233,7 +5233,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMIA2_W(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5289,7 +5289,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMIB2_W(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5348,7 +5348,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMDA2_W(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5359,7 +5359,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMDA2_W(uint32_t i)
 	if (BIT15(i))
 	{
 		if (BIT_N(i, REG_POS(i, 16)))
-			printf("error1_1\n");
+			fprintf(stderr, "error1_1\n");
 		uint32_t tmp = READ32(cpu->mem_if->data, start);
 		registres[15] = tmp & (0XFFFFFFFC | (BIT0(tmp) << 1));
 		c += MMU_memAccessCycles<PROCNUM, 32, MMU_AD_READ>(start);
@@ -5409,7 +5409,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMDB2_W(uint32_t i)
 	{
 		if (cpu->CPSR.bits.mode == USR || cpu->CPSR.bits.mode == SYS)
 		{
-			printf("ERROR1\n");
+			fprintf(stderr, "ERROR1\n");
 			return 1;
 		}
 		oldmode = armcpu_switchMode(cpu, SYS);
@@ -5420,7 +5420,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDMDB2_W(uint32_t i)
 	if (BIT15(i))
 	{
 		if (BIT_N(i, REG_POS(i, 16)))
-			printf("error1_2\n");
+			fprintf(stderr, "error1_2\n");
 		start -= 4;
 		uint32_t tmp = READ32(cpu->mem_if->data, start);
 		c += MMU_memAccessCycles<PROCNUM, 32, MMU_AD_READ>(start);
@@ -5811,7 +5811,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDRD_STRD_POST_INDEX(uint32_t i)
 	uint32_t addr = cpu->R[REG_POS(i, 16)];
 	uint32_t index;
 
-	//printf("%s POST\n", BIT5(i)?"STRD":"LDRD");
+	//fprintf(stderr, "%s POST\n", BIT5(i)?"STRD":"LDRD");
 	/* I bit - immediate or register */
 	if (BIT22(i))
 		index = IMM_OFF;
@@ -5853,7 +5853,7 @@ TEMPLATE static uint32_t FASTCALL OP_LDRD_STRD_OFFSET_PRE_INDEX(uint32_t i)
 	uint32_t addr = cpu->R[REG_POS(i, 16)];
 	uint32_t index;
 
-	//printf("%s PRE\n", BIT5(i)?"STRD":"LDRD");
+	//fprintf(stderr, "%s PRE\n", BIT5(i)?"STRD":"LDRD");
 	// I bit - immediate or register
 	if (BIT22(i))
 		index = IMM_OFF;
@@ -6059,7 +6059,7 @@ TEMPLATE static uint32_t FASTCALL OP_SWI(uint32_t i)
 	if (cpu->swi_tab && !bypassBuiltinSWI)
 	{
 		swinum &= 0x1F;
-		//printf("%d ARM SWI %d \n",PROCNUM,swinum);
+		//fprintf(stderr, "%d ARM SWI %d \n",PROCNUM,swinum);
 		return cpu->swi_tab[swinum]() + 3;
 	}
 	else
@@ -6105,7 +6105,7 @@ TEMPLATE static uint32_t FASTCALL OP_BKPT(uint32_t /*i*/)
 	/*
 	static uint32_t last_bkpt = 0xFFFFFFFF;
 	if(i != last_bkpt)
-		printf("ARM OP_BKPT triggered\n");
+		fprintf(stderr, "ARM OP_BKPT triggered\n");
 	last_bkpt = i;
 
 	//this is not 100% correctly emulated, but it does the job
@@ -6113,7 +6113,7 @@ TEMPLATE static uint32_t FASTCALL OP_BKPT(uint32_t /*i*/)
 	return 4;
 	*/
 
-	printf("ARM OP_BKPT triggered\n");
+	fprintf(stderr, "ARM OP_BKPT triggered\n");
 	Status_Reg tmp = cpu->CPSR;
 	armcpu_switchMode(cpu, ABT); // enter abt mode
 	cpu->R[14] = cpu->instruct_adr + 4;

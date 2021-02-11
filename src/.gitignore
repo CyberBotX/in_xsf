@@ -4,3 +4,10 @@ Release
 *.release
 *.aps
 .vs
+*.obj
+*.o
+*.dll
+*.exp
+*.lib
+*.d
+*.swp

@@ -38,18 +38,13 @@ GameInfo gameInfo;
 NDSSystem nds;
 static std::unique_ptr<CFIRMWARE> firmware;
 
-namespace DLDI
-{
-	bool tryPatch(void *data, size_t size);
-}
-
 int NDS_Init()
 {
 	MMU_Init();
 	nds.VCount = 0;
 
 	// got to print this somewhere..
-	printf("%s\n", EMU_DESMUME_NAME_AND_VERSION());
+	fprintf(stderr, "%s\n", EMU_DESMUME_NAME_AND_VERSION());
 
 	armcpu_new(&NDS_ARM7, 1);
 	armcpu_new(&NDS_ARM9, 0);
@@ -230,7 +225,7 @@ template<int procnum, int num> struct TSequenceItem_Timer : public TSequenceItem
 				}
 #ifndef NDEBUG
 				if (ctr > 1)
-					printf("yikes!!!!! please report!\n");
+					fprintf(stderr, "yikes!!!!! please report!\n");
 #endif
 			}
 
@@ -267,7 +262,7 @@ template<int procnum, int chan> struct TSequenceItem_DMA : public TSequenceItem
 
 	void exec()
 	{
-		//printf("exec from TSequenceItem_DMA: %d %d\n",procnum,chan);
+		//fprintf(stderr, "exec from TSequenceItem_DMA: %d %d\n",procnum,chan);
 		this->controller->exec();
 	}
 };
@@ -453,7 +448,7 @@ static void execHardware_hstart_vblankEnd()
 
 static void execHardware_hstart_vblankStart()
 {
-	//printf("--------VBLANK!!!--------\n");
+	//fprintf(stderr, "--------VBLANK!!!--------\n");
 
 	// fire vblank interrupts if necessary
 	for (int i = 0; i < 2; ++i)
@@ -794,7 +789,7 @@ template<bool FORCE> void NDS_exec(int32_t)
 			uint64_t next = sequencer.findNext();
 			next = std::min(next, nds_timer + kMaxWork); // lets set an upper limit for now
 
-			//printf("%d\n", next - nds_timer);
+			//fprintf(stderr, "%d\n", next - nds_timer);
 
 			sequencer.reschedule = false;
 
@@ -838,7 +833,7 @@ template<int PROCNUM> static void execHardware_interrupts_core()
 
 	if (masked && MMU.reg_IME[PROCNUM] && !ARMPROC.CPSR.bits.I)
 	{
-		//printf("Executing IRQ on procnum %d with IF = %08X and IE = %08X\n",PROCNUM,IF,IE);
+		//fprintf(stderr, "Executing IRQ on procnum %d with IF = %08X and IE = %08X\n",PROCNUM,IF,IE);
 		armcpu_irqException(&ARMPROC);
 	}
 }
