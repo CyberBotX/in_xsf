@@ -15,9 +15,9 @@
 #include <algorithm>
 #include <climits>
 
-struct lt_str : std::binary_function<std::string, std::string, bool>
+struct lt_str
 {
-	struct lt_char : std::binary_function<char, char, bool>
+	struct lt_char
 	{
 		const char *tab;
 		lt_char(const char *t) : tab(t) { }

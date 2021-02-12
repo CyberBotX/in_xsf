@@ -115,7 +115,7 @@ void fw_reset_com(memory_chip_t *mc)
 			// copy User Settings 1 to User Settings 0 area
 			memcpy(&mc->data[0x3FE00], &mc->data[0x3FF00], 0x100);
 
-			printf("Firmware: save config");
+			fprintf(stderr, "Firmware: save config");
 			FILE *fp = fopen(mc->userfile, "wb");
 			if (fp)
 			{
@@ -124,15 +124,15 @@ void fw_reset_com(memory_chip_t *mc)
 					if (fwrite(&mc->data[0x0002A], 1, 0x1D6, fp) == 0x1D6) // WiFi Settings
 					{
 						if (fwrite(&mc->data[0x3FA00], 1, 0x300, fp) == 0x300)  // WiFi AP Settings
-							printf(" - done\n");
+							fprintf(stderr, " - done\n");
 						else
-							printf(" - failed\n");
+							fprintf(stderr, " - failed\n");
 					}
 				}
 				fclose(fp);
 			}
 			else
-				printf(" - failed\n");
+				fprintf(stderr, " - failed\n");
 		}
 
 		mc->write_enable = false;
@@ -235,7 +235,7 @@ uint8_t fw_transfer(memory_chip_t *mc, uint8_t data)
 				break;
 
 			default:
-				printf("Unhandled FW command: %02X\n", data);
+				fprintf(stderr, "Unhandled FW command: %02X\n", data);
 		}
 	}
 
@@ -468,7 +468,7 @@ bool BackupDevice::load_no_gba(const char *fname)
 		fseek(fsrc, 0, SEEK_END);
 		uint32_t fsize = ftell(fsrc);
 		fseek(fsrc, 0, SEEK_SET);
-		//printf("Open %s file (size %i bytes)\n", fname, fsize);
+		//fprintf(stderr, "Open %s file (size %i bytes)\n", fname, fsize);
 
 		auto in_buf = std::unique_ptr<uint8_t[]>(new uint8_t[fsize]);
 
@@ -480,18 +480,18 @@ bool BackupDevice::load_no_gba(const char *fname)
 			uint32_t size = 0;
 			if (!no_gba_unpackSAV(&in_buf[0], fsize, &out_buf[0], size))
 			{
-				//printf("New size %i byte(s)\n", size);
+				//fprintf(stderr, "New size %i byte(s)\n", size);
 				size = no_gba_savTrim(&out_buf[0], size);
-				//printf("--- new size after trim %i byte(s)\n", size);
+				//fprintf(stderr, "--- new size after trim %i byte(s)\n", size);
 				size = no_gba_fillLeft(size);
-				//printf("--- new size after fill %i byte(s)\n", size);
+				//fprintf(stderr, "--- new size after fill %i byte(s)\n", size);
 				raw_applyUserSettings(size);
 				this->data.resize(size);
 				for (uint32_t tt = 0; tt < size; ++tt)
 					this->data[tt] = out_buf[tt];
 
 				//dump back out as a dsv, just to keep things sane
-				printf("---- Loaded no$GBA save\n");
+				fprintf(stderr, "---- Loaded no$GBA save\n");
 
 				fclose(fsrc);
 				return true;
@@ -516,7 +516,7 @@ void BackupDevice::loadfile()
 	if (inf->fail())
 	{
 		// no dsv found; we need to try auto-importing a file with .sav extension
-		printf("DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
+		fprintf(stderr, "DeSmuME .dsv save file not found. Trying to load an old raw .sav file.\n");
 
 		// change extension to sav
 		char tmp[MAX_PATH];
@@ -527,7 +527,7 @@ void BackupDevice::loadfile()
 		inf.reset(new EMUFILE_FILE(tmp, "rb"));
 		if (inf->fail())
 		{
-			printf("Missing save file %s\n", this->filename.c_str());
+			fprintf(stderr, "Missing save file %s\n", this->filename.c_str());
 			return;
 		}
 
@@ -545,7 +545,7 @@ void BackupDevice::loadfile()
 		if (cmp)
 		{
 			// maybe it is a misnamed raw save file. try loading it that way
-			printf("Not a DeSmuME .dsv save file. Trying to load as raw.\n");
+			fprintf(stderr, "Not a DeSmuME .dsv save file. Trying to load as raw.\n");
 			if (!this->load_no_gba(this->filename.c_str()))
 				this->load_raw(this->filename.c_str());
 			return;
@@ -557,7 +557,7 @@ void BackupDevice::loadfile()
 		read32le(&version, inf.get());
 		if (version)
 		{
-			printf("Unknown save file format\n");
+			fprintf(stderr, "Unknown save file format\n");
 			return;
 		}
 		inf->fseek(-24, SEEK_CUR);

@@ -11,12 +11,7 @@
 #include <sstream>
 #include <typeinfo>
 #include <locale>
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(_LIBCPP_VERSION)
-# include "wstring_convert.h"
-# include "codecvt.h"
-#else
-# include <codecvt>
-#endif
+#include <codecvt>
 #include <vector>
 #include <memory>
 #include <cmath>

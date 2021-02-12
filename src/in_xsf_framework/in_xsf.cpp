@@ -10,8 +10,8 @@
 #include "XSFConfig.h"
 #include "XSFCommon.h"
 #include "windowsh_wrapper.h"
-#include <winamp/in2.h>
-#include <winamp/wa_ipc.h>
+#include "winamp/in2.h"
+#include "winamp/wa_ipc.h"
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(_LIBCPP_VERSION)
 std::locale::id std::codecvt<char16_t, char, mbstate_t>::id;

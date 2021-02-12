@@ -224,6 +224,7 @@ bool XSFPlayer_2SF::Load()
 	}
 
 	CommonSettings.use_jit = true;
+	CommonSettings.jit_max_block_size = 100;
 	NDS_Reset();
 
 	execute = true;
@@ -236,8 +237,9 @@ bool XSFPlayer_2SF::Load()
 	}
 
 	sndifwork.xfs_load = true;
-	//CommonSettings.spu_advanced = true;
-	//CommonSettings.advanced_timing = false;
+	CommonSettings.rigorous_timing = true;
+	CommonSettings.spu_advanced = true;
+	CommonSettings.advanced_timing = true;
 
 	return XSFPlayer::Load();
 }

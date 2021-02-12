@@ -1,4 +1,4 @@
-/*  Copyright 2009-2010 DeSmuME team
+/*  Copyright 2009-2015 DeSmuME team
 
 	This file is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -14,38 +14,41 @@
 	along with the this software.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// -------------------------
-// this file contains the METASPU system
-// which is designed to handle the task of audio synchronization
-// and is designed to be as portable between multiple emulators
-// -------------------------
+//-------------------------
+//this file contains the METASPU system
+//which is designed to handle the task of audio synchronization
+//and is designed to be as portable between multiple emulators
+//-------------------------
 
-#pragma once
 
-#include "../types.h"
+#ifndef _METASPU_H_
+#define _METASPU_H_
+
+#include <algorithm>
+
+#include "types.h"
 
 class ISynchronizingAudioBuffer
 {
 public:
-	virtual ~ISynchronizingAudioBuffer() { }
+  virtual ~ISynchronizingAudioBuffer() {}
 
-	virtual void enqueue_samples(int16_t *buf, int samples_provided) = 0;
+	virtual void enqueue_samples(s16* buf, int samples_provided) = 0;
 
-	// returns the number of samples actually supplied, which may not match the number requested
-	virtual int output_samples(int16_t *buf, int samples_requested) = 0;
+	//returns the number of samples actually supplied, which may not match the number requested
+	virtual int output_samples(s16* buf, int samples_requested) = 0;
 };
 
 enum ESynchMode
 {
-	ESynchMode_DualSynchAsynch,
 	ESynchMode_Synchronous
 };
 
 enum ESynchMethod
 {
-	ESynchMethod_N, // nitsuja's
-	ESynchMethod_Z, // zero's
-	ESynchMethod_P // PCSX2 spu2-x
+	ESynchMethod_0, //Null
 };
 
-ISynchronizingAudioBuffer *metaspu_construct(ESynchMethod method);
+ISynchronizingAudioBuffer* metaspu_construct(ESynchMethod method);
+
+#endif

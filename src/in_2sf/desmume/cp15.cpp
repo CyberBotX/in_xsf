@@ -24,7 +24,7 @@ armcp15_t cp15;
 
 bool armcp15_t::reset(armcpu_t *c)
 {
-	//printf("CP15 Reset\n");
+	//fprintf(stderr, "CP15 Reset\n");
 	this->cpu = c;
 	this->IDCode = 0x41059461;
 	this->cacheType = 0x0F0D2112;
@@ -225,7 +225,7 @@ bool armcp15_t::moveCP2ARM(uint32_t *R, uint8_t CRn, uint8_t CRm, uint8_t opcode
 {
 	if (!this->cpu)
 	{
-		printf("ERROR: cp15 don\'t allocated\n");
+		fprintf(stderr, "ERROR: cp15 don\'t allocated\n");
 		return false;
 	}
 	if (this->cpu->CPSR.bits.mode == USR)
@@ -371,7 +371,7 @@ bool armcp15_t::moveARM2CP(uint32_t val, uint8_t CRn, uint8_t CRm, uint8_t opcod
 {
 	if (!this->cpu)
 	{
-		printf("ERROR: cp15 don\'t allocated\n");
+		fprintf(stderr, "ERROR: cp15 don\'t allocated\n");
 		return false;
 	}
 	if (this->cpu->CPSR.bits.mode == USR)

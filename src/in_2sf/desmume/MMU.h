@@ -322,7 +322,7 @@ struct MMU_struct
 		// an extra 128KB for blank memory, directly after arm9_lcd, so that
 		// we can easily map things to the end of arm9_lcd to represent
 		// an unmapped state
-		uint8_t blank_memory[0x20000];
+		uint8_t blank_memory[0x100000 - 0xA4000];
 	};
 #include "PACKED_END.h"
 

@@ -18,8 +18,31 @@
 
 #pragma once
 
+#include <windows.h>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
+#include <algorithm>
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
+using u64 = uint64_t;
+using s64 = int64_t;
+using u32 = uint32_t;
+using s32 = int32_t;
+using u16 = uint16_t;
+using s16 = int16_t;
+using u8 = uint8_t;
+using s8 = int8_t;
+#ifndef FORCEINLINE
+#define FORCEINLINE inline
+#endif
 
 #ifdef _WINDOWS
 # define HAVE_LIBAGG
@@ -35,6 +58,7 @@
 # ifdef __SSE2__
 #  define ENABLE_SSE2
 # endif
+# define HAVE_JIT
 #endif
 
 #ifdef NOSSE
@@ -48,7 +72,9 @@
 #ifdef _MSC_VER
 # define strcasecmp(x, y) _stricmp(x, y)
 # define strncasecmp(x, y, l) strnicmp(x, y, l)
-# define snprintf _snprintf
+# ifndef snprintf
+#  define snprintf _snprintf
+# endif
 #endif
 
 #ifndef MAX_PATH
@@ -74,17 +100,41 @@
 
 #ifdef __MINGW32__
 # undef FASTCALL
+# undef LDM_FASTCALL
 # define FASTCALL __attribute__((fastcall))
+# define LDM_FASTCALL
 # define ASMJIT_CALL_CONV kX86FuncConvGccFastCall
+# define ASMJIT_STDLIB_CALL_CONV kX86FuncConvCDecl
 #elif defined (__i386__) && !defined(__clang__)
 # define FASTCALL __attribute__((regparm(3)))
+# define LDM_FASTCALL
 # define ASMJIT_CALL_CONV kX86FuncConvGccRegParm3
+# define ASMJIT_STDLIB_CALL_CONV kX86FuncConvCDecl
 #elif defined(_MSC_VER) || defined(__INTEL_COMPILER)
 # define FASTCALL
-# define ASMJIT_CALL_CONV kX86FuncConvCDecl
+# define LDM_FASTCALL
+# ifdef _WIN64
+#  define ASMJIT_CALL_CONV kX86FuncConvW64
+#  define ASMJIT_STDLIB_CALL_CONV kX86FuncConvW64
+# else
+#  define ASMJIT_CALL_CONV kX86FuncConvCDecl
+#  define ASMJIT_STDLIB_CALL_CONV kX86FuncConvCDecl
+# endif
 #else
 # define FASTCALL
-# define ASMJIT_CALL_CONV kX86FuncConvCDecl
+# define LDM_FASTCALL
+# if defined(__amd64__) || defined(__x86_64__)
+#  if defined(_WIN64)
+#   define ASMJIT_CALL_CONV kX86FuncConvW64
+#   define ASMJIT_STDLIB_CALL_CONV kX86FuncConvW64
+#  else
+#   define ASMJIT_CALL_CONV kX86FuncConvU64
+#   define ASMJIT_STDLIB_CALL_CONV kX86FuncConvU64
+#  endif
+# else
+#  define ASMJIT_CALL_CONV kX86FuncConvCDecl
+#  define ASMJIT_STDLIB_CALL_CONV kX86FuncConvCDecl
+# endif
 #endif
 
 /*----------------------*/

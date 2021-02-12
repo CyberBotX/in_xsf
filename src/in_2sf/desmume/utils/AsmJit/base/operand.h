@@ -1073,7 +1073,8 @@ static ASMJIT_INLINE Imm imm_u(uint64_t val) {
 }
 
 //! Create void* pointer immediate value operand.
-static ASMJIT_INLINE Imm imm_ptr(void* p) {
+template <typename T>
+static ASMJIT_INLINE Imm imm_ptr(T* p) {
   return Imm(static_cast<int64_t>(reinterpret_cast<intptr_t>(p)));
 }
 

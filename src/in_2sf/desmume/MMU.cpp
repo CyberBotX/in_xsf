@@ -129,7 +129,7 @@ uint32_t MMU_struct::MMU_MASK[2][256] =
 		/* 3X*/	DUP16(0x00007FFF),
 		/* 4X*/	DUP16(0x00FFFFFF),
 		/* 5X*/	DUP16(0x000007FF),
-		/* 6X*/	DUP16(0x00FFFFFF),
+		/* 6X*/	DUP16(0x000FFFFF),
 		/* 7X*/	DUP16(0x000007FF),
 		/* 8X*/	DUP16(0x00000003),
 		/* 9X*/	DUP16(0x00000003),
@@ -147,10 +147,10 @@ uint32_t MMU_struct::MMU_MASK[2][256] =
 		/* 2X*/	DUP16(0x003FFFFF),
 		/* 3X*/	DUP8(0x00007FFF),
 				DUP8(0x0000FFFF),
-		/* 4X*/	DUP8(0x00FFFFFF),
+		/* 4X*/	DUP8(0x0000FFFF),
 				DUP8(0x0000FFFF),
 		/* 5X*/	DUP16(0x00000003),
-		/* 6X*/	DUP16(0x00FFFFFF),
+		/* 6X*/	DUP16(0x000FFFFF),
 		/* 7X*/	DUP16(0x00000003),
 		/* 8X*/	DUP16(0x00000003),
 		/* 9X*/	DUP16(0x00000003),
@@ -671,8 +671,8 @@ static inline void MMU_VRAMmapControl(uint8_t block, uint8_t VRAMBankCnt)
 	MMU_VRAMmapRefreshBank(VRAM_BANK_C);
 	MMU_VRAMmapRefreshBank(VRAM_BANK_D);
 
-	//printf(vramConfiguration.describe().c_str());
-	//printf("vram remapped at vcount=%d\n",nds.VCount);
+	//fprintf(stderr, vramConfiguration.describe().c_str());
+	//fprintf(stderr, "vram remapped at vcount=%d\n",nds.VCount);
 
 	// -------------------------------
 	// set up arm9 mirrorings
@@ -1065,7 +1065,7 @@ void FASTCALL MMU_writeToGCControl(int PROCNUM, uint32_t val)
 	T1WriteLong(MMU.MMU_MEM[TEST_PROCNUM][0x40], 0x1A4, val);
 
 	// Launch DMA if start flag was set to "DS Cart"
-	//printf("triggering card dma\n");
+	//fprintf(stderr, "triggering card dma\n");
 	triggerDma(EDMAMode_Card);
 }
 
@@ -1185,7 +1185,7 @@ static inline uint16_t read_timer(int proc, int timerIndex)
 	int32_t diff = (nds.timerCycle[proc][timerIndex] - nds_timer) & 0xFFFFFFFF;
 	assert(diff >= 0);
 	if (diff < 0)
-		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ DIFF < 0 (%d) (%d) (%d)\n", diff, timerIndex, MMU.timerMODE[proc][timerIndex]);
+		fprintf(stderr, "NEW EMULOOP BAD NEWS PLEASE REPORT: TIME READ DIFF < 0 (%d) (%d) (%d)\n", diff, timerIndex, MMU.timerMODE[proc][timerIndex]);
 
 	int32_t units = diff / (1 << MMU.timerMODE[proc][timerIndex]);
 	int32_t ret;
@@ -1195,7 +1195,7 @@ static inline uint16_t read_timer(int proc, int timerIndex)
 	// whichever instruction setup this counter should advance nds_timer (I think?) and the division should truncate down to 65535 immediately
 	else if (units > 65536)
 	{
-		printf("NEW EMULOOP BAD NEWS PLEASE REPORT: UNITS %d:%d = %d\n", proc, timerIndex, units);
+		fprintf(stderr, "NEW EMULOOP BAD NEWS PLEASE REPORT: UNITS %d:%d = %d\n", proc, timerIndex, units);
 		ret = 0;
 	}
 	else
@@ -1251,7 +1251,7 @@ uint32_t TGXSTAT::read32()
 
 	ret |= (this->gxfifo_irq & 0x3) << 30; // user's irq flags
 
-	//printf("vc=%03d Returning gxstat read: %08X\n",nds.VCount,ret);
+	//fprintf(stderr, "vc=%03d Returning gxstat read: %08X\n",nds.VCount,ret);
 
 	return ret;
 }
@@ -1266,13 +1266,13 @@ void TGXSTAT::write32(uint32_t val)
 		//mtxStack[0].position = 0;
 		this->se = 0; // clear stack error flag
 	}
-	//printf("gxstat write: %08X while gxfifo.size=%d\n",val,gxFIFO.size);
+	//fprintf(stderr, "gxstat write: %08X while gxfifo.size=%d\n",val,gxFIFO.size);
 }
 
 // this could be inlined...
 void MMU_struct_new::write_dma(int proc, int size, uint32_t _adr, uint32_t val)
 {
-	//printf("%08lld -- write_dma: %d %d %08X %08X\n",nds_timer,proc,size,_adr,val);
+	//fprintf(stderr, "%08lld -- write_dma: %d %d %08X %08X\n",nds_timer,proc,size,_adr,val);
 	uint32_t adr = _adr - _REG_DMA_CONTROL_MIN;
 	uint32_t chan = adr / 12;
 	uint32_t regnum = (adr - chan * 12) >> 2;
@@ -1288,7 +1288,7 @@ uint32_t MMU_struct_new::read_dma(int proc, int size, uint32_t _adr)
 	uint32_t regnum = (adr - chan * 12) >> 2;
 
 	uint32_t temp = MMU_new.dma[proc][chan].regs[regnum]->read(size, adr);
-	//printf("%08lld --  read_dma: %d %d %08X = %08X\n",nds_timer,proc,size,_adr,temp);
+	//fprintf(stderr, "%08lld --  read_dma: %d %d %08X = %08X\n",nds_timer,proc,size,_adr,temp);
 
 	return temp;
 }
@@ -1305,7 +1305,7 @@ MMU_struct_new::MMU_struct_new()
 
 void DmaController::write32(uint32_t val)
 {
-	//printf("dma %d,%d WRITE %08X\n",procnum,chan,val);
+	//fprintf(stderr, "dma %d,%d WRITE %08X\n",procnum,chan,val);
 	this->wordcount = val & 0x1FFFFF;
 	uint8_t wasEnable = this->enable;
 	uint32_t valhi = val >> 16;
@@ -1332,7 +1332,7 @@ void DmaController::write32(uint32_t val)
 		this->daddr = this->daddr_user;
 	}
 
-	//printf("dma %d,%d set to startmode %d with wordcount set to: %08X\n",procnum,chan,_startmode,wordcount);
+	//fprintf(stderr, "dma %d,%d set to startmode %d with wordcount set to: %08X\n",procnum,chan,_startmode,wordcount);
 	// analyze enabling and startmode.
 	// note that we only do this if the dma was freshly enabled.
 	// we should probably also only be latching these other regs in that case too..
@@ -1463,7 +1463,7 @@ template<int PROCNUM> void DmaController::doCopy()
 	// need to figure out what to do about this
 	if (bogarted)
 	{
-		printf("YOUR GAME IS BOGARTED!!! PLEASE REPORT!!!\n");
+		fprintf(stderr, "YOUR GAME IS BOGARTED!!! PLEASE REPORT!!!\n");
 		assert(false);
 		return;
 	}
@@ -1580,7 +1580,7 @@ uint32_t DmaController::read32()
 	ret |= this->sar << 23;
 	ret |= this->dar << 21;
 	ret |= this->wordcount;
-	//printf("dma %d,%d READ  %08X\n",procnum,chan,ret);
+	//fprintf(stderr, "dma %d,%d READ  %08X\n",procnum,chan,ret);
 	return ret;
 }
 
@@ -1621,30 +1621,30 @@ void FASTCALL _MMU_ARM9_write08(uint32_t adr, uint8_t val)
 		switch (adr)
 		{
 			case REG_SQRTCNT:
-				printf("ERROR 8bit SQRTCNT WRITE\n");
+				fprintf(stderr, "ERROR 8bit SQRTCNT WRITE\n");
 				return;
 			case REG_SQRTCNT + 1:
-				printf("ERROR 8bit SQRTCNT1 WRITE\n");
+				fprintf(stderr, "ERROR 8bit SQRTCNT1 WRITE\n");
 				return;
 			case REG_SQRTCNT + 2:
-				printf("ERROR 8bit SQRTCNT2 WRITE\n");
+				fprintf(stderr, "ERROR 8bit SQRTCNT2 WRITE\n");
 				return;
 			case REG_SQRTCNT + 3:
-				printf("ERROR 8bit SQRTCNT3 WRITE\n");
+				fprintf(stderr, "ERROR 8bit SQRTCNT3 WRITE\n");
 				return;
 
 #if 1
 			case REG_DIVCNT:
-				printf("ERROR 8bit DIVCNT WRITE\n");
+				fprintf(stderr, "ERROR 8bit DIVCNT WRITE\n");
 				return;
 			case REG_DIVCNT + 1:
-				printf("ERROR 8bit DIVCNT+1 WRITE\n");
+				fprintf(stderr, "ERROR 8bit DIVCNT+1 WRITE\n");
 				return;
 			case REG_DIVCNT + 2:
-				printf("ERROR 8bit DIVCNT+2 WRITE\n");
+				fprintf(stderr, "ERROR 8bit DIVCNT+2 WRITE\n");
 				return;
 			case REG_DIVCNT + 3:
-				printf("ERROR 8bit DIVCNT+3 WRITE\n");
+				fprintf(stderr, "ERROR 8bit DIVCNT+3 WRITE\n");
 				return;
 #endif
 
@@ -1734,12 +1734,12 @@ void FASTCALL _MMU_ARM9_write16(uint32_t adr, uint16_t val)
 			case REG_DIVNUMER:
 			case REG_DIVNUMER + 2:
 			case REG_DIVNUMER + 4:
-				printf("DIV: 16 write NUMER %08X. PLEASE REPORT! \n", val);
+				fprintf(stderr, "DIV: 16 write NUMER %08X. PLEASE REPORT! \n", val);
 				break;
 			case REG_DIVDENOM:
 			case REG_DIVDENOM + 2:
 			case REG_DIVDENOM + 4:
-				printf("DIV: 16 write DENOM %08X. PLEASE REPORT! \n", val);
+				fprintf(stderr, "DIV: 16 write DENOM %08X. PLEASE REPORT! \n", val);
 				break;
 #endif
 			case REG_SQRTCNT:
@@ -2024,10 +2024,10 @@ uint8_t FASTCALL _MMU_ARM9_read08(uint32_t adr)
 
 			// sqrtcnt isnt big enough for these to exist. but they'd probably return 0 so its ok
 			case REG_SQRTCNT + 2:
-				printf("ERROR 8bit SQRTCNT+2 READ\n");
+				fprintf(stderr, "ERROR 8bit SQRTCNT+2 READ\n");
 				return 0;
 			case REG_SQRTCNT + 3:
-				printf("ERROR 8bit SQRTCNT+3 READ\n");
+				fprintf(stderr, "ERROR 8bit SQRTCNT+3 READ\n");
 				return 0;
 
 			// Nostalgia's options menu requires that these work
@@ -2038,10 +2038,10 @@ uint8_t FASTCALL _MMU_ARM9_read08(uint32_t adr)
 
 			// divcnt isnt big enough for these to exist. but they'd probably return 0 so its ok
 			case REG_DIVCNT + 2:
-				printf("ERROR 8bit DIVCNT+2 READ\n");
+				fprintf(stderr, "ERROR 8bit DIVCNT+2 READ\n");
 				return 0;
 			case REG_DIVCNT + 3:
-				printf("ERROR 8bit DIVCNT+3 READ\n");
+				fprintf(stderr, "ERROR 8bit DIVCNT+3 READ\n");
 				return 0;
 		}
 	}
@@ -2077,14 +2077,14 @@ uint16_t FASTCALL _MMU_ARM9_read16(uint32_t adr)
 				return MMU_new.sqrt.read16();
 			// sqrtcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
 			case REG_SQRTCNT + 2:
-				printf("ERROR 16bit SQRTCNT+2 READ\n");
+				fprintf(stderr, "ERROR 16bit SQRTCNT+2 READ\n");
 				return 0;
 
 			case REG_DIVCNT:
 				return MMU_new.div.read16();
 			// divcnt isnt big enough for this to exist. but it'd probably return 0 so its ok
 			case REG_DIVCNT + 2:
-				printf("ERROR 16bit DIVCNT+2 READ\n");
+				fprintf(stderr, "ERROR 16bit DIVCNT+2 READ\n");
 				return 0;
 
 			case REG_IME:
@@ -2255,7 +2255,7 @@ void FASTCALL _MMU_ARM7_write08(uint32_t adr, uint8_t val)
 				break;
 
 			case REG_HALTCNT:
-				//printf("halt 0x%02X\n", val);
+				//fprintf(stderr, "halt 0x%02X\n", val);
 				switch (val)
 				{
 					case 0xC0:
@@ -2310,11 +2310,11 @@ void FASTCALL _MMU_ARM7_write16(uint32_t adr, uint16_t val)
 			case REG_DISPA_VCOUNT:
 				if (nds.VCount >= 202 && nds.VCount <= 212)
 				{
-					printf("VCOUNT set to %i (previous value %i)\n", val, nds.VCount);
+					fprintf(stderr, "VCOUNT set to %i (previous value %i)\n", val, nds.VCount);
 					nds.VCount = val;
 				}
 				else
-					printf("Attempt to set VCOUNT while not within 202-212 (%i), ignored\n", nds.VCount);
+					fprintf(stderr, "Attempt to set VCOUNT while not within 202-212 (%i), ignored\n", nds.VCount);
 				return;
 
 			case REG_EXMEMCNT:
@@ -2379,7 +2379,7 @@ void FASTCALL _MMU_ARM7_write16(uint32_t adr, uint16_t val)
 								// our totally pathetic register handling, only the one thing we've wanted so far
 								if (MMU.powerMan_Reg[0] & PM_SYSTEM_PWR)
 								{
-									printf("SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
+									fprintf(stderr, "SYSTEM POWERED OFF VIA ARM7 SPI POWER DEVICE\n");
 									execute = false;
 								}
 							}
@@ -2413,7 +2413,7 @@ void FASTCALL _MMU_ARM7_write16(uint32_t adr, uint16_t val)
 						}
 
 						int channel = (MMU.SPI_CMD & 0x70) >> 4;
-						//printf("%08X\n",channel);
+						//fprintf(stderr, "%08X\n",channel);
 						switch (channel)
 						{
 							case TSC_MEASURE_TEMP1:

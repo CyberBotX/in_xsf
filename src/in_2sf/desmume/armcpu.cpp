@@ -139,7 +139,7 @@ uint32_t armcpu_switchMode(armcpu_t *armcpu, uint8_t mode)
 			armcpu->SPSR_und = armcpu->SPSR;
 			break;
 		default:
-			printf("switchMode: WRONG mode %02X\n",mode);
+			fprintf(stderr, "switchMode: WRONG mode %02X\n",mode);
 	}
 
 	switch (mode)
@@ -275,7 +275,7 @@ void armcpu_exception(armcpu_t *cpu, uint32_t number)
 	cpu->changeCPSR();
 	cpu->R[15] = cpu->intVector + number;
 	cpu->next_instruction = cpu->R[15];
-	printf("armcpu_exception!\n");
+	fprintf(stderr, "armcpu_exception!\n");
 
 	// HOW DOES THIS WORTK WITHOUT A PREFETCH, LIKE IRQ BELOW?
 	// I REALLY WISH WE DIDNT PREFETCH BEFORE EXECUTING
@@ -329,7 +329,7 @@ template<int PROCNUM> uint32_t armcpu_exec()
 
 	//cFetch = armcpu_prefetch(&ARMPROC);
 
-	//printf("%d: %08X\n",PROCNUM,ARMPROC.instruct_adr);
+	//fprintf(stderr, "%d: %08X\n",PROCNUM,ARMPROC.instruct_adr);
 
 	if (!ARMPROC.CPSR.bits.T)
 	{

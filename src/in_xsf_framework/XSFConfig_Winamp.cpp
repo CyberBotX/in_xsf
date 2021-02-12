@@ -8,8 +8,8 @@
 
 #include "XSFConfig.h"
 #include "XSFCommon.h"
-#include <winamp/in2.h>
-#include <winamp/wa_ipc.h>
+#include "winamp/in2.h"
+#include "winamp/wa_ipc.h"
 
 extern In_Module inMod;
 

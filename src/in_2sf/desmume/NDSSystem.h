@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <cstring>
+#include <stdlib.h>
 #include "armcpu.h"
 #include "MMU.h"
 #include "SPU.h"
@@ -289,8 +290,34 @@ extern struct TCommonSettings
 		strcpy(this->Firmware, "firmware.bin");
 		NDS_FillDefaultFirmwareConfigData(&this->InternalFirmConf);
 
-		for (int i = 0; i < 16; ++i)
-			this->spu_muteChannels[i] = false;
+    bool solo = false;
+    static char* soloEnv = strdup("SOLO_2SF_n");
+    static char* muteEnv = strdup("MUTE_2SF_n");
+		for (int i = 0; i < 16; ++i) {
+      if (i < 10) {
+        soloEnv[9] = '0' + i;
+      } else {
+        soloEnv[9] = 'A' + (i - 10);
+      }
+      char* soloVal = getenv(soloEnv);
+      if (soloVal && soloVal[0] == '1') {
+        solo = true;
+        this->spu_muteChannels[i] = false;
+      } else {
+        this->spu_muteChannels[i] = true;
+      }
+    }
+    if (!solo) {
+      for (int i = 0; i < 16; ++i) {
+        if (i < 10) {
+          muteEnv[9] = '0' + i;
+        } else {
+          muteEnv[9] = 'A' + (i - 10);
+        }
+        char* muteVal = getenv(muteEnv);
+        this->spu_muteChannels[i] = muteVal && muteVal[0] == '1';
+      }
+    }
 
 #ifdef HAVE_JIT
 		// zero 06-sep-2012 - shouldnt be defaulting this to true for now, since the jit is buggy.
