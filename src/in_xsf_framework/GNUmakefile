@@ -10,3 +10,4 @@
 clean:
 	rm -f ../in_xsf_framework.lib *.obj zlib/*.obj winamp/*.obj
 
+.PHONY: clean

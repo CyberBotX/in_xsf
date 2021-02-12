@@ -6,3 +6,5 @@
 
 clean:
 	rm -f ../in_2sf.dll ../in_2sf.exp ../in_2sf.lib *.obj desmume/*.obj desmume/*/*.obj
+
+.PHONY: clean

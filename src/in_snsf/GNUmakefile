@@ -6,3 +6,5 @@
 
 clean:
 	rm -f ../in_snsf.dll ../in_snsf.exp ../in_snsf.lib *.obj snes9x/*.obj snes9x/*/*.obj
+
+.PHONY: clean

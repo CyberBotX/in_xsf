@@ -6,3 +6,5 @@
 
 clean:
 	rm -f ../in_ncsf.dll ../in_ncsf.exp ../in_ncsf.lib *.obj SSEQPlayer/*.obj
+
+.PHONY: clean

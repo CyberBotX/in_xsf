@@ -6,3 +6,5 @@
 
 clean:
 	rm -f ../in_gsf.dll ../in_gsf.exp ../in_gsf.lib *.obj vbam/*/*.obj
+
+.PHONY: clean
