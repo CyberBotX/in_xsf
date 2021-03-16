@@ -21,7 +21,7 @@
 
 /*
  * This structure is meant to be similar to what is stored in the actual
- * Nintendo DS's sound registers.  Items that were not being used by this
+ * Nintendo DS's sound registers. Items that were not being used by this
  * player have been removed, and items which help the simulated registers
  * have been added.
  */
@@ -67,7 +67,7 @@ struct NDSSoundRegister
 
 /*
  * From FeOS Sound System, this is temporary storage of what will go into
- * the Nintendo DS sound registers.  It is kept separate as the original code
+ * the Nintendo DS sound registers. It is kept separate as the original code
  * from FeOS Sound System utilized this to hold data prior to passing it into
  * the DS's registers.
  */
@@ -88,7 +88,7 @@ struct Player;
  * data, duplicated. The way it is duplicated is done as follows:
  * the samples are stored in the center of the buffer, and on both
  * sides is half of the data, the first half being after the data
- * and the second half before before the data. This in essense
+ * and the second half begin before the data. This in essence
  * mirrors the data while allowing a pointer to always be retrieved
  * and no extra copies of the buffer are created. Part of the idea
  * for this came from kode54's original buffer implementation, but

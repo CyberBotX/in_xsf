@@ -141,7 +141,7 @@ int Player::TrackAlloc()
 // Original FSS Function: Player_Run
 void Player::Run()
 {
-	while (this->tempoCount > 240)
+	while (this->tempoCount >= 240)
 	{
 		this->tempoCount -= 240;
 		for (uint8_t i = 0; i < this->nTracks; ++i)
