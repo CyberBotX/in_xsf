@@ -50,8 +50,6 @@ struct SBNK
 	INFOEntryBANK info;
 
 	SBNK(const std::string &fn = "");
-	SBNK(const SBNK &sbnk);
-	SBNK &operator=(const SBNK &sbnk);
 
 	void Read(PseudoFile &file);
 };

@@ -21,8 +21,6 @@ struct SSEQ
 	INFOEntrySEQ info;
 
 	SSEQ(const std::string &fn = "");
-	SSEQ(const SSEQ &sseq);
-	SSEQ &operator=(const SSEQ &sseq);
 
 	void Read(PseudoFile &file);
 };

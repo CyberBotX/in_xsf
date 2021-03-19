@@ -22,7 +22,4 @@ struct SDAT
 	INFOEntryPLAYER player;
 
 	SDAT(PseudoFile &file, uint32_t sseqToLoad);
-private:
-	SDAT(const SDAT &);
-	SDAT &operator=(const SDAT &);
 };

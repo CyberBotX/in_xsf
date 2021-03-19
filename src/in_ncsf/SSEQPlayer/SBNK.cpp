@@ -84,24 +84,6 @@ SBNK::SBNK(const std::string &fn) : filename(fn), instruments(), info()
 	memset(this->waveArc, 0, sizeof(this->waveArc));
 }
 
-SBNK::SBNK(const SBNK &sbnk) : filename(sbnk.filename), instruments(sbnk.instruments), info(sbnk.info)
-{
-	memcpy(this->waveArc, sbnk.waveArc, sizeof(this->waveArc));
-}
-
-SBNK &SBNK::operator=(const SBNK &sbnk)
-{
-	if (this != &sbnk)
-	{
-		this->filename = sbnk.filename;
-		this->instruments = sbnk.instruments;
-
-		memcpy(this->waveArc, sbnk.waveArc, sizeof(this->waveArc));
-		this->info = sbnk.info;
-	}
-	return *this;
-}
-
 void SBNK::Read(PseudoFile &file)
 {
 	uint32_t startOfSBNK = file.pos;

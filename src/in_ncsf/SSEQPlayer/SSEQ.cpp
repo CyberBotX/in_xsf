@@ -14,23 +14,6 @@ SSEQ::SSEQ(const std::string &fn) : filename(fn), data(), bank(nullptr), info()
 {
 }
 
-SSEQ::SSEQ(const SSEQ &sseq) : filename(sseq.filename), data(sseq.data), bank(sseq.bank), info(sseq.info)
-{
-}
-
-SSEQ &SSEQ::operator=(const SSEQ &sseq)
-{
-	if (this != &sseq)
-	{
-		this->filename = sseq.filename;
-		this->data = sseq.data;
-
-		this->bank = sseq.bank;
-		this->info = sseq.info;
-	}
-	return *this;
-}
-
 void SSEQ::Read(PseudoFile &file)
 {
 	uint32_t startOfSSEQ = file.pos;
