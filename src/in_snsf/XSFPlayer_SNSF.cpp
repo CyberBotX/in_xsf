@@ -106,7 +106,7 @@ bool S9xOpenSoundDevice()
 	return true;
 }
 
-static void Map2SFSection(const std::vector<uint8_t> &section)
+static void MapSNSFSection(const std::vector<uint8_t> &section)
 {
 	auto &data = loaderwork.rom;
 
@@ -126,7 +126,7 @@ static void Map2SFSection(const std::vector<uint8_t> &section)
 	std::copy_n(&section[8], size, &data[offset]);
 }
 
-static bool Map2SF(XSFFile *xSF)
+static bool MapSNSF(XSFFile *xSF)
 {
 	if (!xSF->IsValidType(0x23))
 		return false;
@@ -157,12 +157,12 @@ static bool Map2SF(XSFFile *xSF)
 	}
 
 	if (!programSection.empty())
-		Map2SFSection(programSection);
+		MapSNSFSection(programSection);
 
 	return true;
 }
 
-static bool RecursiveLoad2SF(XSFFile *xSF, int level)
+static bool RecursiveLoadSNSF(XSFFile *xSF, int level)
 {
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
@@ -171,11 +171,11 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 #else
 		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib"), 4, 8));
 #endif
-		if (!RecursiveLoad2SF(libxSF.get(), level + 1))
+		if (!RecursiveLoadSNSF(libxSF.get(), level + 1))
 			return false;
 	}
 
-	if (!Map2SF(xSF))
+	if (!MapSNSF(xSF))
 		return false;
 
 	unsigned n = 2;
@@ -192,7 +192,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 #else
 			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag), 4, 8));
 #endif
-			if (!RecursiveLoad2SF(libxSF.get(), level + 1))
+			if (!RecursiveLoadSNSF(libxSF.get(), level + 1))
 				return false;
 		}
 	} while (found);
@@ -200,14 +200,14 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 	return true;
 }
 
-static bool Load2SF(XSFFile *xSF)
+static bool LoadSNSF(XSFFile *xSF)
 {
 	loaderwork.rom.clear();
 	loaderwork.sram.clear();
 	loaderwork.first = false;
 	loaderwork.base = 0;
 
-	return RecursiveLoad2SF(xSF, 1);
+	return RecursiveLoadSNSF(xSF, 1);
 }
 
 XSFPlayer_SNSF::XSFPlayer_SNSF(const std::string &filename) : XSFPlayer()
@@ -224,7 +224,7 @@ XSFPlayer_SNSF::XSFPlayer_SNSF(const std::wstring &filename) : XSFPlayer()
 
 bool XSFPlayer_SNSF::Load()
 {
-	if (!Load2SF(this->xSF.get()))
+	if (!LoadSNSF(this->xSF.get()))
 		return false;
 
 	Settings.SoundSync = true;

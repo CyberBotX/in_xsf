@@ -119,7 +119,7 @@ SoundDriver *systemSoundInit()
 	return new GSFSoundDriver();
 }
 
-static void Map2SFSection(const std::vector<uint8_t> &section, int level)
+static void MapGSFSection(const std::vector<uint8_t> &section, int level)
 {
 	auto &data = loaderwork.rom;
 
@@ -134,7 +134,7 @@ static void Map2SFSection(const std::vector<uint8_t> &section, int level)
 	memcpy(&data[offset], &section[12], size);
 }
 
-static bool Map2SF(XSFFile *xSF, int level)
+static bool MapGSF(XSFFile *xSF, int level)
 {
 	if (!xSF->IsValidType(0x22))
 		return false;
@@ -142,12 +142,12 @@ static bool Map2SF(XSFFile *xSF, int level)
 	auto &programSection = xSF->GetProgramSection();
 
 	if (!programSection.empty())
-		Map2SFSection(programSection, level);
+		MapGSFSection(programSection, level);
 
 	return true;
 }
 
-static bool RecursiveLoad2SF(XSFFile *xSF, int level)
+static bool RecursiveLoadGSF(XSFFile *xSF, int level)
 {
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
@@ -156,11 +156,11 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 #else
 		auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib"), 8, 12));
 #endif
-		if (!RecursiveLoad2SF(libxSF.get(), level + 1))
+		if (!RecursiveLoadGSF(libxSF.get(), level + 1))
 			return false;
 	}
 
-	if (!Map2SF(xSF, level))
+	if (!MapGSF(xSF, level))
 		return false;
 
 	unsigned n = 2;
@@ -177,7 +177,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 #else
 			auto libxSF = std::unique_ptr<XSFFile>(new XSFFile(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag), 8, 12));
 #endif
-			if (!RecursiveLoad2SF(libxSF.get(), level + 1))
+			if (!RecursiveLoadGSF(libxSF.get(), level + 1))
 				return false;
 		}
 	} while (found);
@@ -185,12 +185,12 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 	return true;
 }
 
-static bool Load2SF(XSFFile *xSF)
+static bool LoadGSF(XSFFile *xSF)
 {
 	loaderwork.rom.clear();
 	loaderwork.entry = 0;
 
-	return RecursiveLoad2SF(xSF, 1);
+	return RecursiveLoadGSF(xSF, 1);
 }
 
 XSFPlayer_GSF::XSFPlayer_GSF(const std::string &filename) : XSFPlayer()
@@ -207,7 +207,7 @@ XSFPlayer_GSF::XSFPlayer_GSF(const std::wstring &filename) : XSFPlayer()
 
 bool XSFPlayer_GSF::Load()
 {
-	if (!Load2SF(this->xSF.get()))
+	if (!LoadGSF(this->xSF.get()))
 		return false;
 
 	cpuIsMultiBoot = (loaderwork.entry >> 24) == 2;
