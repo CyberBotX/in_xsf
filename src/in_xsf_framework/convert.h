@@ -130,19 +130,28 @@ public:
 	{
 		double seconds = time / 1000.0;
 		if (seconds < 60)
-			return std::to_string(seconds);
+			return ConvertFuncs::TrimDoubleString(std::to_string(seconds));
 		unsigned long minutes = static_cast<unsigned long>(seconds) / 60;
 		seconds -= minutes * 60;
 		if (minutes < 60)
-			return std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
+			return std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + ConvertFuncs::TrimDoubleString(std::to_string(seconds));
 		unsigned long hours = minutes / 60;
 		minutes %= 60;
-		return std::to_string(hours) + ":" + (minutes < 10 ? "0" : "") + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
+		return std::to_string(hours) + ":" + (minutes < 10 ? "0" : "") + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + ConvertFuncs::TrimDoubleString(std::to_string(seconds));
 	}
 
 	static std::wstring MSToWString(unsigned long time)
 	{
 		return ConvertFuncs::StringToWString(ConvertFuncs::MSToString(time));
+	}
+
+	// Derived from https://stackoverflow.com/a/13709929 (specifically the comments)
+	template<typename T> static std::basic_string<T> TrimDoubleString(const std::basic_string<T> &str)
+	{
+		auto strCopy = str;
+		auto lastNonZero = strCopy.find_last_not_of('0');
+		strCopy.erase(lastNonZero + (lastNonZero == strCopy.find('.') ? 0 : 1));
+		return strCopy;
 	}
 
 	static std::wstring StringToWString(const std::string &str)
@@ -151,7 +160,7 @@ public:
 		int bufferSize = MultiByteToWideChar(CP_UTF8, 0, strC, -1, nullptr, 0);
 		auto buffer = std::vector<wchar_t>(bufferSize);
 		MultiByteToWideChar(CP_UTF8, 0, strC, -1, &buffer[0], bufferSize);
-		return std::wstring(buffer.begin(), buffer.end());
+		return std::wstring(buffer.begin(), buffer.begin() + bufferSize - 1);
 	}
 
 	static std::string WStringToString(const std::wstring &wstr)
@@ -160,6 +169,6 @@ public:
 		int bufferSize = WideCharToMultiByte(CP_UTF8, 0, wstrC, -1, nullptr, 0, nullptr, nullptr);
 		auto buffer = std::vector<char>(bufferSize);
 		WideCharToMultiByte(CP_UTF8, 0, wstrC, -1, &buffer[0], bufferSize, nullptr, nullptr);
-		return std::string(buffer.begin(), buffer.end());
+		return std::string(buffer.begin(), buffer.begin() + bufferSize - 1);
 	}
 };

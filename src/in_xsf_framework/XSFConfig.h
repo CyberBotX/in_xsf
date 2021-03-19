@@ -16,6 +16,26 @@
 
 class XSFConfigIO
 {
+private:
+	// enum versions
+	template<typename T> typename std::enable_if_t<std::is_enum_v<T>, T> GetValueInternal(const std::string &name, const T &defaultValue) const
+	{
+		return convertTo<T>(this->GetValueString(name, std::to_string(static_cast<std::underlying_type_t<T>>(defaultValue))));
+	}
+	template<typename T> typename std::enable_if_t<std::is_enum_v<T>> SetValueInternal(const std::string &name, const T &value)
+	{
+		this->SetValueString(name, std::to_string(static_cast<std::underlying_type_t<T>>(value)));
+	}
+
+	// non-enum versions
+	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> &&std::is_arithmetic_v<T>, T> GetValueInternal(const std::string &name, const T &defaultValue) const
+	{
+		return convertTo<T>(this->GetValueString(name, std::to_string(defaultValue)));
+	}
+	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> &&std::is_arithmetic_v<T>> SetValueInternal(const std::string &name, const T &value)
+	{
+		this->SetValueString(name, std::to_string(value));
+	}
 protected:
 	XSFConfigIO() { }
 public:
@@ -24,10 +44,10 @@ public:
 
 	virtual ~XSFConfigIO() { }
 	virtual void SetValueString(const std::string &name, const std::string &value) = 0;
-	template<typename T> void SetValue(const std::string &name, const T &value) { this->SetValueString(name, std::to_string(value)); }
+	template<typename T> void SetValue(const std::string &name, const T &value) { this->SetValueInternal(name, value); }
 	void SetValue(const std::string &name, const std::string &value) { this->SetValueString(name, value); }
 	virtual std::string GetValueString(const std::string &name, const std::string &defaultValue) const = 0;
-	template<typename T> T GetValue(const std::string &name, const T &defaultValue) const { return convertTo<T>(this->GetValueString(name, std::to_string(defaultValue))); }
+	template<typename T> T GetValue(const std::string &name, const T &defaultValue) const { return this->GetValueInternal(name, defaultValue); }
 	std::string GetValue(const std::string &name, const std::string &defaultValue) const { return this->GetValueString(name, defaultValue); }
 	virtual void SetHInstance(HINSTANCE) { }
 	virtual HINSTANCE GetHInstance() const { return nullptr; }

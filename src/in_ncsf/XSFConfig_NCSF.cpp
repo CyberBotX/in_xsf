@@ -290,7 +290,7 @@ void XSFConfig_NCSF::RefreshSoundView()
 				if (chanId < 8)
 					buf += L"PSG/Noise?";
 				else if (chanId < 14)
-					buf += std::to_wstring(chn.reg.waveDuty == 7 ? 0 : 12.5 * (chn.reg.waveDuty + 1)) + L"% Square";
+					buf += ConvertFuncs::TrimDoubleString(std::to_wstring(chn.reg.waveDuty == 7 ? 0 : 12.5 * (chn.reg.waveDuty + 1))) + L"% Square";
 				else
 					buf += L"Noise";
 				buf += L")";
@@ -304,7 +304,7 @@ void XSFConfig_NCSF::RefreshSoundView()
 
 			std::wstring tmpBuf = ConvertFuncs::StringToWString(NumToHexString(chn.reg.timer)).substr(2);
 			buf = L"$" + tmpBuf + L" (";
-			tmpBuf = std::to_wstring((ARM7_CLOCK / 2) / static_cast<double>(0x10000 - chn.reg.timer) / 8);
+			tmpBuf = ConvertFuncs::TrimDoubleString(std::to_wstring((ARM7_CLOCK / 2) / static_cast<double>(0x10000 - chn.reg.timer) / 8));
 			if (tmpBuf.find('.') != std::wstring::npos)
 				tmpBuf = tmpBuf.substr(0, tmpBuf.find('.') + 2);
 			buf += tmpBuf + L" Hz)";

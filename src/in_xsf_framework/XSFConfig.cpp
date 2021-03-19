@@ -68,8 +68,8 @@ void XSFConfig::LoadConfig()
 	this->defaultLength = ConvertFuncs::StringToMS(this->configIO->GetValue("DefaultLength", XSFConfig::initDefaultLength));
 	this->defaultFade = ConvertFuncs::StringToMS(this->configIO->GetValue("DefaultFade", XSFConfig::initDefaultFade));
 	this->volume = this->configIO->GetValue("Volume", XSFConfig::initVolume);
-	this->volumeType = static_cast<VolumeType>(this->configIO->GetValue("VolumeType", static_cast<int>(XSFConfig::initVolumeType)));
-	this->peakType = static_cast<PeakType>(this->configIO->GetValue("PeakType", static_cast<int>(XSFConfig::initPeakType)));
+	this->volumeType = this->configIO->GetValue("VolumeType", XSFConfig::initVolumeType);
+	this->peakType = this->configIO->GetValue("PeakType", XSFConfig::initPeakType);
 	this->sampleRate = this->configIO->GetValue("SampleRate", XSFConfig::initSampleRate);
 	this->titleFormat = this->configIO->GetValue("TitleFormat", XSFConfig::initTitleFormat);
 
@@ -228,7 +228,7 @@ INT_PTR CALLBACK XSFConfig::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPa
 			SetWindowTextW(GetDlgItem(hwndDlg, idDefaultFade), ConvertFuncs::MSToWString(this->defaultFade).c_str());
 			SetWindowTextW(GetDlgItem(hwndDlg, idSkipSilenceOnStartSec), ConvertFuncs::MSToWString(this->skipSilenceOnStartSec).c_str());
 			SetWindowTextW(GetDlgItem(hwndDlg, idDetectSilenceSec), ConvertFuncs::MSToWString(this->detectSilenceSec).c_str());
-			SetWindowTextW(GetDlgItem(hwndDlg, idVolume), std::to_wstring(this->volume).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idVolume), ConvertFuncs::TrimDoubleString(std::to_wstring(this->volume)).c_str());
 			SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Disabled"));
 			SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Use Volume Tag"));
 			SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Track"));
@@ -335,7 +335,7 @@ void XSFConfig::ResetConfigDefaults(HWND hwndDlg)
 	SetWindowTextW(GetDlgItem(hwndDlg, idDefaultFade), ConvertFuncs::StringToWString(XSFConfig::initDefaultFade).c_str());
 	SetWindowTextW(GetDlgItem(hwndDlg, idSkipSilenceOnStartSec), ConvertFuncs::StringToWString(XSFConfig::initSkipSilenceOnStartSec).c_str());
 	SetWindowTextW(GetDlgItem(hwndDlg, idDetectSilenceSec), ConvertFuncs::StringToWString(XSFConfig::initDetectSilenceSec).c_str());
-	SetWindowTextW(GetDlgItem(hwndDlg, idVolume), std::to_wstring(XSFConfig::initVolume).c_str());
+	SetWindowTextW(GetDlgItem(hwndDlg, idVolume), ConvertFuncs::TrimDoubleString(std::to_wstring(XSFConfig::initVolume)).c_str());
 	SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_SETCURSEL, XSFConfig::initVolumeType, 0);
 	SendMessageW(GetDlgItem(hwndDlg, idClipProtect), CB_SETCURSEL, XSFConfig::initPeakType, 0);
 	auto found = std::find(this->supportedSampleRates.begin(), this->supportedSampleRates.end(), XSFConfig::initSampleRate);
