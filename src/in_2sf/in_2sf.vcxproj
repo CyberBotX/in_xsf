@@ -52,7 +52,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;IN_2SF_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINAMP_PLUGIN;HAVE_LIBZ;_DEBUG;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\in_xsf_framework;..\in_xsf_framework\zlib;..\in_xsf_framework\winamp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4065;4100;4127;4146;4189;4201;4244;4245;4512;4706;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4065;4100;4127;4146;4189;4201;4244;4245;4512;4706;4996;26451;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -68,7 +68,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;IN_2SF_EXPORTS;_CRT_SECURE_NO_WARNINGS;WINAMP_PLUGIN;HAVE_LIBZ;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\in_xsf_framework;..\in_xsf_framework\zlib;..\in_xsf_framework\winamp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4065;4100;4127;4146;4189;4201;4244;4245;4512;4706;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4065;4100;4127;4146;4189;4201;4244;4245;4512;4706;4996;26451;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
