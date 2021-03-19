@@ -183,7 +183,7 @@ static bool RecursiveLoad2SF(XSFFile *xSF, int level)
 	do
 	{
 		found = false;
-		std::string libTag = "_lib" + stringify(n++);
+		std::string libTag = "_lib" + std::to_string(n++);
 		if (xSF->GetTagExists(libTag))
 		{
 			found = true;

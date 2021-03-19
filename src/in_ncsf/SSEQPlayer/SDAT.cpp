@@ -42,7 +42,7 @@ SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk(), player()
 		throw std::logic_error("No SSEQ records found in SDAT");
 
 	if (!infoSection.SEQrecord.entries.count(sseqToLoad))
-		throw std::range_error("SSEQ of " + stringify(sseqToLoad) + " is not found");
+		throw std::range_error("SSEQ of " + std::to_string(sseqToLoad) + " is not found");
 
 	// Read SSEQ
 	if (infoSection.SEQrecord.entries.count(sseqToLoad))

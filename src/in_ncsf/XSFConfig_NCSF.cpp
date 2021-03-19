@@ -85,7 +85,7 @@ INT_PTR CALLBACK XSFConfig_NCSF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARA
 			// Mutes
 			for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
 			{
-				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>((L"SPU " + wstringify(x + 1)).c_str()));
+				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>((L"SPU " + std::to_wstring(x + 1)).c_str()));
 				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, this->mutes[x], x);
 			}
 			break;
@@ -259,9 +259,9 @@ void XSFConfig_NCSF::RefreshSoundView()
 			ProgressSetPosImmediate(hDlg, IDC_SOUND0VOLBAR + chanId, vol);
 
 			if (this->soundViewData->volModeAlternative)
-				buf = wstringify(chn.reg.volumeMul) + L"/" + wstringify(1 << datashift);
+				buf = std::to_wstring(chn.reg.volumeMul) + L"/" + std::to_wstring(1 << datashift);
 			else
-				buf = wstringify(vol);
+				buf = std::to_wstring(vol);
 			SetDlgItemTextW(hDlg, IDC_SOUND0VOL + chanId, buf.c_str());
 
 			if (!chn.reg.panning)
@@ -271,18 +271,18 @@ void XSFConfig_NCSF::RefreshSoundView()
 			else if (chn.reg.panning == 127)
 				buf = L"R";
 			else if (chn.reg.panning < 64)
-				buf = L"L" + wstringify(64 - chn.reg.panning);
+				buf = L"L" + std::to_wstring(64 - chn.reg.panning);
 			else //if (chn.reg.panning > 64)
-				buf = L"R" + wstringify(chn.reg.panning - 64);
+				buf = L"R" + std::to_wstring(chn.reg.panning - 64);
 			SetDlgItemTextW(hDlg, IDC_SOUND0PAN + chanId, buf.c_str());
 
 			static const std::wstring modes[] = { L"Manual", L"Loop Infinite", L"One-Shot", L"Prohibited" };
-			SetDlgItemTextW(hDlg, IDC_SOUND0REPEATMODE + chanId, (wstringify(chn.reg.repeatMode) + L" (" + modes[chn.reg.repeatMode] + L")").c_str());
+			SetDlgItemTextW(hDlg, IDC_SOUND0REPEATMODE + chanId, (std::to_wstring(chn.reg.repeatMode) + L" (" + modes[chn.reg.repeatMode] + L")").c_str());
 
 			if (chn.reg.format != 3)
 			{
 				static const std::wstring formats[] = { L"PCM8", L"PCM16", L"IMA-ADPCM" };
-				SetDlgItemTextW(hDlg, IDC_SOUND0FORMAT + chanId, (wstringify(chn.reg.format) + L" (" + formats[chn.reg.format] + L")").c_str());
+				SetDlgItemTextW(hDlg, IDC_SOUND0FORMAT + chanId, (std::to_wstring(chn.reg.format) + L" (" + formats[chn.reg.format] + L")").c_str());
 			}
 			else
 			{
@@ -290,7 +290,7 @@ void XSFConfig_NCSF::RefreshSoundView()
 				if (chanId < 8)
 					buf += L"PSG/Noise?";
 				else if (chanId < 14)
-					buf += wstringify(chn.reg.waveDuty == 7 ? 0 : 12.5 * (chn.reg.waveDuty + 1)) + L"% Square";
+					buf += std::to_wstring(chn.reg.waveDuty == 7 ? 0 : 12.5 * (chn.reg.waveDuty + 1)) + L"% Square";
 				else
 					buf += L"Noise";
 				buf += L")";
@@ -300,17 +300,17 @@ void XSFConfig_NCSF::RefreshSoundView()
 			static const std::wstring states[] = { L"NONE", L"START", L"ATTACK", L"DECAY", L"SUSTAIN", L"RELEASE" };
 			SetDlgItemTextW(hDlg, IDC_SOUND0STATE + chanId, states[chn.state].c_str());
 
-			SetDlgItemTextW(hDlg, IDC_SOUND0PNT + chanId, (L"samp #" + wstringify(chn.reg.loopStart)).c_str());
+			SetDlgItemTextW(hDlg, IDC_SOUND0PNT + chanId, (L"samp #" + std::to_wstring(chn.reg.loopStart)).c_str());
 
 			std::wstring tmpBuf = ConvertFuncs::StringToWString(NumToHexString(chn.reg.timer)).substr(2);
 			buf = L"$" + tmpBuf + L" (";
-			tmpBuf = wstringify((ARM7_CLOCK / 2) / static_cast<double>(0x10000 - chn.reg.timer) / 8);
+			tmpBuf = std::to_wstring((ARM7_CLOCK / 2) / static_cast<double>(0x10000 - chn.reg.timer) / 8);
 			if (tmpBuf.find('.') != std::wstring::npos)
 				tmpBuf = tmpBuf.substr(0, tmpBuf.find('.') + 2);
 			buf += tmpBuf + L" Hz)";
 			SetDlgItemTextW(hDlg, IDC_SOUND0TMR + chanId, buf.c_str());
 
-			SetDlgItemTextW(hDlg, IDC_SOUND0POSLEN + chanId, (L"samp #" + wstringify(static_cast<uint32_t>(chn.reg.samplePosition)) + L" / " + wstringify(chn.reg.totalLength)).c_str());
+			SetDlgItemTextW(hDlg, IDC_SOUND0POSLEN + chanId, (L"samp #" + std::to_wstring(static_cast<uint32_t>(chn.reg.samplePosition)) + L" / " + std::to_wstring(chn.reg.totalLength)).c_str());
 		}
 		else if (this->soundViewData->channelLastStates[chanId] != CS_NONE)
 		{

@@ -228,7 +228,7 @@ INT_PTR CALLBACK XSFConfig::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPa
 			SetWindowTextW(GetDlgItem(hwndDlg, idDefaultFade), ConvertFuncs::MSToWString(this->defaultFade).c_str());
 			SetWindowTextW(GetDlgItem(hwndDlg, idSkipSilenceOnStartSec), ConvertFuncs::MSToWString(this->skipSilenceOnStartSec).c_str());
 			SetWindowTextW(GetDlgItem(hwndDlg, idDetectSilenceSec), ConvertFuncs::MSToWString(this->detectSilenceSec).c_str());
-			SetWindowTextW(GetDlgItem(hwndDlg, idVolume), wstringify(this->volume).c_str());
+			SetWindowTextW(GetDlgItem(hwndDlg, idVolume), std::to_wstring(this->volume).c_str());
 			SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Disabled"));
 			SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Use Volume Tag"));
 			SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Track"));
@@ -241,7 +241,7 @@ INT_PTR CALLBACK XSFConfig::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPa
 			for (unsigned x = 0, rates = this->supportedSampleRates.size(); x < rates; ++x)
 			{
 				unsigned rate = this->supportedSampleRates[x];
-				SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(wstringify(rate).c_str()));
+				SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(std::to_wstring(rate).c_str()));
 				if (this->sampleRate == rate)
 					SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_SETCURSEL, x, 0);
 			}
@@ -335,7 +335,7 @@ void XSFConfig::ResetConfigDefaults(HWND hwndDlg)
 	SetWindowTextW(GetDlgItem(hwndDlg, idDefaultFade), ConvertFuncs::StringToWString(XSFConfig::initDefaultFade).c_str());
 	SetWindowTextW(GetDlgItem(hwndDlg, idSkipSilenceOnStartSec), ConvertFuncs::StringToWString(XSFConfig::initSkipSilenceOnStartSec).c_str());
 	SetWindowTextW(GetDlgItem(hwndDlg, idDetectSilenceSec), ConvertFuncs::StringToWString(XSFConfig::initDetectSilenceSec).c_str());
-	SetWindowTextW(GetDlgItem(hwndDlg, idVolume), wstringify(XSFConfig::initVolume).c_str());
+	SetWindowTextW(GetDlgItem(hwndDlg, idVolume), std::to_wstring(XSFConfig::initVolume).c_str());
 	SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_SETCURSEL, XSFConfig::initVolumeType, 0);
 	SendMessageW(GetDlgItem(hwndDlg, idClipProtect), CB_SETCURSEL, XSFConfig::initPeakType, 0);
 	auto found = std::find(this->supportedSampleRates.begin(), this->supportedSampleRates.end(), XSFConfig::initSampleRate);
@@ -352,7 +352,7 @@ void XSFConfig::SaveConfigDialog(HWND hwndDlg)
 	this->defaultFade = ConvertFuncs::StringToMS(this->GetTextFromWindow(GetDlgItem(hwndDlg, idDefaultFade)));
 	this->skipSilenceOnStartSec = ConvertFuncs::StringToMS(this->GetTextFromWindow(GetDlgItem(hwndDlg, idSkipSilenceOnStartSec)));
 	this->detectSilenceSec = ConvertFuncs::StringToMS(this->GetTextFromWindow(GetDlgItem(hwndDlg, idDetectSilenceSec)));
-	this->volume = convertTo<double>(this->GetTextFromWindow(GetDlgItem(hwndDlg, idVolume)), false);
+	this->volume = convertTo<double>(this->GetTextFromWindow(GetDlgItem(hwndDlg, idVolume)));
 	this->volumeType = static_cast<VolumeType>(SendMessageW(GetDlgItem(hwndDlg, idReplayGain), CB_GETCURSEL, 0, 0));
 	this->peakType = static_cast<PeakType>(SendMessageW(GetDlgItem(hwndDlg, idClipProtect), CB_GETCURSEL, 0, 0));
 	this->sampleRate = XSFConfig::supportedSampleRates[SendMessageW(GetDlgItem(hwndDlg, idSampleRate), CB_GETCURSEL, 0, 0)];

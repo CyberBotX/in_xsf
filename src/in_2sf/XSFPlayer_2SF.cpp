@@ -162,7 +162,7 @@ bool XSFPlayer_2SF::RecursiveLoad2SF(XSFFile *xSFToLoad, int level)
 	do
 	{
 		found = false;
-		std::string libTag = "_lib" + stringify(n++);
+		std::string libTag = "_lib" + std::to_string(n++);
 		if (xSFToLoad->GetTagExists(libTag))
 		{
 			found = true;

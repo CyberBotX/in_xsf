@@ -63,7 +63,7 @@ public:
 	std::string GetTagValue(const std::string &name) const;
 	template<typename T> T GetTagValue(const std::string &name, const T &defaultValue) const
 	{
-		return this->GetTagExists(name) ? convertTo<T>(this->GetTagValue(name), false) : defaultValue;
+		return this->GetTagExists(name) ? convertTo<T>(this->GetTagValue(name)) : defaultValue;
 	}
 	unsigned long GetLengthMS(unsigned long defaultLength) const;
 	unsigned long GetFadeMS(unsigned long defaultFade) const;

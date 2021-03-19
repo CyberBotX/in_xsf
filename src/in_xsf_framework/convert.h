@@ -5,61 +5,54 @@
 
 #pragma once
 
-#include <stdexcept>
 #include <string>
 #include <sstream>
-#include <typeinfo>
 #include <locale>
-#include <codecvt>
 #include <vector>
 #include <memory>
+#include <type_traits>
 #include <cmath>
 #include "windowsh_wrapper.h"
 
-/*
- * The following exception class and the *stringify and convert* functions are
- * from the C++ FAQ, section 39, entry 3:
- * http://www.parashift.com/c++-faq/convert-string-to-any.html
- *
- * The convert and convertTo functions were made into templates of std::basic_string
- * to handle wide-character strings properly, as well as adding wstringify for the
- * same reason.
- */
-class BadConversion : public std::runtime_error
+ /*
+  * Originally the convert* functions came from the C++ FAQ, Miscellaneous Technical Issues:
+  * https://isocpp.org/wiki/faq/misc-technical-issues#convert-string-to-any
+  *
+  * They have been replaced with a couple functions that use the C++11 std::enable_if
+  * construct along with various other type traits constructs to use the proper
+  * string conversions.
+  */
+template<typename T, typename S> inline typename std::enable_if_t<!std::is_enum_v<T> &&std::is_arithmetic_v<T>, T> convertTo(const std::basic_string<S> &s)
 {
-public:
-	BadConversion(const std::string &s) : std::runtime_error(s) { }
-};
-
-template<typename T> inline std::string stringify(const T &x)
-{
-	std::ostringstream o;
-	if (!(o << x))
-		throw BadConversion(std::string("stringify(") + typeid(x).name() + ")");
-	return o.str();
+	if (std::is_integral_v<T>)
+	{
+		if (std::is_unsigned_v<T>)
+		{
+			if (std::is_same_v<unsigned long long, std::remove_cv_t<T>>)
+				return static_cast<T>(std::stoull(s));
+			else
+				return static_cast<T>(std::stoul(s));
+		}
+		else if (std::is_same_v<long long, std::remove_cv_t<T>>)
+			return static_cast<T>(std::stoll(s));
+		else if (std::is_same_v<long, std::remove_cv_t<T>>)
+			return static_cast<T>(std::stol(s));
+		else
+			return static_cast<T>(std::stoi(s));
+	}
+	else if (std::is_floating_point_v<T>)
+	{
+		if (std::is_same_v<long double, std::remove_cv_t<T>>)
+			return static_cast<T>(std::stold(s));
+		else if (std::is_same_v<double, std::remove_cv_t<T>>)
+			return static_cast<T>(std::stod(s));
+		else
+			return static_cast<T>(std::stof(s));
+	}
 }
-
-template<typename T> inline std::wstring wstringify(const T &x)
+template<typename T, typename S> inline typename std::enable_if_t<std::is_enum_v<T>, T> convertTo(const std::basic_string<S> &s)
 {
-	std::wostringstream o;
-	if (!(o << x))
-		throw BadConversion(std::string("wstringify(") + typeid(x).name() + ")");
-	return o.str();
-}
-
-template<typename T, typename S> inline void convert(const std::basic_string<S> &s, T &x, bool failIfLeftoverChars = true)
-{
-	std::basic_istringstream<S> i(s);
-	S c;
-	if (!(i >> x) || (failIfLeftoverChars && i.get(c)))
-		throw BadConversion(std::string("convert(") + typeid(S).name() + ")");
-}
-
-template<typename T, typename S> inline T convertTo(const std::basic_string<S> &s, bool failIfLeftoverChars = true)
-{
-	T x;
-	convert(s, x, failIfLeftoverChars);
-	return x;
+	return static_cast<T>(convertTo<std::underlying_type_t<T>>(s));
 }
 
 // Miscellaneous conversion functions
@@ -107,13 +100,13 @@ public:
 		{
 			if (!ConvertFuncs::IsDigitsOnly(hoursStr))
 				return 0;
-			hours = convertTo<unsigned long>(hoursStr, false);
+			hours = convertTo<unsigned long>(hoursStr);
 		}
 		if (!minutesStr.empty())
 		{
 			if (!ConvertFuncs::IsDigitsOnly(minutesStr))
 				return 0;
-			minutes = convertTo<unsigned long>(minutesStr, false);
+			minutes = convertTo<unsigned long>(minutesStr);
 		}
 		if (!secondsStr.empty())
 		{
@@ -122,7 +115,7 @@ public:
 			size_t comma = secondsStr.find(',');
 			if (comma != std::string::npos)
 				secondsStr[comma] = '.';
-			seconds = convertTo<double>(secondsStr, false);
+			seconds = convertTo<double>(secondsStr);
 		}
 		seconds += minutes * 60 + hours * 1440;
 		return static_cast<unsigned long>(std::floor(seconds * 1000 + 0.5));
@@ -137,14 +130,14 @@ public:
 	{
 		double seconds = time / 1000.0;
 		if (seconds < 60)
-			return stringify(seconds);
+			return std::to_string(seconds);
 		unsigned long minutes = static_cast<unsigned long>(seconds) / 60;
 		seconds -= minutes * 60;
 		if (minutes < 60)
-			return stringify(minutes) + ":" + (seconds < 10 ? "0" : "") + stringify(seconds);
+			return std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
 		unsigned long hours = minutes / 60;
 		minutes %= 60;
-		return stringify(hours) + ":" + (minutes < 10 ? "0" : "") + stringify(minutes) + ":" + (seconds < 10 ? "0" : "") + stringify(seconds);
+		return std::to_string(hours) + ":" + (minutes < 10 ? "0" : "") + std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
 	}
 
 	static std::wstring MSToWString(unsigned long time)

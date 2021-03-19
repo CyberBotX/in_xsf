@@ -335,7 +335,7 @@ template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, c
 				return 0;
 			}
 			else if (eqstr(tagToGet, "length"))
-				tag = stringify(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade()));
+				tag = std::to_string(file.GetLengthMS(xSFConfig->GetDefaultLength()) + file.GetFadeMS(xSFConfig->GetDefaultFade()));
 			else
 				tag = file.GetTagValue(tagToGet);
 			CopyToString(tag.substr(0, destlen - 1), dest);

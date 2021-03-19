@@ -325,24 +325,24 @@ double XSFFile::GetVolume(VolumeType preferredVolumeType, PeakType preferredPeak
 	bool hadReplayGain = false;
 	if (preferredVolumeType == VOLUMETYPE_REPLAYGAIN_ALBUM && !replaygain_album_gain.empty())
 	{
-		gain = convertTo<double>(replaygain_album_gain, false);
+		gain = convertTo<double>(replaygain_album_gain);
 		hadReplayGain = true;
 	}
 	if (!hadReplayGain && preferredVolumeType != VOLUMETYPE_VOLUME && !replaygain_track_gain.empty())
 	{
-		gain = convertTo<double>(replaygain_track_gain, false);
+		gain = convertTo<double>(replaygain_track_gain);
 		hadReplayGain = true;
 	}
 	if (hadReplayGain)
 	{
 		double vol = std::pow(10.0, gain / 20.0), peak = 1.0;
 		if (preferredPeakType == PEAKTYPE_REPLAYGAIN_ALBUM && !replaygain_album_peak.empty())
-			peak = convertTo<double>(replaygain_album_peak, false);
+			peak = convertTo<double>(replaygain_album_peak);
 		else if (preferredPeakType != PEAKTYPE_NONE && !replaygain_track_peak.empty())
-			peak = convertTo<double>(replaygain_track_peak, false);
+			peak = convertTo<double>(replaygain_track_peak);
 		return !fEqual(peak, 1.0) ? std::min(vol, 1.0 / peak) : vol;
 	}
-	return volume.empty() ? 1.0 : convertTo<double>(volume, false);
+	return volume.empty() ? 1.0 : convertTo<double>(volume);
 }
 
 std::string XSFFile::FormattedTitleOptionalBlock(const std::string &block, bool &hadReplacement, unsigned level) const

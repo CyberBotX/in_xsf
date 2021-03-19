@@ -24,10 +24,10 @@ public:
 
 	virtual ~XSFConfigIO() { }
 	virtual void SetValueString(const std::string &name, const std::string &value) = 0;
-	template<typename T> void SetValue(const std::string &name, const T &value) { this->SetValueString(name, stringify(value)); }
+	template<typename T> void SetValue(const std::string &name, const T &value) { this->SetValueString(name, std::to_string(value)); }
 	void SetValue(const std::string &name, const std::string &value) { this->SetValueString(name, value); }
 	virtual std::string GetValueString(const std::string &name, const std::string &defaultValue) const = 0;
-	template<typename T> T GetValue(const std::string &name, const T &defaultValue) const { return convertTo<T>(this->GetValueString(name, stringify(defaultValue))); }
+	template<typename T> T GetValue(const std::string &name, const T &defaultValue) const { return convertTo<T>(this->GetValueString(name, std::to_string(defaultValue))); }
 	std::string GetValue(const std::string &name, const std::string &defaultValue) const { return this->GetValueString(name, defaultValue); }
 	virtual void SetHInstance(HINSTANCE) { }
 	virtual HINSTANCE GetHInstance() const { return nullptr; }
