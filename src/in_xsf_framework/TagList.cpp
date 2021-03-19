@@ -13,6 +13,11 @@ using namespace std::placeholders;
 
 eq_str TagList::eqstr;
 
+auto TagList::GetTagOrder(const std::string &name) const -> TagsList::const_iterator
+{
+	return std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), [&](const std::string &tag) { return TagList::eqstr(tag, name); });
+}
+
 auto TagList::GetKeys() const -> const TagsList &
 {
 	return this->tagsOrder;
@@ -28,7 +33,7 @@ auto TagList::GetTags() const -> TagsList
 
 bool TagList::Exists(const std::string &name) const
 {
-	return std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind(TagList::eqstr, _1, name)) != this->tagsOrder.end();
+	return this->GetTagOrder(name) != this->tagsOrder.end();
 }
 
 std::string TagList::operator[](const std::string &name) const
@@ -41,8 +46,8 @@ std::string TagList::operator[](const std::string &name) const
 
 std::string &TagList::operator[](const std::string &name)
 {
-	auto tag = std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind(TagList::eqstr, _1, name));
-	if (tag == this->tagsOrder.end())
+	auto tagOrder = this->GetTagOrder(name);
+	if (tagOrder == this->tagsOrder.end())
 	{
 		this->tagsOrder.push_back(name);
 		this->tags[name] = "";
@@ -52,7 +57,7 @@ std::string &TagList::operator[](const std::string &name)
 
 void TagList::Remove(const std::string &name)
 {
-	auto tagOrder = std::find_if(this->tagsOrder.begin(), this->tagsOrder.end(), std::bind(TagList::eqstr, _1, name));
+	auto tagOrder = this->GetTagOrder(name);
 	if (tagOrder != this->tagsOrder.end())
 		this->tagsOrder.erase(tagOrder);
 	if (this->tags.count(name))

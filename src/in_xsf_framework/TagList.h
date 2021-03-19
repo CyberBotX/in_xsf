@@ -23,6 +23,8 @@ private:
 
 	Tags tags;
 	TagsList tagsOrder;
+
+	TagsList::const_iterator GetTagOrder(const std::string &name) const;
 public:
 	TagList() : tags(), tagsOrder() { }
 	const TagsList &GetKeys() const;
