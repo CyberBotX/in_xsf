@@ -134,7 +134,7 @@ std::vector<uint8_t> DialogTemplate::DialogGroup::GenerateControlTemplate() cons
 	*reinterpret_cast<uint16_t *>(&data[16]) = static_cast<uint16_t>(this->id);
 	*reinterpret_cast<uint16_t *>(&data[18]) = 0xFFFF;
 	*reinterpret_cast<uint16_t *>(&data[20]) = 0x0080;
-	memcpy(reinterpret_cast<wchar_t *>(&data[22]), this->groupName.c_str(), this->groupName.length() * sizeof(wchar_t));
+	std::copy_n(this->groupName.c_str(), this->groupName.length(), reinterpret_cast<wchar_t *>(&data[22]));
 
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
@@ -175,7 +175,7 @@ std::vector<uint8_t> DialogTemplate::DialogControlWithLabel::GenerateControlTemp
 	*reinterpret_cast<uint16_t *>(&data[16]) = static_cast<uint16_t>(this->id);
 	*reinterpret_cast<uint16_t *>(&data[18]) = 0xFFFF;
 	*reinterpret_cast<uint16_t *>(&data[20]) = this->type;
-	memcpy(reinterpret_cast<wchar_t *>(&data[22]), this->label.c_str(), this->label.length() * sizeof(wchar_t));
+	std::copy_n(this->label.c_str(), this->label.length(), reinterpret_cast<wchar_t *>(&data[22]));
 
 	return data;
 }
@@ -346,11 +346,11 @@ const DLGTEMPLATE *DialogTemplate::GenerateTemplate()
 	*reinterpret_cast<uint16_t *>(&this->templateData[8]) = controlCount;
 	*reinterpret_cast<uint16_t *>(&this->templateData[14]) = this->size.width;
 	*reinterpret_cast<uint16_t *>(&this->templateData[16]) = this->size.height;
-	memcpy(reinterpret_cast<wchar_t *>(&this->templateData[22]), this->title.c_str(), this->title.length() * sizeof(wchar_t));
+	std::copy_n(this->title.c_str(), this->title.length(), reinterpret_cast<wchar_t *>(&this->templateData[22]));
 	if (!this->fontName.empty())
 	{
 		*reinterpret_cast<uint16_t *>(&this->templateData[22 + sizeof(wchar_t) * (this->title.length() + 1)]) = this->fontSizeInPts;
-		memcpy(reinterpret_cast<wchar_t *>(&this->templateData[24 + sizeof(wchar_t) * (this->title.length() + 1)]), this->fontName.c_str(), this->fontName.length() * sizeof(wchar_t));
+		std::copy_n(this->fontName.c_str(), this->fontName.length(), reinterpret_cast<wchar_t *>(&this->templateData[24 + sizeof(wchar_t) * (this->title.length() + 1)]));
 	}
 
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)

@@ -13,13 +13,13 @@
 Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), masterVol(0), sseqVol(0), sseq(nullptr), allowedChannels(0), sampleRate(0),
 	interpolation(INTERPOLATION_NONE)
 {
-	memset(this->trackIds, 0, sizeof(this->trackIds));
+	std::fill_n(&this->trackIds[0], FSS_TRACKCOUNT, 0);
 	for (int8_t i = 0; i < 16; ++i)
 	{
 		this->channels[i].chnId = i;
 		this->channels[i].ply = this;
 	}
-	memset(this->variables, -1, sizeof(this->variables));
+	std::fill_n(&this->variables[0], 32, -1);
 }
 
 // Original FSS Function: Player_Setup
@@ -49,7 +49,7 @@ void Player::ClearState()
 	this->tempoCount = 0;
 	this->tempoRate = 0x100;
 	this->masterVol = 0; // this is actually the highest level
-	memset(this->variables, -1, sizeof(this->variables));
+	std::fill_n(&this->variables[0], 32, -1);
 }
 
 // Original FSS Function: Player_FreeTracks

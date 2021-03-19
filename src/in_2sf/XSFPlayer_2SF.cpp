@@ -88,7 +88,7 @@ static void SNDIFUpdateAudio(int16_t *buffer, uint32_t num_samples)
 	uint32_t num_bytes = num_samples << 2;
 	if (num_bytes > sndifwork.bufferbytes)
 		num_bytes = sndifwork.bufferbytes;
-	memcpy(&sndifwork.buf[0], buffer, num_bytes);
+	std::copy_n(reinterpret_cast<uint8_t *>(buffer), num_bytes, &sndifwork.buf[0]);
 	sndifwork.filled = num_bytes;
 	sndifwork.used = 0;
 }
@@ -125,7 +125,7 @@ void XSFPlayer_2SF::Map2SFSection(const std::vector<uint8_t> &section)
 		this->rom.resize(finalSize + 10, 0);
 	else if (this->rom.size() < size + offset)
 		this->rom.resize(offset + finalSize + 10);
-	memcpy(&this->rom[offset], &section[8], size);
+	std::copy_n(&section[8], size, &this->rom[offset]);
 }
 
 bool XSFPlayer_2SF::Map2SF(XSFFile *xSFToLoad)
@@ -263,7 +263,7 @@ void XSFPlayer_2SF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, 
 		{
 			if (remainbytes > bytes)
 			{
-				memcpy(&buf[offset], &sndifwork.buf[sndifwork.used], bytes);
+				std::copy_n(&sndifwork.buf[sndifwork.used], bytes, &buf[offset]);
 				sndifwork.used += bytes;
 				offset += bytes;
 				remainbytes -= bytes;
@@ -272,7 +272,7 @@ void XSFPlayer_2SF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, 
 			}
 			else
 			{
-				memcpy(&buf[offset], &sndifwork.buf[sndifwork.used], remainbytes);
+				std::copy_n(&sndifwork.buf[sndifwork.used], remainbytes, &buf[offset]);
 				sndifwork.used += remainbytes;
 				offset += remainbytes;
 				bytes -= remainbytes;

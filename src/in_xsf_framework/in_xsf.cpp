@@ -488,7 +488,7 @@ extern "C" __declspec(dllexport) size_t winampGetExtendedRead_getData(intptr_t h
 		auto sampleBuffer = std::vector<uint8_t>(576 * NumChannels * (BitsPerSample / 8));
 		unsigned samplesWritten = 0;
 		done = tmpxSFPlayer->FillBuffer(sampleBuffer, samplesWritten);
-		memcpy(&dest[copied], &sampleBuffer[0], samplesWritten * NumChannels * (BitsPerSample / 8));
+		std::copy_n(&sampleBuffer[0], samplesWritten * NumChannels * (BitsPerSample / 8), &dest[copied]);
 		copied += samplesWritten * NumChannels * (BitsPerSample / 8);
 		if (killswitch && *killswitch)
 			break;

@@ -27,7 +27,7 @@ void INFOEntrySEQ::Read(PseudoFile &file)
 
 INFOEntryBANK::INFOEntryBANK() : fileID(0)
 {
-	memset(this->waveArc, 0, sizeof(this->waveArc));
+	std::fill_n(&this->waveArc[0], 4, 0);
 }
 
 void INFOEntryBANK::Read(PseudoFile &file)

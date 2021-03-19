@@ -11,7 +11,7 @@
 
 NDSStdHeader::NDSStdHeader() : magic(0)
 {
-	memset(this->type, 0, sizeof(this->type));
+	std::fill_n(&this->type[0], 4, 0);
 }
 
 void NDSStdHeader::Read(PseudoFile &file)

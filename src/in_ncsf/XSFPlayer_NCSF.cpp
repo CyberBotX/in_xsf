@@ -43,7 +43,7 @@ void XSFPlayer_NCSF::MapNCSFSection(const std::vector<uint8_t> &section)
 		this->sdatData.resize(finalSize, 0);
 	else if (this->sdatData.size() < size)
 		this->sdatData.resize(finalSize);
-	memcpy(&this->sdatData[0], &section[0], size);
+	std::copy_n(&section[0], size, &this->sdatData[0]);
 }
 
 bool XSFPlayer_NCSF::MapNCSF(XSFFile *xSFToLoad)

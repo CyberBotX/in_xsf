@@ -128,7 +128,7 @@ void XSFFile::ReadXSF(std::ifstream &xSF, uint32_t programSizeOffset, uint32_t p
 	this->xSFType = PSFHeader[3];
 
 	this->rawData.resize(4);
-	memcpy(&this->rawData[0], PSFHeader, 4);
+	std::copy_n(PSFHeader, 4, &this->rawData[0]);
 
 	if (filesize < 16)
 		throw std::runtime_error("File is too small.");
@@ -150,7 +150,7 @@ void XSFFile::ReadXSF(std::ifstream &xSF, uint32_t programSizeOffset, uint32_t p
 		{
 			this->reservedSection.resize(reservedSize);
 			xSF.read(reinterpret_cast<char *>(&this->reservedSection[0]), reservedSize);
-			memcpy(&this->rawData[16], &this->reservedSection[0], reservedSize);
+			std::copy_n(&this->reservedSection[0], reservedSize, &this->rawData[16]);
 		}
 	}
 
@@ -165,7 +165,7 @@ void XSFFile::ReadXSF(std::ifstream &xSF, uint32_t programSizeOffset, uint32_t p
 		{
 			auto programSectionCompressed = std::vector<uint8_t>(programCompressedSize);
 			xSF.read(reinterpret_cast<char *>(&programSectionCompressed[0]), programCompressedSize);
-			memcpy(&this->rawData[reservedSize + 16], &programSectionCompressed[0], programCompressedSize);
+			std::copy_n(&programSectionCompressed[0], programCompressedSize, &this->rawData[reservedSize + 16]);
 
 			auto programSectionUncompressed = std::vector<uint8_t>(programHeaderSize);
 			unsigned long programUncompressedSize = programHeaderSize;

@@ -81,7 +81,7 @@ void SBNKInstrument::Read(PseudoFile &file, uint32_t startOffset)
 
 SBNK::SBNK(const std::string &fn) : filename(fn), instruments(), info()
 {
-	memset(this->waveArc, 0, sizeof(this->waveArc));
+	std::fill_n(&this->waveArc[0], 4, nullptr);
 }
 
 void SBNK::Read(PseudoFile &file)

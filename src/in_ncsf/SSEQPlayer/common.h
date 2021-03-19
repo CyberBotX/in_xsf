@@ -43,7 +43,7 @@ struct PseudoFile
 
 	template<size_t N> void ReadLE(uint8_t arr[N])
 	{
-		memcpy(&arr[0], &(*this->data)[this->pos], N);
+		std::copy_n(&(*this->data)[this->pos], N, &arr[0]);
 		this->pos += N;
 	}
 
@@ -55,7 +55,7 @@ struct PseudoFile
 
 	void ReadLE(std::vector<uint8_t> &arr)
 	{
-		memcpy(&arr[0], &(*this->data)[this->pos], arr.size());
+		std::copy_n(&(*this->data)[this->pos], arr.size(), &arr[0]);
 		this->pos += arr.size();
 	}
 

@@ -58,7 +58,7 @@ int mapgsf(uint8_t *d, int l, int &s)
 	if (static_cast<size_t>(l) > loaderwork.rom.size())
 		l = loaderwork.rom.size();
 	if (l)
-		memcpy(d, &loaderwork.rom[0], l);
+		std::copy_n(&loaderwork.rom[0], l, d);
 	s = l;
 	return l;
 }
@@ -104,7 +104,7 @@ public:
 			length = buffer.len - buffer.fil;
 		if (length > 0)
 		{
-			memcpy(&buffer.buf[buffer.fil], finalWave, length);
+			std::copy_n(reinterpret_cast<uint8_t *>(finalWave), length, &buffer.buf[buffer.fil]);
 			buffer.fil += length;
 		}
 	}
@@ -131,7 +131,7 @@ static void MapGSFSection(const std::vector<uint8_t> &section, int level)
 		data.resize(finalSize + 10, 0);
 	else if (data.size() < size + offset)
 		data.resize(offset + finalSize + 10);
-	memcpy(&data[offset], &section[12], size);
+	std::copy_n(&section[12], size, &data[offset]);
 }
 
 static bool MapGSF(XSFFile *xSF, int level)
@@ -241,7 +241,7 @@ void XSFPlayer_GSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, 
 		unsigned len = remainbytes;
 		if (len > bytes)
 			len = bytes;
-		memcpy(&buf[offset], &buffer.buf[buffer.cur], len);
+		std::copy_n(&buffer.buf[buffer.cur], len, &buf[offset]);
 		bytes -= len;
 		offset += len;
 		buffer.cur += len;

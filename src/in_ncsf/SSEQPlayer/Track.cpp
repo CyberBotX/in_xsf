@@ -38,7 +38,7 @@ void Track::Zero()
 	this->startPos = this->pos = nullptr;
 	std::fill_n(&this->stack[0], FSS_TRACKSTACKSIZE, StackValue());
 	this->stackPos = 0;
-	memset(this->loopCount, 0, sizeof(this->loopCount));
+	std::fill_n(&this->loopCount[0], FSS_TRACKSTACKSIZE, 0);
 	this->overriding() = false;
 	this->lastComparisonResult = true;
 
