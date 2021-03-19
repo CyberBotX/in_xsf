@@ -1,7 +1,6 @@
 /*
  * xSF - Common functions
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
  *
  * Partially based on the vio*sf framework
  */

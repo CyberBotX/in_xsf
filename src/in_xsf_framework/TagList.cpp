@@ -1,7 +1,6 @@
 /*
  * xSF Tag List
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-03-25
  *
  * Storage of tags from PSF-style files, specifications found at
  * http://wiki.neillcorlett.com/PSFTagFormat

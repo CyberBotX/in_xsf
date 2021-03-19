@@ -1,7 +1,6 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2013-04-23
  */
 
 #include "DialogBuilder.h"

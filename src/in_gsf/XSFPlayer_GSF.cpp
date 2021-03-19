@@ -1,7 +1,6 @@
 /*
  * xSF - GSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
  *
  * Based on a modified viogsf v0.08
  *

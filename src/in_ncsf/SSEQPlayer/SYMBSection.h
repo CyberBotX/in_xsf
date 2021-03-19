@@ -1,7 +1,6 @@
 /*
  * SSEQ Player - SDAT SYMB (Symbol/Filename) Section structures
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-25
  *
  * Nintendo DS Nitro Composer (SDAT) Specification document found at
  * http://www.feshrine.net/hacking/doc/nds-sdat.html

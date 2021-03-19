@@ -1,7 +1,6 @@
 /*
  * xSF - NCSF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-25
  *
  * Partially based on the vio*sf framework
  *

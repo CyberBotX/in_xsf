@@ -1,7 +1,6 @@
 /*
  * xSF - 2SF Player
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
  *
  * Based on a modified vio2sf v0.22c
  *

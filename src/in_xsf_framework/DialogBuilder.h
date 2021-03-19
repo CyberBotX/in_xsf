@@ -1,7 +1,6 @@
 /*
  * Windows Dynamic Dialog Builder framework
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-09-24
  */
 
 #pragma once

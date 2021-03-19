@@ -1,7 +1,6 @@
 /*
  * xSF - Winamp-specification configuration handler
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-10-05
  *
  * Partially based on the vio*sf framework
  */

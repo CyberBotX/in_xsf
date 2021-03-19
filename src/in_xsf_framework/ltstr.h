@@ -1,6 +1,5 @@
 /*
  * Case-insensitive string comparison
- * Last modification on 2014-09-08
  *
  * Based on "How to do case-insensitive string comparison"
  * By Matt Austern

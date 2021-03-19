@@ -1,7 +1,6 @@
 /*
  * xSF - NCSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
- * Last modification on 2014-12-09
  *
  * Partially based on the vio*sf framework
  */
