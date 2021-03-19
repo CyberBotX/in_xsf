@@ -14,6 +14,7 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include "windowsh_wrapper.h"
 
 /*
  * The following exception class and the *stringify and convert* functions are
@@ -153,13 +154,19 @@ public:
 
 	static std::wstring StringToWString(const std::string &str)
 	{
-		static std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-		return conv.from_bytes(str);
+		auto strC = str.c_str();
+		int bufferSize = MultiByteToWideChar(CP_UTF8, 0, strC, -1, nullptr, 0);
+		auto buffer = std::vector<wchar_t>(bufferSize);
+		MultiByteToWideChar(CP_UTF8, 0, strC, -1, &buffer[0], bufferSize);
+		return std::wstring(buffer.begin(), buffer.end());
 	}
 
 	static std::string WStringToString(const std::wstring &wstr)
 	{
-		static std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-		return conv.to_bytes(wstr);
+		auto wstrC = wstr.c_str();
+		int bufferSize = WideCharToMultiByte(CP_UTF8, 0, wstrC, -1, nullptr, 0, nullptr, nullptr);
+		auto buffer = std::vector<char>(bufferSize);
+		WideCharToMultiByte(CP_UTF8, 0, wstrC, -1, &buffer[0], bufferSize, nullptr, nullptr);
+		return std::string(buffer.begin(), buffer.end());
 	}
 };
