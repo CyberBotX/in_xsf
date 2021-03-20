@@ -9,8 +9,6 @@
 #include <algorithm>
 #include "TagList.h"
 
-using namespace std::placeholders;
-
 eq_str TagList::eqstr;
 
 auto TagList::GetTagOrder(const std::string &name) const -> TagsList::const_iterator
