@@ -24,24 +24,26 @@ static inline void Set32BitsLE(uint32_t input, uint8_t *output)
 // The whitespace trimming was modified from the following answer on Stack Overflow:
 // http://stackoverflow.com/a/217605
 
-struct IsWhitespace
+bool IsWhitespace(const char &x)
 {
-  using argument_type = char;;
-	bool operator()(const char &x) const
-	{
-		return x >= 0x01 && x <= 0x20;
-	}
-};
+	return x >= 0x01 && x <= 0x20;
+}
 
 static inline std::string LeftTrimWhitespace(const std::string &orig)
 {
-	auto first_non_space = std::find_if(orig.begin(), orig.end(), std::not1(IsWhitespace()));
+	auto first_non_space = std::find_if(orig.begin(), orig.end(), [](const char &x)
+	{
+		return !IsWhitespace(x);
+	});
 	return std::string(first_non_space, orig.end());
 }
 
 static inline std::string RightTrimWhitespace(const std::string &orig)
 {
-	auto last_non_space = std::find_if(orig.rbegin(), orig.rend(), std::not1(IsWhitespace())).base();
+	auto last_non_space = std::find_if(orig.rbegin(), orig.rend(), [](const char &x)
+	{
+		return !IsWhitespace(x);
+	}).base();
 	return std::string(orig.begin(), last_non_space);
 }
 
