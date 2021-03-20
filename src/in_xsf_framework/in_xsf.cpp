@@ -12,11 +12,6 @@
 #include "winamp/in2.h"
 #include "winamp/wa_ipc.h"
 
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(_LIBCPP_VERSION)
-std::locale::id std::codecvt<char16_t, char, mbstate_t>::id;
-std::locale::id std::codecvt<char32_t, char, mbstate_t>::id;
-#endif
-
 extern In_Module inMod;
 static const XSFFile *xSFFile = nullptr;
 XSFFile *xSFFileInInfo = nullptr;
