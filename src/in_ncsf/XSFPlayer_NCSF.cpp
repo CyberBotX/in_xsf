@@ -166,8 +166,6 @@ bool XSFPlayer_NCSF::Load()
 	soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
 #endif
 
-	std::srand(static_cast<unsigned>(std::time(nullptr)));
-
 	PseudoFile file;
 	file.data = &this->sdatData;
 	this->sdat.reset(new SDAT(file, this->sseq));

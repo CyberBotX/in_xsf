@@ -402,6 +402,14 @@ static inline uint8_t SseqCommandByteCount(int cmd)
 		}
 }
 
+static std::uint32_t RandomU{ 0x12345678 };
+
+static std::uint16_t CalcRandom()
+{
+	RandomU = RandomU * 1664525 + 1013904223;
+	return static_cast<std::uint16_t>(RandomU >> 16);
+}
+
 static auto varFuncSet = [](int16_t, int16_t value) { return value; };
 static auto varFuncAdd = [](int16_t var, int16_t value) -> int16_t { return var + value; };
 static auto varFuncSub = [](int16_t var, int16_t value) -> int16_t { return var - value; };
@@ -417,9 +425,9 @@ static auto varFuncShift = [](int16_t var, int16_t value) -> int16_t
 static auto varFuncRand = [](int16_t, int16_t value) -> int16_t
 {
 	if (value < 0)
-		return -(std::rand() % (-value + 1));
+		return -(CalcRandom() % (-value + 1));
 	else
-		return std::rand() % (value + 1);
+		return CalcRandom() % (value + 1);
 };
 
 static inline std::function<int16_t (int16_t, int16_t)> VarFunc(int cmd)
@@ -732,7 +740,7 @@ void Track::Run()
 						this->overriding.extraValue = read8(pData);
 					int16_t minVal = read16(pData);
 					int16_t maxVal = read16(pData);
-					this->overriding.value = (std::rand() % (maxVal - minVal + 1)) + minVal;
+					this->overriding.value = (CalcRandom() % (maxVal - minVal + 1)) + minVal;
 					break;
 				}
 
