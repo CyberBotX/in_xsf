@@ -128,14 +128,14 @@ void getFileInfo(const in_char *file, in_char *title, int *length_in_ms)
 
 int infoBox(const in_char *file, HWND hwndParent)
 {
-	auto xSF = std::unique_ptr<XSFFile>(new XSFFile());
+	auto xSF = std::make_unique<XSFFile>();
 	if (!file || !*file)
 		*xSF = *xSFFile;
 	else
 	{
 		try
 		{
-			auto tmpxSF = std::unique_ptr<XSFFile>(new XSFFile(file));
+			auto tmpxSF = std::make_unique<XSFFile>(file);
 			*xSF = *tmpxSF;
 		}
 		catch (const std::exception &)
