@@ -124,7 +124,7 @@ inline constexpr int REC_PLAYER2 = 6;
 inline constexpr int REC_STRM = 7;
 
 // Comes from https://stackoverflow.com/a/14589519
-template<typename T> inline constexpr auto ToIntegral(const T &e) -> typename std::underlying_type_t<T>
+template<typename T> inline constexpr auto ToIntegral(const T &e)
 {
 	return static_cast<std::underlying_type_t<T>>(e);
 }
