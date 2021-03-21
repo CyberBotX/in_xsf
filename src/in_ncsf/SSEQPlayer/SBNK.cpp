@@ -13,12 +13,12 @@
 #include "SBNK.h"
 #include "common.h"
 
-SBNKInstrumentRange::SBNKInstrumentRange(std::uint8_t lowerNote, std::uint8_t upperNote, int recordType) : lowNote(lowerNote), highNote(upperNote),
+SBNKInstrument::SBNKInstrument(std::uint8_t lowerNote, std::uint8_t upperNote, int recordType) : lowNote(lowerNote), highNote(upperNote),
 	record(recordType), swav(0), swar(0), noteNumber(0), attackRate(0), decayRate(0), sustainLevel(0), releaseRate(0), pan(0)
 {
 }
 
-void SBNKInstrumentRange::Read(PseudoFile &file)
+void SBNKInstrument::Read(PseudoFile &file)
 {
 	this->swav = file.ReadLE<std::uint16_t>();
 	this->swar = file.ReadLE<std::uint16_t>();
@@ -30,11 +30,11 @@ void SBNKInstrumentRange::Read(PseudoFile &file)
 	this->pan = file.ReadLE<std::uint8_t>();
 }
 
-SBNKInstrument::SBNKInstrument() : record(0), ranges()
+SBNKInstrumentEntry::SBNKInstrumentEntry() : record(0), instruments()
 {
 }
 
-void SBNKInstrument::Read(PseudoFile &file, std::uint32_t startOffset)
+void SBNKInstrumentEntry::Read(PseudoFile &file, std::uint32_t startOffset)
 {
 	this->record = file.ReadLE<std::uint8_t>();
 	std::uint16_t offset = file.ReadLE<std::uint16_t>();
@@ -51,9 +51,9 @@ void SBNKInstrument::Read(PseudoFile &file, std::uint32_t startOffset)
 			for (std::uint8_t i = 0; i < num; ++i)
 			{
 				std::uint16_t thisRecord = file.ReadLE<std::uint16_t>();
-				auto range = SBNKInstrumentRange(lowNote + i, lowNote + i, thisRecord);
-				range.Read(file);
-				this->ranges.push_back(range);
+				auto instrument = SBNKInstrument(lowNote + i, lowNote + i, thisRecord);
+				instrument.Read(file);
+				this->instruments.push_back(instrument);
 			}
 		}
 		else if (this->record == 17)
@@ -66,23 +66,23 @@ void SBNKInstrument::Read(PseudoFile &file, std::uint32_t startOffset)
 				std::uint16_t thisRecord = file.ReadLE<std::uint16_t>();
 				std::uint8_t lowNote = i ? thisRanges[i - 1] + 1 : 0;
 				std::uint8_t highNote = thisRanges[i];
-				auto range = SBNKInstrumentRange(lowNote, highNote, thisRecord);
-				range.Read(file);
-				this->ranges.push_back(range);
+				auto instrument = SBNKInstrument(lowNote, highNote, thisRecord);
+				instrument.Read(file);
+				this->instruments.push_back(instrument);
 				++i;
 			}
 		}
 		else
 		{
-			auto range = SBNKInstrumentRange(0, 127, this->record);
-			range.Read(file);
-			this->ranges.push_back(range);
+			auto instrument = SBNKInstrument(0, 127, this->record);
+			instrument.Read(file);
+			this->instruments.push_back(instrument);
 		}
 	}
 	file.pos = endOfInst;
 }
 
-SBNK::SBNK(const std::string &fn) : filename(fn), instruments(), info()
+SBNK::SBNK(const std::string &fn) : filename(fn), entries(), info()
 {
 	std::fill_n(&this->waveArc[0], 4, nullptr);
 }
@@ -101,7 +101,7 @@ void SBNK::Read(PseudoFile &file)
 	std::uint32_t reserved[8];
 	file.ReadLE(reserved);
 	std::uint32_t count = file.ReadLE<std::uint32_t>();
-	this->instruments.resize(count);
+	this->entries.resize(count);
 	for (std::uint32_t i = 0; i < count; ++i)
-		this->instruments[i].Read(file, startOfSBNK);
+		this->entries[i].Read(file, startOfSBNK);
 }

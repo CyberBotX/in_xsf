@@ -16,7 +16,7 @@
 struct PseudoFile;
 struct SWAR;
 
-struct SBNKInstrumentRange
+struct SBNKInstrument
 {
 	std::uint8_t lowNote;
 	std::uint8_t highNote;
@@ -30,17 +30,17 @@ struct SBNKInstrumentRange
 	std::uint8_t releaseRate;
 	std::uint8_t pan;
 
-	SBNKInstrumentRange(std::uint8_t lowerNote, std::uint8_t upperNote, int recordType);
+	SBNKInstrument(std::uint8_t lowerNote, std::uint8_t upperNote, int recordType);
 
 	void Read(PseudoFile &file);
 };
 
-struct SBNKInstrument
+struct SBNKInstrumentEntry
 {
 	std::uint8_t record;
-	std::vector<SBNKInstrumentRange> ranges;
+	std::vector<SBNKInstrument> instruments;
 
-	SBNKInstrument();
+	SBNKInstrumentEntry();
 
 	void Read(PseudoFile &file, std::uint32_t startOffset);
 };
@@ -48,7 +48,7 @@ struct SBNKInstrument
 struct SBNK
 {
 	std::string filename;
-	std::vector<SBNKInstrument> instruments;
+	std::vector<SBNKInstrumentEntry> entries;
 
 	const SWAR *waveArc[4];
 	INFOEntryBANK info;

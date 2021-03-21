@@ -109,35 +109,35 @@ int Track::NoteOn(int key, int vel, int len)
 {
 	auto sbnk = this->ply->sseq->bank;
 
-	if (this->patch >= sbnk->instruments.size())
+	if (this->patch >= sbnk->entries.size())
 		return -1;
 
 	bool bIsPCM = true;
 	Channel *chn = nullptr;
 	int nCh = -1;
 
-	auto &instrument = sbnk->instruments[this->patch];
-	const SBNKInstrumentRange *noteDef = nullptr;
-	int fRecord = instrument.record;
+	auto &entry = sbnk->entries[this->patch];
+	const SBNKInstrument *noteDef = nullptr;
+	int fRecord = entry.record;
 
 	if (fRecord == 16)
 	{
-		if (!(instrument.ranges[0].lowNote <= key && key <= instrument.ranges[instrument.ranges.size() - 1].highNote))
+		if (!(entry.instruments[0].lowNote <= key && key <= entry.instruments[entry.instruments.size() - 1].highNote))
 			return -1;
-		int rn = key - instrument.ranges[0].lowNote;
-		noteDef = &instrument.ranges[rn];
+		int rn = key - entry.instruments[0].lowNote;
+		noteDef = &entry.instruments[rn];
 		fRecord = noteDef->record;
 	}
 	else if (fRecord == 17)
 	{
-		std::size_t reg, ranges;
-		for (reg = 0, ranges = instrument.ranges.size(); reg < ranges; ++reg)
-			if (key <= instrument.ranges[reg].highNote)
+		std::size_t reg, entries;
+		for (reg = 0, entries = entry.instruments.size(); reg < entries; ++reg)
+			if (key <= entry.instruments[reg].highNote)
 				break;
-		if (reg == ranges)
+		if (reg == entries)
 			return -1;
 
-		noteDef = &instrument.ranges[reg];
+		noteDef = &entry.instruments[reg];
 		fRecord = noteDef->record;
 	}
 
@@ -146,7 +146,7 @@ int Track::NoteOn(int key, int vel, int len)
 	else if (fRecord == 1)
 	{
 		if (!noteDef)
-			noteDef = &instrument.ranges[0];
+			noteDef = &entry.instruments[0];
 	}
 	else if (fRecord < 4)
 	{
@@ -155,7 +155,7 @@ int Track::NoteOn(int key, int vel, int len)
 		// fRecord = 3 -> PSG noise
 		bIsPCM = false;
 		if (!noteDef)
-			noteDef = &instrument.ranges[0];
+			noteDef = &entry.instruments[0];
 		if (fRecord == 3)
 		{
 			nCh = this->ply->ChannelAlloc(ChannelAllocateType::Noise, this->prio);
