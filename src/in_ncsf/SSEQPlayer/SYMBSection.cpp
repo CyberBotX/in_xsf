@@ -18,7 +18,7 @@ SYMBRecord::SYMBRecord() : entries()
 
 void SYMBRecord::Read(PseudoFile &file, std::uint32_t startOffset)
 {
-	std::uint32_t count = file.ReadLE<uint32_t>();
+	std::uint32_t count = file.ReadLE<std::uint32_t>();
 	auto entryOffsets = std::vector<std::uint32_t>(count);
 	file.ReadLE(entryOffsets);
 	for (std::uint32_t i = 0; i < count; ++i)
