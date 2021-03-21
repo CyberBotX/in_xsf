@@ -52,7 +52,7 @@ static struct
 {
 	std::vector<uint8_t> rom;
 	unsigned entry;
-} loaderwork;
+} loaderwork = { std::vector<uint8_t>(), 0 };
 
 int mapgsf(uint8_t *d, int l, int &s)
 {

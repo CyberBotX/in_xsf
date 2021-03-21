@@ -60,7 +60,7 @@ static struct
 	unsigned filled, used;
 	uint32_t bufferbytes, cycles;
 	int xfs_load, sync_type;
-} sndifwork = {std::vector<uint8_t>(), 0, 0, 0, 0, 0, 0};
+} sndifwork = { std::vector<uint8_t>(), 0, 0, 0, 0, 0, 0 };
 
 static void SNDIFDeInit() { }
 

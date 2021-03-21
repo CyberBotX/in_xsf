@@ -37,7 +37,7 @@ struct Override
 	int value;
 	int extraValue;
 
-	Override() : overriding(false) { }
+	Override() : overriding(false), cmd(0), value(0), extraValue(0) { }
 	bool operator()() const { return this->overriding; }
 	bool &operator()() { return this->overriding; }
 	int val(const uint8_t **pData, std::function<int (const uint8_t **)> reader, bool returnExtra = false)

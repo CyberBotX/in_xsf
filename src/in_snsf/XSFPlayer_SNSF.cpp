@@ -64,7 +64,7 @@ static struct
 	std::vector<uint8_t> rom, sram;
 	bool first;
 	unsigned base;
-} loaderwork;
+} loaderwork = { std::vector<uint8_t>(), std::vector<uint8_t>(), false, 0 };
 
 class BUFFER
 {

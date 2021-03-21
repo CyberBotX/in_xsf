@@ -106,14 +106,14 @@ bool XSFPlayer_NCSF::LoadNCSF()
 	return this->RecursiveLoadNCSF(this->xSF.get(), 1);
 }
 
-XSFPlayer_NCSF::XSFPlayer_NCSF(const std::string &filename) : XSFPlayer()
+XSFPlayer_NCSF::XSFPlayer_NCSF(const std::string &filename) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
 {
 	this->uses32BitSamplesClampedTo16Bit = true;
 	this->xSF.reset(new XSFFile(filename, 8, 12));
 }
 
 #ifdef _WIN32
-XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer()
+XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
 {
 	this->uses32BitSamplesClampedTo16Bit = true;
 	this->xSF.reset(new XSFFile(filename, 8, 12));
