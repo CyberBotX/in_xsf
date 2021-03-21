@@ -111,17 +111,14 @@ template<typename T> inline std::string NumToHexString(const T &num)
  * List of types taken from the Nitro Composer Specification
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
  */
-enum RecordName
-{
-	REC_SEQ,
-	REC_SEQARC,
-	REC_BANK,
-	REC_WAVEARC,
-	REC_PLAYER,
-	REC_GROUP,
-	REC_PLAYER2,
-	REC_STRM
-};
+inline constexpr int REC_SEQ = 0;
+inline constexpr int REC_SEQARC = 1;
+inline constexpr int REC_BANK = 2;
+inline constexpr int REC_WAVEARC = 3;
+inline constexpr int REC_PLAYER = 4;
+inline constexpr int REC_GROUP = 5;
+inline constexpr int REC_PLAYER2 = 6;
+inline constexpr int REC_STRM = 7;
 
 template<size_t N> inline bool VerifyHeader(int8_t (&arr)[N], const std::string &header)
 {
