@@ -313,7 +313,7 @@ void DialogTemplate::AutoSize()
 		if (valid && control->controlType == GROUP_CONTROL)
 		{
 			dynamic_cast<DialogGroup *>(control.get())->CalculatePositions(false);
-			// Techically step 2, but calculate the size of the group
+			// Technically step 2, but calculate the size of the group
 			dynamic_cast<DialogGroup *>(control.get())->CalculateSize();
 			if (control->rect.size.width > maxGroupWidth)
 				maxGroupWidth = control->rect.size.width;

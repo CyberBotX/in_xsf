@@ -14,14 +14,14 @@
 #include <cmath>
 #include "windowsh_wrapper.h"
 
- /*
-  * Originally the convert* functions came from the C++ FAQ, Miscellaneous Technical Issues:
-  * https://isocpp.org/wiki/faq/misc-technical-issues#convert-string-to-any
-  *
-  * They have been replaced with a couple functions that use the C++11 std::enable_if
-  * construct along with various other type traits constructs to use the proper
-  * string conversions.
-  */
+/*
+ * Originally the convert* functions came from the C++ FAQ, Miscellaneous Technical Issues:
+ * https://isocpp.org/wiki/faq/misc-technical-issues#convert-string-to-any
+ *
+ * They have been replaced with a couple functions that use the C++11 std::enable_if
+ * construct along with various other type traits constructs to use the proper
+ * string conversions.
+ */
 template<typename T, typename S> inline typename std::enable_if_t<!std::is_enum_v<T> &&std::is_arithmetic_v<T>, T> convertTo(const std::basic_string<S> &s)
 {
 	if (std::is_integral_v<T>)

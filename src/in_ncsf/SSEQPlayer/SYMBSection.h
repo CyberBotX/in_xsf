@@ -20,9 +20,6 @@ struct SYMBRecord
 	void Read(PseudoFile &file, uint32_t startOffset);
 };
 
-/*
- * The size has been left out of this structure as it is unused by this player.
- */
 struct SYMBSection
 {
 	SYMBRecord SEQrecord;

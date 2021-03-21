@@ -17,7 +17,6 @@
 /*
  * Pseudo-file data structure
  */
-
 struct PseudoFile
 {
 	std::vector<uint8_t> *data;
@@ -90,8 +89,8 @@ template<typename T> inline T ReadLE(const uint8_t *arr)
 }
 
 /*
- * The following function is used to convert an integer into a hexidecimal
- * string, the length being determined by the size of the integer.  8-bit
+ * The following function is used to convert an integer into a hexadecimal
+ * string, the length being determined by the size of the integer. 8-bit
  * integers are in the format of 0x00, 16-bit integers are in the format of
  * 0x0000, and so on.
  */

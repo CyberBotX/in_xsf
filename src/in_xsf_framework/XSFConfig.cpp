@@ -155,8 +155,8 @@ void XSFConfig::GenerateDialogs()
 		WithRelativePositionToParent(RelativePosition::FROM_TOPLEFT, Point<short>(6, 11)).IsLeftJustified());
 	this->configDialog.AddEditBoxControl(DialogEditBoxBuilder().WithSize(150, 14).InGroup(L"Title Format").WithRelativePositionToSibling(RelativePosition::FROM_BOTTOMLEFT, Point<short>(0, 4)).IsLeftJustified().
 		WithAutoHScroll().WithBorder().WithTabStop().WithID(idTitleFormat));
-	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Names between percent symbols (e.g. %game%, %title%) will be replaced with the respective value from the file's tags.  Using square brackets around any "
-			L"items will cause them to only be displayed if there was a replacement done (e.g. [%disc%.] will display 01. if disc was in the tags as 01, but will display nothing if disc was not in the tags).  Square "
+	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Names between percent symbols (e.g. %game%, %title%) will be replaced with the respective value from the file's tags. Using square brackets around any "
+			L"items will cause them to only be displayed if there was a replacement done (e.g. [%disc%.] will display 01. if disc was in the tags as 01, but will display nothing if disc was not in the tags). Square "
 			L"bracket blocks can be nested.").WithSize(150, 72).InGroup(L"Title Format").WithRelativePositionToSibling(RelativePosition::FROM_BOTTOMLEFT, Point<short>(0, 4)).IsLeftJustified());
 
 	this->GenerateSpecificDialogs();

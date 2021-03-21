@@ -13,9 +13,6 @@
 #include "INFOEntry.h"
 #include "common.h"
 
-/*
- * The size has been left out of this structure as it is unused by this player.
- */
 struct SWAR
 {
 	std::string filename;
