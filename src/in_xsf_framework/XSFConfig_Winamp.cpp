@@ -6,8 +6,12 @@
  */
 
 #include <filesystem>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include "windowsh_wrapper.h"
 #include "XSFConfig.h"
-#include "XSFCommon.h"
+#include "convert.h"
 #include "winamp/in2.h"
 #include "winamp/wa_ipc.h"
 

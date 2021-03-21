@@ -10,19 +10,22 @@
  * http://desmume.org/
  */
 
+#include <algorithm>
 #include <filesystem>
 #include <memory>
+#include <string>
+#include <vector>
+#include <cstdint>
 #include <zlib.h>
-#include "convert.h"
-#include "XSFPlayer.h"
 #include "XSFCommon.h"
+#include "XSFPlayer.h"
 #include "desmume/NDSSystem.h"
 
 class XSFPlayer_2SF : public XSFPlayer
 {
-	std::vector<uint8_t> rom;
+	std::vector<std::uint8_t> rom;
 
-	void Map2SFSection(const std::vector<uint8_t> &section);
+	void Map2SFSection(const std::vector<std::uint8_t> &section);
 	bool Map2SF(XSFFile *xSFToLoad);
 	bool RecursiveLoad2SF(XSFFile *xSFToLoad, int level);
 	bool Load2SF(XSFFile *xSFToLoad);
@@ -33,7 +36,7 @@ public:
 #endif
 	~XSFPlayer_2SF() { this->Terminate(); }
 	bool Load();
-	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
+	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples);
 	void Terminate();
 };
 
@@ -56,17 +59,17 @@ volatile bool execute = false;
 
 static struct
 {
-	std::vector<uint8_t> buf;
+	std::vector<std::uint8_t> buf;
 	unsigned filled, used;
-	uint32_t bufferbytes, cycles;
+	std::uint32_t bufferbytes, cycles;
 	int xfs_load, sync_type;
-} sndifwork = { std::vector<uint8_t>(), 0, 0, 0, 0, 0, 0 };
+} sndifwork = { std::vector<std::uint8_t>(), 0, 0, 0, 0, 0, 0 };
 
 static void SNDIFDeInit() { }
 
 static int SNDIFInit(int buffersize)
 {
-	uint32_t bufferbytes = buffersize * sizeof(int16_t);
+	std::uint32_t bufferbytes = buffersize * sizeof(std::int16_t);
 	SNDIFDeInit();
 	sndifwork.buf.resize(bufferbytes + 3);
 	sndifwork.bufferbytes = bufferbytes;
@@ -79,17 +82,17 @@ static void SNDIFMuteAudio() { }
 static void SNDIFUnMuteAudio() { }
 static void SNDIFSetVolume(int) { }
 
-static uint32_t SNDIFGetAudioSpace()
+static std::uint32_t SNDIFGetAudioSpace()
 {
 	return sndifwork.bufferbytes >> 2; // bytes to samples
 }
 
-static void SNDIFUpdateAudio(int16_t *buffer, uint32_t num_samples)
+static void SNDIFUpdateAudio(std::int16_t *buffer, std::uint32_t num_samples)
 {
-	uint32_t num_bytes = num_samples << 2;
+	std::uint32_t num_bytes = num_samples << 2;
 	if (num_bytes > sndifwork.bufferbytes)
 		num_bytes = sndifwork.bufferbytes;
-	std::copy_n(reinterpret_cast<uint8_t *>(buffer), num_bytes, &sndifwork.buf[0]);
+	std::copy_n(reinterpret_cast<std::uint8_t *>(buffer), num_bytes, &sndifwork.buf[0]);
 	sndifwork.filled = num_bytes;
 	sndifwork.used = 0;
 }
@@ -118,9 +121,9 @@ SoundInterface_struct *SNDCoreList[] =
 	nullptr
 };
 
-void XSFPlayer_2SF::Map2SFSection(const std::vector<uint8_t> &section)
+void XSFPlayer_2SF::Map2SFSection(const std::vector<std::uint8_t> &section)
 {
-	uint32_t offset = Get32BitsLE(&section[0]), size = Get32BitsLE(&section[4]), finalSize = size + offset;
+	std::uint32_t offset = Get32BitsLE(&section[0]), size = Get32BitsLE(&section[4]), finalSize = size + offset;
 	finalSize = NextHighestPowerOf2(finalSize);
 	if (this->rom.empty())
 		this->rom.resize(finalSize + 10, 0);
@@ -244,15 +247,15 @@ bool XSFPlayer_2SF::Load()
 	return XSFPlayer::Load();
 }
 
-void XSFPlayer_2SF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples)
+void XSFPlayer_2SF::GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples)
 {
 	static const double HBASE_CYCLES = 33509300.322234;
 	static const int HLINE_CYCLES = 6 * (99 + 256);
-	static const uint32_t HSAMPLES = static_cast<uint32_t>(static_cast<double>(this->sampleRate * HLINE_CYCLES) / HBASE_CYCLES);
+	std::uint32_t HSAMPLES = static_cast<std::uint32_t>(static_cast<double>(this->sampleRate * HLINE_CYCLES) / HBASE_CYCLES);
 	static const int VDIVISION = 100;
 	static const int VLINES = 263;
 	static const double VBASE_CYCLES = HBASE_CYCLES / VDIVISION;
-	static const uint32_t VSAMPLES = static_cast<uint32_t>(static_cast<double>(this->sampleRate * HLINE_CYCLES * VLINES) / HBASE_CYCLES);
+	std::uint32_t VSAMPLES = static_cast<std::uint32_t>(static_cast<double>(this->sampleRate * HLINE_CYCLES * VLINES) / HBASE_CYCLES);
 
 	if (!sndifwork.xfs_load)
 		return;
@@ -286,19 +289,19 @@ void XSFPlayer_2SF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, 
 			{
 				/* vsync */
 				sndifwork.cycles += (this->sampleRate / VDIVISION) * HLINE_CYCLES * VLINES;
-				if (sndifwork.cycles >= static_cast<uint32_t>(VBASE_CYCLES * (VSAMPLES + 1)))
-					sndifwork.cycles -= static_cast<uint32_t>(VBASE_CYCLES * (VSAMPLES + 1));
+				if (sndifwork.cycles >= static_cast<std::uint32_t>(VBASE_CYCLES * (VSAMPLES + 1)))
+					sndifwork.cycles -= static_cast<std::uint32_t>(VBASE_CYCLES * (VSAMPLES + 1));
 				else
-					sndifwork.cycles -= static_cast<uint32_t>(VBASE_CYCLES * VSAMPLES);
+					sndifwork.cycles -= static_cast<std::uint32_t>(VBASE_CYCLES * VSAMPLES);
 			}
 			else
 			{
 				/* hsync */
 				sndifwork.cycles += this->sampleRate * HLINE_CYCLES;
-				if (sndifwork.cycles >= static_cast<uint32_t>(HBASE_CYCLES * (HSAMPLES + 1)))
-					sndifwork.cycles -= static_cast<uint32_t>(HBASE_CYCLES * (HSAMPLES + 1));
+				if (sndifwork.cycles >= static_cast<std::uint32_t>(HBASE_CYCLES * (HSAMPLES + 1)))
+					sndifwork.cycles -= static_cast<std::uint32_t>(HBASE_CYCLES * (HSAMPLES + 1));
 				else
-					sndifwork.cycles -= static_cast<uint32_t>(HBASE_CYCLES * HSAMPLES);
+					sndifwork.cycles -= static_cast<std::uint32_t>(HBASE_CYCLES * HSAMPLES);
 			}
 			NDS_exec<false>();
 			SPU_Emulate_user();

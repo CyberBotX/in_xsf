@@ -12,6 +12,7 @@
 #include <string>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cwchar>
 #include <cstring>
@@ -25,14 +26,14 @@ template<typename T> inline bool fEqual(T x, T y, int N = 1)
 	return diff <= tolerance * std::abs(x) && diff <= tolerance * std::abs(y);
 }
 
-inline uint32_t Get32BitsLE(const uint8_t *input)
+inline std::uint32_t Get32BitsLE(const std::uint8_t *input)
 {
 	return input[0] | (input[1] << 8) | (input[2] << 16) | (input[3] << 24);
 }
 
-inline uint32_t Get32BitsLE(std::ifstream &input)
+inline std::uint32_t Get32BitsLE(std::ifstream &input)
 {
-	uint8_t bytes[4];
+	std::uint8_t bytes[4];
 	input.read(reinterpret_cast<char *>(bytes), 4);
 	return Get32BitsLE(bytes);
 }
@@ -44,7 +45,7 @@ template<typename T> inline T NextHighestPowerOf2(T value)
 	if (value < 1)
 		return 1;
 	--value;
-	for (size_t i = 1; i < sizeof(T) * std::numeric_limits<unsigned char>::digits; i <<= 1)
+	for (std::size_t i = 1; i < sizeof(T) * std::numeric_limits<unsigned char>::digits; i <<= 1)
 		value |= value >> i;
 	return value + 1;
 }
@@ -60,20 +61,20 @@ template<typename T1, typename T2> inline void clamp(T1 &valueToClamp, const T2 
 
 inline void CopyToString(const std::wstring &src, wchar_t *dst)
 {
-	wcscpy(dst, src.c_str());
+	std::wcscpy(dst, src.c_str());
 }
 
 inline void CopyToString(const std::string &src, wchar_t *dst)
 {
-	wcscpy(dst, ConvertFuncs::StringToWString(src).c_str());
+	std::wcscpy(dst, ConvertFuncs::StringToWString(src).c_str());
 }
 
 inline void CopyToString(const std::string &src, char *dst)
 {
-	strcpy(dst, src.c_str());
+	std::strcpy(dst, src.c_str());
 }
 
 inline void CopyToString(const std::wstring &src, char *dst)
 {
-	strcpy(dst, ConvertFuncs::WStringToString(src).c_str());
+	std::strcpy(dst, ConvertFuncs::WStringToString(src).c_str());
 }

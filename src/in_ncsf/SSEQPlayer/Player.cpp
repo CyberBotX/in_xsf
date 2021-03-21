@@ -7,14 +7,18 @@
  * https://github.com/fincs/FSS
  */
 
+#include <algorithm>
+#include <cstdint>
 #include "Player.h"
+#include "SSEQ.h"
 #include "common.h"
+#include "consts.h"
 
 Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), masterVol(0), sseqVol(0), sseq(nullptr), allowedChannels(0), sampleRate(0),
-	interpolation(INTERPOLATION_NONE)
+	interpolation(Interpolation::None)
 {
 	std::fill_n(&this->trackIds[0], FSS_TRACKCOUNT, 0);
-	for (int8_t i = 0; i < 16; ++i)
+	for (std::int8_t i = 0; i < 16; ++i)
 	{
 		this->channels[i].chnId = i;
 		this->channels[i].ply = this;
@@ -55,7 +59,7 @@ void Player::ClearState()
 // Original FSS Function: Player_FreeTracks
 void Player::FreeTracks()
 {
-	for (uint8_t i = 0; i < this->nTracks; ++i)
+	for (std::uint8_t i = 0; i < this->nTracks; ++i)
 		this->tracks[this->trackIds[i]].Free();
 	this->nTracks = 0;
 }
@@ -64,14 +68,14 @@ void Player::FreeTracks()
 void Player::Stop(bool bKillSound)
 {
 	this->ClearState();
-	for (uint8_t i = 0; i < this->nTracks; ++i)
+	for (std::uint8_t i = 0; i < this->nTracks; ++i)
 	{
-		uint8_t trackId = this->trackIds[i];
+		std::uint8_t trackId = this->trackIds[i];
 		this->tracks[trackId].ClearState();
 		for (int j = 0; j < 16; ++j)
 		{
 			Channel &chn = this->channels[j];
-			if (chn.state != CS_NONE && chn.trackId == trackId)
+			if (chn.state != ChannelState::None && chn.trackId == trackId)
 			{
 				if (bKillSound)
 					chn.Kill();
@@ -84,16 +88,16 @@ void Player::Stop(bool bKillSound)
 }
 
 // Original FSS Function: Chn_Alloc
-int Player::ChannelAlloc(int type, int priority)
+int Player::ChannelAlloc(ChannelAllocateType type, int priority)
 {
-	static const uint8_t pcmChnArray[] = { 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 };
-	static const uint8_t psgChnArray[] = { 8, 9, 10, 11, 12, 13 };
-	static const uint8_t noiseChnArray[] = { 14, 15 };
-	static const uint8_t arraySizes[] = { sizeof(pcmChnArray), sizeof(psgChnArray), sizeof(noiseChnArray) };
-	static const uint8_t *const arrayArray[] = { pcmChnArray, psgChnArray, noiseChnArray };
+	static const std::uint8_t pcmChnArray[] = { 4, 5, 6, 7, 2, 0, 3, 1, 8, 9, 10, 11, 14, 12, 15, 13 };
+	static const std::uint8_t psgChnArray[] = { 8, 9, 10, 11, 12, 13 };
+	static const std::uint8_t noiseChnArray[] = { 14, 15 };
+	static const std::uint8_t arraySizes[] = { sizeof(pcmChnArray), sizeof(psgChnArray), sizeof(noiseChnArray) };
+	static const std::uint8_t *const arrayArray[] = { pcmChnArray, psgChnArray, noiseChnArray };
 
-	auto chnArray = arrayArray[type];
-	int arraySize = arraySizes[type];
+	auto chnArray = arrayArray[ToIntegral(type)];
+	int arraySize = arraySizes[ToIntegral(type)];
 
 	int curChnNo = -1;
 	for (int i = 0; i < arraySize; ++i)
@@ -126,10 +130,10 @@ int Player::TrackAlloc()
 	for (int i = 0; i < FSS_MAXTRACKS; ++i)
 	{
 		Track &thisTrk = this->tracks[i];
-		if (!thisTrk.state[TS_ALLOCBIT])
+		if (!thisTrk.state[ToIntegral(TrackState::AllocateBit)])
 		{
 			thisTrk.Zero();
-			thisTrk.state.set(TS_ALLOCBIT);
+			thisTrk.state.set(ToIntegral(TrackState::AllocateBit));
 			thisTrk.updateFlags.reset();
 			return i;
 		}
@@ -143,7 +147,7 @@ void Player::Run()
 	while (this->tempoCount >= 240)
 	{
 		this->tempoCount -= 240;
-		for (uint8_t i = 0; i < this->nTracks; ++i)
+		for (std::uint8_t i = 0; i < this->nTracks; ++i)
 			this->tracks[this->trackIds[i]].Run();
 	}
 	this->tempoCount += (static_cast<int>(this->tempo) * static_cast<int>(this->tempoRate)) >> 8;

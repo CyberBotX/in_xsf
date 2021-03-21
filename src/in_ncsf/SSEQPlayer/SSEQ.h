@@ -8,14 +8,18 @@
 
 #pragma once
 
-#include "SBNK.h"
+#include <string>
+#include <vector>
+#include <cstdint>
 #include "INFOEntry.h"
-#include "common.h"
+
+struct PseudoFile;
+struct SBNK;
 
 struct SSEQ
 {
 	std::string filename;
-	std::vector<uint8_t> data;
+	std::vector<std::uint8_t> data;
 
 	const SBNK *bank;
 	INFOEntrySEQ info;

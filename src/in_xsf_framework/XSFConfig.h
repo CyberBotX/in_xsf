@@ -8,11 +8,16 @@
 #pragma once
 
 #include <memory>
-#include "XSFPlayer.h"
+#include <string>
+#include <type_traits>
+#include <vector>
 #include "DialogBuilder.h"
 #include "convert.h"
 #include "windowsh_wrapper.h"
-#include <windowsx.h>
+
+enum class PeakType;
+enum class VolumeType;
+class XSFPlayer;
 
 class XSFConfigIO
 {
@@ -28,11 +33,11 @@ private:
 	}
 
 	// non-enum versions
-	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> &&std::is_arithmetic_v<T>, T> GetValueInternal(const std::string &name, const T &defaultValue) const
+	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> && std::is_arithmetic_v<T>, T> GetValueInternal(const std::string &name, const T &defaultValue) const
 	{
 		return convertTo<T>(this->GetValueString(name, std::to_string(defaultValue)));
 	}
-	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> &&std::is_arithmetic_v<T>> SetValueInternal(const std::string &name, const T &value)
+	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> && std::is_arithmetic_v<T>> SetValueInternal(const std::string &name, const T &value)
 	{
 		this->SetValueString(name, std::to_string(value));
 	}

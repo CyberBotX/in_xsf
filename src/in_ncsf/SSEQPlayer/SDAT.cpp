@@ -6,25 +6,31 @@
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
  */
 
-#include "SDAT.h"
-#include "NDSStdHeader.h"
-#include "SYMBSection.h"
-#include "INFOSection.h"
+#include <stdexcept>
+#include <string>
+#include <cstdint>
 #include "FATSection.h"
-#include "convert.h"
+#include "INFOSection.h"
+#include "NDSStdHeader.h"
+#include "SBNK.h"
+#include "SDAT.h"
+#include "SSEQ.h"
+#include "SWAR.h"
+#include "SYMBSection.h"
+#include "common.h"
 
-SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk(), player()
+SDAT::SDAT(PseudoFile &file, std::uint32_t sseqToLoad) : sseq(), sbnk(), player()
 {
 	// Read sections
 	NDSStdHeader header;
 	header.Read(file);
 	header.Verify("SDAT", 0x0100FEFF);
-	uint32_t SYMBOffset = file.ReadLE<uint32_t>();
-	file.ReadLE<uint32_t>(); // SYMB size
-	uint32_t INFOOffset = file.ReadLE<uint32_t>();
-	file.ReadLE<uint32_t>(); // INFO size
-	uint32_t FATOffset = file.ReadLE<uint32_t>();
-	file.ReadLE<uint32_t>(); // FAT Size
+	std::uint32_t SYMBOffset = file.ReadLE<std::uint32_t>();
+	file.ReadLE<std::uint32_t>(); // SYMB size
+	std::uint32_t INFOOffset = file.ReadLE<std::uint32_t>();
+	file.ReadLE<std::uint32_t>(); // INFO size
+	std::uint32_t FATOffset = file.ReadLE<std::uint32_t>();
+	file.ReadLE<std::uint32_t>(); // FAT Size
 	SYMBSection symbSection;
 	if (SYMBOffset)
 	{
@@ -47,7 +53,7 @@ SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk(), player()
 	// Read SSEQ
 	if (infoSection.SEQrecord.entries.count(sseqToLoad))
 	{
-		uint16_t fileID = infoSection.SEQrecord.entries[sseqToLoad].fileID;
+		std::uint32_t fileID = infoSection.SEQrecord.entries[sseqToLoad].fileID;
 		std::string name = "SSEQ" + NumToHexString(fileID).substr(2);
 		if (SYMBOffset)
 			name = NumToHexString(sseqToLoad).substr(6) + " - " + symbSection.SEQrecord.entries[sseqToLoad];
@@ -58,7 +64,7 @@ SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk(), player()
 		this->sseq.reset(newSSEQ);
 
 		// Read SBNK for this SSEQ
-		uint16_t bank = newSSEQ->info.bank;
+		std::uint16_t bank = newSSEQ->info.bank;
 		fileID = infoSection.BANKrecord.entries[bank].fileID;
 		name = "SBNK" + NumToHexString(fileID).substr(2);
 		if (SYMBOffset)
@@ -74,7 +80,7 @@ SDAT::SDAT(PseudoFile &file, uint32_t sseqToLoad) : sseq(), sbnk(), player()
 		for (int i = 0; i < 4; ++i)
 			if (newSBNK->info.waveArc[i] != 0xFFFF)
 			{
-				uint16_t waveArc = newSBNK->info.waveArc[i];
+				std::uint16_t waveArc = newSBNK->info.waveArc[i];
 				fileID = infoSection.WAVEARCrecord.entries[waveArc].fileID;
 				name = "SWAR" + NumToHexString(fileID).substr(2);
 				if (SYMBOffset)

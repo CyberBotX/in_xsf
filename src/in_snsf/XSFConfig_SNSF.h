@@ -12,8 +12,11 @@
 #pragma once
 
 #include <bitset>
-#include "XSFPlayer.h"
+#include <string>
+#include "windowsh_wrapper.h"
 #include "XSFConfig.h"
+
+class XSFPlayer;
 
 class XSFConfig_SNSF : public XSFConfig
 {

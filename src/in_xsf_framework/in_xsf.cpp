@@ -5,10 +5,20 @@
  * Partially based on the vio*sf framework
  */
 
-#include "XSFPlayer.h"
-#include "XSFConfig.h"
-#include "XSFCommon.h"
+#include <algorithm>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+#include <cstddef>
+#include <cstdint>
 #include "windowsh_wrapper.h"
+#include "XSFCommon.h"
+#include "XSFConfig.h"
+#include "XSFFile.h"
+#include "XSFPlayer.h"
+#include "convert.h"
 #include "winamp/in2.h"
 #include "winamp/wa_ipc.h"
 
@@ -35,7 +45,7 @@ DWORD WINAPI playThread(void *b)
 		{
 			decode_pos_ms = seek_needed - (seek_needed % 1000);
 			seek_needed = -1;
-			auto dummyBuffer = std::vector<uint8_t>(576 * NumChannels * (BitsPerSample / 8));
+			auto dummyBuffer = std::vector<std::uint8_t>(576 * NumChannels * (BitsPerSample / 8));
 			xSFPlayer->Seek(static_cast<unsigned>(decode_pos_ms), nullptr, dummyBuffer, inMod.outMod);
 		}
 
@@ -51,7 +61,7 @@ DWORD WINAPI playThread(void *b)
 		}
 		else if (static_cast<unsigned>(inMod.outMod->CanWrite()) >= ((576 * NumChannels * (BitsPerSample / 8)) << (inMod.dsp_isactive() ? 1 : 0)))
 		{
-			auto sampleBuffer = std::vector<uint8_t>(576 * NumChannels * (BitsPerSample / 8));
+			auto sampleBuffer = std::vector<std::uint8_t>(576 * NumChannels * (BitsPerSample / 8));
 			unsigned samplesWritten = 0;
 			done = xSFPlayer->FillBuffer(sampleBuffer, samplesWritten);
 			if (samplesWritten)
@@ -305,7 +315,7 @@ extern "C" __declspec(dllexport) In_Module *winampGetInModule2()
 
 static eq_str eqstr;
 
-template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, const char *data, T *dest, size_t destlen)
+template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, const char *data, T *dest, std::size_t destlen)
 {
 	if (eqstr(data, "type"))
 	{
@@ -343,7 +353,7 @@ template<typename T> int wrapperWinampGetExtendedFileInfo(const XSFFile &file, c
 	}
 }
 
-extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, const char *data, char *dest, size_t destlen)
+extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, const char *data, char *dest, std::size_t destlen)
 {
 	try
 	{
@@ -356,7 +366,7 @@ extern "C" __declspec(dllexport) int winampGetExtendedFileInfo(const char *fn, c
 	}
 }
 
-extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *fn, const char *data, wchar_t *dest, size_t destlen)
+extern "C" __declspec(dllexport) int winampGetExtendedFileInfoW(const wchar_t *fn, const char *data, wchar_t *dest, std::size_t destlen)
 {
 	try
 	{
@@ -418,7 +428,7 @@ extern "C" __declspec(dllexport) int winampClearExtendedFileInfoW(const wchar_t 
 	return 0;
 }
 
-intptr_t wrapperWinampGetExtendedRead_open(std::unique_ptr<XSFPlayer> tmpxSFPlayer, int *size, int *bps, int *nch, int *srate)
+std::intptr_t wrapperWinampGetExtendedRead_open(std::unique_ptr<XSFPlayer> &&tmpxSFPlayer, int *size, int *bps, int *nch, int *srate)
 {
 	xSFConfig->CopyConfigToMemory(tmpxSFPlayer.get(), true);
 	if (!tmpxSFPlayer->Load())
@@ -433,10 +443,10 @@ intptr_t wrapperWinampGetExtendedRead_open(std::unique_ptr<XSFPlayer> tmpxSFPlay
 		*nch = NumChannels;
 	if (srate)
 		*srate = tmpxSFPlayer->GetSampleRate();
-	return reinterpret_cast<intptr_t>(tmpxSFPlayer.release());
+	return reinterpret_cast<std::intptr_t>(tmpxSFPlayer.release());
 }
 
-extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_open(const char *fn, int *size, int *bps, int *nch, int *srate)
+extern "C" __declspec(dllexport) std::intptr_t winampGetExtendedRead_open(const char *fn, int *size, int *bps, int *nch, int *srate)
 {
 	try
 	{
@@ -449,7 +459,7 @@ extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_open(const char 
 	}
 }
 
-extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wchar_t *fn, int *size, int *bps, int *nch, int *srate)
+extern "C" __declspec(dllexport) std::intptr_t winampGetExtendedRead_openW(const wchar_t *fn, int *size, int *bps, int *nch, int *srate)
 {
 	try
 	{
@@ -464,14 +474,14 @@ extern "C" __declspec(dllexport) intptr_t winampGetExtendedRead_openW(const wcha
 
 static int extendedSeekNeeded = -1;
 
-extern "C" __declspec(dllexport) size_t winampGetExtendedRead_getData(intptr_t handle, char *dest, size_t len, int *killswitch)
+extern "C" __declspec(dllexport) std::size_t winampGetExtendedRead_getData(std::intptr_t handle, char *dest, std::size_t len, int *killswitch)
 {
 	XSFPlayer *tmpxSFPlayer = reinterpret_cast<XSFPlayer *>(handle);
 	if (!tmpxSFPlayer)
 		return 0;
 	if (extendedSeekNeeded != -1)
 	{
-		auto dummyBuffer = std::vector<uint8_t>(576 * NumChannels * (BitsPerSample / 8));
+		auto dummyBuffer = std::vector<std::uint8_t>(576 * NumChannels * (BitsPerSample / 8));
 		if (tmpxSFPlayer->Seek(static_cast<unsigned>(extendedSeekNeeded), killswitch, dummyBuffer, nullptr))
 			return 0;
 		extendedSeekNeeded = -1;
@@ -480,7 +490,7 @@ extern "C" __declspec(dllexport) size_t winampGetExtendedRead_getData(intptr_t h
 	bool done = false;
 	while (copied + (576 * NumChannels * (BitsPerSample / 8)) < len && !done)
 	{
-		auto sampleBuffer = std::vector<uint8_t>(576 * NumChannels * (BitsPerSample / 8));
+		auto sampleBuffer = std::vector<std::uint8_t>(576 * NumChannels * (BitsPerSample / 8));
 		unsigned samplesWritten = 0;
 		done = tmpxSFPlayer->FillBuffer(sampleBuffer, samplesWritten);
 		std::copy_n(&sampleBuffer[0], samplesWritten * NumChannels * (BitsPerSample / 8), &dest[copied]);
@@ -491,13 +501,13 @@ extern "C" __declspec(dllexport) size_t winampGetExtendedRead_getData(intptr_t h
 	return copied;
 }
 
-extern "C" __declspec(dllexport) int winampGetExtendedRead_setTime(intptr_t, int millisecs)
+extern "C" __declspec(dllexport) int winampGetExtendedRead_setTime(std::intptr_t, int millisecs)
 {
 	extendedSeekNeeded = millisecs;
 	return 1;
 }
 
-extern "C" __declspec(dllexport) void winampGetExtendedRead_close(intptr_t handle)
+extern "C" __declspec(dllexport) void winampGetExtendedRead_close(std::intptr_t handle)
 {
 	XSFPlayer *tmpxSFPlayer = reinterpret_cast<XSFPlayer *>(handle);
 	if (tmpxSFPlayer)

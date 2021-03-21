@@ -9,16 +9,18 @@
 #pragma once
 
 #include <map>
+#include <cstdint>
 #include "INFOEntry.h"
-#include "common.h"
+
+struct PseudoFile;
 
 template<typename T> struct INFORecord
 {
-	std::map<uint32_t, T> entries;
+	std::map<std::uint32_t, T> entries;
 
 	INFORecord();
 
-	void Read(PseudoFile &file, uint32_t startOffset);
+	void Read(PseudoFile &file, std::uint32_t startOffset);
 };
 
 struct INFOSection

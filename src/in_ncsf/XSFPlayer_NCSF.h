@@ -10,22 +10,28 @@
 
 #pragma once
 
-#include <memory>
 #include <bitset>
+#include <memory>
+#include <string>
+#include <vector>
+#ifdef _DEBUG
+# include <cstddef>
+#endif
+#include <cstdint>
 #include "XSFPlayer.h"
 #include "SSEQPlayer/SDAT.h"
 #include "SSEQPlayer/Player.h"
 
 class XSFPlayer_NCSF : public XSFPlayer
 {
-	uint32_t sseq;
-	std::vector<uint8_t> sdatData;
+	std::uint32_t sseq;
+	std::vector<std::uint8_t> sdatData;
 	std::unique_ptr<SDAT> sdat;
 	Player player;
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	std::bitset<16> mutes;
 
-	void MapNCSFSection(const std::vector<uint8_t> &section);
+	void MapNCSFSection(const std::vector<std::uint8_t> &section);
 	bool MapNCSF(XSFFile *xSFToLoad);
 	bool RecursiveLoadNCSF(XSFFile *xSFToLoad, int level);
 	bool LoadNCSF();
@@ -36,12 +42,12 @@ public:
 #endif
 	~XSFPlayer_NCSF();
 	bool Load();
-	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
+	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples);
 	void Terminate();
 
 	void SetInterpolation(unsigned interpolation);
 	void SetMutes(const std::bitset<16> &newMutes);
 #ifdef _DEBUG
-	const Channel &GetChannel(size_t chanNum) const;
+	const Channel &GetChannel(std::size_t chanNum) const;
 #endif
 };

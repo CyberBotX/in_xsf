@@ -6,10 +6,14 @@
  */
 
 #include <bitset>
-#include "XSFPlayer.h"
+#include <sstream>
+#include <string>
+#include "windowsh_wrapper.h"
 #include "XSFConfig.h"
 #include "convert.h"
 #include "vbam/gba/Sound.h"
+
+class XSFPlayer;
 
 enum
 {
@@ -80,10 +84,10 @@ void XSFConfig_GSF::SaveSpecificConfig()
 
 void XSFConfig_GSF::GenerateSpecificDialogs()
 {
-	this->configDialog.AddCheckBoxControl(DialogCheckBoxBuilder(L"Low-Pass Filtering").WithSize(80, 10).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_BOTTOMLEFT, Point<short>(0, 7), 2).WithTabStop().
+	this->configDialog.AddCheckBoxControl(DialogCheckBoxBuilder(L"Low-Pass Filtering").WithSize(80, 10).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 7), 2).WithTabStop().
 		WithID(idLowPassFiltering));
-	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Mute").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_BOTTOMLEFT, Point<short>(0, 10)).IsLeftJustified());
-	this->configDialog.AddListBoxControl(DialogListBoxBuilder().WithSize(78, 45).WithExactHeight().InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::FROM_TOPRIGHT, Point<short>(5, -3)).WithID(idMutes).WithBorder().
+	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Mute").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 10)).IsLeftJustified());
+	this->configDialog.AddListBoxControl(DialogListBoxBuilder().WithSize(78, 45).WithExactHeight().InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromTopRight, Point<short>(5, -3)).WithID(idMutes).WithBorder().
 		WithVerticalScrollbar().WithMultipleSelect().WithTabStop());
 }
 

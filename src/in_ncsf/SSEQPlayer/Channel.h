@@ -14,9 +14,13 @@
 
 #include <algorithm>
 #include <bitset>
+#include <cstddef>
 #include <cstdint>
-#include "SWAV.h"
-#include "Track.h"
+#include "common.h"
+#include "consts.h"
+
+struct SWAV;
+struct Track;
 
 /*
  * This structure is meant to be similar to what is stored in the actual
@@ -27,41 +31,41 @@
 struct NDSSoundRegister
 {
 	// Control Register
-	uint8_t volumeMul;
-	uint8_t volumeDiv;
-	uint8_t panning;
-	uint8_t waveDuty;
-	uint8_t repeatMode;
-	uint8_t format;
+	std::uint8_t volumeMul;
+	std::uint8_t volumeDiv;
+	std::uint8_t panning;
+	std::uint8_t waveDuty;
+	std::uint8_t repeatMode;
+	std::uint8_t format;
 	bool enable;
 
 	// Data Source Register
 	const SWAV *source;
 
 	// Timer Register
-	uint16_t timer;
+	std::uint16_t timer;
 
 	// PSG Handling, not a DS register
-	uint16_t psgX;
-	int16_t psgLast;
-	uint32_t psgLastCount;
+	std::uint16_t psgX;
+	std::int16_t psgLast;
+	std::uint32_t psgLastCount;
 
 	// The following are taken from DeSmuME
 	double samplePosition;
 	double sampleIncrease;
 
 	// Loopstart Register
-	uint32_t loopStart;
+	std::uint32_t loopStart;
 
 	// Length Register
-	uint32_t length;
+	std::uint32_t length;
 
-	uint32_t totalLength;
+	std::uint32_t totalLength;
 
 	NDSSoundRegister();
 
 	void ClearControlRegister();
-	void SetControlRegister(uint32_t reg);
+	void SetControlRegister(std::uint32_t reg);
 };
 
 /*
@@ -72,10 +76,10 @@ struct NDSSoundRegister
  */
 struct TempSndReg
 {
-	uint32_t CR;
+	std::uint32_t CR;
 	const SWAV *SOURCE;
-	uint16_t TIMER;
-	uint32_t REPEAT_POINT, LENGTH;
+	std::uint16_t TIMER;
+	std::uint32_t REPEAT_POINT, LENGTH;
 
 	TempSndReg();
 };
@@ -95,10 +99,10 @@ struct Player;
  * accessing the SWAVs samples and also doesn't use 0s before the
  * start of the SWAV or use 0s after the end of a non-looping SWAV.
  */
-template<size_t N> struct RingBuffer
+template<std::size_t N> struct RingBuffer
 {
-	int16_t buffer[N * 2];
-	size_t bufferPos, getPos;
+	std::int16_t buffer[N * 2];
+	std::size_t bufferPos, getPos;
 
 	RingBuffer() : bufferPos(N / 2), getPos(N / 2)
 	{
@@ -109,7 +113,7 @@ template<size_t N> struct RingBuffer
 		std::fill_n(&this->buffer[0], N * 2, 0);
 		this->bufferPos = this->getPos = N / 2;
 	}
-	void PushSample(int16_t sample)
+	void PushSample(std::int16_t sample)
 	{
 		this->buffer[this->bufferPos] = sample;
 		if (this->bufferPos >= N)
@@ -120,23 +124,23 @@ template<size_t N> struct RingBuffer
 		if (this->bufferPos >= N * 3 / 2)
 			this->bufferPos -= N;
 	}
-	void PushSamples(const int16_t *samples, size_t size)
+	void PushSamples(const std::int16_t *samples, std::size_t size)
 	{
 		if (this->bufferPos + size > N * 3 / 2)
 		{
-			size_t free = N * 3 / 2 - this->bufferPos;
+			std::size_t free = N * 3 / 2 - this->bufferPos;
 			std::copy_n(&samples[0], free, &this->buffer[this->bufferPos]);
 			std::copy(&samples[free], &samples[size], &this->buffer[N / 2]);
 		}
 		else
 			std::copy_n(&samples[0], size, &this->buffer[this->bufferPos]);
-		size_t rightFree = this->bufferPos < N ? N - this->bufferPos : 0;
+		std::size_t rightFree = this->bufferPos < N ? N - this->bufferPos : 0;
 		if (rightFree < size)
 		{
 			if (!rightFree)
 			{
-				size_t leftStart = this->bufferPos - N;
-				size_t leftSize = std::min(N / 2 - leftStart, size);
+				std::size_t leftStart = this->bufferPos - N;
+				std::size_t leftSize = std::min(N / 2 - leftStart, size);
 				std::copy_n(&samples[0], leftSize, &this->buffer[leftStart]);
 				if (leftSize < size)
 					std::copy(&samples[leftSize], &samples[size], &this->buffer[N * 3 / 2]);
@@ -153,7 +157,7 @@ template<size_t N> struct RingBuffer
 		if (this->bufferPos >= N * 3 / 2)
 			this->bufferPos -= N;
 	}
-	const int16_t *GetBuffer() const
+	const std::int16_t *GetBuffer() const
 	{
 		return &this->buffer[this->getPos];
 	}
@@ -167,35 +171,35 @@ template<size_t N> struct RingBuffer
 
 struct Channel
 {
-	int8_t chnId;
+	std::int8_t chnId;
 
 	TempSndReg tempReg;
-	uint8_t state;
-	int8_t trackId; // -1 = none
-	uint8_t prio;
+	ChannelState state;
+	std::int8_t trackId; // -1 = none
+	std::uint8_t prio;
 	bool manualSweep;
 
-	std::bitset<CF_BITS> flags;
-	int8_t pan; // -64 .. 63
-	int16_t extAmpl;
+	std::bitset<ToIntegral(ChannelFlag::Bits)> flags;
+	std::int8_t pan; // -64 .. 63
+	std::int16_t extAmpl;
 
-	int16_t velocity;
-	int8_t extPan;
-	uint8_t key;
+	std::int16_t velocity;
+	std::int8_t extPan;
+	std::uint8_t key;
 
 	int ampl; // 7 fractionary bits
 	int extTune; // in 64ths of a semitone
 
-	uint8_t orgKey;
+	std::uint8_t orgKey;
 
-	uint8_t modType, modSpeed, modDepth, modRange;
-	uint16_t modDelay, modDelayCnt, modCounter;
+	std::uint8_t modType, modSpeed, modDepth, modRange;
+	std::uint16_t modDelay, modDelayCnt, modCounter;
 
-	uint32_t sweepLen, sweepCnt;
-	int16_t sweepPitch;
+	std::uint32_t sweepLen, sweepCnt;
+	std::int16_t sweepPitch;
 
-	uint8_t attackLvl, sustainLvl;
-	uint16_t decayRate, releaseRate;
+	std::uint8_t attackLvl, sustainLvl;
+	std::uint16_t decayRate, releaseRate;
 
 	/*
 	 * These were originally global variables in FeOS Sound System, but
@@ -203,7 +207,7 @@ struct Channel
 	 * into this class.
 	 */
 	int noteLength;
-	uint16_t vol;
+	std::uint16_t vol;
 
 	const Player *ply;
 	NDSSoundRegister reg;
@@ -234,7 +238,7 @@ struct Channel
 	void Kill();
 	void UpdateTrack();
 	void Update();
-	int32_t Interpolate();
-	int32_t GenerateSample();
+	std::int32_t Interpolate();
+	std::int32_t GenerateSample();
 	void IncrementSample();
 };

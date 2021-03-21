@@ -8,11 +8,14 @@
 
 #pragma once
 
-#include "common.h"
+#include <vector>
+#include <cstdint>
+
+struct PseudoFile;
 
 struct FATRecord
 {
-	uint32_t offset;
+	std::uint32_t offset;
 
 	FATRecord();
 

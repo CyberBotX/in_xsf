@@ -10,10 +10,19 @@
  * http://desmume.org/
  */
 
-#include "XSFCommon.h"
+#include <algorithm>
+#include <vector>
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include "Channel.h"
 #include "Player.h"
+#include "SWAV.h"
+#include "Track.h"
+#include "XSFCommon.h"
 #include "common.h"
+#include "consts.h"
 
 NDSSoundRegister::NDSSoundRegister() : volumeMul(0), volumeDiv(0), panning(0), waveDuty(0), repeatMode(0), format(0), enable(false),
 	source(nullptr), timer(0), psgX(0), psgLast(0), psgLastCount(0), samplePosition(0), sampleIncrease(0), loopStart(0), length(0), totalLength(0)
@@ -26,7 +35,7 @@ void NDSSoundRegister::ClearControlRegister()
 	this->enable = false;
 }
 
-void NDSSoundRegister::SetControlRegister(uint32_t reg)
+void NDSSoundRegister::SetControlRegister(std::uint32_t reg)
 {
 	this->volumeMul = reg & 0x7F;
 	this->volumeDiv = (reg >> 8) & 0x03;
@@ -54,7 +63,7 @@ static inline double sinc(double x)
 	return fEqual(x, 0.0) ? 1.0 : std::sin(x * M_PI) / (x * M_PI);
 }
 
-Channel::Channel() : chnId(-1), tempReg(), state(CS_NONE), trackId(-1), prio(0), manualSweep(false), flags(), pan(0), extAmpl(0), velocity(0), extPan(0),
+Channel::Channel() : chnId(-1), tempReg(), state(ChannelState::None), trackId(-1), prio(0), manualSweep(false), flags(), pan(0), extAmpl(0), velocity(0), extPan(0),
 	key(0), ampl(0), extTune(0), orgKey(0), modType(0), modSpeed(0), modDepth(0), modRange(0), modDelay(0), modDelayCnt(0), modCounter(0),
 	sweepLen(0), sweepCnt(0), sweepPitch(0), attackLvl(0), sustainLvl(0x7F), decayRate(0), releaseRate(0xFFFF), noteLength(-1), vol(0), ply(nullptr), reg(),
 	ringBuffer()
@@ -114,7 +123,7 @@ void Channel::UpdatePorta(const Track &trk)
 	this->manualSweep = false;
 	this->sweepPitch = trk.sweepPitch;
 	this->sweepCnt = 0;
-	if (!trk.state[TS_PORTABIT])
+	if (!trk.state[ToIntegral(TrackState::PortamentoBit)])
 	{
 		this->sweepLen = 0;
 		return;
@@ -130,7 +139,7 @@ void Channel::UpdatePorta(const Track &trk)
 	}
 	else
 	{
-		int sq_time = static_cast<uint32_t>(trk.portaTime) * static_cast<uint32_t>(trk.portaTime);
+		int sq_time = static_cast<std::uint32_t>(trk.portaTime) * static_cast<std::uint32_t>(trk.portaTime);
 		int abs_sp = std::abs(this->sweepPitch);
 		this->sweepLen = (abs_sp * sq_time) >> 11;
 	}
@@ -141,13 +150,13 @@ void Channel::Release()
 {
 	this->noteLength = -1;
 	this->prio = 1;
-	this->state = CS_RELEASE;
+	this->state = ChannelState::Release;
 }
 
 // Original FSS Function: Chn_Kill
 void Channel::Kill()
 {
-	this->state = CS_NONE;
+	this->state = ChannelState::None;
 	this->trackId = -1;
 	this->prio = 0;
 	this->reg.ClearControlRegister();
@@ -155,18 +164,16 @@ void Channel::Kill()
 	this->noteLength = -1;
 }
 
-static inline int getModFlag(int type)
+static inline ChannelFlag getModFlag(int type)
 {
 	switch (type)
 	{
 		case 0:
-			return CF_UPDTMR;
-		case 1:
-			return CF_UPDVOL;
+			return ChannelFlag::UpdateTimer;
 		case 2:
-			return CF_UPDPAN;
-		default:
-			return 0;
+			return ChannelFlag::UpdatePan;
+		default: // basically 1
+			return ChannelFlag::UpdateVolume;
 	}
 }
 
@@ -185,46 +192,46 @@ void Channel::UpdateTrack()
 	if (trackFlags.none())
 		return;
 
-	if (trackFlags[TUF_LEN])
+	if (trackFlags[ToIntegral(TrackUpdateFlag::Length)])
 	{
-		int st = this->state;
-		if (st > CS_START)
+		ChannelState st = this->state;
+		if (st > ChannelState::Start)
 		{
-			if (st < CS_RELEASE && !--this->noteLength)
+			if (st < ChannelState::Release && !--this->noteLength)
 				this->Release();
 			if (this->manualSweep && this->sweepCnt < this->sweepLen)
 				++this->sweepCnt;
 		}
 	}
-	if (trackFlags[TUF_VOL])
+	if (trackFlags[ToIntegral(TrackUpdateFlag::Volume)])
 	{
 		this->UpdateVol(trk);
-		this->flags.set(CF_UPDVOL);
+		this->flags.set(ToIntegral(ChannelFlag::UpdateVolume));
 	}
-	if (trackFlags[TUF_PAN])
+	if (trackFlags[ToIntegral(TrackUpdateFlag::Pan)])
 	{
 		this->UpdatePan(trk);
-		this->flags.set(CF_UPDPAN);
+		this->flags.set(ToIntegral(ChannelFlag::UpdatePan));
 	}
-	if (trackFlags[TUF_TIMER])
+	if (trackFlags[ToIntegral(TrackUpdateFlag::Timer)])
 	{
 		this->UpdateTune(trk);
-		this->flags.set(CF_UPDTMR);
+		this->flags.set(ToIntegral(ChannelFlag::UpdateTimer));
 	}
-	if (trackFlags[TUF_MOD])
+	if (trackFlags[ToIntegral(TrackUpdateFlag::Modulation)])
 	{
 		int oldType = this->modType;
 		int newType = trk.modType;
 		this->UpdateMod(trk);
 		if (oldType != newType)
 		{
-			this->flags.set(getModFlag(oldType));
-			this->flags.set(getModFlag(newType));
+			this->flags.set(ToIntegral(getModFlag(oldType)));
+			this->flags.set(ToIntegral(getModFlag(newType)));
 		}
 	}
 }
 
-static const uint16_t getpitchtbl[] =
+static const std::uint16_t getpitchtbl[] =
 {
 	0x0000, 0x003B, 0x0076, 0x00B2, 0x00ED, 0x0128, 0x0164, 0x019F,
 	0x01DB, 0x0217, 0x0252, 0x028E, 0x02CA, 0x0305, 0x0341, 0x037D,
@@ -324,7 +331,7 @@ static const uint16_t getpitchtbl[] =
 	0xFC51, 0xFCC7, 0xFD3C, 0xFDB2, 0xFE28, 0xFE9E, 0xFF14, 0xFF8A
 };
 
-static const uint8_t getvoltbl[] =
+static const std::uint8_t getvoltbl[] =
 {
 	0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -375,7 +382,7 @@ static const uint8_t getvoltbl[] =
 };
 
 // This function was obtained through disassembly of Ninty's sound driver
-static inline uint16_t Timer_Adjust(uint16_t basetmr, int pitch)
+static inline std::uint16_t Timer_Adjust(std::uint16_t basetmr, int pitch)
 {
 	int shift = 0;
 	pitch = -pitch;
@@ -392,7 +399,7 @@ static inline uint16_t Timer_Adjust(uint16_t basetmr, int pitch)
 		pitch -= 0x300;
 	}
 
-	uint64_t tmr = static_cast<uint64_t>(basetmr) * (static_cast<uint32_t>(getpitchtbl[pitch]) + 0x10000);
+	std::uint64_t tmr = static_cast<std::uint64_t>(basetmr) * (static_cast<std::uint32_t>(getpitchtbl[pitch]) + 0x10000);
 	shift -= 16;
 	if (shift <= 0)
 		tmr >>= -shift;
@@ -409,7 +416,7 @@ static inline uint16_t Timer_Adjust(uint16_t basetmr, int pitch)
 		return 0x10;
 	if (tmr > 0xFFFF)
 		return 0xFFFF;
-	return static_cast<uint16_t>(tmr);
+	return static_cast<std::uint16_t>(tmr);
 }
 
 static inline int calcVolDivShift(int x)
@@ -427,35 +434,35 @@ static inline int calcVolDivShift(int x)
 void Channel::Update()
 {
 	// Kill active channels that aren't physically active
-	if (this->state > CS_START && !this->reg.enable)
+	if (this->state > ChannelState::Start && !this->reg.enable)
 	{
 		this->Kill();
 		return;
 	}
 
-	bool bNotInSustain = this->state != CS_SUSTAIN;
-	bool bInStart = this->state == CS_START;
+	bool bNotInSustain = this->state != ChannelState::Sustain;
+	bool bInStart = this->state == ChannelState::Start;
 	bool bPitchSweep = this->sweepPitch && this->sweepLen && this->sweepCnt <= this->sweepLen;
 	bool bModulation = !!this->modDepth;
-	bool bVolNeedUpdate = this->flags[CF_UPDVOL] || bNotInSustain;
-	bool bPanNeedUpdate = this->flags[CF_UPDPAN] || bInStart;
-	bool bTmrNeedUpdate = this->flags[CF_UPDTMR] || bInStart || bPitchSweep;
+	bool bVolNeedUpdate = this->flags[ToIntegral(ChannelFlag::UpdateVolume)] || bNotInSustain;
+	bool bPanNeedUpdate = this->flags[ToIntegral(ChannelFlag::UpdatePan)] || bInStart;
+	bool bTmrNeedUpdate = this->flags[ToIntegral(ChannelFlag::UpdateTimer)] || bInStart || bPitchSweep;
 	int modParam = 0;
 
 	switch (this->state)
 	{
-		case CS_NONE:
+		case ChannelState::None:
 			return;
-		case CS_START:
+		case ChannelState::Start:
 			this->reg.ClearControlRegister();
 			this->reg.source = this->tempReg.SOURCE;
 			this->reg.loopStart = this->tempReg.REPEAT_POINT;
 			this->reg.length = this->tempReg.LENGTH;
 			this->reg.totalLength = this->reg.loopStart + this->reg.length;
 			this->ampl = AMPL_THRESHOLD;
-			this->state = CS_ATTACK;
+			this->state = ChannelState::Attack;
 			// fallthrough
-		case CS_ATTACK:
+		case ChannelState::Attack:
 		{
 			int newAmpl = this->ampl;
 			int oldAmpl = this->ampl >> 7;
@@ -464,21 +471,21 @@ void Channel::Update()
 			while ((newAmpl >> 7) == oldAmpl);
 			this->ampl = newAmpl;
 			if (!this->ampl)
-				this->state = CS_DECAY;
+				this->state = ChannelState::Decay;
 			break;
 		}
-		case CS_DECAY:
+		case ChannelState::Decay:
 		{
 			this->ampl -= static_cast<int>(this->decayRate);
 			int sustLvl = Cnv_Sust(this->sustainLvl) << 7;
 			if (this->ampl <= sustLvl)
 			{
 				this->ampl = sustLvl;
-				this->state = CS_SUSTAIN;
+				this->state = ChannelState::Sustain;
 			}
 			break;
 		}
-		case CS_RELEASE:
+		case ChannelState::Release:
 			this->ampl -= static_cast<int>(this->releaseRate);
 			if (this->ampl <= AMPL_THRESHOLD)
 			{
@@ -511,12 +518,12 @@ void Channel::Update()
 		modParam = Cnv_Sine(this->modCounter >> 8) * this->modRange * this->modDepth; // 7.14
 
 		if (this->modType == 1)
-			modParam = static_cast<int64_t>(modParam * 60) >> 14; // vol: adjust range to 6dB = 60cB (no fractional bits)
+			modParam = static_cast<std::int64_t>(modParam * 60) >> 14; // vol: adjust range to 6dB = 60cB (no fractional bits)
 		else
 			modParam >>= 8; // tmr/pan: adjust to 7.6
 
 		// Update the modulation variables
-		uint32_t counter = this->modCounter + (this->modSpeed << 6);
+		std::uint32_t counter = this->modCounter + (this->modSpeed << 6);
 		while (counter >= 0x8000)
 			counter -= 0x8000;
 		this->modCounter = counter;
@@ -531,22 +538,22 @@ void Channel::Update()
 		{
 			int len = this->sweepLen;
 			int cnt = this->sweepCnt;
-			totalAdj += (static_cast<int64_t>(this->sweepPitch) * (len - cnt)) / len;
+			totalAdj += (static_cast<std::int64_t>(this->sweepPitch) * (len - cnt)) / len;
 			if (!this->manualSweep)
 				++this->sweepCnt;
 		}
-		uint16_t tmr = this->tempReg.TIMER;
+		std::uint16_t tmr = this->tempReg.TIMER;
 
 		if (totalAdj)
 			tmr = Timer_Adjust(tmr, totalAdj);
 		this->reg.timer = -tmr;
 		this->reg.sampleIncrease = (ARM7_CLOCK / static_cast<double>(this->ply->sampleRate * 2)) / (0x10000 - this->reg.timer);
-		this->flags.reset(CF_UPDTMR);
+		this->flags.reset(ToIntegral(ChannelFlag::UpdateTimer));
 	}
 
 	if (bVolNeedUpdate || bPanNeedUpdate)
 	{
-		uint32_t cr = this->tempReg.CR;
+		std::uint32_t cr = this->tempReg.CR;
 		if (bVolNeedUpdate)
 		{
 			int totalVol = this->ampl >> 7;
@@ -569,7 +576,7 @@ void Channel::Update()
 
 			this->vol = ((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8);
 
-			this->flags.reset(CF_UPDVOL);
+			this->flags.reset(ToIntegral(ChannelFlag::UpdateVolume));
 		}
 
 		if (bPanNeedUpdate)
@@ -583,7 +590,7 @@ void Channel::Update()
 
 			cr &= ~SOUND_PAN(0x7F);
 			cr |= SOUND_PAN(realPan);
-			this->flags.reset(CF_UPDPAN);
+			this->flags.reset(ToIntegral(ChannelFlag::UpdatePan));
 		}
 
 		this->tempReg.CR = cr;
@@ -591,7 +598,7 @@ void Channel::Update()
 	}
 }
 
-static const int16_t wavedutytbl[8][8] =
+static const std::int16_t wavedutytbl[8][8] =
 {
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF },
 	{ -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, -0x7FFF, 0x7FFF, 0x7FFF },
@@ -606,14 +613,14 @@ static const int16_t wavedutytbl[8][8] =
 // Linear interpolation code originally from DeSmuME
 // Legrange comes from Olli Niemitalo:
 // http://www.student.oulu.fi/~oniemita/dsp/deip.pdf
-int32_t Channel::Interpolate()
+std::int32_t Channel::Interpolate()
 {
 	double ratio = this->reg.samplePosition;
-	ratio -= static_cast<int32_t>(ratio);
+	ratio -= static_cast<std::int32_t>(ratio);
 
 	const auto &data = this->ringBuffer.GetBuffer();
 
-	if (this->ply->interpolation == INTERPOLATION_SINC)
+	if (this->ply->interpolation == Interpolation::Sinc)
 	{
 		double kernel[SINC_WIDTH * 2], kernel_sum = 0.0;
 		int i = SINC_WIDTH, shift = static_cast<int>(std::floor(ratio * SINC_RESOLUTION));
@@ -629,13 +636,13 @@ int32_t Channel::Interpolate()
 		double sum = 0.0;
 		for (i = 0; i < static_cast<int>(SINC_WIDTH * 2); ++i)
 			sum += data[i - static_cast<int>(SINC_WIDTH) + 1] * kernel[i];
-		return static_cast<int32_t>(sum / kernel_sum);
+		return static_cast<std::int32_t>(sum / kernel_sum);
 	}
-	else if (this->ply->interpolation > INTERPOLATION_LINEAR)
+	else if (this->ply->interpolation > Interpolation::Linear)
 	{
 		double c0, c1, c2, c3, c4, c5;
 
-		if (this->ply->interpolation == INTERPOLATION_6POINTLEGRANGE)
+		if (this->ply->interpolation == Interpolation::SixPointLegrange)
 		{
 			ratio -= 0.5;
 			double even1 = data[-2] + data[3], odd1 = data[-2] - data[3];
@@ -647,30 +654,30 @@ int32_t Channel::Interpolate()
 			c3 = 1 / 48.0 * odd1 - 13 / 48.0 * odd2 + 17 / 24.0 * odd3;
 			c4 = 1 / 48.0 * even1 - 0.0625 * even2 + 1 / 24.0 * even3;
 			c5 = 1 / 24.0 * odd2 - 1 / 12.0 * odd3 - 1 / 120.0 * odd1;
-			return static_cast<int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
+			return static_cast<std::int32_t>(((((c5 * ratio + c4) * ratio + c3) * ratio + c2) * ratio + c1) * ratio + c0);
 		}
-		else // INTERPOLATION_4POINTLEAGRANGE
+		else // 4-Point Legrange
 		{
 			c0 = data[0];
 			c1 = data[1] - 1 / 3.0 * data[-1] - 0.5 * data[0] - 1 / 6.0 * data[2];
 			c2 = 0.5 * (data[-1] + data[1]) - data[0];
 			c3 = 1 / 6.0 * (data[2] - data[-1]) + 0.5 * (data[0] - data[1]);
-			return static_cast<int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
+			return static_cast<std::int32_t>(((c3 * ratio + c2) * ratio + c1) * ratio + c0);
 		}
 	}
-	else // INTERPOLATION_LINEAR
-		return static_cast<int32_t>(data[0] + ratio * (data[1] - data[0]));
+	else // Linear
+		return static_cast<std::int32_t>(data[0] + ratio * (data[1] - data[0]));
 }
 
-int32_t Channel::GenerateSample()
+std::int32_t Channel::GenerateSample()
 {
 	if (this->reg.samplePosition < 0)
 		return 0;
 
 	if (this->reg.format != 3)
 	{
-		if (this->ply->interpolation == INTERPOLATION_NONE)
-			return this->reg.source->dataptr[static_cast<uint32_t>(this->reg.samplePosition)];
+		if (this->ply->interpolation == Interpolation::None)
+			return this->reg.source->dataptr[static_cast<std::uint32_t>(this->reg.samplePosition)];
 		else
 			return this->Interpolate();
 	}
@@ -679,13 +686,13 @@ int32_t Channel::GenerateSample()
 		if (this->chnId < 8)
 			return 0;
 		else if (this->chnId < 14)
-			return wavedutytbl[this->reg.waveDuty][static_cast<uint32_t>(this->reg.samplePosition) & 0x7];
+			return wavedutytbl[this->reg.waveDuty][static_cast<std::uint32_t>(this->reg.samplePosition) & 0x7];
 		else
 		{
-			if (this->reg.psgLastCount != static_cast<uint32_t>(this->reg.samplePosition))
+			if (this->reg.psgLastCount != static_cast<std::uint32_t>(this->reg.samplePosition))
 			{
-				uint32_t max = static_cast<uint32_t>(this->reg.samplePosition);
-				for (uint32_t i = this->reg.psgLastCount; i < max; ++i)
+				std::uint32_t max = static_cast<std::uint32_t>(this->reg.samplePosition);
+				for (std::uint32_t i = this->reg.psgLastCount; i < max; ++i)
 				{
 					if (this->reg.psgX & 0x1)
 					{
@@ -699,7 +706,7 @@ int32_t Channel::GenerateSample()
 					}
 				}
 
-				this->reg.psgLastCount = static_cast<uint32_t>(this->reg.samplePosition);
+				this->reg.psgLastCount = static_cast<std::uint32_t>(this->reg.samplePosition);
 			}
 
 			return this->reg.psgLast;
@@ -717,17 +724,17 @@ void Channel::IncrementSample()
 		{
 			this->ringBuffer.Clear();
 			this->ringBuffer.bufferPos += SINC_WIDTH + 1;
-			auto preData = std::vector<int16_t>(SINC_WIDTH + 1, this->reg.source->dataptr[0]);
+			auto preData = std::vector<std::int16_t>(SINC_WIDTH + 1, this->reg.source->dataptr[0]);
 			this->ringBuffer.PushSamples(&preData[0], SINC_WIDTH + 1);
 			if (this->reg.totalLength < SINC_WIDTH + 1)
 			{
 				this->ringBuffer.PushSamples(&this->reg.source->dataptr[0], this->reg.totalLength);
 				if (this->reg.repeatMode == 1)
 				{
-					size_t samplesLeft = SINC_WIDTH + 1 - this->reg.totalLength;
+					std::size_t samplesLeft = SINC_WIDTH + 1 - this->reg.totalLength;
 					while (samplesLeft)
 					{
-						size_t samplesToPush = std::min(samplesLeft, this->reg.length);
+						std::size_t samplesToPush = std::min(samplesLeft, this->reg.length);
 						this->ringBuffer.PushSamples(&this->reg.source->dataptr[this->reg.loopStart], samplesToPush);
 						samplesLeft -= samplesToPush;
 					}
@@ -738,8 +745,8 @@ void Channel::IncrementSample()
 		}
 		if (this->reg.samplePosition >= 0)
 		{
-			uint32_t loc = static_cast<uint32_t>(this->reg.samplePosition) + SINC_WIDTH + 1;
-			uint32_t newloc = static_cast<uint32_t>(samplePosition) + SINC_WIDTH + 1;
+			std::uint32_t loc = static_cast<std::uint32_t>(this->reg.samplePosition) + SINC_WIDTH + 1;
+			std::uint32_t newloc = static_cast<std::uint32_t>(samplePosition) + SINC_WIDTH + 1;
 
 			if (this->reg.repeatMode == 1)
 			{

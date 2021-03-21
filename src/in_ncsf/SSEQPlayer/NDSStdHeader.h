@@ -8,15 +8,18 @@
 
 #pragma once
 
-#include "common.h"
+#include <string>
+#include <cstdint>
+
+struct PseudoFile;
 
 struct NDSStdHeader
 {
-	int8_t type[4];
-	uint32_t magic;
+	std::int8_t type[4];
+	std::uint32_t magic;
 
 	NDSStdHeader();
 
 	void Read(PseudoFile &file);
-	void Verify(const std::string &typeToCheck, uint32_t magicToCheck);
+	void Verify(const std::string &typeToCheck, std::uint32_t magicToCheck);
 };

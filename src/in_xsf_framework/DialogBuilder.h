@@ -5,14 +5,15 @@
 
 #pragma once
 
-#include <string>
-#include <memory>
-#include <vector>
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 #include <cstdint>
-#include "XSFCommon.h"
 #include "windowsh_wrapper.h"
+#include "convert.h"
 
 template<typename T> struct Point
 {
@@ -44,21 +45,21 @@ class RelativePosition
 {
 public:
 	Point<short> relativePosition;
-	enum BaseType
+	enum class BaseType
 	{
-		TO_PARENT,
-		TO_SIBLING
+		ToParent,
+		ToSibling
 	} type;
-	enum PositionType
+	enum class PositionType
 	{
-		FROM_TOP,
-		FROM_BOTTOM,
-		FROM_LEFT,
-		FROM_RIGHT,
-		FROM_TOPLEFT,
-		FROM_BOTTOMLEFT,
-		FROM_TOPRIGHT,
-		FROM_BOTTOMRIGHT
+		FromTop,
+		FromBottom,
+		FromLeft,
+		FromRight,
+		FromTopLeft,
+		FromBottomLeft,
+		FromTopRight,
+		FromBottomRight
 	} positionType;
 
 	RelativePosition(const Point<short> &RelPosition, BaseType Type, PositionType PosType) : relativePosition(RelPosition), type(Type), positionType(PosType) { }
@@ -70,7 +71,7 @@ public:
 class RelativePositionToParent : public RelativePosition
 {
 public:
-	RelativePositionToParent(const Point<short> &RelPosition, PositionType PosType) : RelativePosition(RelPosition, TO_PARENT, PosType) { }
+	RelativePositionToParent(const Point<short> &RelPosition, PositionType PosType) : RelativePosition(RelPosition, BaseType::ToParent, PosType) { }
 	RelativePositionToParent *Clone() const { return new RelativePositionToParent(this->relativePosition, this->positionType); }
 };
 
@@ -79,20 +80,20 @@ class RelativePositionToSibling : public RelativePosition
 public:
 	short siblingsBack;
 
-	RelativePositionToSibling(const Point<short> &RelPosition, PositionType PosType, short SiblingsBack = 1) : RelativePosition(RelPosition, TO_SIBLING, PosType), siblingsBack(SiblingsBack) { }
+	RelativePositionToSibling(const Point<short> &RelPosition, PositionType PosType, short SiblingsBack = 1) : RelativePosition(RelPosition, BaseType::ToSibling, PosType), siblingsBack(SiblingsBack) { }
 	RelativePositionToSibling *Clone() const { return new RelativePositionToSibling(this->relativePosition, this->positionType, this->siblingsBack); }
 };
 
-enum DialogControlType
+enum class DialogControlType
 {
-	NO_CONTROL,
-	GROUP_CONTROL,
-	EDITBOX_CONTROL,
-	LABEL_CONTROL,
-	CHECKBOX_CONTROL,
-	BUTTON_CONTROL,
-	LISTBOX_CONTROL,
-	COMBOBOX_CONTROL
+	None,
+	Group,
+	EditBox,
+	Label,
+	CheckBox,
+	Button,
+	ListBox,
+	ComboBox
 };
 
 class DialogTemplate;
@@ -102,14 +103,14 @@ class DialogBuilder
 protected:
 	friend class DialogTemplate;
 	std::wstring title, fontName;
-	uint32_t style, exstyle;
-	uint16_t fontSizeInPts;
+	std::uint32_t style, exstyle;
+	std::uint16_t fontSizeInPts;
 	Size<short> size;
 	bool resetControls;
 public:
 	DialogBuilder() : title(L""), fontName(L""), style(0), exstyle(0), fontSizeInPts(0), size(), resetControls(false) { }
 	DialogBuilder &WithTitle(const std::wstring &Title) { this->title = Title; return *this; }
-	DialogBuilder &WithFont(const std::wstring &FontName, uint16_t FontSizeInPts) { this->fontName = FontName; this->fontSizeInPts = FontSizeInPts; return *this; }
+	DialogBuilder &WithFont(const std::wstring &FontName, std::uint16_t FontSizeInPts) { this->fontName = FontName; this->fontSizeInPts = FontSizeInPts; return *this; }
 	DialogBuilder &WithSize(short Width, short Height) { this->size.width = Width; this->size.height = Height; return *this; }
 	DialogBuilder &WithSize(const Size<short> &Sz) { this->size = Sz; return *this; }
 	DialogBuilder &ResetControls(bool Reset = true) { this->resetControls = Reset; return *this; }
@@ -139,7 +140,7 @@ template<class T> class DialogControlBuilder
 protected:
 	friend class DialogTemplate;
 	DialogControlType controlType;
-	uint32_t style, exstyle;
+	std::uint32_t style, exstyle;
 	Rect<short> rect;
 	short id;
 	int index;
@@ -147,7 +148,7 @@ protected:
 
 	T &me() { return dynamic_cast<T &>(*this); }
 public:
-	DialogControlBuilder(DialogControlType Type = NO_CONTROL) : controlType(Type), style(0), exstyle(0), rect(), id(-1), index(-1), relativePosition() { }
+	DialogControlBuilder(DialogControlType Type = DialogControlType::None) : controlType(Type), style(0), exstyle(0), rect(), id(-1), index(-1), relativePosition() { }
 	virtual ~DialogControlBuilder() { }
 	T &WithPosition(short X, short Y) { this->rect.position.x = X; this->rect.position.y = Y; return this->me(); }
 	T &WithPosition(const Point<short> &Position) { this->rect.position = Position; return this->me(); }
@@ -182,7 +183,7 @@ protected:
 	friend class DialogTemplate;
 	std::wstring groupName;
 public:
-	DialogGroupBuilder(const std::wstring &newGroupName) : DialogControlBuilder(GROUP_CONTROL), groupName(newGroupName) { }
+	DialogGroupBuilder(const std::wstring &newGroupName) : DialogControlBuilder(DialogControlType::Group), groupName(newGroupName) { }
 };
 
 template<class T> class DialogInGroupBuilder : public DialogControlBuilder<T>
@@ -200,7 +201,7 @@ class DialogEditBoxBuilder : public DialogInGroupBuilder<DialogEditBoxBuilder>
 protected:
 	friend class DialogTemplate;
 public:
-	DialogEditBoxBuilder() : DialogInGroupBuilder(EDITBOX_CONTROL) { }
+	DialogEditBoxBuilder() : DialogInGroupBuilder(DialogControlType::EditBox) { }
 	DialogEditBoxBuilder &IsLeftJustified() { this->style &= ~(ES_LEFT | ES_CENTER | ES_RIGHT); this->style |= ES_LEFT; return this->me(); }
 	DialogEditBoxBuilder &IsCenterJustified() { this->style &= ~(ES_LEFT | ES_CENTER | ES_RIGHT); this->style |= ES_CENTER; return this->me(); }
 	DialogEditBoxBuilder &IsRightJustified() { this->style &= ~(ES_LEFT | ES_CENTER | ES_RIGHT); this->style |= ES_RIGHT; return this->me(); }
@@ -229,7 +230,7 @@ class DialogLabelBuilder : public DialogControlWithLabelBuilder<DialogLabelBuild
 protected:
 	friend class DialogTemplate;
 public:
-	DialogLabelBuilder(const std::wstring &Label) : DialogControlWithLabelBuilder(LABEL_CONTROL, Label) { }
+	DialogLabelBuilder(const std::wstring &Label) : DialogControlWithLabelBuilder(DialogControlType::Label, Label) { }
 	DialogLabelBuilder &IsLeftJustified(bool WithWordWrap = false)
 	{
 		this->style &= ~(SS_LEFT | SS_CENTER | SS_RIGHT | SS_LEFTNOWORDWRAP);
@@ -311,7 +312,7 @@ class DialogButtonBuilder : public DialogButtonBaseBuilder<DialogButtonBuilder>
 protected:
 	friend class DialogTemplate;
 public:
-	DialogButtonBuilder(const std::wstring &Label) : DialogButtonBaseBuilder(BUTTON_CONTROL, Label) { }
+	DialogButtonBuilder(const std::wstring &Label) : DialogButtonBaseBuilder(DialogControlType::Button, Label) { }
 	DialogButtonBuilder &IsDefault(bool Default = true) { if (Default) this->style |= BS_DEFPUSHBUTTON; else this->style &= ~BS_DEFPUSHBUTTON; return this->me(); }
 };
 
@@ -320,7 +321,7 @@ class DialogCheckBoxBuilder : public DialogButtonBaseBuilder<DialogCheckBoxBuild
 protected:
 	friend class DialogTemplate;
 public:
-	DialogCheckBoxBuilder(const std::wstring &Label) : DialogButtonBaseBuilder(CHECKBOX_CONTROL, Label) { this->style |= BS_AUTOCHECKBOX; }
+	DialogCheckBoxBuilder(const std::wstring &Label) : DialogButtonBaseBuilder(DialogControlType::CheckBox, Label) { this->style |= BS_AUTOCHECKBOX; }
 	DialogCheckBoxBuilder &WithTextOnLeft(bool TextOnLeft = true) { if (TextOnLeft) this->style |= BS_LEFTTEXT; else this->style &= ~BS_LEFTTEXT; return this->me(); }
 	DialogCheckBoxBuilder &LikePushButton(bool PushButton = true) { if (PushButton) this->style |= BS_PUSHLIKE; else this->style &= ~BS_PUSHLIKE; return this->me(); }
 };
@@ -330,7 +331,7 @@ class DialogListBoxBuilder : public DialogInGroupBuilder<DialogListBoxBuilder>
 protected:
 	friend class DialogTemplate;
 public:
-	DialogListBoxBuilder() : DialogInGroupBuilder(LISTBOX_CONTROL) { }
+	DialogListBoxBuilder() : DialogInGroupBuilder(DialogControlType::ListBox) { }
 	DialogListBoxBuilder &WithNotify(bool Notify = true) { if (Notify) this->style |= LBS_NOTIFY; else this->style &= ~LBS_NOTIFY; return this->me(); }
 	DialogListBoxBuilder &WithSort(bool Sort = true) { if (Sort) this->style |= LBS_SORT; else this->style &= ~LBS_SORT; return this->me(); }
 	DialogListBoxBuilder &WithMultipleSelect(bool MultipleSelect = true) { if (MultipleSelect) this->style |= LBS_MULTIPLESEL; else this->style &= ~LBS_MULTIPLESEL; return this->me(); }
@@ -348,7 +349,7 @@ class DialogComboBoxBuilder : public DialogInGroupBuilder<DialogComboBoxBuilder>
 protected:
 	friend class DialogTemplate;
 public:
-	DialogComboBoxBuilder() : DialogInGroupBuilder(COMBOBOX_CONTROL) { }
+	DialogComboBoxBuilder() : DialogInGroupBuilder(DialogControlType::ComboBox) { }
 	DialogComboBoxBuilder &IsSimple() { this->style &= ~(CBS_SIMPLE | CBS_DROPDOWN | CBS_DROPDOWNLIST); this->style |= CBS_SIMPLE; return this->me(); }
 	DialogComboBoxBuilder &IsDropDown() { this->style &= ~(CBS_SIMPLE | CBS_DROPDOWN | CBS_DROPDOWNLIST); this->style |= CBS_DROPDOWN; return this->me(); }
 	DialogComboBoxBuilder &IsDropDownList() { this->style &= ~(CBS_SIMPLE | CBS_DROPDOWN | CBS_DROPDOWNLIST); this->style |= CBS_DROPDOWNLIST; return this->me(); }
@@ -372,13 +373,13 @@ class DialogTemplate
 	{
 	protected:
 		DialogControlType controlType;
-		uint32_t style, exstyle;
+		std::uint32_t style, exstyle;
 		Rect<short> rect;
 		short id;
 		std::unique_ptr<RelativePosition> relativePosition;
 
 		friend class DialogTemplate;
-		DialogControl() : controlType(NO_CONTROL), style(0), exstyle(0), rect(), id(-1), relativePosition() { }
+		DialogControl() : controlType(DialogControlType::None), style(0), exstyle(0), rect(), id(-1), relativePosition() { }
 		DialogControl(const DialogControl &control) : controlType(control.controlType), style(control.style), exstyle(control.exstyle), rect(control.rect), id(control.id),
 			relativePosition(control.relativePosition ? control.relativePosition->Clone() : nullptr) { }
 		DialogControl &operator=(const DialogControl &control)
@@ -411,9 +412,9 @@ class DialogTemplate
 
 			return control;
 		}
-		virtual uint16_t GetControlCount() const { return 1; }
+		virtual std::uint16_t GetControlCount() const { return 1; }
 		virtual short GetControlHeight() const { return this->rect.size.height; }
-		virtual std::vector<uint8_t> GenerateControlTemplate() const = 0;
+		virtual std::vector<std::uint8_t> GenerateControlTemplate() const = 0;
 		virtual DialogControl *Clone() const = 0;
 	};
 
@@ -452,15 +453,15 @@ class DialogTemplate
 		}
 		void CalculatePositions(bool doRightAndBottom = false);
 		void CalculateSize();
-		uint16_t GetControlCount() const;
-		std::vector<uint8_t> GenerateControlTemplate() const;
+		std::uint16_t GetControlCount() const;
+		std::vector<std::uint8_t> GenerateControlTemplate() const;
 		DialogGroup *Clone() const { return new DialogGroup(*this); }
 	};
 
 	class DialogControlWithoutLabel : public DialogControl
 	{
 	protected:
-		uint16_t type;
+		std::uint16_t type;
 
 		friend class DialogTemplate;
 		friend class DialogControl;
@@ -475,7 +476,7 @@ class DialogTemplate
 			return *this;
 		}
 	public:
-		template<typename Control, typename Builder> static std::unique_ptr<Control> CreateControl(const DialogControlBuilder<Builder> &builder, uint16_t Type)
+		template<typename Control, typename Builder> static std::unique_ptr<Control> CreateControl(const DialogControlBuilder<Builder> &builder, std::uint16_t Type)
 		{
 			auto control = DialogControl::CreateControl<Control>(builder);
 
@@ -483,14 +484,14 @@ class DialogTemplate
 
 			return control;
 		}
-		virtual std::vector<uint8_t> GenerateControlTemplate() const;
+		virtual std::vector<std::uint8_t> GenerateControlTemplate() const;
 		virtual DialogControlWithoutLabel *Clone() const { return new DialogControlWithoutLabel(*this); }
 	};
 
 	class DialogControlWithLabel : public DialogControl
 	{
 	protected:
-		uint16_t type;
+		std::uint16_t type;
 		std::wstring label;
 
 		friend class DialogTemplate;
@@ -507,7 +508,7 @@ class DialogTemplate
 			return *this;
 		}
 	public:
-		template<typename Control, typename Builder> static std::unique_ptr<Control> CreateControl(const DialogControlBuilder<Builder> &builder, uint16_t Type)
+		template<typename Control, typename Builder> static std::unique_ptr<Control> CreateControl(const DialogControlBuilder<Builder> &builder, std::uint16_t Type)
 		{
 			auto control = DialogControl::CreateControl<Control>(builder);
 
@@ -516,7 +517,7 @@ class DialogTemplate
 
 			return control;
 		}
-		virtual std::vector<uint8_t> GenerateControlTemplate() const;
+		virtual std::vector<std::uint8_t> GenerateControlTemplate() const;
 		virtual DialogControlWithLabel *Clone() const { return new DialogControlWithLabel(*this); }
 	};
 
@@ -587,12 +588,12 @@ class DialogTemplate
 	};
 
 	std::wstring title;
-	uint32_t style, exstyle;
+	std::uint32_t style, exstyle;
 	std::wstring fontName;
-	uint16_t fontSizeInPts;
+	std::uint16_t fontSizeInPts;
 	Size<short> size;
 	DialogTemplate::Controls controls;
-	std::vector<uint8_t> templateData;
+	std::vector<std::uint8_t> templateData;
 
 	template<typename Builder> void AddControlToGroup(std::unique_ptr<DialogControl> &&control, const DialogControlBuilder<Builder> &builder)
 	{
@@ -608,7 +609,7 @@ class DialogTemplate
 		{
 			for (auto curr = this->controls.begin(), end = this->controls.end(); curr != end; ++curr)
 			{
-				if ((*curr)->controlType != GROUP_CONTROL)
+				if ((*curr)->controlType != DialogControlType::Group)
 					continue;
 				DialogGroup *group = dynamic_cast<DialogGroup *>(curr->get());
 				if (group->groupName == groupBuilder.groupName)
@@ -623,7 +624,7 @@ class DialogTemplate
 			throw std::runtime_error("Group " + ConvertFuncs::WStringToString(groupBuilder.groupName) + " was not found.");
 		}
 	}
-	uint16_t GetTotalControlCount() const;
+	std::uint16_t GetTotalControlCount() const;
 	bool CalculateControlPosition(short index, bool doRightAndBottom = false);
 	void CalculateSize();
 public:

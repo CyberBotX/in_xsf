@@ -9,10 +9,13 @@
 #pragma once
 
 #include <memory>
-#include "SSEQ.h"
+#include <cstdint>
+#include "INFOEntry.h"
 #include "SBNK.h"
+#include "SSEQ.h"
 #include "SWAR.h"
-#include "common.h"
+
+struct PseudoFile;
 
 struct SDAT
 {
@@ -21,5 +24,5 @@ struct SDAT
 	std::unique_ptr<SWAR> swar[4];
 	INFOEntryPLAYER player;
 
-	SDAT(PseudoFile &file, uint32_t sseqToLoad);
+	SDAT(PseudoFile &file, std::uint32_t sseqToLoad);
 };

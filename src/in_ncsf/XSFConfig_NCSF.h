@@ -8,26 +8,32 @@
 #pragma once
 
 #include <bitset>
-#include <memory>
-#include "XSFConfig.h"
-#include "XSFPlayer_NCSF.h"
+#include <string>
+#ifdef _DEBUG
+# include <algorithm>
+# include <memory>
+# include <cstdint>
+# include "SSEQPlayer/consts.h"
+#endif
 #include "windowsh_wrapper.h"
+#include "XSFConfig.h"
 
 class XSFConfig_NCSF;
+class XSFPlayer_NCSF;
 
 #ifdef _DEBUG
 struct SoundViewData
 {
 	XSFConfig_NCSF *config;
 	XSFPlayer_NCSF *player;
-	uint8_t channelLastStates[16];
+	ChannelState channelLastStates[16];
 	HWND hDlg;
 
 	bool volModeAlternative;
 
 	SoundViewData() : config(nullptr), player(nullptr), hDlg(nullptr), volModeAlternative(false)
 	{
-		std::fill_n(&this->channelLastStates[0], sizeof(this->channelLastStates), CS_START);
+		std::fill_n(&this->channelLastStates[0], sizeof(this->channelLastStates), ChannelState::Start);
 	}
 };
 #endif

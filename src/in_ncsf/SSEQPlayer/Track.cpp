@@ -7,10 +7,18 @@
  * https://github.com/fincs/FSS
  */
 
-#include <cstdlib>
-#include "Track.h"
+#include <algorithm>
+#include <functional>
+#include <cstddef>
+#include <cstdint>
 #include "Player.h"
+#include "SBNK.h"
+#include "SSEQ.h"
+#include "SWAR.h"
+#include "SWAV.h"
+#include "Track.h"
 #include "common.h"
+#include "consts.h"
 
 Track::Track()
 {
@@ -18,7 +26,7 @@ Track::Track()
 }
 
 // Original FSS Function: Player_InitTrack
-void Track::Init(uint8_t handle, Player *player, const uint8_t *dataPos, int n)
+void Track::Init(std::uint8_t handle, Player *player, const std::uint8_t *dataPos, int n)
 {
 	this->trackId = handle;
 	this->num = n;
@@ -63,8 +71,8 @@ void Track::Zero()
 void Track::ClearState()
 {
 	this->state.reset();
-	this->state.set(TS_ALLOCBIT);
-	this->state.set(TS_NOTEWAIT);
+	this->state.set(ToIntegral(TrackState::AllocateBit));
+	this->state.set(ToIntegral(TrackState::NoteWait));
 	this->prio = this->ply->prio + 64;
 
 	this->pos = this->startPos;
@@ -122,7 +130,7 @@ int Track::NoteOn(int key, int vel, int len)
 	}
 	else if (fRecord == 17)
 	{
-		size_t reg, ranges;
+		std::size_t reg, ranges;
 		for (reg = 0, ranges = instrument.ranges.size(); reg < ranges; ++reg)
 			if (key <= instrument.ranges[reg].highNote)
 				break;
@@ -150,7 +158,7 @@ int Track::NoteOn(int key, int vel, int len)
 			noteDef = &instrument.ranges[0];
 		if (fRecord == 3)
 		{
-			nCh = this->ply->ChannelAlloc(TYPE_NOISE, this->prio);
+			nCh = this->ply->ChannelAlloc(ChannelAllocateType::Noise, this->prio);
 			if (nCh < 0)
 				return -1;
 			chn = &this->ply->channels[nCh];
@@ -158,7 +166,7 @@ int Track::NoteOn(int key, int vel, int len)
 		}
 		else
 		{
-			nCh = this->ply->ChannelAlloc(TYPE_PSG, this->prio);
+			nCh = this->ply->ChannelAlloc(ChannelAllocateType::PSG, this->prio);
 			if (nCh < 0)
 				return -1;
 			chn = &this->ply->channels[nCh];
@@ -171,7 +179,7 @@ int Track::NoteOn(int key, int vel, int len)
 
 	if (bIsPCM)
 	{
-		nCh = this->ply->ChannelAlloc(TYPE_PCM, this->prio);
+		nCh = this->ply->ChannelAlloc(ChannelAllocateType::PCM, this->prio);
 		if (nCh < 0)
 			return -1;
 		chn = &this->ply->channels[nCh];
@@ -185,7 +193,7 @@ int Track::NoteOn(int key, int vel, int len)
 		chn->reg.samplePosition = -3;
 	}
 
-	chn->state = CS_START;
+	chn->state = ChannelState::Start;
 	chn->trackId = this->trackId;
 	chn->flags.reset();
 	chn->prio = this->prio;
@@ -223,7 +231,7 @@ int Track::NoteOnTie(int key, int vel)
 	for (i = 0; i < 16; ++i)
 	{
 		chn = &this->ply->channels[i];
-		if (chn->state > CS_NONE && chn->trackId == this->trackId && chn->state != CS_RELEASE)
+		if (chn->state > ChannelState::None && chn->trackId == this->trackId && chn->state != ChannelState::Release)
 			break;
 	}
 
@@ -245,7 +253,7 @@ int Track::NoteOnTie(int key, int vel)
 	chn->UpdatePorta(*this);
 
 	this->portaKey = key;
-	chn->flags.set(CF_UPDTMR);
+	chn->flags.set(ToIntegral(ChannelFlag::UpdateTimer));
 
 	return i;
 }
@@ -256,145 +264,145 @@ void Track::ReleaseAllNotes()
 	for (int i = 0; i < 16; ++i)
 	{
 		Channel &chn = this->ply->channels[i];
-		if (chn.state > CS_NONE && chn.trackId == this->trackId && chn.state != CS_RELEASE)
+		if (chn.state > ChannelState::None && chn.trackId == this->trackId && chn.state != ChannelState::Release)
 			chn.Release();
 	}
 }
 
-enum SseqCommand
+enum class SSEQCommand
 {
-	SSEQ_CMD_ALLOCTRACK = 0xFE, // Silently ignored
-	SSEQ_CMD_OPENTRACK = 0x93,
+	AllocateTrack = 0xFE, // Silently ignored
+	OpenTrack = 0x93,
 
-	SSEQ_CMD_REST = 0x80,
-	SSEQ_CMD_PATCH = 0x81,
-	SSEQ_CMD_PAN = 0xC0,
-	SSEQ_CMD_VOL = 0xC1,
-	SSEQ_CMD_MASTERVOL = 0xC2,
-	SSEQ_CMD_PRIO = 0xC6,
-	SSEQ_CMD_NOTEWAIT = 0xC7,
-	SSEQ_CMD_TIE = 0xC8,
-	SSEQ_CMD_EXPR = 0xD5,
-	SSEQ_CMD_TEMPO = 0xE1,
-	SSEQ_CMD_END = 0xFF,
+	Rest = 0x80,
+	Patch = 0x81,
+	Pan = 0xC0,
+	Volume = 0xC1,
+	MasterVolume = 0xC2,
+	Priority = 0xC6,
+	NoteWait = 0xC7,
+	Tie = 0xC8,
+	Expression = 0xD5,
+	Tempo = 0xE1,
+	End = 0xFF,
 
-	SSEQ_CMD_GOTO = 0x94,
-	SSEQ_CMD_CALL = 0x95,
-	SSEQ_CMD_RET = 0xFD,
-	SSEQ_CMD_LOOPSTART = 0xD4,
-	SSEQ_CMD_LOOPEND = 0xFC,
+	Goto = 0x94,
+	Call = 0x95,
+	Return = 0xFD,
+	LoopStart = 0xD4,
+	LoopEnd = 0xFC,
 
-	SSEQ_CMD_TRANSPOSE = 0xC3,
-	SSEQ_CMD_PITCHBEND = 0xC4,
-	SSEQ_CMD_PITCHBENDRANGE = 0xC5,
+	Transpose = 0xC3,
+	PitchBend = 0xC4,
+	PitchBendRange = 0xC5,
 
-	SSEQ_CMD_ATTACK = 0xD0,
-	SSEQ_CMD_DECAY = 0xD1,
-	SSEQ_CMD_SUSTAIN = 0xD2,
-	SSEQ_CMD_RELEASE = 0xD3,
+	Attack = 0xD0,
+	Decay = 0xD1,
+	Sustain = 0xD2,
+	Release = 0xD3,
 
-	SSEQ_CMD_PORTAKEY = 0xC9,
-	SSEQ_CMD_PORTAFLAG = 0xCE,
-	SSEQ_CMD_PORTATIME = 0xCF,
-	SSEQ_CMD_SWEEPPITCH = 0xE3,
+	PortamentoKey = 0xC9,
+	PortamentoFlag = 0xCE,
+	PortamentoTime = 0xCF,
+	SweepPitch = 0xE3,
 
-	SSEQ_CMD_MODDEPTH = 0xCA,
-	SSEQ_CMD_MODSPEED = 0xCB,
-	SSEQ_CMD_MODTYPE = 0xCC,
-	SSEQ_CMD_MODRANGE = 0xCD,
-	SSEQ_CMD_MODDELAY = 0xE0,
+	ModulationDepth = 0xCA,
+	ModulationSpeed = 0xCB,
+	ModulationType = 0xCC,
+	ModulationRange = 0xCD,
+	ModulationDelay = 0xE0,
 
-	SSEQ_CMD_RANDOM = 0xA0,
-	SSEQ_CMD_PRINTVAR = 0xD6,
-	SSEQ_CMD_IF = 0xA2,
-	SSEQ_CMD_FROMVAR = 0xA1,
-	SSEQ_CMD_SETVAR = 0xB0,
-	SSEQ_CMD_ADDVAR = 0xB1,
-	SSEQ_CMD_SUBVAR = 0xB2,
-	SSEQ_CMD_MULVAR = 0xB3,
-	SSEQ_CMD_DIVVAR = 0xB4,
-	SSEQ_CMD_SHIFTVAR = 0xB5,
-	SSEQ_CMD_RANDVAR = 0xB6,
-	SSEQ_CMD_CMP_EQ = 0xB8,
-	SSEQ_CMD_CMP_GE = 0xB9,
-	SSEQ_CMD_CMP_GT = 0xBA,
-	SSEQ_CMD_CMP_LE = 0xBB,
-	SSEQ_CMD_CMP_LT = 0xBC,
-	SSEQ_CMD_CMP_NE = 0xBD,
+	Random = 0xA0,
+	PrintVariable = 0xD6,
+	If = 0xA2,
+	FromVariable = 0xA1,
+	SetVariable = 0xB0,
+	AddVariable = 0xB1,
+	SubtractVariable = 0xB2,
+	MultiplyVariable = 0xB3,
+	DivideVariable = 0xB4,
+	ShiftVariable = 0xB5,
+	RandomVariable = 0xB6,
+	CompareEqualTo = 0xB8,
+	CompareGreaterThanOrEqualTo = 0xB9,
+	CompareGreaterThan = 0xBA,
+	CompareLessThanOrEqualTo = 0xBB,
+	CompareLessThan = 0xBC,
+	CompareNotEqualTo = 0xBD,
 
-	SSEQ_CMD_MUTE = 0xD7 // Unsupported
+	Mute = 0xD7 // Unsupported
 };
 
-static const uint8_t VariableByteCount = 1 << 7;
-static const uint8_t ExtraByteOnNoteOrVarOrCmp = 1 << 6;
+static const std::uint8_t VariableByteCount = 1 << 7;
+static const std::uint8_t ExtraByteOnNoteOrVarOrCmp = 1 << 6;
 
-static inline uint8_t SseqCommandByteCount(int cmd)
+static inline std::uint8_t SseqCommandByteCount(int cmd)
 {
 	if (cmd < 0x80)
 		return 1 | VariableByteCount;
 	else
-		switch (cmd)
+		switch (static_cast<SSEQCommand>(cmd))
 		{
-			case SSEQ_CMD_REST:
-			case SSEQ_CMD_PATCH:
+			case SSEQCommand::Rest:
+			case SSEQCommand::Patch:
 				return VariableByteCount;
 
-			case SSEQ_CMD_PAN:
-			case SSEQ_CMD_VOL:
-			case SSEQ_CMD_MASTERVOL:
-			case SSEQ_CMD_PRIO:
-			case SSEQ_CMD_NOTEWAIT:
-			case SSEQ_CMD_TIE:
-			case SSEQ_CMD_EXPR:
-			case SSEQ_CMD_LOOPSTART:
-			case SSEQ_CMD_TRANSPOSE:
-			case SSEQ_CMD_PITCHBEND:
-			case SSEQ_CMD_PITCHBENDRANGE:
-			case SSEQ_CMD_ATTACK:
-			case SSEQ_CMD_DECAY:
-			case SSEQ_CMD_SUSTAIN:
-			case SSEQ_CMD_RELEASE:
-			case SSEQ_CMD_PORTAKEY:
-			case SSEQ_CMD_PORTAFLAG:
-			case SSEQ_CMD_PORTATIME:
-			case SSEQ_CMD_MODDEPTH:
-			case SSEQ_CMD_MODSPEED:
-			case SSEQ_CMD_MODTYPE:
-			case SSEQ_CMD_MODRANGE:
-			case SSEQ_CMD_PRINTVAR:
-			case SSEQ_CMD_MUTE:
+			case SSEQCommand::Pan:
+			case SSEQCommand::Volume:
+			case SSEQCommand::MasterVolume:
+			case SSEQCommand::Priority:
+			case SSEQCommand::NoteWait:
+			case SSEQCommand::Tie:
+			case SSEQCommand::Expression:
+			case SSEQCommand::LoopStart:
+			case SSEQCommand::Transpose:
+			case SSEQCommand::PitchBend:
+			case SSEQCommand::PitchBendRange:
+			case SSEQCommand::Attack:
+			case SSEQCommand::Decay:
+			case SSEQCommand::Sustain:
+			case SSEQCommand::Release:
+			case SSEQCommand::PortamentoKey:
+			case SSEQCommand::PortamentoFlag:
+			case SSEQCommand::PortamentoTime:
+			case SSEQCommand::ModulationDepth:
+			case SSEQCommand::ModulationSpeed:
+			case SSEQCommand::ModulationType:
+			case SSEQCommand::ModulationRange:
+			case SSEQCommand::PrintVariable:
+			case SSEQCommand::Mute:
 				return 1;
 
-			case SSEQ_CMD_ALLOCTRACK:
-			case SSEQ_CMD_TEMPO:
-			case SSEQ_CMD_SWEEPPITCH:
-			case SSEQ_CMD_MODDELAY:
+			case SSEQCommand::AllocateTrack:
+			case SSEQCommand::Tempo:
+			case SSEQCommand::SweepPitch:
+			case SSEQCommand::ModulationDelay:
 				return 2;
 
-			case SSEQ_CMD_GOTO:
-			case SSEQ_CMD_CALL:
-			case SSEQ_CMD_SETVAR:
-			case SSEQ_CMD_ADDVAR:
-			case SSEQ_CMD_SUBVAR:
-			case SSEQ_CMD_MULVAR:
-			case SSEQ_CMD_DIVVAR:
-			case SSEQ_CMD_SHIFTVAR:
-			case SSEQ_CMD_RANDVAR:
-			case SSEQ_CMD_CMP_EQ:
-			case SSEQ_CMD_CMP_GE:
-			case SSEQ_CMD_CMP_GT:
-			case SSEQ_CMD_CMP_LE:
-			case SSEQ_CMD_CMP_LT:
-			case SSEQ_CMD_CMP_NE:
+			case SSEQCommand::Goto:
+			case SSEQCommand::Call:
+			case SSEQCommand::SetVariable:
+			case SSEQCommand::AddVariable:
+			case SSEQCommand::SubtractVariable:
+			case SSEQCommand::MultiplyVariable:
+			case SSEQCommand::DivideVariable:
+			case SSEQCommand::ShiftVariable:
+			case SSEQCommand::RandomVariable:
+			case SSEQCommand::CompareEqualTo:
+			case SSEQCommand::CompareGreaterThanOrEqualTo:
+			case SSEQCommand::CompareGreaterThan:
+			case SSEQCommand::CompareLessThanOrEqualTo:
+			case SSEQCommand::CompareLessThan:
+			case SSEQCommand::CompareNotEqualTo:
 				return 3;
 
-			case SSEQ_CMD_OPENTRACK:
+			case SSEQCommand::OpenTrack:
 				return 4;
 
-			case SSEQ_CMD_FROMVAR:
+			case SSEQCommand::FromVariable:
 				return 1 | ExtraByteOnNoteOrVarOrCmp; // Technically 2 bytes with an additional 1, leaving 1 off because we will be reading it to determine if the additional byte is needed
 
-			case SSEQ_CMD_RANDOM:
+			case SSEQCommand::Random:
 				return 4 | ExtraByteOnNoteOrVarOrCmp; // Technically 5 bytes with an additional 1, leaving 1 off because we will be reading it to determine if the additional byte is needed
 
 			default:
@@ -410,19 +418,19 @@ static std::uint16_t CalcRandom()
 	return static_cast<std::uint16_t>(RandomU >> 16);
 }
 
-static auto varFuncSet = [](int16_t, int16_t value) { return value; };
-static auto varFuncAdd = [](int16_t var, int16_t value) -> int16_t { return var + value; };
-static auto varFuncSub = [](int16_t var, int16_t value) -> int16_t { return var - value; };
-static auto varFuncMul = [](int16_t var, int16_t value) -> int16_t { return var * value; };
-static auto varFuncDiv = [](int16_t var, int16_t value) -> int16_t { return var / value; };
-static auto varFuncShift = [](int16_t var, int16_t value) -> int16_t
+static auto varFuncSet = [](std::int16_t, std::int16_t value) { return value; };
+static auto varFuncAdd = [](std::int16_t var, std::int16_t value) -> std::int16_t { return var + value; };
+static auto varFuncSub = [](std::int16_t var, std::int16_t value) -> std::int16_t { return var - value; };
+static auto varFuncMul = [](std::int16_t var, std::int16_t value) -> std::int16_t { return var * value; };
+static auto varFuncDiv = [](std::int16_t var, std::int16_t value) -> std::int16_t { return var / value; };
+static auto varFuncShift = [](std::int16_t var, std::int16_t value) -> std::int16_t
 {
 	if (value < 0)
 		return var >> -value;
 	else
 		return var << value;
 };
-static auto varFuncRand = [](int16_t, int16_t value) -> int16_t
+static auto varFuncRand = [](std::int16_t, std::int16_t value) -> std::int16_t
 {
 	if (value < 0)
 		return -(CalcRandom() % (-value + 1));
@@ -430,51 +438,51 @@ static auto varFuncRand = [](int16_t, int16_t value) -> int16_t
 		return CalcRandom() % (value + 1);
 };
 
-static inline std::function<int16_t (int16_t, int16_t)> VarFunc(int cmd)
+static inline std::function<std::int16_t (std::int16_t, std::int16_t)> VarFunc(int cmd)
 {
-	switch (cmd)
+	switch (static_cast<SSEQCommand>(cmd))
 	{
-		case SSEQ_CMD_SETVAR:
+		case SSEQCommand::SetVariable:
 			return varFuncSet;
-		case SSEQ_CMD_ADDVAR:
+		case SSEQCommand::AddVariable:
 			return varFuncAdd;
-		case SSEQ_CMD_SUBVAR:
+		case SSEQCommand::SubtractVariable:
 			return varFuncSub;
-		case SSEQ_CMD_MULVAR:
+		case SSEQCommand::MultiplyVariable:
 			return varFuncMul;
-		case SSEQ_CMD_DIVVAR:
+		case SSEQCommand::DivideVariable:
 			return varFuncDiv;
-		case SSEQ_CMD_SHIFTVAR:
+		case SSEQCommand::ShiftVariable:
 			return varFuncShift;
-		case SSEQ_CMD_RANDVAR:
+		case SSEQCommand::RandomVariable:
 			return varFuncRand;
 		default:
 			return nullptr;
 	}
 }
 
-static auto compareFuncEq = [](int16_t a, int16_t b) { return a == b; };
-static auto compareFuncGe = [](int16_t a, int16_t b) { return a >= b; };
-static auto compareFuncGt = [](int16_t a, int16_t b) { return a > b; };
-static auto compareFuncLe = [](int16_t a, int16_t b) { return a <= b; };
-static auto compareFuncLt = [](int16_t a, int16_t b) { return a < b; };
-static auto compareFuncNe = [](int16_t a, int16_t b) { return a != b; };
+static auto compareFuncEq = [](std::int16_t a, std::int16_t b) { return a == b; };
+static auto compareFuncGe = [](std::int16_t a, std::int16_t b) { return a >= b; };
+static auto compareFuncGt = [](std::int16_t a, std::int16_t b) { return a > b; };
+static auto compareFuncLe = [](std::int16_t a, std::int16_t b) { return a <= b; };
+static auto compareFuncLt = [](std::int16_t a, std::int16_t b) { return a < b; };
+static auto compareFuncNe = [](std::int16_t a, std::int16_t b) { return a != b; };
 
-static inline std::function<bool (int16_t, int16_t)> CompareFunc(int cmd)
+static inline std::function<bool (std::int16_t, std::int16_t)> CompareFunc(int cmd)
 {
-	switch (cmd)
+	switch (static_cast<SSEQCommand>(cmd))
 	{
-		case SSEQ_CMD_CMP_EQ:
+		case SSEQCommand::CompareEqualTo:
 			return compareFuncEq;
-		case SSEQ_CMD_CMP_GE:
+		case SSEQCommand::CompareGreaterThanOrEqualTo:
 			return compareFuncGe;
-		case SSEQ_CMD_CMP_GT:
+		case SSEQCommand::CompareGreaterThan:
 			return compareFuncGt;
-		case SSEQ_CMD_CMP_LE:
+		case SSEQCommand::CompareLessThanOrEqualTo:
 			return compareFuncLe;
-		case SSEQ_CMD_CMP_LT:
+		case SSEQCommand::CompareLessThan:
 			return compareFuncLt;
-		case SSEQ_CMD_CMP_NE:
+		case SSEQCommand::CompareNotEqualTo:
 			return compareFuncNe;
 		default:
 			return nullptr;
@@ -485,10 +493,10 @@ static inline std::function<bool (int16_t, int16_t)> CompareFunc(int cmd)
 void Track::Run()
 {
 	// Indicate "heartbeat" for this track
-	this->updateFlags.set(TUF_LEN);
+	this->updateFlags.set(ToIntegral(TrackUpdateFlag::Length));
 
 	// Exit if the track has already ended
-	if (this->state[TS_END])
+	if (this->state[ToIntegral(TrackState::End)])
 		return;
 
 	if (this->wait)
@@ -513,9 +521,9 @@ void Track::Run()
 			int key = cmd + this->transpose;
 			int vel = this->overriding.val(pData, read8, true);
 			int len = this->overriding.val(pData, readvl);
-			if (this->state[TS_NOTEWAIT])
+			if (this->state[ToIntegral(TrackState::NoteWait)])
 				this->wait = len;
-			if (this->state[TS_TIEBIT])
+			if (this->state[ToIntegral(TrackState::TieBit)])
 				this->NoteOnTie(key, vel);
 			else
 				this->NoteOn(key, vel, len);
@@ -523,13 +531,13 @@ void Track::Run()
 		else
 		{
 			int value;
-			switch (cmd)
+			switch (static_cast<SSEQCommand>(cmd))
 			{
 				//-----------------------------------------------------------------
 				// Main commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_OPENTRACK:
+				case SSEQCommand::OpenTrack:
 				{
 					int tNum = read8(pData);
 					auto trackPos = &this->ply->sseq->data[read24(pData)];
@@ -542,91 +550,91 @@ void Track::Run()
 					break;
 				}
 
-				case SSEQ_CMD_REST:
+				case SSEQCommand::Rest:
 					this->wait = this->overriding.val(pData, readvl);
 					break;
 
-				case SSEQ_CMD_PATCH:
+				case SSEQCommand::Patch:
 					this->patch = this->overriding.val(pData, readvl);
 					break;
 
-				case SSEQ_CMD_GOTO:
+				case SSEQCommand::Goto:
 					*pData = &this->ply->sseq->data[read24(pData)];
 					break;
 
-				case SSEQ_CMD_CALL:
+				case SSEQCommand::Call:
 					value = read24(pData);
 					if (this->stackPos < FSS_TRACKSTACKSIZE)
 					{
-						const uint8_t *dest = &this->ply->sseq->data[value];
-						this->stack[this->stackPos++] = StackValue(STACKTYPE_CALL, *pData);
+						const std::uint8_t *dest = &this->ply->sseq->data[value];
+						this->stack[this->stackPos++] = StackValue(StackType::Call, *pData);
 						*pData = dest;
 					}
 					break;
 
-				case SSEQ_CMD_RET:
-					if (this->stackPos && this->stack[this->stackPos - 1].type == STACKTYPE_CALL)
+				case SSEQCommand::Return:
+					if (this->stackPos && this->stack[this->stackPos - 1].type == StackType::Call)
 						*pData = this->stack[--this->stackPos].dest;
 					break;
 
-				case SSEQ_CMD_PAN:
+				case SSEQCommand::Pan:
 					this->pan = this->overriding.val(pData, read8) - 64;
-					this->updateFlags.set(TUF_PAN);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Pan));
 					break;
 
-				case SSEQ_CMD_VOL:
+				case SSEQCommand::Volume:
 					this->vol = this->overriding.val(pData, read8);
-					this->updateFlags.set(TUF_VOL);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
-				case SSEQ_CMD_MASTERVOL:
+				case SSEQCommand::MasterVolume:
 					this->ply->masterVol = Cnv_Sust(this->overriding.val(pData, read8));
-					for (uint8_t i = 0; i < this->ply->nTracks; ++i)
-						this->ply->tracks[this->ply->trackIds[i]].updateFlags.set(TUF_VOL);
+					for (std::uint8_t i = 0; i < this->ply->nTracks; ++i)
+						this->ply->tracks[this->ply->trackIds[i]].updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
-				case SSEQ_CMD_PRIO:
+				case SSEQCommand::Priority:
 					this->prio = this->ply->prio + read8(pData);
 					// Update here?
 					break;
 
-				case SSEQ_CMD_NOTEWAIT:
-					this->state.set(TS_NOTEWAIT, !!read8(pData));
+				case SSEQCommand::NoteWait:
+					this->state.set(ToIntegral(TrackState::NoteWait), !!read8(pData));
 					break;
 
-				case SSEQ_CMD_TIE:
-					this->state.set(TS_TIEBIT, !!read8(pData));
+				case SSEQCommand::Tie:
+					this->state.set(ToIntegral(TrackState::TieBit), !!read8(pData));
 					this->ReleaseAllNotes();
 					break;
 
-				case SSEQ_CMD_EXPR:
+				case SSEQCommand::Expression:
 					this->expr = this->overriding.val(pData, read8);
-					this->updateFlags.set(TUF_VOL);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
-				case SSEQ_CMD_TEMPO:
+				case SSEQCommand::Tempo:
 					this->ply->tempo = read16(pData);
 					break;
 
-				case SSEQ_CMD_END:
-					this->state.set(TS_END);
+				case SSEQCommand::End:
+					this->state.set(ToIntegral(TrackState::End));
 					return;
 
-				case SSEQ_CMD_LOOPSTART:
+				case SSEQCommand::LoopStart:
 					value = this->overriding.val(pData, read8);
 					if (this->stackPos < FSS_TRACKSTACKSIZE)
 					{
 						this->loopCount[this->stackPos] = value;
-						this->stack[this->stackPos++] = StackValue(STACKTYPE_LOOP, *pData);
+						this->stack[this->stackPos++] = StackValue(StackType::Loop, *pData);
 					}
 					break;
 
-				case SSEQ_CMD_LOOPEND:
-					if (this->stackPos && this->stack[this->stackPos - 1].type == STACKTYPE_LOOP)
+				case SSEQCommand::LoopEnd:
+					if (this->stackPos && this->stack[this->stackPos - 1].type == StackType::Loop)
 					{
-						const uint8_t *rPos = this->stack[this->stackPos - 1].dest;
-						uint8_t &nR = this->loopCount[this->stackPos - 1];
-						uint8_t prevR = nR;
+						const std::uint8_t *rPos = this->stack[this->stackPos - 1].dest;
+						std::uint8_t &nR = this->loopCount[this->stackPos - 1];
+						std::uint8_t prevR = nR;
 						if (!prevR || --nR)
 							*pData = rPos;
 						else
@@ -638,37 +646,37 @@ void Track::Run()
 				// Tuning commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_TRANSPOSE:
+				case SSEQCommand::Transpose:
 					this->transpose = this->overriding.val(pData, read8);
 					break;
 
-				case SSEQ_CMD_PITCHBEND:
+				case SSEQCommand::PitchBend:
 					this->pitchBend = this->overriding.val(pData, read8);
-					this->updateFlags.set(TUF_TIMER);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Timer));
 					break;
 
-				case SSEQ_CMD_PITCHBENDRANGE:
+				case SSEQCommand::PitchBendRange:
 					this->pitchBendRange = read8(pData);
-					this->updateFlags.set(TUF_TIMER);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Timer));
 					break;
 
 				//-----------------------------------------------------------------
 				// Envelope-related commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_ATTACK:
+				case SSEQCommand::Attack:
 					this->a = this->overriding.val(pData, read8);
 					break;
 
-				case SSEQ_CMD_DECAY:
+				case SSEQCommand::Decay:
 					this->d = this->overriding.val(pData, read8);
 					break;
 
-				case SSEQ_CMD_SUSTAIN:
+				case SSEQCommand::Sustain:
 					this->s = this->overriding.val(pData, read8);
 					break;
 
-				case SSEQ_CMD_RELEASE:
+				case SSEQCommand::Release:
 					this->r = this->overriding.val(pData, read8);
 					break;
 
@@ -676,26 +684,26 @@ void Track::Run()
 				// Portamento-related commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_PORTAKEY:
+				case SSEQCommand::PortamentoKey:
 					this->portaKey = read8(pData) + this->transpose;
-					this->state.set(TS_PORTABIT);
+					this->state.set(ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
-				case SSEQ_CMD_PORTAFLAG:
-					this->state.set(TS_PORTABIT, !!read8(pData));
+				case SSEQCommand::PortamentoFlag:
+					this->state.set(ToIntegral(TrackState::PortamentoBit), !!read8(pData));
 					// Update here?
 					break;
 
-				case SSEQ_CMD_PORTATIME:
+				case SSEQCommand::PortamentoTime:
 					this->portaTime = this->overriding.val(pData, read8);
-					this->state.set(TS_PORTABIT);
+					this->state.set(ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
-				case SSEQ_CMD_SWEEPPITCH:
+				case SSEQCommand::SweepPitch:
 					this->sweepPitch = this->overriding.val(pData, read16);
-					this->state.set(TS_PORTABIT);
+					this->state.set(ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
@@ -703,43 +711,43 @@ void Track::Run()
 				// Modulation-related commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_MODDEPTH:
+				case SSEQCommand::ModulationDepth:
 					this->modDepth = this->overriding.val(pData, read8);
-					this->updateFlags.set(TUF_MOD);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
-				case SSEQ_CMD_MODSPEED:
+				case SSEQCommand::ModulationSpeed:
 					this->modSpeed = this->overriding.val(pData, read8);
-					this->updateFlags.set(TUF_MOD);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
-				case SSEQ_CMD_MODTYPE:
+				case SSEQCommand::ModulationType:
 					this->modType = read8(pData);
-					this->updateFlags.set(TUF_MOD);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
-				case SSEQ_CMD_MODRANGE:
+				case SSEQCommand::ModulationRange:
 					this->modRange = read8(pData);
-					this->updateFlags.set(TUF_MOD);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
-				case SSEQ_CMD_MODDELAY:
+				case SSEQCommand::ModulationDelay:
 					this->modDelay = this->overriding.val(pData, read16);
-					this->updateFlags.set(TUF_MOD);
+					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
 				//-----------------------------------------------------------------
 				// Randomness-related commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_RANDOM:
+				case SSEQCommand::Random:
 				{
 					this->overriding() = true;
 					this->overriding.cmd = read8(pData);
-					if ((this->overriding.cmd >= SSEQ_CMD_SETVAR && this->overriding.cmd <= SSEQ_CMD_CMP_NE) || this->overriding.cmd < 0x80)
+					if ((this->overriding.cmd >= ToIntegral(SSEQCommand::SetVariable) && this->overriding.cmd <= ToIntegral(SSEQCommand::CompareNotEqualTo)) || this->overriding.cmd < 0x80)
 						this->overriding.extraValue = read8(pData);
-					int16_t minVal = read16(pData);
-					int16_t maxVal = read16(pData);
+					std::int16_t minVal = read16(pData);
+					std::int16_t maxVal = read16(pData);
 					this->overriding.value = (CalcRandom() % (maxVal - minVal + 1)) + minVal;
 					break;
 				}
@@ -748,25 +756,25 @@ void Track::Run()
 				// Variable-related commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_FROMVAR:
+				case SSEQCommand::FromVariable:
 					this->overriding() = true;
 					this->overriding.cmd = read8(pData);
-					if ((this->overriding.cmd >= SSEQ_CMD_SETVAR && this->overriding.cmd <= SSEQ_CMD_CMP_NE) || this->overriding.cmd < 0x80)
+					if ((this->overriding.cmd >= ToIntegral(SSEQCommand::SetVariable) && this->overriding.cmd <= ToIntegral(SSEQCommand::CompareNotEqualTo)) || this->overriding.cmd < 0x80)
 						this->overriding.extraValue = read8(pData);
 					this->overriding.value = this->ply->variables[read8(pData)];
 					break;
 
-				case SSEQ_CMD_SETVAR:
-				case SSEQ_CMD_ADDVAR:
-				case SSEQ_CMD_SUBVAR:
-				case SSEQ_CMD_MULVAR:
-				case SSEQ_CMD_DIVVAR:
-				case SSEQ_CMD_SHIFTVAR:
-				case SSEQ_CMD_RANDVAR:
+				case SSEQCommand::SetVariable:
+				case SSEQCommand::AddVariable:
+				case SSEQCommand::SubtractVariable:
+				case SSEQCommand::MultiplyVariable:
+				case SSEQCommand::DivideVariable:
+				case SSEQCommand::ShiftVariable:
+				case SSEQCommand::RandomVariable:
 				{
-					int8_t varNo = this->overriding.val(pData, read8, true);
+					std::int8_t varNo = this->overriding.val(pData, read8, true);
 					value = this->overriding.val(pData, read16);
-					if (cmd == SSEQ_CMD_DIVVAR && !value) // Division by 0, skip it to prevent crashing
+					if (cmd == ToIntegral(SSEQCommand::DivideVariable) && !value) // Division by 0, skip it to prevent crashing
 						break;
 					this->ply->variables[varNo] = VarFunc(cmd)(this->ply->variables[varNo], value);
 					break;
@@ -776,31 +784,31 @@ void Track::Run()
 				// Conditional-related commands
 				//-----------------------------------------------------------------
 
-				case SSEQ_CMD_CMP_EQ:
-				case SSEQ_CMD_CMP_GE:
-				case SSEQ_CMD_CMP_GT:
-				case SSEQ_CMD_CMP_LE:
-				case SSEQ_CMD_CMP_LT:
-				case SSEQ_CMD_CMP_NE:
+				case SSEQCommand::CompareEqualTo:
+				case SSEQCommand::CompareGreaterThanOrEqualTo:
+				case SSEQCommand::CompareGreaterThan:
+				case SSEQCommand::CompareLessThanOrEqualTo:
+				case SSEQCommand::CompareLessThan:
+				case SSEQCommand::CompareNotEqualTo:
 				{
-					int8_t varNo = this->overriding.val(pData, read8, true);
+					std::int8_t varNo = this->overriding.val(pData, read8, true);
 					value = this->overriding.val(pData, read16);
 					this->lastComparisonResult = CompareFunc(cmd)(this->ply->variables[varNo], value);
 					break;
 				}
 
-				case SSEQ_CMD_IF:
+				case SSEQCommand::If:
 					if (!this->lastComparisonResult)
 					{
 						int nextCmd = read8(pData);
-						uint8_t cmdBytes = SseqCommandByteCount(nextCmd);
+						std::uint8_t cmdBytes = SseqCommandByteCount(nextCmd);
 						bool variableBytes = !!(cmdBytes & VariableByteCount);
 						bool extraByte = !!(cmdBytes & ExtraByteOnNoteOrVarOrCmp);
 						cmdBytes &= ~(VariableByteCount | ExtraByteOnNoteOrVarOrCmp);
 						if (extraByte)
 						{
 							int extraCmd = read8(pData);
-							if ((extraCmd >= SSEQ_CMD_SETVAR && extraCmd <= SSEQ_CMD_CMP_NE) || extraCmd < 0x80)
+							if ((extraCmd >= ToIntegral(SSEQCommand::SetVariable) && extraCmd <= ToIntegral(SSEQCommand::CompareNotEqualTo)) || extraCmd < 0x80)
 								++cmdBytes;
 						}
 						*pData += cmdBytes;
@@ -814,7 +822,7 @@ void Track::Run()
 			}
 		}
 
-		if (cmd != SSEQ_CMD_RANDOM && cmd != SSEQ_CMD_FROMVAR)
+		if (cmd != ToIntegral(SSEQCommand::Random) && cmd != ToIntegral(SSEQCommand::FromVariable))
 			this->overriding() = false;
 	}
 }

@@ -9,9 +9,12 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
+#include <type_traits>
 #include <vector>
 #include <cstring>
+#include <cstddef>
 #include <cstdint>
 
 /*
@@ -19,8 +22,8 @@
  */
 struct PseudoFile
 {
-	std::vector<uint8_t> *data;
-	uint32_t pos;
+	std::vector<std::uint8_t> *data;
+	std::uint32_t pos;
 
 	PseudoFile() : data(nullptr), pos(0)
 	{
@@ -29,18 +32,18 @@ struct PseudoFile
 	template<typename T> T ReadLE()
 	{
 		T finalVal = 0;
-		for (size_t i = 0; i < sizeof(T); ++i)
+		for (std::size_t i = 0; i < sizeof(T); ++i)
 			finalVal |= (*this->data)[this->pos++] << (i * 8);
 		return finalVal;
 	}
 
-	template<typename T, size_t N> void ReadLE(T (&arr)[N])
+	template<typename T, std::size_t N> void ReadLE(T (&arr)[N])
 	{
-		for (size_t i = 0; i < N; ++i)
+		for (std::size_t i = 0; i < N; ++i)
 			arr[i] = this->ReadLE<T>();
 	}
 
-	template<size_t N> void ReadLE(uint8_t arr[N])
+	template<std::size_t N> void ReadLE(std::uint8_t arr[N])
 	{
 		std::copy_n(&(*this->data)[this->pos], N, &arr[0]);
 		this->pos += N;
@@ -48,11 +51,11 @@ struct PseudoFile
 
 	template<typename T> void ReadLE(std::vector<T> &arr)
 	{
-		for (size_t i = 0, len = arr.size(); i < len; ++i)
+		for (std::size_t i = 0, len = arr.size(); i < len; ++i)
 			arr[i] = this->ReadLE<T>();
 	}
 
-	void ReadLE(std::vector<uint8_t> &arr)
+	void ReadLE(std::vector<std::uint8_t> &arr)
 	{
 		std::copy_n(&(*this->data)[this->pos], arr.size(), &arr[0]);
 		this->pos += arr.size();
@@ -64,7 +67,7 @@ struct PseudoFile
 		std::string str;
 		do
 		{
-			chr = static_cast<char>(this->ReadLE<uint8_t>());
+			chr = static_cast<char>(this->ReadLE<std::uint8_t>());
 			if (chr)
 				str += chr;
 		} while (chr);
@@ -80,10 +83,10 @@ struct PseudoFile
  * as little-endian formating.
  */
 
-template<typename T> inline T ReadLE(const uint8_t *arr)
+template<typename T> inline T ReadLE(const std::uint8_t *arr)
 {
 	T finalVal = 0;
-	for (size_t i = 0; i < sizeof(T); ++i)
+	for (std::size_t i = 0; i < sizeof(T); ++i)
 		finalVal |= arr[i] << (i * 8);
 	return finalVal;
 }
@@ -97,10 +100,10 @@ template<typename T> inline T ReadLE(const uint8_t *arr)
 template<typename T> inline std::string NumToHexString(const T &num)
 {
 	std::string hex;
-	uint8_t len = sizeof(T) * 2;
-	for (uint8_t i = 0; i < len; ++i)
+	std::uint8_t len = sizeof(T) * 2;
+	for (std::uint8_t i = 0; i < len; ++i)
 	{
-		uint8_t tmp = (num >> (i * 4)) & 0xF;
+		std::uint8_t tmp = (num >> (i * 4)) & 0xF;
 		hex = static_cast<char>(tmp < 10 ? tmp + '0' : tmp - 10 + 'a') + hex;
 	}
 	return "0x" + hex;
@@ -120,7 +123,13 @@ inline constexpr int REC_GROUP = 5;
 inline constexpr int REC_PLAYER2 = 6;
 inline constexpr int REC_STRM = 7;
 
-template<size_t N> inline bool VerifyHeader(int8_t (&arr)[N], const std::string &header)
+// Comes from https://stackoverflow.com/a/14589519
+template<typename T> inline constexpr auto ToIntegral(const T &e) -> typename std::underlying_type_t<T>
+{
+	return static_cast<std::underlying_type_t<T>>(e);
+}
+
+template<std::size_t N> inline bool VerifyHeader(std::int8_t (&arr)[N], const std::string &header)
 {
 	std::string arrHeader = std::string(&arr[0], &arr[N]);
 	return arrHeader == header;
@@ -131,7 +140,7 @@ template<size_t N> inline bool VerifyHeader(int8_t (&arr)[N], const std::string 
  */
 inline int Cnv_Attack(int attk)
 {
-	static const uint8_t lut[] =
+	static const std::uint8_t lut[] =
 	{
 		0x00, 0x01, 0x05, 0x0E, 0x1A, 0x26, 0x33, 0x3F, 0x49, 0x54,
 		0x5C, 0x64, 0x6D, 0x74, 0x7B, 0x7F, 0x84, 0x89, 0x8F
@@ -158,7 +167,7 @@ inline int Cnv_Fall(int fall)
 
 inline int Cnv_Scale(int scale)
 {
-	static const int16_t lut[] =
+	static const std::int16_t lut[] =
 	{
 		-32768, -421, -361, -325, -300, -281, -265, -252,
 		-240, -230, -221, -212, -205, -198, -192, -186,
@@ -185,7 +194,7 @@ inline int Cnv_Scale(int scale)
 
 inline int Cnv_Sust(int sust)
 {
-	static const int16_t lut[] =
+	static const std::int16_t lut[] =
 	{
 		-32768, -722, -721, -651, -601, -562, -530, -503,
 		-480, -460, -442, -425, -410, -396, -383, -371,
@@ -212,12 +221,12 @@ inline int Cnv_Sust(int sust)
 
 inline int Cnv_Sine(int arg)
 {
-	static const int8_t lut[] =
+	static const std::int8_t lut[] =
 	{
 		0, 6, 12, 19, 25, 31, 37, 43, 49, 54, 60, 65, 71, 76, 81, 85, 90, 94,
 		98, 102, 106, 109, 112, 115, 117, 120, 122, 123, 125, 126, 126, 127, 127
 	};
-	static const int lut_size = sizeof(lut) / sizeof(int8_t);
+	static const int lut_size = sizeof(lut) / sizeof(std::int8_t);
 
 	if (arg < lut_size)
 		return lut[arg];
@@ -229,7 +238,7 @@ inline int Cnv_Sine(int arg)
 	return -lut[4 * lut_size - arg];
 }
 
-inline int read8(const uint8_t **ppData)
+inline int read8(const std::uint8_t **ppData)
 {
 	auto pData = *ppData;
 	int x = *pData;
@@ -237,14 +246,14 @@ inline int read8(const uint8_t **ppData)
 	return x;
 }
 
-inline int read16(const uint8_t **ppData)
+inline int read16(const std::uint8_t **ppData)
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
 	return x;
 }
 
-inline int read24(const uint8_t **ppData)
+inline int read24(const std::uint8_t **ppData)
 {
 	int x = read8(ppData);
 	x |= read8(ppData) << 8;
@@ -252,7 +261,7 @@ inline int read24(const uint8_t **ppData)
 	return x;
 }
 
-inline int readvl(const uint8_t **ppData)
+inline int readvl(const std::uint8_t **ppData)
 {
 	int x = 0;
 	for (;;)

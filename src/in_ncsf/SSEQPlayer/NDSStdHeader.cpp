@@ -6,8 +6,11 @@
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
  */
 
+#include <algorithm>
 #include <stdexcept>
+#include <cstdint>
 #include "NDSStdHeader.h"
+#include "common.h"
 
 NDSStdHeader::NDSStdHeader() : magic(0)
 {
@@ -17,13 +20,13 @@ NDSStdHeader::NDSStdHeader() : magic(0)
 void NDSStdHeader::Read(PseudoFile &file)
 {
 	file.ReadLE(this->type);
-	this->magic = file.ReadLE<uint32_t>();
-	file.ReadLE<uint32_t>(); // file size
-	file.ReadLE<uint16_t>(); // structure size
-	file.ReadLE<uint16_t>(); // # of blocks
+	this->magic = file.ReadLE<std::uint32_t>();
+	file.ReadLE<std::uint32_t>(); // file size
+	file.ReadLE<std::uint16_t>(); // structure size
+	file.ReadLE<std::uint16_t>(); // # of blocks
 }
 
-void NDSStdHeader::Verify(const std::string &typeToCheck, uint32_t magicToCheck)
+void NDSStdHeader::Verify(const std::string &typeToCheck, std::uint32_t magicToCheck)
 {
 	if (!VerifyHeader(this->type, typeToCheck) || this->magic != magicToCheck)
 		throw std::runtime_error("NDS Standard Header for " + typeToCheck + " invalid");

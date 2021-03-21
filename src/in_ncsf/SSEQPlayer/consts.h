@@ -14,46 +14,81 @@
 
 #include <cstdint>
 
-const uint32_t ARM7_CLOCK = 33513982;
-const double SecondsPerClockCycle = 64.0 * 2728.0 / ARM7_CLOCK;
+inline constexpr std::uint32_t ARM7_CLOCK = 33513982;
+inline constexpr double SecondsPerClockCycle = 64.0 * 2728.0 / ARM7_CLOCK;
 
-inline uint32_t BIT(uint32_t n) { return 1 << n; }
+inline std::uint32_t BIT(std::uint32_t n) { return 1 << n; }
 
-enum { TS_ALLOCBIT, TS_NOTEWAIT, TS_PORTABIT, TS_TIEBIT, TS_END, TS_BITS };
+enum class TrackState
+{
+	AllocateBit,
+	NoteWait,
+	PortamentoBit,
+	TieBit,
+	End,
+	Bits
+};
 
-enum { TUF_VOL, TUF_PAN, TUF_TIMER, TUF_MOD, TUF_LEN, TUF_BITS };
+enum class TrackUpdateFlag
+{
+	Volume,
+	Pan,
+	Timer,
+	Modulation,
+	Length,
+	Bits
+};
 
-enum { CS_NONE, CS_START, CS_ATTACK, CS_DECAY, CS_SUSTAIN, CS_RELEASE };
+enum class ChannelState
+{
+	None,
+	Start,
+	Attack,
+	Decay,
+	Sustain,
+	Release
+};
 
-enum { CF_UPDVOL, CF_UPDPAN, CF_UPDTMR, CF_BITS };
+enum class ChannelFlag
+{
+	UpdateVolume,
+	UpdatePan,
+	UpdateTimer,
+	Bits
+};
 
-enum { TYPE_PCM, TYPE_PSG, TYPE_NOISE };
+enum class ChannelAllocateType
+{
+	PCM,
+	PSG,
+	Noise
+};
 
-const int FSS_TRACKCOUNT = 16;
-const int FSS_MAXTRACKS = 32;
-const int FSS_TRACKSTACKSIZE = 3;
-const int AMPL_K = 723;
-const int AMPL_MIN = -AMPL_K;
-const int AMPL_THRESHOLD = AMPL_MIN * 128;
+inline constexpr int FSS_TRACKCOUNT = 16;
+inline constexpr int FSS_MAXTRACKS = 32;
+inline constexpr int FSS_TRACKSTACKSIZE = 3;
+inline constexpr int AMPL_K = 723;
+inline constexpr int AMPL_MIN = -AMPL_K;
+inline constexpr int AMPL_THRESHOLD = AMPL_MIN * 128;
 
 inline int SOUND_FREQ(int n) { return -0x1000000 / n; }
 
-inline uint32_t SOUND_VOL(int n) { return n; }
-inline uint32_t SOUND_VOLDIV(int n) { return n << 8; }
-inline uint32_t SOUND_PAN(int n) { return n << 16; }
-inline uint32_t SOUND_DUTY(int n) { return n << 24; }
-const uint32_t SOUND_REPEAT = BIT(27);
-const uint32_t SOUND_ONE_SHOT = BIT(28);
-inline uint32_t SOUND_LOOP(bool a) { return a ? SOUND_REPEAT : SOUND_ONE_SHOT; }
-const uint32_t SOUND_FORMAT_PSG = 3 << 29;
-inline uint32_t SOUND_FORMAT(int n) { return n << 29; }
-const uint32_t SCHANNEL_ENABLE = BIT(31);
+inline std::uint32_t SOUND_VOL(int n) { return n; }
+inline std::uint32_t SOUND_VOLDIV(int n) { return n << 8; }
+inline std::uint32_t SOUND_PAN(int n) { return n << 16; }
+inline std::uint32_t SOUND_DUTY(int n) { return n << 24; }
+inline const std::uint32_t SOUND_REPEAT = BIT(27);
+inline const std::uint32_t SOUND_ONE_SHOT = BIT(28);
+inline std::uint32_t SOUND_LOOP(bool a) { return a ? SOUND_REPEAT : SOUND_ONE_SHOT; }
+inline constexpr std::uint32_t SOUND_FORMAT_PSG = 3 << 29;
+inline std::uint32_t SOUND_FORMAT(int n) { return n << 29; }
+inline const std::uint32_t SCHANNEL_ENABLE = BIT(31);
 
-enum Interpolation
+enum class Interpolation
 {
-	INTERPOLATION_NONE,
-	INTERPOLATION_LINEAR,
-	INTERPOLATION_4POINTLEGRANGE,
-	INTERPOLATION_6POINTLEGRANGE,
-	INTERPOLATION_SINC
+	None,
+	Linear,
+	FourPointLegrange,
+	SixPointLegrange,
+	Sinc
 };

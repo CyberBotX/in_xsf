@@ -7,7 +7,9 @@
  */
 
 #include <algorithm>
+#include <string>
 #include "TagList.h"
+#include "eqstr.h"
 
 eq_str TagList::eqstr;
 

@@ -9,14 +9,17 @@
 #pragma once
 
 #include <map>
-#include "SWAV.h"
+#include <string>
+#include <cstdint>
 #include "INFOEntry.h"
-#include "common.h"
+#include "SWAV.h"
+
+struct PseudoFile;
 
 struct SWAR
 {
 	std::string filename;
-	std::map<uint32_t, SWAV> swavs;
+	std::map<std::uint32_t, SWAV> swavs;
 
 	INFOEntryWAVEARC info;
 

@@ -8,17 +8,22 @@
  * https://github.com/fincs/FSS
  */
 
+#include <algorithm>
+#include <bitset>
 #include <filesystem>
 #include <memory>
-#include <cstdlib>
-#include <ctime>
+#include <string>
+#include <vector>
+#include <cstddef>
+#include <cstdint>
 #include <zlib.h>
-#include "convert.h"
-#include "XSFPlayer_NCSF.h"
-#include "XSFConfig_NCSF.h"
 #include "XSFCommon.h"
+#include "XSFConfig_NCSF.h"
+#include "XSFPlayer_NCSF.h"
 #include "SSEQPlayer/SDAT.h"
 #include "SSEQPlayer/Player.h"
+#include "SSEQPlayer/common.h"
+#include "SSEQPlayer/consts.h"
 
 const char *XSFPlayer::WinampDescription = "NCSF Decoder";
 const char *XSFPlayer::WinampExts = "ncsf;minincsf\0DS Nitro Composer Sound Format files (*.ncsf;*.minincsf)\0";
@@ -37,9 +42,9 @@ XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
 }
 #endif
 
-void XSFPlayer_NCSF::MapNCSFSection(const std::vector<uint8_t> &section)
+void XSFPlayer_NCSF::MapNCSFSection(const std::vector<std::uint8_t> &section)
 {
-	uint32_t size = Get32BitsLE(&section[8]), finalSize = size;
+	std::uint32_t size = Get32BitsLE(&section[8]), finalSize = size;
 	if (this->sdatData.empty())
 		this->sdatData.resize(finalSize, 0);
 	else if (this->sdatData.size() < size)
@@ -183,12 +188,12 @@ bool XSFPlayer_NCSF::Load()
 	return XSFPlayer::Load();
 }
 
-static inline int32_t muldiv7(int32_t val, uint8_t mul)
+static inline std::int32_t muldiv7(std::int32_t val, std::uint8_t mul)
 {
 	return mul == 127 ? val : ((val * mul) >> 7);
 }
 
-void XSFPlayer_NCSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples)
+void XSFPlayer_NCSF::GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples)
 {
 	unsigned long mute = this->mutes.to_ulong();
 
@@ -196,22 +201,22 @@ void XSFPlayer_NCSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset,
 	{
 		this->secondsIntoPlayback += this->secondsPerSample;
 
-		int32_t leftChannel = 0, rightChannel = 0;
+		std::int32_t leftChannel = 0, rightChannel = 0;
 
 		// I need to advance the sound channels here
 		for (int i = 0; i < 16; ++i)
 		{
 			Channel &chn = this->player.channels[i];
 
-			if (chn.state > CS_NONE)
+			if (chn.state > ChannelState::None)
 			{
-				int32_t sample = chn.GenerateSample();
+				std::int32_t sample = chn.GenerateSample();
 				chn.IncrementSample();
 
 				if (mute & BIT(i))
 					continue;
 
-				uint8_t datashift = chn.reg.volumeDiv;
+				std::uint8_t datashift = chn.reg.volumeDiv;
 				if (datashift == 3)
 					datashift = 4;
 				sample = muldiv7(sample, chn.reg.volumeMul) >> datashift;
@@ -254,7 +259,7 @@ void XSFPlayer_NCSF::SetMutes(const std::bitset<16> &newMutes)
 }
 
 #ifdef _DEBUG
-const Channel &XSFPlayer_NCSF::GetChannel(size_t chanNum) const
+const Channel &XSFPlayer_NCSF::GetChannel(std::size_t chanNum) const
 {
 	return this->player.channels[chanNum];
 }

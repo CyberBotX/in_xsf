@@ -5,10 +5,13 @@
  * Partially based on the vio*sf framework
  */
 
-#include <cstring>
-#include "XSFPlayer.h"
-#include "XSFConfig.h"
+#include <algorithm>
+#include <limits>
+#include <vector>
+#include <cstdint>
 #include "XSFCommon.h"
+#include "XSFConfig.h"
+#include "XSFPlayer.h"
 
 extern XSFConfig *xSFConfig;
 
@@ -50,26 +53,26 @@ XSFPlayer &XSFPlayer::operator=(const XSFPlayer &xSFPlayer)
 	return *this;
 }
 
-bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
+bool XSFPlayer::FillBuffer(std::vector<std::uint8_t> &buf, unsigned &samplesWritten)
 {
 	bool endFlag = false;
 	unsigned detectSilence = xSFConfig->GetDetectSilenceSec();
 	unsigned pos = 0, bufsize = buf.size() >> 2;
-	auto trueBuffer = std::vector<uint8_t>(bufsize << (this->uses32BitSamplesClampedTo16Bit ? 3 : 2));
-	auto longBuffer = std::vector<uint8_t>(bufsize << 3);
-	auto bufLong = reinterpret_cast<int32_t *>(&longBuffer[0]);
+	auto trueBuffer = std::vector<std::uint8_t>(bufsize << (this->uses32BitSamplesClampedTo16Bit ? 3 : 2));
+	auto longBuffer = std::vector<std::uint8_t>(bufsize << 3);
+	auto bufLong = reinterpret_cast<std::int32_t *>(&longBuffer[0]);
 	while (pos < bufsize)
 	{
 		unsigned remain = bufsize - pos, offset = pos;
 		this->GenerateSamples(trueBuffer, pos << (this->uses32BitSamplesClampedTo16Bit ? 2 : 1), remain);
 		if (this->uses32BitSamplesClampedTo16Bit)
 		{
-			auto trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
+			auto trueBufLong = reinterpret_cast<std::int32_t *>(&trueBuffer[0]);
 			std::copy_n(&trueBufLong[0], bufsize << 1, &bufLong[0]);
 		}
 		else
 		{
-			auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+			auto trueBufShort = reinterpret_cast<std::int16_t *>(&trueBuffer[0]);
 			std::copy_n(&trueBufShort[0], bufsize << 1, &bufLong[0]);
 		}
 		if (detectSilence || skipSilenceOnStartSec)
@@ -77,7 +80,7 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 			unsigned skipOffset = 0;
 			for (unsigned ofs = 0; ofs < remain; ++ofs)
 			{
-				uint32_t sampleL = bufLong[2 * (offset + ofs)], sampleR = bufLong[2 * (offset + ofs) + 1];
+				std::uint32_t sampleL = bufLong[2 * (offset + ofs)], sampleR = bufLong[2 * (offset + ofs) + 1];
 				bool silence = (sampleL + CHECK_SILENCE_BIAS + CHECK_SILENCE_LEVEL) - this->prevSampleL <= CHECK_SILENCE_LEVEL * 2 &&
 					(sampleR + CHECK_SILENCE_BIAS + CHECK_SILENCE_LEVEL) - this->prevSampleR <= CHECK_SILENCE_LEVEL * 2;
 
@@ -114,7 +117,7 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 			{
 				if (skipOffset)
 				{
-					auto tmpBuf = std::vector<int32_t>((bufsize - skipOffset) << 1);
+					auto tmpBuf = std::vector<std::int32_t>((bufsize - skipOffset) << 1);
 					std::copy(&bufLong[(offset + skipOffset) << 1], &bufLong[bufsize << 1], &tmpBuf[0]);
 					std::copy_n(&tmpBuf[0], (bufsize - skipOffset) << 1, &bufLong[offset << 1]);
 					pos += skipOffset;
@@ -129,12 +132,12 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 		{
 			if (this->uses32BitSamplesClampedTo16Bit)
 			{
-				auto trueBufLong = reinterpret_cast<int32_t *>(&trueBuffer[0]);
+				auto trueBufLong = reinterpret_cast<std::int32_t *>(&trueBuffer[0]);
 				std::copy_n(&bufLong[0], bufsize << 1, &trueBufLong[0]);
 			}
 			else
 			{
-				auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+				auto trueBufShort = reinterpret_cast<std::int16_t *>(&trueBuffer[0]);
 				std::copy_n(&bufLong[0], bufsize << 1, &trueBufShort[0]);
 			}
 		}
@@ -164,29 +167,29 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 			double s1 = bufLong[2 * ofs] * scale, s2 = bufLong[2 * ofs + 1] * scale;
 			if (!this->uses32BitSamplesClampedTo16Bit)
 			{
-				clamp(s1, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
-				clamp(s2, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
+				clamp(s1, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+				clamp(s2, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
 			}
-			bufLong[2 * ofs] = static_cast<int32_t>(s1);
-			bufLong[2 * ofs + 1] = static_cast<int32_t>(s2);
+			bufLong[2 * ofs] = static_cast<std::int32_t>(s1);
+			bufLong[2 * ofs + 1] = static_cast<std::int32_t>(s2);
 		}
 	}
 
 	if (this->uses32BitSamplesClampedTo16Bit)
 	{
-		auto bufShort = reinterpret_cast<int16_t *>(&buf[0]);
+		auto bufShort = reinterpret_cast<std::int16_t *>(&buf[0]);
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
-			int32_t s1 = bufLong[2 * ofs], s2 = bufLong[2 * ofs + 1];
-			clamp(s1, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
-			clamp(s2, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max());
-			bufShort[2 * ofs] = static_cast<int16_t>(s1);
-			bufShort[2 * ofs + 1] = static_cast<int16_t>(s2);
+			std::int32_t s1 = bufLong[2 * ofs], s2 = bufLong[2 * ofs + 1];
+			clamp(s1, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+			clamp(s2, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+			bufShort[2 * ofs] = static_cast<std::int16_t>(s1);
+			bufShort[2 * ofs + 1] = static_cast<std::int16_t>(s2);
 		}
 	}
 	else
 	{
-		auto trueBufShort = reinterpret_cast<int16_t *>(&trueBuffer[0]);
+		auto trueBufShort = reinterpret_cast<std::int16_t *>(&trueBuffer[0]);
 		std::copy_n(&bufLong[0], bufsize << 1, &trueBufShort[0]);
 		std::copy(&trueBuffer[0], &trueBuffer[bufsize << 2], &buf[0]);
 	}
@@ -194,12 +197,12 @@ bool XSFPlayer::FillBuffer(std::vector<uint8_t> &buf, unsigned &samplesWritten)
 	/* Fading */
 	if (!xSFConfig->GetPlayInfinitely() && this->fadeSample && this->currentSample + bufsize >= this->lengthSample)
 	{
-		auto bufShort = reinterpret_cast<int16_t *>(&buf[0]);
+		auto bufShort = reinterpret_cast<std::int16_t *>(&buf[0]);
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
 			if (this->currentSample + ofs >= this->lengthSample && this->currentSample + ofs < this->lengthSample + this->fadeSample)
 			{
-				int scale = static_cast<uint64_t>(this->lengthSample + this->fadeSample - (this->currentSample + ofs)) * 0x10000 / this->fadeSample;
+				int scale = static_cast<std::uint64_t>(this->lengthSample + this->fadeSample - (this->currentSample + ofs)) * 0x10000 / this->fadeSample;
 				bufShort[2 * ofs] = (bufShort[2 * ofs] * scale) >> 16;
 				bufShort[2 * ofs + 1] = (bufShort[2 * ofs + 1] * scale) >> 16;
 			}
@@ -217,8 +220,8 @@ bool XSFPlayer::Load()
 {
 	this->lengthInMS = this->xSF->GetLengthMS(xSFConfig->GetDefaultLength());
 	this->fadeInMS = this->xSF->GetFadeMS(xSFConfig->GetDefaultFade());
-	this->lengthSample = static_cast<uint64_t>(this->lengthInMS) * this->sampleRate / 1000;
-	this->fadeSample = static_cast<uint64_t>(this->fadeInMS) * this->sampleRate / 1000;
+	this->lengthSample = static_cast<std::uint64_t>(this->lengthInMS) * this->sampleRate / 1000;
+	this->fadeSample = static_cast<std::uint64_t>(this->fadeInMS) * this->sampleRate / 1000;
 	this->volume = this->xSF->GetVolume(xSFConfig->GetVolumeType(), xSFConfig->GetPeakType());
 	return true;
 }
@@ -233,9 +236,9 @@ void XSFPlayer::SeekTop()
 #ifdef WINAMP_PLUGIN
 static inline DWORD TicksDiff(DWORD prev, DWORD cur) { return cur >= prev ? cur - prev : 0xFFFFFFFF - prev + cur; }
 
-int XSFPlayer::Seek(unsigned seekPosition, volatile int *killswitch, std::vector<uint8_t> &buf, Out_Module *outMod)
+int XSFPlayer::Seek(unsigned seekPosition, volatile int *killswitch, std::vector<std::uint8_t> &buf, Out_Module *outMod)
 {
-	unsigned bufsize = buf.size() >> 2, seekSample = static_cast<uint64_t>(seekPosition) * this->sampleRate / 1000;
+	unsigned bufsize = buf.size() >> 2, seekSample = static_cast<std::uint64_t>(seekPosition) * this->sampleRate / 1000;
 	DWORD prevTick = outMod ? GetTickCount() : 0;
 	if (seekSample < this->currentSample)
 	{
@@ -253,7 +256,7 @@ int XSFPlayer::Seek(unsigned seekPosition, volatile int *killswitch, std::vector
 			if (TicksDiff(prevTick, curTick) >= 500)
 			{
 				prevTick = curTick;
-				unsigned cur = static_cast<uint64_t>(this->currentSample) * 1000 / this->sampleRate;
+				unsigned cur = static_cast<std::uint64_t>(this->currentSample) * 1000 / this->sampleRate;
 				outMod->Flush(cur);
 			}
 		}

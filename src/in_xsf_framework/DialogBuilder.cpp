@@ -3,13 +3,20 @@
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
  */
 
+#include <algorithm>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <cstdint>
+#include "windowsh_wrapper.h"
 #include "DialogBuilder.h"
+#include "XSFCommon.h"
 
 // Code modified from the following answer on Stack Overflow:
 // http://stackoverflow.com/a/3407254
-static inline uint32_t getNextMultipleOf4(uint32_t origNum)
+static inline std::uint32_t getNextMultipleOf4(std::uint32_t origNum)
 {
-	uint32_t remainder = origNum % 4;
+	std::uint32_t remainder = origNum % 4;
 	if (!remainder)
 		return origNum;
 	return origNum + 4 - remainder;
@@ -20,16 +27,16 @@ Point<short> RelativePosition::CalculatePosition(const Rect<short> &child, const
 	Point<short> newPosition = child.position;
 	if (this->relativePosition.y != -1)
 	{
-		if (this->positionType == FROM_TOP || this->positionType == FROM_TOPLEFT || this->positionType == FROM_TOPRIGHT)
+		if (this->positionType == PositionType::FromTop || this->positionType == PositionType::FromTopLeft || this->positionType == PositionType::FromTopRight)
 			newPosition.y = other.position.y + this->relativePosition.y;
-		if (this->positionType == FROM_BOTTOM || this->positionType == FROM_BOTTOMLEFT || this->positionType == FROM_BOTTOMRIGHT)
+		if (this->positionType == PositionType::FromBottom || this->positionType == PositionType::FromBottomLeft || this->positionType == PositionType::FromBottomRight)
 			newPosition.y = other.position.y + other.size.height + this->relativePosition.y;
 	}
 	if (this->relativePosition.x != -1)
 	{
-		if (this->positionType == FROM_LEFT || this->positionType == FROM_TOPLEFT || this->positionType == FROM_BOTTOMLEFT)
+		if (this->positionType == PositionType::FromLeft || this->positionType == PositionType::FromTopLeft || this->positionType == PositionType::FromBottomLeft)
 			newPosition.x = other.position.x + this->relativePosition.x;
-		if (this->positionType == FROM_RIGHT || this->positionType == FROM_TOPRIGHT || this->positionType == FROM_BOTTOMRIGHT)
+		if (this->positionType == PositionType::FromRight || this->positionType == PositionType::FromTopRight || this->positionType == PositionType::FromBottomRight)
 			newPosition.x = other.position.x + other.size.width + this->relativePosition.x;
 	}
 	return newPosition;
@@ -44,15 +51,15 @@ void DialogTemplate::DialogGroup::CalculatePositions(bool doRightAndBottom)
 		if (control->relativePosition)
 		{
 			bool valid = true;
-			if (!doRightAndBottom && control->relativePosition->type == RelativePosition::TO_PARENT)
+			if (!doRightAndBottom && control->relativePosition->type == RelativePosition::BaseType::ToParent)
 			{
 				switch (control->relativePosition->positionType)
 				{
-					case RelativePosition::FROM_BOTTOM:
-					case RelativePosition::FROM_BOTTOMLEFT:
-					case RelativePosition::FROM_BOTTOMRIGHT:
-					case RelativePosition::FROM_RIGHT:
-					case RelativePosition::FROM_TOPRIGHT:
+					case RelativePosition::PositionType::FromBottom:
+					case RelativePosition::PositionType::FromBottomLeft:
+					case RelativePosition::PositionType::FromBottomRight:
+					case RelativePosition::PositionType::FromRight:
+					case RelativePosition::PositionType::FromTopRight:
 						valid = false;
 						break;
 					default:
@@ -62,7 +69,7 @@ void DialogTemplate::DialogGroup::CalculatePositions(bool doRightAndBottom)
 			if (valid)
 			{
 				Rect<short> other = this->rect;
-				if (control->relativePosition->type == RelativePosition::TO_SIBLING)
+				if (control->relativePosition->type == RelativePosition::BaseType::ToSibling)
 				{
 					short siblingsBack = dynamic_cast<const RelativePositionToSibling *>(control->relativePosition.get())->siblingsBack;
 					if (x - siblingsBack >= 0)
@@ -82,15 +89,15 @@ void DialogTemplate::DialogGroup::CalculateSize()
 		bool usePosition = true;
 		if (control->relativePosition)
 		{
-			if (control->relativePosition->type == RelativePosition::TO_PARENT)
+			if (control->relativePosition->type == RelativePosition::BaseType::ToParent)
 			{
 				switch (control->relativePosition->positionType)
 				{
-					case RelativePosition::FROM_BOTTOM:
-					case RelativePosition::FROM_BOTTOMLEFT:
-					case RelativePosition::FROM_BOTTOMRIGHT:
-					case RelativePosition::FROM_RIGHT:
-					case RelativePosition::FROM_TOPRIGHT:
+					case RelativePosition::PositionType::FromBottom:
+					case RelativePosition::PositionType::FromBottomLeft:
+					case RelativePosition::PositionType::FromBottomRight:
+					case RelativePosition::PositionType::FromRight:
+					case RelativePosition::PositionType::FromTopRight:
 						usePosition = false;
 						/*if (control->relativePosition->relativePosition.x != -1 && control->rect.size.width + control->relativePosition->relativePosition.x > maxOtherWidth)
 							maxOtherWidth = control->rect.size.width + control->relativePosition->relativePosition.x;
@@ -114,27 +121,27 @@ void DialogTemplate::DialogGroup::CalculateSize()
 	this->rect.size.height = (maxY - this->rect.position.y) + maxOtherHeight + 7;
 }
 
-uint16_t DialogTemplate::DialogGroup::GetControlCount() const
+std::uint16_t DialogTemplate::DialogGroup::GetControlCount() const
 {
-	uint16_t count = 1;
+	std::uint16_t count = 1;
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control) { count += control->GetControlCount(); });
 	return count;
 }
 
-std::vector<uint8_t> DialogTemplate::DialogGroup::GenerateControlTemplate() const
+std::vector<std::uint8_t> DialogTemplate::DialogGroup::GenerateControlTemplate() const
 {
-	auto data = std::vector<uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t) * (this->groupName.length() + 1)), 0);
+	auto data = std::vector<std::uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t) * (this->groupName.length() + 1)), 0);
 
-	*reinterpret_cast<uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | BS_GROUPBOX | this->style;
-	*reinterpret_cast<uint32_t *>(&data[4]) = this->exstyle;
-	*reinterpret_cast<uint16_t *>(&data[8]) = this->rect.position.x;
-	*reinterpret_cast<uint16_t *>(&data[10]) = this->rect.position.y;
-	*reinterpret_cast<uint16_t *>(&data[12]) = this->rect.size.width;
-	*reinterpret_cast<uint16_t *>(&data[14]) = this->rect.size.height;
-	*reinterpret_cast<uint16_t *>(&data[16]) = static_cast<uint16_t>(this->id);
-	*reinterpret_cast<uint16_t *>(&data[18]) = 0xFFFF;
-	*reinterpret_cast<uint16_t *>(&data[20]) = 0x0080;
-	std::copy_n(this->groupName.c_str(), this->groupName.length(), reinterpret_cast<wchar_t *>(&data[22]));
+	*reinterpret_cast<std::uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | BS_GROUPBOX | this->style;
+	*reinterpret_cast<std::uint32_t *>(&data[4]) = this->exstyle;
+	*reinterpret_cast<std::uint16_t *>(&data[8]) = this->rect.position.x;
+	*reinterpret_cast<std::uint16_t *>(&data[10]) = this->rect.position.y;
+	*reinterpret_cast<std::uint16_t *>(&data[12]) = this->rect.size.width;
+	*reinterpret_cast<std::uint16_t *>(&data[14]) = this->rect.size.height;
+	*reinterpret_cast<std::uint16_t *>(&data[16]) = static_cast<std::uint16_t>(this->id);
+	*reinterpret_cast<std::uint16_t *>(&data[18]) = 0xFFFF;
+	*reinterpret_cast<std::uint16_t *>(&data[20]) = 0x0080;
+	CopyToString(this->groupName, reinterpret_cast<wchar_t *>(&data[22]));
 
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)
 	{
@@ -145,44 +152,44 @@ std::vector<uint8_t> DialogTemplate::DialogGroup::GenerateControlTemplate() cons
 	return data;
 }
 
-std::vector<uint8_t> DialogTemplate::DialogControlWithoutLabel::GenerateControlTemplate() const
+std::vector<std::uint8_t> DialogTemplate::DialogControlWithoutLabel::GenerateControlTemplate() const
 {
-	auto data = std::vector<uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t)), 0);
+	auto data = std::vector<std::uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t)), 0);
 
-	*reinterpret_cast<uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | this->style;
-	*reinterpret_cast<uint32_t *>(&data[4]) = this->exstyle;
-	*reinterpret_cast<uint16_t *>(&data[8]) = this->rect.position.x;
-	*reinterpret_cast<uint16_t *>(&data[10]) = this->rect.position.y;
-	*reinterpret_cast<uint16_t *>(&data[12]) = this->rect.size.width;
-	*reinterpret_cast<uint16_t *>(&data[14]) = this->rect.size.height;
-	*reinterpret_cast<uint16_t *>(&data[16]) = static_cast<uint16_t>(this->id);
-	*reinterpret_cast<uint16_t *>(&data[18]) = 0xFFFF;
-	*reinterpret_cast<uint16_t *>(&data[20]) = this->type;
+	*reinterpret_cast<std::uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | this->style;
+	*reinterpret_cast<std::uint32_t *>(&data[4]) = this->exstyle;
+	*reinterpret_cast<std::uint16_t *>(&data[8]) = this->rect.position.x;
+	*reinterpret_cast<std::uint16_t *>(&data[10]) = this->rect.position.y;
+	*reinterpret_cast<std::uint16_t *>(&data[12]) = this->rect.size.width;
+	*reinterpret_cast<std::uint16_t *>(&data[14]) = this->rect.size.height;
+	*reinterpret_cast<std::uint16_t *>(&data[16]) = static_cast<uint16_t>(this->id);
+	*reinterpret_cast<std::uint16_t *>(&data[18]) = 0xFFFF;
+	*reinterpret_cast<std::uint16_t *>(&data[20]) = this->type;
 
 	return data;
 }
 
-std::vector<uint8_t> DialogTemplate::DialogControlWithLabel::GenerateControlTemplate() const
+std::vector<std::uint8_t> DialogTemplate::DialogControlWithLabel::GenerateControlTemplate() const
 {
-	auto data = std::vector<uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t) * (this->label.length() + 1)), 0);
+	auto data = std::vector<std::uint8_t>(getNextMultipleOf4(24 + sizeof(wchar_t) * (this->label.length() + 1)), 0);
 
-	*reinterpret_cast<uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | this->style;
-	*reinterpret_cast<uint32_t *>(&data[4]) = this->exstyle;
-	*reinterpret_cast<uint16_t *>(&data[8]) = this->rect.position.x;
-	*reinterpret_cast<uint16_t *>(&data[10]) = this->rect.position.y;
-	*reinterpret_cast<uint16_t *>(&data[12]) = this->rect.size.width;
-	*reinterpret_cast<uint16_t *>(&data[14]) = this->rect.size.height;
-	*reinterpret_cast<uint16_t *>(&data[16]) = static_cast<uint16_t>(this->id);
-	*reinterpret_cast<uint16_t *>(&data[18]) = 0xFFFF;
-	*reinterpret_cast<uint16_t *>(&data[20]) = this->type;
-	std::copy_n(this->label.c_str(), this->label.length(), reinterpret_cast<wchar_t *>(&data[22]));
+	*reinterpret_cast<std::uint32_t *>(&data[0]) = WS_CHILD | WS_VISIBLE | this->style;
+	*reinterpret_cast<std::uint32_t *>(&data[4]) = this->exstyle;
+	*reinterpret_cast<std::uint16_t *>(&data[8]) = this->rect.position.x;
+	*reinterpret_cast<std::uint16_t *>(&data[10]) = this->rect.position.y;
+	*reinterpret_cast<std::uint16_t *>(&data[12]) = this->rect.size.width;
+	*reinterpret_cast<std::uint16_t *>(&data[14]) = this->rect.size.height;
+	*reinterpret_cast<std::uint16_t *>(&data[16]) = static_cast<std::uint16_t>(this->id);
+	*reinterpret_cast<std::uint16_t *>(&data[18]) = 0xFFFF;
+	*reinterpret_cast<std::uint16_t *>(&data[20]) = this->type;
+	CopyToString(this->label, reinterpret_cast<wchar_t *>(&data[22]));
 
 	return data;
 }
 
-uint16_t DialogTemplate::GetTotalControlCount() const
+std::uint16_t DialogTemplate::GetTotalControlCount() const
 {
-	uint16_t count = 0;
+	std::uint16_t count = 0;
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control) { count += control->GetControlCount(); });
 	return count;
 }
@@ -198,32 +205,32 @@ void DialogTemplate::AddGroupControl(const DialogControlBuilder<DialogGroupBuild
 
 void DialogTemplate::AddEditBoxControl(const DialogControlBuilder<DialogEditBoxBuilder> &builder)
 {
-	this->AddControlToGroup(std::move(DialogEditBox::CreateControl(builder)), builder);
+	this->AddControlToGroup(DialogEditBox::CreateControl(builder), builder);
 }
 
 void DialogTemplate::AddLabelControl(const DialogControlBuilder<DialogLabelBuilder> &builder)
 {
-	this->AddControlToGroup(std::move(DialogLabel::CreateControl(builder)), builder);
+	this->AddControlToGroup(DialogLabel::CreateControl(builder), builder);
 }
 
 void DialogTemplate::AddCheckBoxControl(const DialogControlBuilder<DialogCheckBoxBuilder> &builder)
 {
-	this->AddControlToGroup(std::move(DialogButton::CreateControl(builder)), builder);
+	this->AddControlToGroup(DialogButton::CreateControl(builder), builder);
 }
 
 void DialogTemplate::AddButtonControl(const DialogControlBuilder<DialogButtonBuilder> &builder)
 {
-	this->AddControlToGroup(std::move(DialogButton::CreateControl(builder)), builder);
+	this->AddControlToGroup(DialogButton::CreateControl(builder), builder);
 }
 
 void DialogTemplate::AddListBoxControl(const DialogControlBuilder<DialogListBoxBuilder> &builder)
 {
-	this->AddControlToGroup(std::move(DialogListBox::CreateControl(builder)), builder);
+	this->AddControlToGroup(DialogListBox::CreateControl(builder), builder);
 }
 
 void DialogTemplate::AddComboBoxControl(const DialogControlBuilder<DialogComboBoxBuilder> &builder)
 {
-	this->AddControlToGroup(std::move(DialogComboBox::CreateControl(builder)), builder);
+	this->AddControlToGroup(DialogComboBox::CreateControl(builder), builder);
 }
 
 bool DialogTemplate::CalculateControlPosition(short index, bool doRightAndBottom)
@@ -232,15 +239,15 @@ bool DialogTemplate::CalculateControlPosition(short index, bool doRightAndBottom
 	bool valid = true;
 	if (control->relativePosition)
 	{
-		if (!doRightAndBottom && control->relativePosition->type == RelativePosition::TO_PARENT)
+		if (!doRightAndBottom && control->relativePosition->type == RelativePosition::BaseType::ToParent)
 		{
 			switch (control->relativePosition->positionType)
 			{
-				case RelativePosition::FROM_BOTTOM:
-				case RelativePosition::FROM_BOTTOMLEFT:
-				case RelativePosition::FROM_BOTTOMRIGHT:
-				case RelativePosition::FROM_RIGHT:
-				case RelativePosition::FROM_TOPRIGHT:
+				case RelativePosition::PositionType::FromBottom:
+				case RelativePosition::PositionType::FromBottomLeft:
+				case RelativePosition::PositionType::FromBottomRight:
+				case RelativePosition::PositionType::FromRight:
+				case RelativePosition::PositionType::FromTopRight:
 					valid = false;
 					break;
 				default:
@@ -250,7 +257,7 @@ bool DialogTemplate::CalculateControlPosition(short index, bool doRightAndBottom
 		if (valid)
 		{
 			Rect<short> other = Rect<short>(Point<short>(), this->size);
-			if (control->relativePosition->type == RelativePosition::TO_SIBLING)
+			if (control->relativePosition->type == RelativePosition::BaseType::ToSibling)
 			{
 				short siblingsBack = dynamic_cast<const RelativePositionToSibling *>(control->relativePosition.get())->siblingsBack;
 				if (index - siblingsBack >= 0)
@@ -270,15 +277,15 @@ void DialogTemplate::CalculateSize()
 		bool usePosition = true;
 		if (control->relativePosition)
 		{
-			if (control->relativePosition->type == RelativePosition::TO_PARENT)
+			if (control->relativePosition->type == RelativePosition::BaseType::ToParent)
 			{
 				switch (control->relativePosition->positionType)
 				{
-					case RelativePosition::FROM_BOTTOM:
-					case RelativePosition::FROM_BOTTOMLEFT:
-					case RelativePosition::FROM_BOTTOMRIGHT:
-					case RelativePosition::FROM_RIGHT:
-					case RelativePosition::FROM_TOPRIGHT:
+					case RelativePosition::PositionType::FromBottom:
+					case RelativePosition::PositionType::FromBottomLeft:
+					case RelativePosition::PositionType::FromBottomRight:
+					case RelativePosition::PositionType::FromRight:
+					case RelativePosition::PositionType::FromTopRight:
 						usePosition = false;
 						/*if (control->relativePosition->relativePosition.x != -1 && control->rect.size.width + control->relativePosition->relativePosition.x > maxOtherWidth)
 							maxOtherWidth = control->rect.size.width + control->relativePosition->relativePosition.x;
@@ -310,7 +317,7 @@ void DialogTemplate::AutoSize()
 	{
 		auto &control = this->controls[x];
 		bool valid = this->CalculateControlPosition(x, false);
-		if (valid && control->controlType == GROUP_CONTROL)
+		if (valid && control->controlType == DialogControlType::Group)
 		{
 			dynamic_cast<DialogGroup *>(control.get())->CalculatePositions(false);
 			// Technically step 2, but calculate the size of the group
@@ -323,7 +330,7 @@ void DialogTemplate::AutoSize()
 	for (x = 0; x < num; ++x)
 	{
 		auto &control = this->controls[x];
-		if (control->controlType != GROUP_CONTROL)
+		if (control->controlType != DialogControlType::Group)
 			continue;
 		control->rect.size.width = maxGroupWidth;
 		dynamic_cast<DialogGroup *>(control.get())->CalculatePositions(true);
@@ -338,19 +345,19 @@ void DialogTemplate::AutoSize()
 const DLGTEMPLATE *DialogTemplate::GenerateTemplate()
 {
 	this->templateData.clear();
-	uint16_t controlCount = this->GetTotalControlCount();
+	std::uint16_t controlCount = this->GetTotalControlCount();
 	this->templateData.resize(getNextMultipleOf4(24 + sizeof(wchar_t) * (this->title.length() + 1 + (this->fontName.empty() ? 0 : this->fontName.length() + 1))), 0);
 
-	*reinterpret_cast<uint32_t *>(&this->templateData[0]) = this->style | (this->fontName.empty() ? 0 : DS_SETFONT);
-	*reinterpret_cast<uint32_t *>(&this->templateData[4]) = this->exstyle;
-	*reinterpret_cast<uint16_t *>(&this->templateData[8]) = controlCount;
-	*reinterpret_cast<uint16_t *>(&this->templateData[14]) = this->size.width;
-	*reinterpret_cast<uint16_t *>(&this->templateData[16]) = this->size.height;
-	std::copy_n(this->title.c_str(), this->title.length(), reinterpret_cast<wchar_t *>(&this->templateData[22]));
+	*reinterpret_cast<std::uint32_t *>(&this->templateData[0]) = this->style | (this->fontName.empty() ? 0 : DS_SETFONT);
+	*reinterpret_cast<std::uint32_t *>(&this->templateData[4]) = this->exstyle;
+	*reinterpret_cast<std::uint16_t *>(&this->templateData[8]) = controlCount;
+	*reinterpret_cast<std::uint16_t *>(&this->templateData[14]) = this->size.width;
+	*reinterpret_cast<std::uint16_t *>(&this->templateData[16]) = this->size.height;
+	CopyToString(this->title, reinterpret_cast<wchar_t *>(&this->templateData[22]));
 	if (!this->fontName.empty())
 	{
-		*reinterpret_cast<uint16_t *>(&this->templateData[22 + sizeof(wchar_t) * (this->title.length() + 1)]) = this->fontSizeInPts;
-		std::copy_n(this->fontName.c_str(), this->fontName.length(), reinterpret_cast<wchar_t *>(&this->templateData[24 + sizeof(wchar_t) * (this->title.length() + 1)]));
+		*reinterpret_cast<std::uint16_t *>(&this->templateData[22 + sizeof(wchar_t) * (this->title.length() + 1)]) = this->fontSizeInPts;
+		CopyToString(this->fontName, reinterpret_cast<wchar_t *>(&this->templateData[24 + sizeof(wchar_t) * (this->title.length() + 1)]));
 	}
 
 	std::for_each(this->controls.begin(), this->controls.end(), [&](const std::unique_ptr<DialogControl> &control)

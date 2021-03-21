@@ -11,12 +11,17 @@
  * http://www.snes9x.com/
  */
 
+#include <algorithm>
 #include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
+#include <cstddef>
+#include <cstdint>
 #include <zlib.h>
-#include "convert.h"
-#include "XSFPlayer.h"
-#include "XSFConfig_SNSF.h"
 #include "XSFCommon.h"
+#include "XSFConfig_SNSF.h"
+#include "XSFPlayer.h"
 
 #undef min
 #undef max
@@ -38,7 +43,7 @@ public:
 #endif
 	~XSFPlayer_SNSF() { this->Terminate(); }
 	bool Load();
-	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
+	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples);
 	void Terminate();
 };
 
@@ -61,15 +66,15 @@ XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
 
 static struct
 {
-	std::vector<uint8_t> rom, sram;
+	std::vector<std::uint8_t> rom, sram;
 	bool first;
 	unsigned base;
-} loaderwork = { std::vector<uint8_t>(), std::vector<uint8_t>(), false, 0 };
+} loaderwork = { std::vector<std::uint8_t>(), std::vector<std::uint8_t>(), false, 0 };
 
 class BUFFER
 {
 public:
-	std::vector<uint8_t> buf;
+	std::vector<std::uint8_t> buf;
 	unsigned fil, cur, len;
 	BUFFER() : buf(), fil(0), cur(0), len(0) { }
 	bool Init()
@@ -107,11 +112,11 @@ bool S9xOpenSoundDevice()
 	return true;
 }
 
-static void MapSNSFSection(const std::vector<uint8_t> &section)
+static void MapSNSFSection(const std::vector<std::uint8_t> &section)
 {
 	auto &data = loaderwork.rom;
 
-	uint32_t offset = Get32BitsLE(&section[0]), size = Get32BitsLE(&section[4]), finalSize = size + offset;
+	std::uint32_t offset = Get32BitsLE(&section[0]), size = Get32BitsLE(&section[4]), finalSize = size + offset;
 	if (!loaderwork.first)
 	{
 		loaderwork.first = true;
@@ -136,17 +141,17 @@ static bool MapSNSF(XSFFile *xSF)
 
 	if (!reservedSection.empty())
 	{
-		size_t reservedPosition = 0, reservedSize = reservedSection.size();
+		std::size_t reservedPosition = 0, reservedSize = reservedSection.size();
 		while (reservedPosition + 8 < reservedSize)
 		{
-			uint32_t type = Get32BitsLE(&reservedSection[reservedPosition]), size = Get32BitsLE(&reservedSection[reservedPosition + 4]);
+			std::uint32_t type = Get32BitsLE(&reservedSection[reservedPosition]), size = Get32BitsLE(&reservedSection[reservedPosition + 4]);
 			if (!type)
 			{
 				if (loaderwork.sram.empty())
 					loaderwork.sram.resize(0x20000, 0xFF);
 				if (reservedPosition + 8 + size > reservedSize)
 					return false;
-				uint32_t offset = Get32BitsLE(&reservedSection[reservedPosition + 8]);
+				std::uint32_t offset = Get32BitsLE(&reservedSection[reservedPosition + 8]);
 				if (size > 4 && loaderwork.sram.size() > offset)
 				{
 					auto len = std::min(size - 4, loaderwork.sram.size() - offset);
@@ -264,7 +269,7 @@ bool XSFPlayer_SNSF::Load()
 	return XSFPlayer::Load();
 }
 
-void XSFPlayer_SNSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples)
+void XSFPlayer_SNSF::GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples)
 {
 	unsigned bytes = samples << 2;
 	while (bytes)

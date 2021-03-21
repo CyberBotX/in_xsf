@@ -5,13 +5,12 @@
 
 #pragma once
 
-#include <string>
-#include <sstream>
 #include <locale>
-#include <vector>
-#include <memory>
+#include <string>
 #include <type_traits>
+#include <vector>
 #include <cmath>
+#include <cstddef>
 #include "windowsh_wrapper.h"
 
 /*
@@ -62,10 +61,10 @@ private:
 	template<typename T> static bool IsDigitsOnly(const std::basic_string<T> &input, const std::locale &loc = std::locale::classic())
 	{
 		auto inputChars = std::vector<T>(input.begin(), input.end());
-		size_t length = inputChars.size();
+		std::size_t length = inputChars.size();
 		auto masks = std::vector<typename std::ctype<T>::mask>(length);
 		std::use_facet<std::ctype<T>>(loc).is(&inputChars[0], &inputChars[length], &masks[0]);
-		for (size_t x = 0; x < length; ++x)
+		for (std::size_t x = 0; x < length; ++x)
 			if (inputChars[x] != '.' && !(masks[x] & std::ctype<T>::digit))
 				return false;
 		return true;
@@ -77,10 +76,10 @@ public:
 		unsigned long hours = 0, minutes = 0;
 		double seconds = 0.0;
 		std::string hoursStr, minutesStr, secondsStr;
-		size_t firstcolon = time.find(':');
+		std::size_t firstcolon = time.find(':');
 		if (firstcolon != std::string::npos)
 		{
-			size_t secondcolon = time.substr(firstcolon + 1).find(':');
+			std::size_t secondcolon = time.substr(firstcolon + 1).find(':');
 			if (secondcolon != std::string::npos)
 			{
 				secondcolon = firstcolon + secondcolon + 1;
@@ -112,7 +111,7 @@ public:
 		{
 			if (!ConvertFuncs::IsDigitsOnly(secondsStr))
 				return 0;
-			size_t comma = secondsStr.find(',');
+			std::size_t comma = secondsStr.find(',');
 			if (comma != std::string::npos)
 				secondsStr[comma] = '.';
 			seconds = convertTo<double>(secondsStr);

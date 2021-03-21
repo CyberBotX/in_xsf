@@ -7,54 +7,57 @@
 
 #pragma once
 
+#include <fstream>
+#include <string>
+#include <vector>
 #include <cstdint>
 #include "convert.h"
 #include "TagList.h"
 
-enum VolumeType
+enum class VolumeType
 {
-	VOLUMETYPE_NONE,
-	VOLUMETYPE_VOLUME,
-	VOLUMETYPE_REPLAYGAIN_TRACK,
-	VOLUMETYPE_REPLAYGAIN_ALBUM
+	None,
+	Volume,
+	ReplayGainTrack,
+	ReplayGainAlbum
 };
 
-enum PeakType
+enum class PeakType
 {
-	PEAKTYPE_NONE,
-	PEAKTYPE_REPLAYGAIN_TRACK,
-	PEAKTYPE_REPLAYGAIN_ALBUM
+	None,
+	ReplayGainTrack,
+	ReplayGainAlbum
 };
 
 class XSFFile
 {
 protected:
-	uint8_t xSFType;
+	std::uint8_t xSFType;
 	bool hasFile;
-	std::vector<uint8_t> rawData, reservedSection, programSection;
+	std::vector<std::uint8_t> rawData, reservedSection, programSection;
 	TagList tags;
 	std::string fileName;
-	void ReadXSF(const std::string &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly = false);
+	void ReadXSF(const std::string &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
 #ifdef _WIN32
-	void ReadXSF(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly = false);
+	void ReadXSF(const std::wstring &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
 #endif
-	void ReadXSF(std::ifstream &xSF, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly = false);
+	void ReadXSF(std::ifstream &xSF, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
 	std::string FormattedTitleOptionalBlock(const std::string &block, bool &hadReplacement, unsigned level) const;
 public:
 	XSFFile();
 	XSFFile(const std::string &filename);
-	XSFFile(const std::string &filename, uint32_t programSizeOffset, uint32_t programHeaderSize);
+	XSFFile(const std::string &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize);
 #ifdef _WIN32
 	XSFFile(const std::wstring &filename);
-	XSFFile(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize);
+	XSFFile(const std::wstring &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize);
 #endif
-	bool IsValidType(uint8_t type) const;
+	bool IsValidType(std::uint8_t type) const;
 	void Clear();
 	bool HasFile() const;
-	std::vector<uint8_t> &GetReservedSection();
-	std::vector<uint8_t> GetReservedSection() const;
-	std::vector<uint8_t> &GetProgramSection();
-	std::vector<uint8_t> GetProgramSection() const;
+	std::vector<std::uint8_t> &GetReservedSection();
+	std::vector<std::uint8_t> GetReservedSection() const;
+	std::vector<std::uint8_t> &GetProgramSection();
+	std::vector<std::uint8_t> GetProgramSection() const;
 	const TagList &GetAllTags() const;
 	void SetAllTags(const TagList &newTags);
 	void SetTag(const std::string &name, const std::string &value);

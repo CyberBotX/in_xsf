@@ -9,15 +9,17 @@
 #pragma once
 
 #include <map>
-#include "common.h"
+#include <cstdint>
+
+struct PseudoFile;
 
 struct SYMBRecord
 {
-	std::map<uint32_t, std::string> entries;
+	std::map<std::uint32_t, std::string> entries;
 
 	SYMBRecord();
 
-	void Read(PseudoFile &file, uint32_t startOffset);
+	void Read(PseudoFile &file, std::uint32_t startOffset);
 };
 
 struct SYMBSection

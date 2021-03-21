@@ -10,12 +10,16 @@
  * http://vba-m.com/
  */
 
+#include <algorithm>
 #include <filesystem>
 #include <memory>
+#include <string>
+#include <vector>
+#include <cstddef>
+#include <cstdint>
 #include <zlib.h>
-#include "convert.h"
-#include "XSFPlayer.h"
 #include "XSFCommon.h"
+#include "XSFPlayer.h"
 #include "vbam/gba/Globals.h"
 #include "vbam/gba/Sound.h"
 #include "vbam/common/SoundDriver.h"
@@ -29,7 +33,7 @@ public:
 #endif
 	~XSFPlayer_GSF() { this->Terminate(); }
 	bool Load();
-	void GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples);
+	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples);
 	void Terminate();
 };
 
@@ -50,13 +54,13 @@ XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
 
 static struct
 {
-	std::vector<uint8_t> rom;
+	std::vector<std::uint8_t> rom;
 	unsigned entry;
-} loaderwork = { std::vector<uint8_t>(), 0 };
+} loaderwork = { std::vector<std::uint8_t>(), 0 };
 
-int mapgsf(uint8_t *d, int l, int &s)
+int mapgsf(std::uint8_t *d, int l, int &s)
 {
-	if (static_cast<size_t>(l) > loaderwork.rom.size())
+	if (static_cast<std::size_t>(l) > loaderwork.rom.size())
 		l = loaderwork.rom.size();
 	if (l)
 		std::copy_n(&loaderwork.rom[0], l, d);
@@ -66,9 +70,9 @@ int mapgsf(uint8_t *d, int l, int &s)
 
 static struct
 {
-	std::vector<uint8_t> buf;
-	uint32_t len, fil, cur;
-} buffer = { std::vector<uint8_t>(), 0, 0, 0 };
+	std::vector<std::uint8_t> buf;
+	std::uint32_t len, fil, cur;
+} buffer = { std::vector<std::uint8_t>(), 0, 0, 0 };
 
 class GSFSoundDriver : public SoundDriver
 {
@@ -81,7 +85,7 @@ public:
 	bool init(long sampleRate)
 	{
 		freebuffer();
-		uint32_t len = (sampleRate / 10) << 2;
+		std::int32_t len = (sampleRate / 10) << 2;
 		buffer.buf.resize(len);
 		buffer.len = len;
 		return true;
@@ -99,13 +103,13 @@ public:
 	{
 	}
 
-	void write(uint16_t *finalWave, int length)
+	void write(std::uint16_t *finalWave, int length)
 	{
-		if (static_cast<uint32_t>(length) > buffer.len - buffer.fil)
+		if (static_cast<std::uint32_t>(length) > buffer.len - buffer.fil)
 			length = buffer.len - buffer.fil;
 		if (length > 0)
 		{
-			std::copy_n(reinterpret_cast<uint8_t *>(finalWave), length, &buffer.buf[buffer.fil]);
+			std::copy_n(reinterpret_cast<std::uint8_t *>(finalWave), length, &buffer.buf[buffer.fil]);
 			buffer.fil += length;
 		}
 	}
@@ -120,11 +124,11 @@ SoundDriver *systemSoundInit()
 	return new GSFSoundDriver();
 }
 
-static void MapGSFSection(const std::vector<uint8_t> &section, int level)
+static void MapGSFSection(const std::vector<std::uint8_t> &section, int level)
 {
 	auto &data = loaderwork.rom;
 
-	uint32_t entry = Get32BitsLE(&section[0]), offset = Get32BitsLE(&section[4]) & 0x1FFFFFF, size = Get32BitsLE(&section[8]), finalSize = size + offset;
+	std::uint32_t entry = Get32BitsLE(&section[0]), offset = Get32BitsLE(&section[4]) & 0x1FFFFFF, size = Get32BitsLE(&section[8]), finalSize = size + offset;
 	if (level == 1)
 		loaderwork.entry = entry;
 	finalSize = NextHighestPowerOf2(finalSize);
@@ -226,7 +230,7 @@ bool XSFPlayer_GSF::Load()
 	return XSFPlayer::Load();
 }
 
-void XSFPlayer_GSF::GenerateSamples(std::vector<uint8_t> &buf, unsigned offset, unsigned samples)
+void XSFPlayer_GSF::GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples)
 {
 	unsigned bytes = samples << 2;
 	while (bytes)

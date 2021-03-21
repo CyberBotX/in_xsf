@@ -6,7 +6,11 @@
  * http://www.feshrine.net/hacking/doc/nds-sdat.html
  */
 
+#include <vector>
+#include <cstddef>
+#include <cstdint>
 #include "SWAV.h"
+#include "common.h"
 
 static int ima_index_table[] =
 {
@@ -31,9 +35,9 @@ SWAV::SWAV() : waveType(0), loop(0), sampleRate(0), time(0), loopOffset(0), nonL
 {
 }
 
-static inline void DecodeADPCMNibble(int32_t nibble, int32_t &stepIndex, int32_t &predictedValue)
+static inline void DecodeADPCMNibble(std::int32_t nibble, std::int32_t &stepIndex, std::int32_t &predictedValue)
 {
-	int32_t step = ima_step_table[stepIndex];
+	std::int32_t step = ima_step_table[stepIndex];
 
 	stepIndex += ima_index_table[nibble];
 
@@ -42,7 +46,7 @@ static inline void DecodeADPCMNibble(int32_t nibble, int32_t &stepIndex, int32_t
 	else if (stepIndex > 88)
 		stepIndex = 88;
 
-	int32_t diff = step >> 3;
+	std::int32_t diff = step >> 3;
 
 	if (nibble & 4)
 		diff += step;
@@ -61,15 +65,15 @@ static inline void DecodeADPCMNibble(int32_t nibble, int32_t &stepIndex, int32_t
 		predictedValue = 0x7FFF;
 }
 
-void SWAV::DecodeADPCM(const uint8_t *origData, uint32_t len)
+void SWAV::DecodeADPCM(const std::uint8_t *origData, std::uint32_t len)
 {
-	int32_t predictedValue = origData[0] | (origData[1] << 8);
-	int32_t stepIndex = origData[2] | (origData[3] << 8);
+	std::int32_t predictedValue = origData[0] | (origData[1] << 8);
+	std::int32_t stepIndex = origData[2] | (origData[3] << 8);
 	auto finalData = &this->data[0];
 
-	for (uint32_t i = 0; i < len; ++i)
+	for (std::uint32_t i = 0; i < len; ++i)
 	{
-		int32_t nibble = origData[i + 4] & 0x0F;
+		std::int32_t nibble = origData[i + 4] & 0x0F;
 		DecodeADPCMNibble(nibble, stepIndex, predictedValue);
 		finalData[2 * i] = predictedValue;
 
@@ -81,14 +85,14 @@ void SWAV::DecodeADPCM(const uint8_t *origData, uint32_t len)
 
 void SWAV::Read(PseudoFile &file)
 {
-	this->waveType = file.ReadLE<uint8_t>();
-	this->loop = file.ReadLE<uint8_t>();
-	this->sampleRate = file.ReadLE<uint16_t>();
-	this->time = file.ReadLE<uint16_t>();
-	this->loopOffset = file.ReadLE<uint16_t>();
-	this->nonLoopLength = file.ReadLE<uint32_t>();
-	uint32_t size = (this->loopOffset + this->nonLoopLength) * 4;
-	auto origData = std::vector<uint8_t>(size);
+	this->waveType = file.ReadLE<std::uint8_t>();
+	this->loop = file.ReadLE<std::uint8_t>();
+	this->sampleRate = file.ReadLE<std::uint16_t>();
+	this->time = file.ReadLE<std::uint16_t>();
+	this->loopOffset = file.ReadLE<std::uint16_t>();
+	this->nonLoopLength = file.ReadLE<std::uint32_t>();
+	std::uint32_t size = (this->loopOffset + this->nonLoopLength) * 4;
+	auto origData = std::vector<std::uint8_t>(size);
 	file.ReadLE(origData);
 
 	// Convert data accordingly
@@ -96,7 +100,7 @@ void SWAV::Read(PseudoFile &file)
 	{
 		// PCM 8-bit -> PCM signed 16-bit
 		this->data.resize(size, 0);
-		for (size_t i = 0; i < size; ++i)
+		for (std::size_t i = 0; i < size; ++i)
 			this->data[i] = origData[i] << 8;
 		this->loopOffset *= 4;
 		this->nonLoopLength *= 4;
@@ -105,8 +109,8 @@ void SWAV::Read(PseudoFile &file)
 	{
 		// PCM signed 16-bit, no conversion
 		this->data.resize(size / 2, 0);
-		for (size_t i = 0; i < size / 2; ++i)
-			this->data[i] = ReadLE<int16_t>(&origData[2 * i]);
+		for (std::size_t i = 0; i < size / 2; ++i)
+			this->data[i] = ReadLE<std::int16_t>(&origData[2 * i]);
 		this->loopOffset *= 2;
 		this->nonLoopLength *= 2;
 	}

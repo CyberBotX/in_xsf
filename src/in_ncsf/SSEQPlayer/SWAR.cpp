@@ -7,9 +7,13 @@
  */
 
 #include <stdexcept>
+#include <string>
 #include <vector>
-#include "SWAR.h"
+#include <cstdint>
 #include "NDSStdHeader.h"
+#include "SWAR.h"
+#include "SWAV.h"
+#include "common.h"
 
 SWAR::SWAR(const std::string &fn) : filename(fn), swavs(), info()
 {
@@ -17,21 +21,21 @@ SWAR::SWAR(const std::string &fn) : filename(fn), swavs(), info()
 
 void SWAR::Read(PseudoFile &file)
 {
-	uint32_t startOfSWAR = file.pos;
+	std::uint32_t startOfSWAR = file.pos;
 	NDSStdHeader header;
 	header.Read(file);
 	header.Verify("SWAR", 0x0100FEFF);
-	int8_t type[4];
+	std::int8_t type[4];
 	file.ReadLE(type);
 	if (!VerifyHeader(type, "DATA"))
 		throw std::runtime_error("SWAR DATA structure invalid");
-	file.ReadLE<uint32_t>(); // size
-	uint32_t reserved[8];
+	file.ReadLE<std::uint32_t>(); // size
+	std::uint32_t reserved[8];
 	file.ReadLE(reserved);
-	uint32_t count = file.ReadLE<uint32_t>();
-	auto offsets = std::vector<uint32_t>(count);
+	std::uint32_t count = file.ReadLE<std::uint32_t>();
+	auto offsets = std::vector<std::uint32_t>(count);
 	file.ReadLE(offsets);
-	for (uint32_t i = 0; i < count; ++i)
+	for (std::uint32_t i = 0; i < count; ++i)
 		if (offsets[i])
 		{
 			file.pos = startOfSWAR + offsets[i];

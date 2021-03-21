@@ -8,18 +8,20 @@
 
 #include <stdexcept>
 #include <vector>
+#include <cstdint>
 #include "SYMBSection.h"
+#include "common.h"
 
 SYMBRecord::SYMBRecord() : entries()
 {
 }
 
-void SYMBRecord::Read(PseudoFile &file, uint32_t startOffset)
+void SYMBRecord::Read(PseudoFile &file, std::uint32_t startOffset)
 {
-	uint32_t count = file.ReadLE<uint32_t>();
-	auto entryOffsets = std::vector<uint32_t>(count);
+	std::uint32_t count = file.ReadLE<uint32_t>();
+	auto entryOffsets = std::vector<std::uint32_t>(count);
 	file.ReadLE(entryOffsets);
-	for (uint32_t i = 0; i < count; ++i)
+	for (std::uint32_t i = 0; i < count; ++i)
 		if (entryOffsets[i])
 		{
 			file.pos = startOffset + entryOffsets[i];
@@ -33,13 +35,13 @@ SYMBSection::SYMBSection() : SEQrecord(), BANKrecord(), WAVEARCrecord(), PLAYERr
 
 void SYMBSection::Read(PseudoFile &file)
 {
-	uint32_t startOfSYMB = file.pos;
-	int8_t type[4];
+	std::uint32_t startOfSYMB = file.pos;
+	std::int8_t type[4];
 	file.ReadLE(type);
 	if (!VerifyHeader(type, "SYMB"))
 		throw std::runtime_error("SDAT SYMB Section invalid");
-	file.ReadLE<uint32_t>(); // size
-	uint32_t recordOffsets[8];
+	file.ReadLE<std::uint32_t>(); // size
+	std::uint32_t recordOffsets[8];
 	file.ReadLE(recordOffsets);
 	if (recordOffsets[REC_SEQ])
 	{
