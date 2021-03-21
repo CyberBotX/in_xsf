@@ -11,6 +11,7 @@
  * http://www.snes9x.com/
  */
 
+#include <filesystem>
 #include <zlib.h>
 #include "convert.h"
 #include "XSFPlayer.h"
@@ -167,9 +168,9 @@ static bool RecursiveLoadSNSF(XSFFile *xSF, int level)
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
 #ifdef _WIN32
-		auto libxSF = std::make_unique<XSFFile>(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib")), 4, 8);
+		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).wstring(), 4, 8);
 #else
-		auto libxSF = std::make_unique<XSFFile>(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib"), 4, 8);
+		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).string(), 4, 8);
 #endif
 		if (!RecursiveLoadSNSF(libxSF.get(), level + 1))
 			return false;
@@ -188,9 +189,9 @@ static bool RecursiveLoadSNSF(XSFFile *xSF, int level)
 		{
 			found = true;
 #ifdef _WIN32
-			auto libxSF = std::make_unique<XSFFile>(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag)), 4, 8);
+			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).wstring(), 4, 8);
 #else
-			auto libxSF = std::make_unique<XSFFile>(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag), 4, 8);
+			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).string(), 4, 8);
 #endif
 			if (!RecursiveLoadSNSF(libxSF.get(), level + 1))
 				return false;

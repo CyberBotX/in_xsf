@@ -10,6 +10,7 @@
  * http://vba-m.com/
  */
 
+#include <filesystem>
 #include <memory>
 #include <zlib.h>
 #include "convert.h"
@@ -152,9 +153,9 @@ static bool RecursiveLoadGSF(XSFFile *xSF, int level)
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
 #ifdef _WIN32
-		auto libxSF = std::make_unique<XSFFile>(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib")), 8, 12);
+		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).wstring(), 8, 12);
 #else
-		auto libxSF = std::make_unique<XSFFile>(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue("_lib"), 8, 12);
+		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).string(), 8, 12);
 #endif
 		if (!RecursiveLoadGSF(libxSF.get(), level + 1))
 			return false;
@@ -173,9 +174,9 @@ static bool RecursiveLoadGSF(XSFFile *xSF, int level)
 		{
 			found = true;
 #ifdef _WIN32
-			auto libxSF = std::make_unique<XSFFile>(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag)), 8, 12);
+			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).wstring(), 8, 12);
 #else
-			auto libxSF = std::make_unique<XSFFile>(ExtractDirectoryFromPath(xSF->GetFilename()) + xSF->GetTagValue(libTag), 8, 12);
+			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).string(), 8, 12);
 #endif
 			if (!RecursiveLoadGSF(libxSF.get(), level + 1))
 				return false;

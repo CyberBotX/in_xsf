@@ -9,9 +9,6 @@
 
 #include <limits>
 #include <fstream>
-#if defined(_WIN32) && !defined(_MSC_VER)
-# include "fstream_wfopen.h"
-#endif
 #include <string>
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -40,24 +37,6 @@ inline uint32_t Get32BitsLE(std::ifstream &input)
 	return Get32BitsLE(bytes);
 }
 
-// This gets the directory for the path, including the final forward/backward slash
-template<typename T> inline std::basic_string<T> ExtractDirectoryFromPath(const std::basic_string<T> &fullPath)
-{
-	auto lastSlash = fullPath.rfind('\\');
-	if (lastSlash == std::basic_string<T>::npos)
-		lastSlash = fullPath.rfind('/');
-	return lastSlash != std::basic_string<T>::npos ? fullPath.substr(0, lastSlash + 1) : std::basic_string<T>();
-}
-
-// This gets the filename for the path
-template<typename T> inline std::basic_string<T> ExtractFilenameFromPath(const std::basic_string<T> &fullPath)
-{
-	auto lastSlash = fullPath.rfind('\\');
-	if (lastSlash == std::basic_string<T>::npos)
-		lastSlash = fullPath.rfind('/');
-	return lastSlash != std::basic_string<T>::npos ? fullPath.substr(lastSlash + 1) : std::basic_string<T>();
-}
-
 // Code from the following answer on Stack Overflow:
 // http://stackoverflow.com/a/15479212
 template<typename T> inline T NextHighestPowerOf2(T value)
@@ -78,24 +57,6 @@ template<typename T1, typename T2> inline void clamp(T1 &valueToClamp, const T2 
 	else if (valueToClamp > maxValue)
 		valueToClamp = maxValue;
 }
-
-inline bool FileExists(const std::string &filename)
-{
-	std::ifstream file(filename.c_str());
-	return !!file;
-}
-
-#ifdef _WIN32
-inline bool FileExists(const std::wstring &filename)
-{
-#ifdef _MSC_VER
-	std::ifstream file(filename.c_str());
-#else
-	ifstream_wfopen file(filename.c_str());
-#endif
-	return !!file;
-}
-#endif
 
 inline void CopyToString(const std::wstring &src, wchar_t *dst)
 {

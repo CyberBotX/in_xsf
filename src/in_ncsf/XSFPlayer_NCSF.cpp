@@ -8,6 +8,7 @@
  * https://github.com/fincs/FSS
  */
 
+#include <filesystem>
 #include <memory>
 #include <cstdlib>
 #include <ctime>
@@ -67,9 +68,9 @@ bool XSFPlayer_NCSF::RecursiveLoadNCSF(XSFFile *xSFToLoad, int level)
 	if (level <= 10 && xSFToLoad->GetTagExists("_lib"))
 	{
 #ifdef _WIN32
-		auto libxSF = std::make_unique<XSFFile>(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSFToLoad->GetFilename()) + xSFToLoad->GetTagValue("_lib")), 8, 12);
+		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue("_lib")).wstring(), 8, 12);
 #else
-		auto libxSF = std::make_unique<XSFFile>(ExtractDirectoryFromPath(xSFToLoad->GetFilename()) + xSFToLoad->GetTagValue("_lib"), 8, 12);
+		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue("_lib")).string(), 8, 12);
 #endif
 		if (!this->RecursiveLoadNCSF(libxSF.get(), level + 1))
 			return false;
@@ -88,9 +89,9 @@ bool XSFPlayer_NCSF::RecursiveLoadNCSF(XSFFile *xSFToLoad, int level)
 		{
 			found = true;
 #ifdef _WIN32
-			auto libxSF = std::make_unique<XSFFile>(ConvertFuncs::StringToWString(ExtractDirectoryFromPath(xSFToLoad->GetFilename()) + xSFToLoad->GetTagValue(libTag)), 8, 12);
+			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue(libTag)).wstring(), 8, 12);
 #else
-			auto libxSF = std::make_unique<XSFFile>(ExtractDirectoryFromPath(xSFToLoad->GetFilename()) + xSFToLoad->GetTagValue(libTag), 8, 12);
+			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue(libTag)).string(), 8, 12);
 #endif
 			if (!this->RecursiveLoadNCSF(libxSF.get(), level + 1))
 				return false;

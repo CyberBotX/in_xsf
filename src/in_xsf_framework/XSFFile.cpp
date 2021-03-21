@@ -6,8 +6,12 @@
  */
 
 #include <algorithm>
+#include <filesystem>
 #include <functional>
 #include <stdexcept>
+#if defined(_WIN32) && !defined(_MSC_VER)
+# include "fstream_wfopen.h"
+#endif
 #include "zlib.h"
 #include "XSFFile.h"
 #include "XSFCommon.h"
@@ -80,7 +84,7 @@ XSFFile::XSFFile(const std::wstring &filename, uint32_t programSizeOffset, uint3
 
 void XSFFile::ReadXSF(const std::string &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly)
 {
-	if (!FileExists(filename))
+	if (!std::filesystem::is_regular_file(filename))
 		throw std::logic_error("File " + filename + " does not exist.");
 
 	std::ifstream xSF;
@@ -95,7 +99,7 @@ void XSFFile::ReadXSF(const std::string &filename, uint32_t programSizeOffset, u
 #ifdef _WIN32
 void XSFFile::ReadXSF(const std::wstring &filename, uint32_t programSizeOffset, uint32_t programHeaderSize, bool readTagsOnly)
 {
-	if (!FileExists(filename))
+	if (!std::filesystem::is_regular_file(filename))
 		throw std::logic_error("File " + ConvertFuncs::WStringToString(filename) + " does not exist.");
 
 #if defined(_WIN32) && !defined(_MSC_VER)
@@ -460,7 +464,7 @@ std::string XSFFile::GetFilename() const
 
 std::string XSFFile::GetFilenameWithoutPath() const
 {
-	return ExtractFilenameFromPath(this->fileName);
+	return std::filesystem::path(this->fileName).filename().string();
 }
 
 void XSFFile::SaveFile() const
