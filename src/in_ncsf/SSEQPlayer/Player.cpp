@@ -105,14 +105,17 @@ int Player::ChannelAlloc(ChannelAllocateType type, int priority)
 		int thisChnNo = chnArray[i];
 		if (!this->allowedChannels[thisChnNo])
 			continue;
-		Channel &thisChn = this->channels[thisChnNo];
-		Channel &curChn = this->channels[curChnNo];
-		if (curChnNo != -1 && thisChn.prio >= curChn.prio)
+		if (curChnNo != -1)
 		{
-			if (thisChn.prio != curChn.prio)
-				continue;
-			if (curChn.vol <= thisChn.vol)
-				continue;
+			Channel &thisChn = this->channels[thisChnNo];
+			Channel &curChn = this->channels[curChnNo];
+			if (curChnNo != -1 && thisChn.prio >= curChn.prio)
+			{
+				if (thisChn.prio != curChn.prio)
+					continue;
+				if (curChn.vol <= thisChn.vol)
+					continue;
+			}
 		}
 		curChnNo = thisChnNo;
 	}
