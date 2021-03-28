@@ -138,9 +138,6 @@
     <ClCompile Include="desmume/utils/AsmJit/base/operand.cpp">
       <Filter>Source Files\desmume\utils\AsmJit\base</Filter>
     </ClCompile>
-    <ClCompile Include="desmume/readwrite.cpp">
-      <Filter>Source Files\desmume\utils\AsmJit\base</Filter>
-    </ClCompile>
     <ClCompile Include="desmume/utils/AsmJit/base/runtime.cpp">
       <Filter>Source Files\desmume\utils\AsmJit\base</Filter>
     </ClCompile>
@@ -203,6 +200,9 @@
     </ClCompile>
     <ClCompile Include="spu\sampledata.cpp">
       <Filter>Source Files\spu</Filter>
+    </ClCompile>
+    <ClCompile Include="desmume/readwrite.cpp">
+      <Filter>Source Files\desmume</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -406,5 +406,8 @@
     <None Include="desmume\thumb_tabdef.inc">
       <Filter>Header Files\desmume</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>
