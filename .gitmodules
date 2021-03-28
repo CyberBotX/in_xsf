@@ -1,3 +1,6 @@
 [submodule "src/in_xsf_framework/zlib"]
 	path = src/in_xsf_framework/zlib
 	url = https://github.com/madler/zlib
+[submodule "src/in_xsf_framework/wxWidgets"]
+	path = src/in_xsf_framework/wxWidgets
+	url = https://github.com/wxWidgets/wxWidgets
