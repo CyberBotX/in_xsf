@@ -106,11 +106,11 @@ template<std::size_t N> struct RingBuffer
 
 	RingBuffer() : bufferPos(N / 2), getPos(N / 2)
 	{
-		std::fill_n(&this->buffer[0], N * 2, 0);
+		std::fill_n(&this->buffer[0], N * 2, static_cast<std::int16_t>(0));
 	}
 	void Clear()
 	{
-		std::fill_n(&this->buffer[0], N * 2, 0);
+		std::fill_n(&this->buffer[0], N * 2, static_cast<std::int16_t>(0));
 		this->bufferPos = this->getPos = N / 2;
 	}
 	void PushSample(std::int16_t sample)

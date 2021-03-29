@@ -100,7 +100,7 @@ public:
 			return;
 		if (bytes > bleft)
 			bytes = bleft;
-		std::fill_n(&this->buf[this->fil], bytes, 0);
+		std::fill_n(&this->buf[this->fil], bytes, static_cast<std::uint8_t>(0));
 		S9xMixSamples(&this->buf[this->fil], bytes >> 1);
 		this->fil += bytes;
 	}

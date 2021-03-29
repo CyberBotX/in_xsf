@@ -13,7 +13,7 @@
 #include "SBNK.h"
 #include "common.h"
 
-SBNKInstrument::SBNKInstrument(std::uint8_t lowerNote, std::uint8_t upperNote, int recordType) : lowNote(lowerNote), highNote(upperNote),
+SBNKInstrument::SBNKInstrument(std::uint8_t lowerNote, std::uint8_t upperNote, std::uint16_t recordType) : lowNote(lowerNote), highNote(upperNote),
 	record(recordType), swav(0), swar(0), noteNumber(0), attackRate(0), decayRate(0), sustainLevel(0), releaseRate(0), pan(0)
 {
 }

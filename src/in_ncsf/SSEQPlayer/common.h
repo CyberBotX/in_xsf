@@ -138,7 +138,7 @@ template<std::size_t N> inline bool VerifyHeader(std::int8_t (&arr)[N], const st
 /*
  * The remaining functions in this file come from the FeOS Sound System source code.
  */
-inline int Cnv_Attack(int attk)
+inline std::uint8_t Cnv_Attack(int attk)
 {
 	static const std::uint8_t lut[] =
 	{
@@ -151,7 +151,7 @@ inline int Cnv_Attack(int attk)
 	return attk >= 0x6D ? lut[0x7F - attk] : 0xFF - attk;
 }
 
-inline int Cnv_Fall(int fall)
+inline std::uint16_t Cnv_Fall(int fall)
 {
 	if (fall & 0x80) // Supposedly invalid value...
 		fall = 0; // Use apparently correct default
@@ -165,7 +165,7 @@ inline int Cnv_Fall(int fall)
 		return (0x1E00 / (0x7E - fall)) & 0xFFFF;
 }
 
-inline int Cnv_Scale(int scale)
+inline std::int16_t Cnv_Scale(int scale)
 {
 	static const std::int16_t lut[] =
 	{
@@ -192,7 +192,7 @@ inline int Cnv_Scale(int scale)
 	return lut[scale];
 }
 
-inline int Cnv_Sust(int sust)
+inline std::int16_t Cnv_Sust(int sust)
 {
 	static const std::int16_t lut[] =
 	{
@@ -238,17 +238,17 @@ inline int Cnv_Sine(int arg)
 	return -lut[4 * lut_size - arg];
 }
 
-inline int read8(const std::uint8_t **ppData)
+inline std::uint8_t read8(const std::uint8_t **ppData)
 {
 	auto pData = *ppData;
-	int x = *pData;
+	std::uint8_t x = *pData;
 	*ppData = pData + 1;
 	return x;
 }
 
-inline int read16(const std::uint8_t **ppData)
+inline std::uint16_t read16(const std::uint8_t **ppData)
 {
-	int x = read8(ppData);
+	std::uint16_t x = read8(ppData);
 	x |= read8(ppData) << 8;
 	return x;
 }

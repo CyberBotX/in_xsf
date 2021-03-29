@@ -42,12 +42,12 @@ struct Override
 	Override() : overriding(false), cmd(0), value(0), extraValue(0) { }
 	bool operator()() const { return this->overriding; }
 	bool &operator()() { return this->overriding; }
-	int val(const std::uint8_t **pData, std::function<int (const std::uint8_t **)> reader, bool returnExtra = false)
+	template<typename T> T val(const std::uint8_t **pData, std::function<int (const std::uint8_t **)> reader, bool returnExtra = false)
 	{
 		if (this->overriding)
-			return returnExtra ? this->extraValue : this->value;
+			return static_cast<T>(returnExtra ? this->extraValue : this->value);
 		else
-			return reader(pData);
+			return static_cast<T>(reader(pData));
 	}
 };
 
@@ -86,12 +86,12 @@ struct Track
 
 	Track();
 
-	void Init(std::uint8_t handle, Player *ply, const std::uint8_t *pos, int n);
+	void Init(std::uint8_t handle, Player *ply, const std::uint8_t *pos, std::uint8_t n);
 	void Zero();
 	void ClearState();
 	void Free();
-	int NoteOn(int key, int vel, int len);
-	int NoteOnTie(int key, int vel);
+	int NoteOn(std::uint8_t key, int vel, int len);
+	int NoteOnTie(std::uint8_t key, int vel);
 	void ReleaseAllNotes();
 	void Run();
 };

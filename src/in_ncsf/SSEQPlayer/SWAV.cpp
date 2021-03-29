@@ -75,11 +75,11 @@ void SWAV::DecodeADPCM(const std::uint8_t *origData, std::uint32_t len)
 	{
 		std::int32_t nibble = origData[i + 4] & 0x0F;
 		DecodeADPCMNibble(nibble, stepIndex, predictedValue);
-		finalData[2 * i] = predictedValue;
+		finalData[2 * i] = static_cast<std::int16_t>(predictedValue);
 
 		nibble = (origData[i + 4] >> 4) & 0x0F;
 		DecodeADPCMNibble(nibble, stepIndex, predictedValue);
-		finalData[2 * i + 1] = predictedValue;
+		finalData[2 * i + 1] = static_cast<std::int16_t>(predictedValue);
 	}
 }
 

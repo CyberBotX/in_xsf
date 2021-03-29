@@ -40,5 +40,7 @@ add_library(in_ncsf SHARED ${HEADERS} ${RESOURCES} ${SOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 source_group("Resource Files" FILES ${RESOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})
+target_compile_options(in_ncsf PUBLIC
+	$<$<CXX_COMPILER_ID:MSVC>:/wd6011 /wd6385 /wd26819>)
 target_link_libraries(in_ncsf
 	in_xsf_framework)

@@ -26,7 +26,7 @@ Track::Track()
 }
 
 // Original FSS Function: Player_InitTrack
-void Track::Init(std::uint8_t handle, Player *player, const std::uint8_t *dataPos, int n)
+void Track::Init(std::uint8_t handle, Player *player, const std::uint8_t *dataPos, std::uint8_t n)
 {
 	this->trackId = handle;
 	this->num = n;
@@ -46,7 +46,7 @@ void Track::Zero()
 	this->startPos = this->pos = nullptr;
 	std::fill_n(&this->stack[0], FSS_TRACKSTACKSIZE, StackValue());
 	this->stackPos = 0;
-	std::fill_n(&this->loopCount[0], FSS_TRACKSTACKSIZE, 0);
+	std::fill_n(&this->loopCount[0], FSS_TRACKSTACKSIZE, static_cast<std::uint8_t>(0));
 	this->overriding() = false;
 	this->lastComparisonResult = true;
 
@@ -105,7 +105,7 @@ void Track::Free()
 }
 
 // Original FSS Function: Note_On
-int Track::NoteOn(int key, int vel, int len)
+int Track::NoteOn(std::uint8_t key, int vel, int len)
 {
 	auto sbnk = this->ply->sseq->bank;
 
@@ -172,7 +172,7 @@ int Track::NoteOn(int key, int vel, int len)
 			chn = &this->ply->channels[nCh];
 			chn->tempReg.CR = SOUND_FORMAT_PSG | SCHANNEL_ENABLE | SOUND_DUTY(noteDef->swav & 0x7);
 		}
-		chn->tempReg.TIMER = -SOUND_FREQ(262 * 8); // key #60 (C4)
+		chn->tempReg.TIMER = static_cast<std::uint16_t>(-SOUND_FREQ(262 * 8)); // key #60 (C4)
 		chn->reg.samplePosition = -1;
 		chn->reg.psgX = 0x7FFF;
 	}
@@ -223,7 +223,7 @@ int Track::NoteOn(int key, int vel, int len)
 }
 
 // Original FSS Function: Note_On_Tie
-int Track::NoteOnTie(int key, int vel)
+int Track::NoteOnTie(std::uint8_t key, int vel)
 {
 	// Find an existing note
 	int i;
@@ -518,9 +518,9 @@ void Track::Run()
 		if (cmd < 0x80)
 		{
 			// Note on
-			int key = cmd + this->transpose;
-			int vel = this->overriding.val(pData, read8, true);
-			int len = this->overriding.val(pData, readvl);
+			std::uint8_t key = static_cast<std::uint8_t>(cmd + this->transpose);
+			int vel = this->overriding.val<std::uint8_t>(pData, read8, true);
+			int len = this->overriding.val<int>(pData, readvl);
 			if (this->state[ToIntegral(TrackState::NoteWait)])
 				this->wait = len;
 			if (this->state[ToIntegral(TrackState::TieBit)])
@@ -539,23 +539,23 @@ void Track::Run()
 
 				case SSEQCommand::OpenTrack:
 				{
-					int tNum = read8(pData);
+					std::uint8_t tNum = read8(pData);
 					auto trackPos = &this->ply->sseq->data[read24(pData)];
 					int newTrack = this->ply->TrackAlloc();
 					if (newTrack != -1)
 					{
-						this->ply->tracks[newTrack].Init(newTrack, this->ply, trackPos, tNum);
-						this->ply->trackIds[this->ply->nTracks++] = newTrack;
+						this->ply->tracks[newTrack].Init(static_cast<std::uint8_t>(newTrack), this->ply, trackPos, tNum);
+						this->ply->trackIds[this->ply->nTracks++] = static_cast<std::uint8_t>(newTrack);
 					}
 					break;
 				}
 
 				case SSEQCommand::Rest:
-					this->wait = this->overriding.val(pData, readvl);
+					this->wait = this->overriding.val<int>(pData, readvl);
 					break;
 
 				case SSEQCommand::Patch:
-					this->patch = this->overriding.val(pData, readvl);
+					this->patch = this->overriding.val<std::uint16_t>(pData, readvl);
 					break;
 
 				case SSEQCommand::Goto:
@@ -578,23 +578,23 @@ void Track::Run()
 					break;
 
 				case SSEQCommand::Pan:
-					this->pan = this->overriding.val(pData, read8) - 64;
+					this->pan = this->overriding.val<std::uint8_t>(pData, read8) - 64;
 					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Pan));
 					break;
 
 				case SSEQCommand::Volume:
-					this->vol = this->overriding.val(pData, read8);
+					this->vol = this->overriding.val<std::uint8_t>(pData, read8);
 					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
 				case SSEQCommand::MasterVolume:
-					this->ply->masterVol = Cnv_Sust(this->overriding.val(pData, read8));
+					this->ply->masterVol = Cnv_Sust(this->overriding.val<std::uint8_t>(pData, read8));
 					for (std::uint8_t i = 0; i < this->ply->nTracks; ++i)
 						this->ply->tracks[this->ply->trackIds[i]].updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
 				case SSEQCommand::Priority:
-					this->prio = this->ply->prio + read8(pData);
+					this->prio = static_cast<std::uint8_t>(this->ply->prio + read8(pData));
 					// Update here?
 					break;
 
@@ -608,7 +608,7 @@ void Track::Run()
 					break;
 
 				case SSEQCommand::Expression:
-					this->expr = this->overriding.val(pData, read8);
+					this->expr = this->overriding.val<std::uint8_t>(pData, read8);
 					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
@@ -621,10 +621,10 @@ void Track::Run()
 					return;
 
 				case SSEQCommand::LoopStart:
-					value = this->overriding.val(pData, read8);
+					value = this->overriding.val<std::uint8_t>(pData, read8);
 					if (this->stackPos < FSS_TRACKSTACKSIZE)
 					{
-						this->loopCount[this->stackPos] = value;
+						this->loopCount[this->stackPos] = static_cast<std::uint8_t>(value);
 						this->stack[this->stackPos++] = StackValue(StackType::Loop, *pData);
 					}
 					break;
@@ -647,11 +647,11 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQCommand::Transpose:
-					this->transpose = this->overriding.val(pData, read8);
+					this->transpose = this->overriding.val<std::int8_t>(pData, read8);
 					break;
 
 				case SSEQCommand::PitchBend:
-					this->pitchBend = this->overriding.val(pData, read8);
+					this->pitchBend = this->overriding.val<std::int8_t>(pData, read8);
 					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Timer));
 					break;
 
@@ -665,19 +665,19 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQCommand::Attack:
-					this->a = this->overriding.val(pData, read8);
+					this->a = this->overriding.val<std::uint8_t>(pData, read8);
 					break;
 
 				case SSEQCommand::Decay:
-					this->d = this->overriding.val(pData, read8);
+					this->d = this->overriding.val<std::uint8_t>(pData, read8);
 					break;
 
 				case SSEQCommand::Sustain:
-					this->s = this->overriding.val(pData, read8);
+					this->s = this->overriding.val<std::uint8_t>(pData, read8);
 					break;
 
 				case SSEQCommand::Release:
-					this->r = this->overriding.val(pData, read8);
+					this->r = this->overriding.val<std::uint8_t>(pData, read8);
 					break;
 
 				//-----------------------------------------------------------------
@@ -685,7 +685,7 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQCommand::PortamentoKey:
-					this->portaKey = read8(pData) + this->transpose;
+					this->portaKey = static_cast<std::uint8_t>(read8(pData) + this->transpose);
 					this->state.set(ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
@@ -696,13 +696,13 @@ void Track::Run()
 					break;
 
 				case SSEQCommand::PortamentoTime:
-					this->portaTime = this->overriding.val(pData, read8);
+					this->portaTime = this->overriding.val<std::uint8_t>(pData, read8);
 					this->state.set(ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
 				case SSEQCommand::SweepPitch:
-					this->sweepPitch = this->overriding.val(pData, read16);
+					this->sweepPitch = this->overriding.val<std::int16_t>(pData, read16);
 					this->state.set(ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
@@ -712,12 +712,12 @@ void Track::Run()
 				//-----------------------------------------------------------------
 
 				case SSEQCommand::ModulationDepth:
-					this->modDepth = this->overriding.val(pData, read8);
+					this->modDepth = this->overriding.val<std::uint8_t>(pData, read8);
 					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
 				case SSEQCommand::ModulationSpeed:
-					this->modSpeed = this->overriding.val(pData, read8);
+					this->modSpeed = this->overriding.val<std::uint8_t>(pData, read8);
 					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
@@ -732,7 +732,7 @@ void Track::Run()
 					break;
 
 				case SSEQCommand::ModulationDelay:
-					this->modDelay = this->overriding.val(pData, read16);
+					this->modDelay = this->overriding.val<std::uint16_t>(pData, read16);
 					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
@@ -746,8 +746,8 @@ void Track::Run()
 					this->overriding.cmd = read8(pData);
 					if ((this->overriding.cmd >= ToIntegral(SSEQCommand::SetVariable) && this->overriding.cmd <= ToIntegral(SSEQCommand::CompareNotEqualTo)) || this->overriding.cmd < 0x80)
 						this->overriding.extraValue = read8(pData);
-					std::int16_t minVal = read16(pData);
-					std::int16_t maxVal = read16(pData);
+					std::int16_t minVal = static_cast<std::int16_t>(read16(pData));
+					std::int16_t maxVal = static_cast<std::int16_t>(read16(pData));
 					this->overriding.value = (CalcRandom() % (maxVal - minVal + 1)) + minVal;
 					break;
 				}
@@ -772,11 +772,11 @@ void Track::Run()
 				case SSEQCommand::ShiftVariable:
 				case SSEQCommand::RandomVariable:
 				{
-					std::int8_t varNo = this->overriding.val(pData, read8, true);
-					value = this->overriding.val(pData, read16);
+					std::int8_t varNo = this->overriding.val<std::int8_t>(pData, read8, true);
+					value = this->overriding.val<std::int16_t>(pData, read16);
 					if (cmd == ToIntegral(SSEQCommand::DivideVariable) && !value) // Division by 0, skip it to prevent crashing
 						break;
-					this->ply->variables[varNo] = VarFunc(cmd)(this->ply->variables[varNo], value);
+					this->ply->variables[varNo] = VarFunc(cmd)(this->ply->variables[varNo], static_cast<std::int16_t>(value));
 					break;
 				}
 
@@ -791,9 +791,9 @@ void Track::Run()
 				case SSEQCommand::CompareLessThan:
 				case SSEQCommand::CompareNotEqualTo:
 				{
-					std::int8_t varNo = this->overriding.val(pData, read8, true);
-					value = this->overriding.val(pData, read16);
-					this->lastComparisonResult = CompareFunc(cmd)(this->ply->variables[varNo], value);
+					std::int8_t varNo = this->overriding.val<std::int8_t>(pData, read8, true);
+					value = this->overriding.val<std::int16_t>(pData, read16);
+					this->lastComparisonResult = CompareFunc(cmd)(this->ply->variables[varNo], static_cast<std::int16_t>(value));
 					break;
 				}
 

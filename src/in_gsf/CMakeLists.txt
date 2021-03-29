@@ -30,5 +30,7 @@ set(SOURCES
 add_library(in_gsf SHARED ${HEADERS} ${SOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})
+target_compile_options(in_gsf PUBLIC
+	$<$<CXX_COMPILER_ID:MSVC>:/wd4127 /wd4189 /wd26495 /wd26812>)
 target_link_libraries(in_gsf
 	in_xsf_framework)

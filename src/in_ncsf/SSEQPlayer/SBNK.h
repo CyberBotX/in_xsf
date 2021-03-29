@@ -30,7 +30,7 @@ struct SBNKInstrument
 	std::uint8_t releaseRate;
 	std::uint8_t pan;
 
-	SBNKInstrument(std::uint8_t lowerNote, std::uint8_t upperNote, int recordType);
+	SBNKInstrument(std::uint8_t lowerNote, std::uint8_t upperNote, std::uint16_t recordType);
 
 	void Read(PseudoFile &file);
 };

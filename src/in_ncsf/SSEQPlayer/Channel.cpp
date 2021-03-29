@@ -90,7 +90,7 @@ void Channel::UpdateVol(const Track &trk)
 	finalVol += Cnv_Sust(trk.expr);
 	if (finalVol < -AMPL_K)
 		finalVol = -AMPL_K;
-	this->extAmpl = finalVol;
+	this->extAmpl = static_cast<std::int16_t>(finalVol);
 }
 
 // Original FSS Function: Chn_UpdatePan
@@ -526,7 +526,7 @@ void Channel::Update()
 		std::uint32_t counter = this->modCounter + (this->modSpeed << 6);
 		while (counter >= 0x8000)
 			counter -= 0x8000;
-		this->modCounter = counter;
+		this->modCounter = static_cast<std::uint16_t>(counter);
 	}
 
 	if (bTmrNeedUpdate)
@@ -574,7 +574,7 @@ void Channel::Update()
 			else if (totalVol < AMPL_K - 60)
 				cr |= SOUND_VOLDIV(1);
 
-			this->vol = ((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8);
+			this->vol = static_cast<std::uint16_t>(((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8));
 
 			this->flags.reset(ToIntegral(ChannelFlag::UpdateVolume));
 		}

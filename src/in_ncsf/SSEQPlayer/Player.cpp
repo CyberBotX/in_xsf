@@ -17,13 +17,13 @@
 Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), masterVol(0), sseqVol(0), sseq(nullptr), allowedChannels(0), sampleRate(0),
 	interpolation(Interpolation::None)
 {
-	std::fill_n(&this->trackIds[0], FSS_TRACKCOUNT, 0);
+	std::fill_n(&this->trackIds[0], FSS_TRACKCOUNT, static_cast<std::uint8_t>(0));
 	for (std::int8_t i = 0; i < 16; ++i)
 	{
 		this->channels[i].chnId = i;
 		this->channels[i].ply = this;
 	}
-	std::fill_n(&this->variables[0], 32, -1);
+	std::fill_n(&this->variables[0], 32, static_cast<std::int16_t>(-1));
 }
 
 // Original FSS Function: Player_Setup
@@ -34,10 +34,10 @@ bool Player::Setup(const SSEQ *sseqToPlay)
 	int firstTrack = this->TrackAlloc();
 	if (firstTrack == -1)
 		return false;
-	this->tracks[firstTrack].Init(firstTrack, this, nullptr, 0);
+	this->tracks[firstTrack].Init(static_cast<std::uint8_t>(firstTrack), this, nullptr, 0);
 
 	this->nTracks = 1;
-	this->trackIds[0] = firstTrack;
+	this->trackIds[0] = static_cast<std::uint8_t>(firstTrack);
 
 	this->tracks[firstTrack].startPos = this->tracks[firstTrack].pos = &this->sseq->data[0];
 
@@ -53,7 +53,7 @@ void Player::ClearState()
 	this->tempoCount = 0;
 	this->tempoRate = 0x100;
 	this->masterVol = 0; // this is actually the highest level
-	std::fill_n(&this->variables[0], 32, -1);
+	std::fill_n(&this->variables[0], 32, static_cast<std::int16_t>(-1));
 }
 
 // Original FSS Function: Player_FreeTracks

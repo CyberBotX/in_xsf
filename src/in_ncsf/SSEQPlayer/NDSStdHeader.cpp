@@ -14,7 +14,7 @@
 
 NDSStdHeader::NDSStdHeader() : magic(0)
 {
-	std::fill_n(&this->type[0], 4, 0);
+	std::fill_n(&this->type[0], 4, static_cast<std::int8_t>(0));
 }
 
 void NDSStdHeader::Read(PseudoFile &file)

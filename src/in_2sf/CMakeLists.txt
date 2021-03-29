@@ -117,5 +117,7 @@ set(SOURCES
 add_library(in_2sf SHARED ${HEADERS} ${SOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})
+target_compile_options(in_2sf PUBLIC
+	$<$<CXX_COMPILER_ID:MSVC>:/wd4018 /wd4100 /wd4146 /wd4127 /wd4189 /wd4201 /wd4245 /wd4456 /wd4459 /wd4701 /wd4703 /wd4706 /wd4996 /wd6001 /wd6011 /wd6297 /wd6308 /wd6385 /wd6386 /wd26454 /wd26495 /wd26812 /wd26819 /wd28112>)
 target_link_libraries(in_2sf
 	in_xsf_framework)

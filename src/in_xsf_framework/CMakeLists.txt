@@ -235,7 +235,7 @@ target_compile_definitions(in_xsf_framework PUBLIC
 	UNICODE_INPUT_PLUGIN
 	$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Debug>>:_ITERATOR_DEBUG_LEVEL=0>)
 target_compile_options(in_xsf_framework PUBLIC
-	$<$<CXX_COMPILER_ID:MSVC>:/W4>)
+	$<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4244 /wd6258 /wd26451 /wd28159>)
 target_include_directories(in_xsf_framework PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/winamp

@@ -29,7 +29,7 @@ void INFOEntrySEQ::Read(PseudoFile &file)
 
 INFOEntryBANK::INFOEntryBANK() : fileID(0)
 {
-	std::fill_n(&this->waveArc[0], 4, 0);
+	std::fill_n(&this->waveArc[0], 4, static_cast<std::uint16_t>(0));
 }
 
 void INFOEntryBANK::Read(PseudoFile &file)
