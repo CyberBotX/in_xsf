@@ -2,7 +2,7 @@
 #include <wx/string.h>
 #include "RegExValidator.h"
 
-RegExValidator::RegExValidator(wxString regExpString, wxString *valPtr, int regExpFlags) : wxTextValidator(wxFILTER_EMPTY, valPtr), regEx(regExpString, regExpFlags), regExString(regExpString), regExFlags(regExpFlags)
+RegExValidator::RegExValidator(const wxString &regExpString, wxString *valPtr, int regExpFlags) : wxTextValidator(wxFILTER_EMPTY, valPtr), regEx(regExpString, regExpFlags), regExString(regExpString), regExFlags(regExpFlags)
 {
 }
 
