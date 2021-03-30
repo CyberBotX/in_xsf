@@ -211,6 +211,7 @@ set(HEADERS
 	DialogBuilder.h
 	eqstr.h
 	ltstr.h
+	RegExValidator.h
 	TagList.h
 	windowsh_wrapper.h
 	XSFCommon.h
@@ -220,6 +221,7 @@ set(HEADERS
 set(SOURCES
 	DialogBuilder.cpp
 	in_xsf.cpp
+	RegExValidator.cpp
 	TagList.cpp
 	XSFConfig.cpp
 	XSFConfig_Winamp.cpp
