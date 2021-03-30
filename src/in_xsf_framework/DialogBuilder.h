@@ -72,7 +72,7 @@ class RelativePositionToParent : public RelativePosition
 {
 public:
 	RelativePositionToParent(const Point<short> &RelPosition, PositionType PosType) : RelativePosition(RelPosition, BaseType::ToParent, PosType) { }
-	RelativePositionToParent *Clone() const { return new RelativePositionToParent(this->relativePosition, this->positionType); }
+	RelativePositionToParent *Clone() const override { return new RelativePositionToParent(this->relativePosition, this->positionType); }
 };
 
 class RelativePositionToSibling : public RelativePosition
@@ -81,7 +81,7 @@ public:
 	short siblingsBack;
 
 	RelativePositionToSibling(const Point<short> &RelPosition, PositionType PosType, short SiblingsBack = 1) : RelativePosition(RelPosition, BaseType::ToSibling, PosType), siblingsBack(SiblingsBack) { }
-	RelativePositionToSibling *Clone() const { return new RelativePositionToSibling(this->relativePosition, this->positionType, this->siblingsBack); }
+	RelativePositionToSibling *Clone() const override { return new RelativePositionToSibling(this->relativePosition, this->positionType, this->siblingsBack); }
 };
 
 enum class DialogControlType
@@ -453,9 +453,9 @@ class DialogTemplate
 		}
 		void CalculatePositions(bool doRightAndBottom = false);
 		void CalculateSize();
-		std::uint16_t GetControlCount() const;
-		std::vector<std::uint8_t> GenerateControlTemplate() const;
-		DialogGroup *Clone() const { return new DialogGroup(*this); }
+		std::uint16_t GetControlCount() const override;
+		std::vector<std::uint8_t> GenerateControlTemplate() const override;
+		DialogGroup *Clone() const override { return new DialogGroup(*this); }
 	};
 
 	class DialogControlWithoutLabel : public DialogControl
@@ -484,8 +484,8 @@ class DialogTemplate
 
 			return control;
 		}
-		virtual std::vector<std::uint8_t> GenerateControlTemplate() const;
-		virtual DialogControlWithoutLabel *Clone() const { return new DialogControlWithoutLabel(*this); }
+		virtual std::vector<std::uint8_t> GenerateControlTemplate() const override;
+		virtual DialogControlWithoutLabel *Clone() const override { return new DialogControlWithoutLabel(*this); }
 	};
 
 	class DialogControlWithLabel : public DialogControl
@@ -517,8 +517,8 @@ class DialogTemplate
 
 			return control;
 		}
-		virtual std::vector<std::uint8_t> GenerateControlTemplate() const;
-		virtual DialogControlWithLabel *Clone() const { return new DialogControlWithLabel(*this); }
+		virtual std::vector<std::uint8_t> GenerateControlTemplate() const override;
+		virtual DialogControlWithLabel *Clone() const override { return new DialogControlWithLabel(*this); }
 	};
 
 	class DialogEditBox : public DialogControlWithoutLabel
@@ -584,7 +584,7 @@ class DialogTemplate
 		{
 			return DialogControlWithoutLabel::CreateControl<DialogComboBox>(builder, 0x0085);
 		}
-		short GetControlHeight() const { return (this->style & CBS_SIMPLE && !(this->style & CBS_DROPDOWNLIST)) ? this->rect.size.height : 14; }
+		short GetControlHeight() const override { return (this->style & CBS_SIMPLE && !(this->style & CBS_DROPDOWNLIST)) ? this->rect.size.height : 14; }
 	};
 
 	std::wstring title;

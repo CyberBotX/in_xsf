@@ -41,10 +41,10 @@ public:
 #ifdef _WIN32
 	XSFPlayer_SNSF(const std::wstring &filename);
 #endif
-	~XSFPlayer_SNSF() { this->Terminate(); }
-	bool Load();
-	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples);
-	void Terminate();
+	~XSFPlayer_SNSF() override { this->Terminate(); }
+	bool Load() override;
+	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
+	void Terminate() override;
 };
 
 const char *XSFPlayer::WinampDescription = "SNSF Decoder";

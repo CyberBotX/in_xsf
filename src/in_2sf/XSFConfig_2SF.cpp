@@ -34,15 +34,15 @@ protected:
 	std::bitset<16> mutes;
 
 	XSFConfig_2SF();
-	void LoadSpecificConfig();
-	void SaveSpecificConfig();
-	void GenerateSpecificDialogs();
-	INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	void ResetSpecificConfigDefaults(HWND hwndDlg);
-	void SaveSpecificConfigDialog(HWND hwndDlg);
-	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad);
+	void LoadSpecificConfig() override;
+	void SaveSpecificConfig() override;
+	void GenerateSpecificDialogs() override;
+	INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+	void ResetSpecificConfigDefaults(HWND hwndDlg) override;
+	void SaveSpecificConfigDialog(HWND hwndDlg) override;
+	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
 public:
-	void About(HWND parent);
+	void About(HWND parent) override;
 };
 
 unsigned XSFConfig::initSampleRate = static_cast<unsigned>(DESMUME_SAMPLE_RATE);

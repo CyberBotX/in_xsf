@@ -26,10 +26,10 @@ protected:
 
 	XSFConfigIO_Winamp();
 public:
-	void SetValueString(const std::string &name, const std::string &value);
-	std::string GetValueString(const std::string &name, const std::string &defaultValue) const;
-	void SetHInstance(HINSTANCE hInstance);
-	HINSTANCE GetHInstance() const;
+	void SetValueString(const std::string &name, const std::string &value) override;
+	std::string GetValueString(const std::string &name, const std::string &defaultValue) const override;
+	void SetHInstance(HINSTANCE hInstance) override;
+	HINSTANCE GetHInstance() const override;
 };
 
 XSFConfigIO *XSFConfigIO::Create()

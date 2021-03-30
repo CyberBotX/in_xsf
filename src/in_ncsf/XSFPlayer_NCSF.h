@@ -40,10 +40,10 @@ public:
 #ifdef _WIN32
 	XSFPlayer_NCSF(const std::wstring &filename);
 #endif
-	~XSFPlayer_NCSF();
-	bool Load();
-	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples);
-	void Terminate();
+	~XSFPlayer_NCSF() override;
+	bool Load() override;
+	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
+	void Terminate() override;
 
 	void SetInterpolation(unsigned interpolation);
 	void SetMutes(const std::bitset<16> &newMutes);

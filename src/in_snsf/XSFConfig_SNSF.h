@@ -30,15 +30,15 @@ protected:
 	std::bitset<8> mutes;
 
 	XSFConfig_SNSF();
-	void LoadSpecificConfig();
-	void SaveSpecificConfig();
-	void GenerateSpecificDialogs();
-	INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	void ResetSpecificConfigDefaults(HWND hwndDlg);
-	void SaveSpecificConfigDialog(HWND hwndDlg);
-	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad);
+	void LoadSpecificConfig() override;
+	void SaveSpecificConfig() override;
+	void GenerateSpecificDialogs() override;
+	INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+	void ResetSpecificConfigDefaults(HWND hwndDlg) override;
+	void SaveSpecificConfigDialog(HWND hwndDlg) override;
+	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
 public:
 	unsigned resampler;
 
-	void About(HWND parent);
+	void About(HWND parent) override;
 };

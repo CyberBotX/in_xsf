@@ -34,10 +34,10 @@ public:
 #ifdef _WIN32
 	XSFPlayer_2SF(const std::wstring &filename);
 #endif
-	~XSFPlayer_2SF() { this->Terminate(); }
-	bool Load();
-	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples);
-	void Terminate();
+	~XSFPlayer_2SF() override { this->Terminate(); }
+	bool Load() override;
+	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
+	void Terminate() override;
 };
 
 const char *XSFPlayer::WinampDescription = "2SF Decoder";

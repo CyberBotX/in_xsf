@@ -30,7 +30,7 @@ struct INFOEntrySEQ : INFOEntry
 
 	INFOEntrySEQ();
 
-	void Read(PseudoFile &file);
+	void Read(PseudoFile &file) override;
 };
 
 struct INFOEntryBANK : INFOEntry
@@ -40,7 +40,7 @@ struct INFOEntryBANK : INFOEntry
 
 	INFOEntryBANK();
 
-	void Read(PseudoFile &file);
+	void Read(PseudoFile &file) override;
 };
 
 struct INFOEntryWAVEARC : INFOEntry
@@ -49,7 +49,7 @@ struct INFOEntryWAVEARC : INFOEntry
 
 	INFOEntryWAVEARC();
 
-	void Read(PseudoFile &file);
+	void Read(PseudoFile &file) override;
 };
 
 struct INFOEntryPLAYER : INFOEntry
@@ -58,5 +58,5 @@ struct INFOEntryPLAYER : INFOEntry
 
 	INFOEntryPLAYER();
 
-	void Read(PseudoFile &file);
+	void Read(PseudoFile &file) override;
 };
