@@ -14,7 +14,7 @@
 #include "XSFConfig_NCSF.h"
 #include "XSFPlayer_NCSF.h"
 #include "convert.h"
-#ifdef _DEBUG
+#ifndef NDEBUG
 # include <cstdint>
 # include "SSEQPlayer/common.h"
 # include "SSEQPlayer/consts.h"
@@ -40,7 +40,7 @@ XSFConfig *XSFConfig::Create()
 }
 
 XSFConfig_NCSF::XSFConfig_NCSF() : XSFConfig(), interpolation(0), mutes()
-#ifdef _DEBUG
+#ifndef NDEBUG
 	, soundViewData()
 #endif
 {
@@ -134,7 +134,7 @@ void XSFConfig_NCSF::About(HWND parent)
 		"Utilizes code adapted from the FeOS Sound System library by fincs, git revision 5204c55 on GitHub, for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
 }
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 INT_PTR CALLBACK XSFConfig_NCSF::SoundViewDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	auto data = reinterpret_cast<SoundViewData *>(GetWindowLongW(hwndDlg, DWLP_USER));

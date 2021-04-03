@@ -14,7 +14,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#ifdef _DEBUG
+#ifndef NDEBUG
 # include <cstddef>
 #endif
 #include <cstdint>
@@ -47,7 +47,7 @@ public:
 
 	void SetInterpolation(unsigned interpolation);
 	void SetMutes(const std::bitset<16> &newMutes);
-#ifdef _DEBUG
+#ifndef NDEBUG
 	const Channel &GetChannel(std::size_t chanNum) const;
 #endif
 };

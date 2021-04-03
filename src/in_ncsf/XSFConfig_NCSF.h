@@ -9,7 +9,7 @@
 
 #include <bitset>
 #include <string>
-#ifdef _DEBUG
+#ifndef NDEBUG
 # include <algorithm>
 # include <memory>
 # include <cstdint>
@@ -21,7 +21,7 @@
 class XSFConfig_NCSF;
 class XSFPlayer_NCSF;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 struct SoundViewData
 {
 	XSFConfig_NCSF *config;
@@ -58,7 +58,7 @@ protected:
 	void SaveSpecificConfigDialog(HWND hwndDlg) override;
 	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 	std::unique_ptr<SoundViewData> soundViewData;
 
 	static INT_PTR CALLBACK SoundViewDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -66,7 +66,7 @@ protected:
 public:
 	void About(HWND parent) override;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 	void CallSoundView(XSFPlayer *xSFPlayer, HINSTANCE hInstance, HWND hwndParent);
 	void RefreshSoundView();
 	void CloseSoundView();

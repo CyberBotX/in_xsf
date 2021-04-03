@@ -125,7 +125,7 @@ XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer(), sseq
 }
 #endif
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 static HANDLE soundViewThreadHandle = INVALID_HANDLE_VALUE;
 static bool killSoundViewThread;
 
@@ -150,7 +150,7 @@ static DWORD WINAPI soundViewThread(void *b)
 
 XSFPlayer_NCSF::~XSFPlayer_NCSF()
 {
-#ifdef _DEBUG
+#ifndef NDEBUG
 	killSoundViewThread = true;
 	if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
 	{
@@ -167,7 +167,7 @@ bool XSFPlayer_NCSF::Load()
 	if (!this->LoadNCSF())
 		return false;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 	killSoundViewThread = false;
 	soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
 #endif
@@ -258,7 +258,7 @@ void XSFPlayer_NCSF::SetMutes(const std::bitset<16> &newMutes)
 	this->mutes = newMutes;
 }
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 const Channel &XSFPlayer_NCSF::GetChannel(std::size_t chanNum) const
 {
 	return this->player.channels[chanNum];
