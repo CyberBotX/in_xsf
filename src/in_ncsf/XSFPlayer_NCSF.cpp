@@ -112,6 +112,9 @@ bool XSFPlayer_NCSF::LoadNCSF()
 }
 
 XSFPlayer_NCSF::XSFPlayer_NCSF(const std::string &filename) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
+#ifndef NDEBUG
+	, useSoundViewDialog(false)
+#endif
 {
 	this->uses32BitSamplesClampedTo16Bit = true;
 	this->xSF.reset(new XSFFile(filename, 8, 12));
@@ -119,6 +122,9 @@ XSFPlayer_NCSF::XSFPlayer_NCSF(const std::string &filename) : XSFPlayer(), sseq(
 
 #ifdef _WIN32
 XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
+#ifndef NDEBUG
+	, useSoundViewDialog(false)
+#endif
 {
 	this->uses32BitSamplesClampedTo16Bit = true;
 	this->xSF.reset(new XSFFile(filename, 8, 12));
@@ -151,14 +157,17 @@ static DWORD WINAPI soundViewThread(void *b)
 XSFPlayer_NCSF::~XSFPlayer_NCSF()
 {
 #ifndef NDEBUG
-	killSoundViewThread = true;
-	if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
+	if (soundViewThreadHandle != INVALID_HANDLE_VALUE)
 	{
-		TerminateThread(soundViewThreadHandle, 0);
-		static_cast<XSFConfig_NCSF *>(xSFConfig)->CloseSoundView();
+		killSoundViewThread = true;
+		if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
+		{
+			TerminateThread(soundViewThreadHandle, 0);
+			static_cast<XSFConfig_NCSF *>(xSFConfig)->CloseSoundView();
+		}
+		CloseHandle(soundViewThreadHandle);
+		soundViewThreadHandle = INVALID_HANDLE_VALUE;
 	}
-	CloseHandle(soundViewThreadHandle);
-	soundViewThreadHandle = INVALID_HANDLE_VALUE;
 #endif
 }
 
@@ -168,8 +177,11 @@ bool XSFPlayer_NCSF::Load()
 		return false;
 
 #ifndef NDEBUG
-	killSoundViewThread = false;
-	soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
+	if (this->useSoundViewDialog)
+	{
+		killSoundViewThread = false;
+		soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
+	}
 #endif
 
 	PseudoFile file;
@@ -247,6 +259,13 @@ void XSFPlayer_NCSF::Terminate()
 {
 	this->player.Stop(true);
 }
+
+#ifndef NDEBUG
+void XSFPlayer_NCSF::SetUseSoundViewDialog(bool newUseSoundViewDialog)
+{
+	this->useSoundViewDialog = newUseSoundViewDialog;
+}
+#endif
 
 void XSFPlayer_NCSF::SetInterpolation(unsigned interpolation)
 {

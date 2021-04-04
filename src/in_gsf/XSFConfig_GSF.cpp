@@ -8,11 +8,16 @@
 #include <bitset>
 #include <sstream>
 #include <string>
+#include <cstddef>
 #include "windowsh_wrapper.h"
 #include "XSFConfig.h"
+#include "XSFConfig_GSF.h"
+#include "XSFConfigDialog_GSF.h"
 #include "convert.h"
 #include "vbam/gba/Sound.h"
 
+class wxWindow;
+class XSFConfigDialog;
 class XSFPlayer;
 
 enum
@@ -21,33 +26,9 @@ enum
 	idMutes
 };
 
-class XSFConfig_GSF : public XSFConfig
-{
-protected:
-	static bool initLowPassFiltering;
-	static std::string initMutes;
-
-	friend class XSFConfig;
-	bool lowPassFiltering;
-	std::bitset<6> mutes;
-
-	XSFConfig_GSF();
-	void LoadSpecificConfig() override;
-	void SaveSpecificConfig() override;
-	void GenerateSpecificDialogs() override;
-	INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
-	void ResetSpecificConfigDefaults(HWND hwndDlg) override;
-	void SaveSpecificConfigDialog(HWND hwndDlg) override;
-	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
-public:
-	void About(HWND parent) override;
-};
-
-unsigned XSFConfig::initSampleRate = 44100;
-std::string XSFConfig::commonName = "GSF Decoder";
-std::string XSFConfig::versionNumber = "0.9b";
-bool XSFConfig_GSF::initLowPassFiltering = true;
-std::string XSFConfig_GSF::initMutes = "000000";
+const unsigned XSFConfig::initSampleRate = 44100;
+const std::string XSFConfig::commonName = "GSF Decoder";
+const std::string XSFConfig::versionNumber = "0.9b";
 
 XSFConfig *XSFConfig::Create()
 {
@@ -82,53 +63,32 @@ void XSFConfig_GSF::SaveSpecificConfig()
 	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
 
-void XSFConfig_GSF::GenerateSpecificDialogs()
+void XSFConfig_GSF::InitializeSpecificConfigDialog(XSFConfigDialog *dialog)
 {
-	this->configDialog.AddCheckBoxControl(DialogCheckBoxBuilder(L"Low-Pass Filtering").WithSize(80, 10).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 7), 2).WithTabStop().
-		WithID(idLowPassFiltering));
-	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Mute").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 10)).IsLeftJustified());
-	this->configDialog.AddListBoxControl(DialogListBoxBuilder().WithSize(78, 45).WithExactHeight().InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromTopRight, Point<short>(5, -3)).WithID(idMutes).WithBorder().
-		WithVerticalScrollbar().WithMultipleSelect().WithTabStop());
+	auto gsfDialog = static_cast<XSFConfigDialog_GSF *>(dialog);
+	gsfDialog->lowPassFiltering = this->lowPassFiltering;
+	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+		if (this->mutes[x])
+			gsfDialog->mute.Add(x);
 }
 
-INT_PTR CALLBACK XSFConfig_GSF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void XSFConfig_GSF::ResetSpecificConfigDefaults(XSFConfigDialog *dialog)
 {
-	switch (uMsg)
-	{
-		case WM_INITDIALOG:
-			// Low-Pass Filtering
-			if (this->lowPassFiltering)
-				SendMessageW(GetDlgItem(hwndDlg, idLowPassFiltering), BM_SETCHECK, BST_CHECKED, 0);
-			// Mutes
-			SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Square 1"));
-			SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Square 2"));
-			SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Wave Pattern"));
-			SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Noise"));
-			SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"PCM A"));
-			SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"PCM B"));
-			for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
-				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, this->mutes[x], x);
-			break;
-		case WM_COMMAND:
-			break;
-	}
-
-	return XSFConfig::ConfigDialogProc(hwndDlg, uMsg, wParam, lParam);
-}
-
-void XSFConfig_GSF::ResetSpecificConfigDefaults(HWND hwndDlg)
-{
-	SendMessageW(GetDlgItem(hwndDlg, idLowPassFiltering), BM_SETCHECK, XSFConfig_GSF::initLowPassFiltering ? BST_CHECKED : BST_UNCHECKED, 0);
+	auto gsfDialog = static_cast<XSFConfigDialog_GSF *>(dialog);
+	gsfDialog->lowPassFiltering = XSFConfig_GSF::initLowPassFiltering;
+	gsfDialog->mute.Clear();
 	auto tmpMutes = std::bitset<6>(XSFConfig_GSF::initMutes);
-	for (int x = 0, numMutes = tmpMutes.size(); x < numMutes; ++x)
-		SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, tmpMutes[x], x);
+	for (std::size_t x = 0, numMutes = tmpMutes.size(); x < numMutes; ++x)
+		if (tmpMutes[x])
+			gsfDialog->mute.Add(x);
 }
 
-void XSFConfig_GSF::SaveSpecificConfigDialog(HWND hwndDlg)
+void XSFConfig_GSF::SaveSpecificConfigDialog(XSFConfigDialog *dialog)
 {
-	this->lowPassFiltering = SendMessageW(GetDlgItem(hwndDlg, idLowPassFiltering), BM_GETCHECK, 0, 0) == BST_CHECKED;
-	for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
-		this->mutes[x] = !!SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_GETSEL, x, 0);
+	auto gsfDialog = static_cast<XSFConfigDialog_GSF *>(dialog);
+	this->lowPassFiltering = gsfDialog->lowPassFiltering;
+	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+		this->mutes[x] = gsfDialog->mute.Index(x) != wxNOT_FOUND;
 }
 
 void XSFConfig_GSF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
@@ -145,4 +105,9 @@ void XSFConfig_GSF::About(HWND parent)
 {
 	MessageBoxW(parent, ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber + ", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
 		"Utilizes modified VBA-M, SVN revision 1231, for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
+}
+
+XSFConfigDialog *XSFConfig_GSF::CreateDialogBox(wxWindow *window, const std::string &title)
+{
+	return new XSFConfigDialog_GSF(*this, window, title);
 }

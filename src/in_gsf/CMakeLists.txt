@@ -12,7 +12,9 @@ set(HEADERS
 	vbam/gba/GBAcpu.h
 	vbam/gba/GBAinline.h
 	vbam/gba/Globals.h
-	vbam/gba/Sound.h)
+	vbam/gba/Sound.h
+	XSFConfig_GSF.h
+	XSFConfigDialog_GSF.h)
 set(SOURCES
 	vbam/apu/Blip_Buffer.cpp
 	vbam/apu/Gb_Apu.cpp
@@ -25,6 +27,7 @@ set(SOURCES
 	vbam/gba/Globals.cpp
 	vbam/gba/Sound.cpp
 	XSFConfig_GSF.cpp
+	XSFConfigDialog_GSF.cpp
 	XSFPlayer_GSF.cpp)
 
 add_library(in_gsf SHARED ${HEADERS} ${SOURCES})

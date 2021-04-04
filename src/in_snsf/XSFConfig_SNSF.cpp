@@ -12,11 +12,18 @@
 #include <bitset>
 #include <sstream>
 #include <string>
+#include <cstddef>
 #include <cstdint>
 #include "windowsh_wrapper.h"
+#include "XSFConfig.h"
 #include "XSFConfig_SNSF.h"
+#include "XSFConfigDialog_SNSF.h"
 #include "convert.h"
 #include "snes9x/apu/apu.h"
+
+class wxWindow;
+class XSFConfigDialog;
+class XSFPlayer;
 
 enum
 {
@@ -26,13 +33,9 @@ enum
 	idMutes
 };
 
-unsigned XSFConfig::initSampleRate = 44100;
-std::string XSFConfig::commonName = "SNSF Decoder";
-std::string XSFConfig::versionNumber = "0.9b";
-//bool XSFConfig_SNSF::initSixteenBitSound = true;
-bool XSFConfig_SNSF::initReverseStereo = false;
-unsigned XSFConfig_SNSF::initResampler = 1;
-std::string XSFConfig_SNSF::initMutes = "00000000";
+const unsigned XSFConfig::initSampleRate = 44100;
+const std::string XSFConfig::commonName = "SNSF Decoder";
+const std::string XSFConfig::versionNumber = "0.9b";
 
 XSFConfig *XSFConfig::Create()
 {
@@ -71,69 +74,35 @@ void XSFConfig_SNSF::SaveSpecificConfig()
 	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
 
-void XSFConfig_SNSF::GenerateSpecificDialogs()
+void XSFConfig_SNSF::InitializeSpecificConfigDialog(XSFConfigDialog *dialog)
 {
-	/*this->configDialog.AddCheckBoxControl(DialogCheckBoxBuilder(L"Sixteen-Bit Sound").WithSize(80, 10).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 7), 2).WithTabStop().
-		WithID(idSixteenBitSound));*/
-	this->configDialog.AddCheckBoxControl(DialogCheckBoxBuilder(L"Reverse Stereo").WithSize(80, 10).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 7), 2).WithTabStop().
-		WithID(idReverseStereo));
-	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Resampler").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 10)).IsLeftJustified());
-	this->configDialog.AddComboBoxControl(DialogComboBoxBuilder().WithSize(78, 14).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromTopRight, Point<short>(5, -3)).WithTabStop().IsDropDownList().
-		WithID(idResampler));
-	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Mute").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 10), 2).IsLeftJustified());
-	this->configDialog.AddListBoxControl(DialogListBoxBuilder().WithSize(78, 45).WithExactHeight().InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromTopRight, Point<short>(5, -3)).WithID(idMutes).WithBorder().
-		WithVerticalScrollbar().WithMultipleSelect().WithTabStop());
+	auto snsfDialog = static_cast<XSFConfigDialog_SNSF *>(dialog);
+	snsfDialog->reverseStereo = this->reverseStereo;
+	snsfDialog->resampler = static_cast<int>(this->resampler);
+	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+		if (this->mutes[x])
+			snsfDialog->mute.Add(x);
 }
 
-INT_PTR CALLBACK XSFConfig_SNSF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void XSFConfig_SNSF::ResetSpecificConfigDefaults(XSFConfigDialog *dialog)
 {
-	switch (uMsg)
-	{
-		case WM_INITDIALOG:
-			// Sixteen-Bit Sound
-			/*if (this->sixteenBitSound)
-				SendMessageW(GetDlgItem(hwndDlg, idSixteenBitSound), BM_SETCHECK, BST_CHECKED, 0);*/
-			// Reverse Stereo
-			if (this->reverseStereo)
-				SendMessageW(GetDlgItem(hwndDlg, idReverseStereo), BM_SETCHECK, BST_CHECKED, 0);
-			// Resampler
-			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Linear Resampler"));
-			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Hermite Resampler"));
-			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Bspline Resampler"));
-			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Osculating Resampler"));
-			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Sinc Resampler"));
-			SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_SETCURSEL, this->resampler, 0);
-			// Mutes
-			for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
-			{
-				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>((L"BRRPCM " + std::to_wstring(x + 1)).c_str()));
-				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, this->mutes[x], x);
-			}
-			break;
-		case WM_COMMAND:
-			break;
-	}
-
-	return XSFConfig::ConfigDialogProc(hwndDlg, uMsg, wParam, lParam);
-}
-
-void XSFConfig_SNSF::ResetSpecificConfigDefaults(HWND hwndDlg)
-{
-	//SendMessageW(GetDlgItem(hwndDlg, idSixteenBitSound), BM_SETCHECK, XSFConfig_SNSF::initSixteenBitSound ? BST_CHECKED : BST_UNCHECKED, 0);
-	SendMessageW(GetDlgItem(hwndDlg, idReverseStereo), BM_SETCHECK, XSFConfig_SNSF::initReverseStereo ? BST_CHECKED : BST_UNCHECKED, 0);
-	SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_SETCURSEL, XSFConfig_SNSF::initResampler, 0);
+	auto snsfDialog = static_cast<XSFConfigDialog_SNSF *>(dialog);
+	snsfDialog->reverseStereo = XSFConfig_SNSF::initReverseStereo;
+	snsfDialog->resampler = XSFConfig_SNSF::initResampler;
+	snsfDialog->mute.Clear();
 	auto tmpMutes = std::bitset<8>(XSFConfig_SNSF::initMutes);
-	for (int x = 0, numMutes = tmpMutes.size(); x < numMutes; ++x)
-		SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, tmpMutes[x], x);
+	for (std::size_t x = 0, numMutes = tmpMutes.size(); x < numMutes; ++x)
+		if (tmpMutes[x])
+			snsfDialog->mute.Add(x);
 }
 
-void XSFConfig_SNSF::SaveSpecificConfigDialog(HWND hwndDlg)
+void XSFConfig_SNSF::SaveSpecificConfigDialog(XSFConfigDialog *dialog)
 {
-	//this->sixteenBitSound = SendMessageW(GetDlgItem(hwndDlg, idSixteenBitSound), BM_GETCHECK, 0, 0) == BST_CHECKED;
-	this->reverseStereo = SendMessageW(GetDlgItem(hwndDlg, idReverseStereo), BM_GETCHECK, 0, 0) == BST_CHECKED;
-	this->resampler = static_cast<unsigned>(SendMessageW(GetDlgItem(hwndDlg, idResampler), CB_GETCURSEL, 0, 0));
-	for (int x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
-		this->mutes[x] = !!SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_GETSEL, x, 0);
+	auto snsfDialog = static_cast<XSFConfigDialog_SNSF *>(dialog);
+	this->reverseStereo = snsfDialog->reverseStereo;
+	this->resampler = snsfDialog->resampler;
+	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+		this->mutes[x] = snsfDialog->mute.Index(x) != wxNOT_FOUND;
 }
 
 void XSFConfig_SNSF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
@@ -152,4 +121,9 @@ void XSFConfig_SNSF::About(HWND parent)
 {
 	MessageBoxW(parent, ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber + ", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
 		"Utilizes modified snes9x v1.53 for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
+}
+
+XSFConfigDialog *XSFConfig_SNSF::CreateDialogBox(wxWindow *window, const std::string &title)
+{
+	return new XSFConfigDialog_SNSF(*this, window, title);
 }

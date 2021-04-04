@@ -12,11 +12,12 @@
 #include <type_traits>
 #include <vector>
 #include "DialogBuilder.h"
+#include "XSFFile.h"
 #include "convert.h"
 #include "windowsh_wrapper.h"
 
-enum class PeakType;
-enum class VolumeType;
+class wxWindow;
+class XSFConfigDialog;
 class XSFPlayer;
 
 class XSFConfigIO
@@ -68,30 +69,29 @@ protected:
 	PeakType peakType;
 	unsigned sampleRate;
 	std::string titleFormat;
-	DialogTemplate configDialog, configDialogProperty, infoDialog;
+	DialogTemplate infoDialog;
 	std::vector<unsigned> supportedSampleRates;
 	std::unique_ptr<XSFConfigIO> configIO;
 
 	XSFConfig();
 	std::wstring GetTextFromWindow(HWND hwnd);
 	virtual void LoadSpecificConfig() = 0;
-	virtual void GenerateSpecificDialogs() = 0;
 	virtual void SaveSpecificConfig() = 0;
-	virtual INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	virtual INT_PTR CALLBACK InfoDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	virtual void ResetSpecificConfigDefaults(HWND hwndDlg) = 0;
-	virtual void SaveSpecificConfigDialog(HWND hwndDlg) = 0;
+	virtual void InitializeSpecificConfigDialog(XSFConfigDialog *dialog) = 0;
+	virtual void ResetSpecificConfigDefaults(XSFConfigDialog *dialog) = 0;
+	virtual void SaveSpecificConfigDialog(XSFConfigDialog *dialog) = 0;
 	virtual void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) = 0;
 public:
-	static bool initPlayInfinitely;
-	static std::string initSkipSilenceOnStartSec, initDetectSilenceSec, initDefaultLength, initDefaultFade, initTitleFormat;
-	static double initVolume;
-	static VolumeType initVolumeType;
-	static PeakType initPeakType;
+	static constexpr bool initPlayInfinitely = false;
+	inline static const std::string initSkipSilenceOnStartSec = "5", initDetectSilenceSec = "5", initDefaultLength = "1:55", initDefaultFade = "5", initTitleFormat = "%game%[ - [%disc%.]%track%] - %title%";
+	static constexpr double initVolume = 1.0;
+	static constexpr VolumeType initVolumeType = VolumeType::ReplayGainAlbum;
+	static constexpr PeakType initPeakType = PeakType::ReplayGainTrack;
 	// These are not defined in XSFConfig.cpp, they should be defined in your own config's source.
-	static unsigned initSampleRate;
-	static std::string commonName;
-	static std::string versionNumber;
+	static const unsigned initSampleRate;
+	static const std::string commonName;
+	static const std::string versionNumber;
 	// The Create function is not defined in XSFConfig.cpp, it should be defined in your own config's source and return a pointer to your config's class.
 	static XSFConfig *Create();
 	static const std::string &CommonNameWithVersion();
@@ -100,17 +100,20 @@ public:
 	void LoadConfig();
 	void SaveConfig();
 	void GenerateDialogs();
-	static INT_PTR CALLBACK ConfigDialogProcStatic(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static INT_PTR CALLBACK InfoDialogProcStatic(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void CallConfigDialog(HINSTANCE hInstance, HWND hwndParent);
 	void CallInfoDialog(HINSTANCE hInstance, HWND hwndParent);
-	void ResetConfigDefaults(HWND hwndDlg);
-	void SaveConfigDialog(HWND hwndDlg);
+	void InitializeConfigDialog(XSFConfigDialog *dialog);
+	void ResetConfigDefaults(XSFConfigDialog *dialog);
+	void SaveConfigDialog(XSFConfigDialog *dialog);
 	void CopyConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad);
 	void SetHInstance(HINSTANCE hInstance);
 	HINSTANCE GetHInstance() const;
 
 	virtual void About(HWND parent) = 0;
+	virtual XSFConfigDialog *CreateDialogBox(wxWindow *window, const std::string &title) = 0;
+
+	const std::vector<unsigned> &GetSupportedSampleRates() const;
 
 	bool GetPlayInfinitely() const;
 	unsigned long GetSkipSilenceOnStartSec() const;

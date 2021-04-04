@@ -16,6 +16,7 @@ set(HEADERS
 	SSEQPlayer/Track.h
 	resource.h
 	XSFConfig_NCSF.h
+	XSFConfigDialog_NCSF.h
 	XSFPlayer_NCSF.h)
 set(RESOURCES
 	in_ncsf.rc)
@@ -34,6 +35,7 @@ set(SOURCES
 	SSEQPlayer/SYMBSection.cpp
 	SSEQPlayer/Track.cpp
 	XSFConfig_NCSF.cpp
+	XSFConfigDialog_NCSF.cpp
 	XSFPlayer_NCSF.cpp)
 
 add_library(in_ncsf SHARED ${HEADERS} ${RESOURCES} ${SOURCES})

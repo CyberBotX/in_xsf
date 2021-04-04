@@ -11,10 +11,14 @@
 #include <cstddef>
 #include "windowsh_wrapper.h"
 #include "XSFConfig.h"
+#include "XSFConfig_2SF.h"
+#include "XSFConfigDialog_2SF.h"
 #include "convert.h"
 #include "desmume/NDSSystem.h"
 #include "desmume/version.h"
 
+class wxWindow;
+class XSFConfigDialog;
 class XSFPlayer;
 
 enum
@@ -23,33 +27,9 @@ enum
 	idMutes
 };
 
-class XSFConfig_2SF : public XSFConfig
-{
-protected:
-	static unsigned initInterpolation;
-	static std::string initMutes;
-
-	friend class XSFConfig;
-	unsigned interpolation;
-	std::bitset<16> mutes;
-
-	XSFConfig_2SF();
-	void LoadSpecificConfig() override;
-	void SaveSpecificConfig() override;
-	void GenerateSpecificDialogs() override;
-	INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
-	void ResetSpecificConfigDefaults(HWND hwndDlg) override;
-	void SaveSpecificConfigDialog(HWND hwndDlg) override;
-	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
-public:
-	void About(HWND parent) override;
-};
-
-unsigned XSFConfig::initSampleRate = static_cast<unsigned>(DESMUME_SAMPLE_RATE);
-std::string XSFConfig::commonName = "2SF Decoder";
-std::string XSFConfig::versionNumber = "0.9b";
-unsigned XSFConfig_2SF::initInterpolation = 2;
-std::string XSFConfig_2SF::initMutes = "0000000000000000";
+const unsigned XSFConfig::initSampleRate = static_cast<unsigned>(DESMUME_SAMPLE_RATE);
+const std::string XSFConfig::commonName = "2SF Decoder";
+const std::string XSFConfig::versionNumber = "0.9b";
 
 XSFConfig *XSFConfig::Create()
 {
@@ -74,54 +54,32 @@ void XSFConfig_2SF::SaveSpecificConfig()
 	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
 
-void XSFConfig_2SF::GenerateSpecificDialogs()
+void XSFConfig_2SF::InitializeSpecificConfigDialog(XSFConfigDialog *dialog)
 {
-	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Interpolation").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 10), 2).IsLeftJustified());
-	this->configDialog.AddComboBoxControl(DialogComboBoxBuilder().WithSize(78, 14).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromTopRight, Point<short>(5, -3)).WithID(idInterpolation).IsDropDownList().
-		WithTabStop());
-	this->configDialog.AddLabelControl(DialogLabelBuilder(L"Mute").WithSize(50, 8).InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromBottomLeft, Point<short>(0, 10), 2).IsLeftJustified());
-	this->configDialog.AddListBoxControl(DialogListBoxBuilder().WithSize(78, 45).WithExactHeight().InGroup(L"Output").WithRelativePositionToSibling(RelativePosition::PositionType::FromTopRight, Point<short>(5, -3)).WithID(idMutes).WithBorder().
-		WithVerticalScrollbar().WithMultipleSelect().WithTabStop());
+	auto twosfDialog = static_cast<XSFConfigDialog_2SF *>(dialog);
+	twosfDialog->interpolation = static_cast<int>(this->interpolation);
+	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
+		if (this->mutes[x])
+			twosfDialog->mute.Add(x);
 }
 
-INT_PTR CALLBACK XSFConfig_2SF::ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void XSFConfig_2SF::ResetSpecificConfigDefaults(XSFConfigDialog *dialog)
 {
-	switch (uMsg)
-	{
-		case WM_INITDIALOG:
-			// Interpolation
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"No Interpolation"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Linear Interpolation"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Cosine Interpolation"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Sharp Interpolation"));
-			SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_SETCURSEL, this->interpolation, 0);
-			// Mutes
-			for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
-			{
-				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_ADDSTRING, 0, reinterpret_cast<LPARAM>((L"SPU " + std::to_wstring(x + 1)).c_str()));
-				SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, this->mutes[x], x);
-			}
-			break;
-		case WM_COMMAND:
-			break;
-	}
-
-	return XSFConfig::ConfigDialogProc(hwndDlg, uMsg, wParam, lParam);
-}
-
-void XSFConfig_2SF::ResetSpecificConfigDefaults(HWND hwndDlg)
-{
-	SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_SETCURSEL, XSFConfig_2SF::initInterpolation, 0);
+	auto twosfDialog = static_cast<XSFConfigDialog_2SF *>(dialog);
+	twosfDialog->interpolation = XSFConfig_2SF::initInterpolation;
+	twosfDialog->mute.Clear();
 	auto tmpMutes = std::bitset<16>(XSFConfig_2SF::initMutes);
 	for (std::size_t x = 0, numMutes = tmpMutes.size(); x < numMutes; ++x)
-		SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_SETSEL, tmpMutes[x], x);
+		if (tmpMutes[x])
+			twosfDialog->mute.Add(x);
 }
 
-void XSFConfig_2SF::SaveSpecificConfigDialog(HWND hwndDlg)
+void XSFConfig_2SF::SaveSpecificConfigDialog(XSFConfigDialog *dialog)
 {
-	this->interpolation = static_cast<unsigned>(SendMessageW(GetDlgItem(hwndDlg, idInterpolation), CB_GETCURSEL, 0, 0));
+	auto twosfDialog = static_cast<XSFConfigDialog_2SF *>(dialog);
+	this->interpolation = twosfDialog->interpolation;
 	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
-		this->mutes[x] = !!SendMessageW(GetDlgItem(hwndDlg, idMutes), LB_GETSEL, x, 0);
+		this->mutes[x] = twosfDialog->mute.Index(x) != wxNOT_FOUND;
 }
 
 void XSFConfig_2SF::CopySpecificConfigToMemory(XSFPlayer *, bool preLoad)
@@ -138,4 +96,9 @@ void XSFConfig_2SF::About(HWND parent)
 {
 	MessageBoxW(parent, ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber + ", using xSF Winamp plugin framework (based on the vio*sf plugins) by Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]\n\n"
 		"Utilizes modified " + EMU_DESMUME_NAME_AND_VERSION() + " for audio playback.").c_str(), ConvertFuncs::StringToWString(XSFConfig::commonName + " v" + XSFConfig::versionNumber).c_str(), MB_OK);
+}
+
+XSFConfigDialog *XSFConfig_2SF::CreateDialogBox(wxWindow *window, const std::string &title)
+{
+	return new XSFConfigDialog_2SF(*this, window, title);
 }

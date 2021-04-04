@@ -22,6 +22,8 @@
 #include "SSEQPlayer/SDAT.h"
 #include "SSEQPlayer/Player.h"
 
+class XSFFile;
+
 class XSFPlayer_NCSF : public XSFPlayer
 {
 	std::uint32_t sseq;
@@ -29,6 +31,9 @@ class XSFPlayer_NCSF : public XSFPlayer
 	std::unique_ptr<SDAT> sdat;
 	Player player;
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
+#ifndef NDEBUG
+	bool useSoundViewDialog;
+#endif
 	std::bitset<16> mutes;
 
 	void MapNCSFSection(const std::vector<std::uint8_t> &section);
@@ -45,6 +50,9 @@ public:
 	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
 	void Terminate() override;
 
+#ifndef NDEBUG
+	void SetUseSoundViewDialog(bool newUseSoundViewDialog);
+#endif
 	void SetInterpolation(unsigned interpolation);
 	void SetMutes(const std::bitset<16> &newMutes);
 #ifndef NDEBUG

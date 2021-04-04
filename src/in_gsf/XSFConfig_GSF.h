@@ -1,12 +1,8 @@
 /*
- * xSF - SNSF configuration
+ * xSF - GSF configuration
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
  *
  * Partially based on the vio*sf framework
- *
- * NOTE: 16-bit sound is always enabled, the player is currently limited to
- * creating a 16-bit PCM for Winamp and can not handle 8-bit sound from
- * snes9x.
  */
 
 #pragma once
@@ -20,18 +16,17 @@ class wxWindow;
 class XSFConfigDialog;
 class XSFPlayer;
 
-class XSFConfig_SNSF : public XSFConfig
+class XSFConfig_GSF : public XSFConfig
 {
 protected:
-	static constexpr bool /*initSixteenBitSound = true, */initReverseStereo = false;
-	static constexpr unsigned initResampler = 1;
-	inline static const std::string initMutes = "00000000";
+	static constexpr bool initLowPassFiltering = true;
+	inline static const std::string initMutes = "000000";
 
 	friend class XSFConfig;
-	bool /*sixteenBitSound, */reverseStereo;
-	std::bitset<8> mutes;
+	bool lowPassFiltering;
+	std::bitset<6> mutes;
 
-	XSFConfig_SNSF();
+	XSFConfig_GSF();
 	void LoadSpecificConfig() override;
 	void SaveSpecificConfig() override;
 	void InitializeSpecificConfigDialog(XSFConfigDialog *dialog) override;
@@ -39,8 +34,6 @@ protected:
 	void SaveSpecificConfigDialog(XSFConfigDialog *dialog) override;
 	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
 public:
-	unsigned resampler;
-
 	void About(HWND parent) override;
 	XSFConfigDialog *CreateDialogBox(wxWindow *window, const std::string &title) override;
 };

@@ -18,8 +18,13 @@
 #include "windowsh_wrapper.h"
 #include "XSFConfig.h"
 
+class wxWindow;
 class XSFConfig_NCSF;
+class XSFConfigDialog;
+class XSFPlayer;
+#ifndef DEBUG
 class XSFPlayer_NCSF;
+#endif
 
 #ifndef NDEBUG
 struct SoundViewData
@@ -41,21 +46,26 @@ struct SoundViewData
 class XSFConfig_NCSF : public XSFConfig
 {
 protected:
-	static unsigned initInterpolation;
-	static std::string initMutes;
+#ifndef NDEBUG
+	static constexpr bool initUseSoundViewDialog = true;
+#endif
+	static constexpr unsigned initInterpolation = 4;
+	inline static const std::string initMutes = "0000000000000000";
 
 	friend class XSFConfig;
 	friend struct SoundViewData;
+#ifndef NDEBUG
+	bool useSoundViewDialog;
+#endif
 	unsigned interpolation;
 	std::bitset<16> mutes;
 
 	XSFConfig_NCSF();
 	void LoadSpecificConfig() override;
 	void SaveSpecificConfig() override;
-	void GenerateSpecificDialogs() override;
-	INT_PTR CALLBACK ConfigDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
-	void ResetSpecificConfigDefaults(HWND hwndDlg) override;
-	void SaveSpecificConfigDialog(HWND hwndDlg) override;
+	void InitializeSpecificConfigDialog(XSFConfigDialog *dialog) override;
+	void ResetSpecificConfigDefaults(XSFConfigDialog *dialog) override;
+	void SaveSpecificConfigDialog(XSFConfigDialog *dialog) override;
 	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
 
 #ifndef NDEBUG
@@ -65,6 +75,7 @@ protected:
 #endif
 public:
 	void About(HWND parent) override;
+	XSFConfigDialog *CreateDialogBox(wxWindow *window, const std::string &title) override;
 
 #ifndef NDEBUG
 	void CallSoundView(XSFPlayer *xSFPlayer, HINSTANCE hInstance, HWND hwndParent);

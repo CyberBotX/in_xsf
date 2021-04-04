@@ -198,6 +198,7 @@ set(wxUSE_XRC OFF CACHE BOOL " " FORCE)
 set(wxUSE_ZIPSTREAM OFF CACHE BOOL " " FORCE)
 set(wxUSE_ZLIB OFF CACHE STRING " " FORCE)
 
+add_compile_definitions($<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Debug>>:_ITERATOR_DEBUG_LEVEL=0>)
 add_subdirectory(wxWidgets)
 
 # in_xsf_framework
@@ -216,6 +217,7 @@ set(HEADERS
 	windowsh_wrapper.h
 	XSFCommon.h
 	XSFConfig.h
+	XSFConfigDialog.h
 	XSFFile.h
 	XSFPlayer.h)
 set(SOURCES
@@ -225,6 +227,7 @@ set(SOURCES
 	TagList.cpp
 	XSFConfig.cpp
 	XSFConfig_Winamp.cpp
+	XSFConfigDialog.cpp
 	XSFFile.cpp
 	XSFPlayer.cpp)
 

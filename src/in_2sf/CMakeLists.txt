@@ -63,7 +63,9 @@ set(HEADERS
 	spu/adpcmdecoder.h
 	spu/interpolator.h
 	spu/samplecache.h
-	spu/sampledata.h)
+	spu/sampledata.h
+	XSFConfig_2SF.h
+	XSFConfigDialog_2SF.h)
 set(SOURCES
 	desmume/addons/slot1_retail.cpp
 	desmume/arm_instructions.cpp
@@ -112,12 +114,13 @@ set(SOURCES
 	spu/samplecache.cpp
 	spu/sampledata.cpp
 	XSFConfig_2SF.cpp
+	XSFConfigDialog_2SF.cpp
 	XSFPlayer_2SF.cpp)
 
 add_library(in_2sf SHARED ${HEADERS} ${SOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})
 target_compile_options(in_2sf PUBLIC
-	$<$<CXX_COMPILER_ID:MSVC>:/wd4018 /wd4100 /wd4146 /wd4127 /wd4189 /wd4201 /wd4245 /wd4456 /wd4459 /wd4701 /wd4703 /wd4706 /wd4996 /wd6001 /wd6011 /wd6297 /wd6308 /wd6385 /wd6386 /wd26454 /wd26495 /wd26812 /wd26819 /wd28112>)
+	$<$<CXX_COMPILER_ID:MSVC>:/wd4018 /wd4100 /wd4146 /wd4127 /wd4189 /wd4201 /wd4245 /wd4456 /wd4459 /wd4505 /wd4701 /wd4703 /wd4706 /wd4996 /wd6001 /wd6011 /wd6297 /wd6308 /wd6385 /wd6386 /wd26454 /wd26495 /wd26812 /wd26819 /wd28112>)
 target_link_libraries(in_2sf
 	in_xsf_framework)

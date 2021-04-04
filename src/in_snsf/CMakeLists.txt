@@ -24,7 +24,8 @@ set(HEADERS
 	snes9x/ppu.h
 	snes9x/sdd1.h
 	snes9x/snes9x.h
-	XSFConfig_SNSF.h)
+	XSFConfig_SNSF.h
+	XSFConfigDialog_SNSF.h)
 set(SOURCES
 	snes9x/apu/apu.cpp
 	snes9x/apu/SNES_SPC.cpp
@@ -39,6 +40,7 @@ set(SOURCES
 	snes9x/ppu.cpp
 	snes9x/sdd1.cpp
 	XSFConfig_SNSF.cpp
+	XSFConfigDialog_SNSF.cpp
 	XSFPlayer_SNSF.cpp)
 
 add_library(in_snsf SHARED ${HEADERS} ${SOURCES})
