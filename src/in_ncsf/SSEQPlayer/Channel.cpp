@@ -461,7 +461,7 @@ void Channel::Update()
 			this->reg.totalLength = this->reg.loopStart + this->reg.length;
 			this->ampl = AMPL_THRESHOLD;
 			this->state = ChannelState::Attack;
-			// fallthrough
+			[[fallthrough]];
 		case ChannelState::Attack:
 		{
 			int newAmpl = this->ampl;
