@@ -66,7 +66,7 @@ set(HEADERS
 	spu/sampledata.h
 	XSFConfig_2SF.h
 	XSFConfigDialog_2SF.h)
-set(SOURCES
+set(DESMUME_SOURCES
 	desmume/addons/slot1_retail.cpp
 	desmume/arm_instructions.cpp
 	desmume/arm_jit.cpp
@@ -112,12 +112,24 @@ set(SOURCES
 	spu/adpcmdecoder.cpp
 	spu/interpolator.cpp
 	spu/samplecache.cpp
-	spu/sampledata.cpp
+	spu/sampledata.cpp)
+set(SOURCES
+	${DESMUME_SOURCES}
 	XSFConfig_2SF.cpp
 	XSFConfigDialog_2SF.cpp
 	XSFPlayer_2SF.cpp)
 
+set(DESMUME_COMPILE_OPTIONS
+	$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wno-shadow -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-missing-field-initializers -Wno-unused-function -Wno-implicit-fallthrough -Wno-old-style-cast -Wno-deprecated-copy
+		-Wno-sign-compare -Wno-float-equal -Wno-missing-braces>
+	$<$<CXX_COMPILER_ID:GNU>:-Wno-class-memaccess -Wno-unused-but-set-variable>
+	$<$<CXX_COMPILER_ID:Clang>:-Wno-array-bounds>)
+
+set_source_files_properties(${DESMUME_SOURCES} PROPERTIES
+	COMPILE_OPTIONS "${DESMUME_COMPILE_OPTIONS}")
+
 add_library(in_2sf SHARED ${HEADERS} ${SOURCES})
+set_target_properties(in_2sf PROPERTIES PREFIX "")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})
 target_compile_options(in_2sf PUBLIC

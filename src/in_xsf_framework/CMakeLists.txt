@@ -236,10 +236,13 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEAD
 source_group("Source Files" ${SOURCES})
 target_compile_definitions(in_xsf_framework PUBLIC
 	_CRT_SECURE_NO_WARNINGS
+	_WINDOWS
 	WINAMP_PLUGIN
 	UNICODE_INPUT_PLUGIN
 	$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<CONFIG:Debug>>:_ITERATOR_DEBUG_LEVEL=0>)
 target_compile_options(in_xsf_framework PUBLIC
+	$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wall -Wctor-dtor-privacy -Wold-style-cast -Wextra -Wno-div-by-zero -Wfloat-equal -Wshadow -Winit-self -Wcast-qual -Wunreachable-code -Woverloaded-virtual -Wno-long-long -Wno-switch>
+	$<$<CXX_COMPILER_ID:GNU>:-Wlogical-op>
 	$<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4244 /wd6258 /wd26451 /wd28159>)
 target_include_directories(in_xsf_framework PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}

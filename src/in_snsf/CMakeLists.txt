@@ -26,7 +26,7 @@ set(HEADERS
 	snes9x/snes9x.h
 	XSFConfig_SNSF.h
 	XSFConfigDialog_SNSF.h)
-set(SOURCES
+set(SNES9X_SOURCES
 	snes9x/apu/apu.cpp
 	snes9x/apu/SNES_SPC.cpp
 	snes9x/apu/SNES_SPC_misc.cpp
@@ -38,12 +38,21 @@ set(SOURCES
 	snes9x/globals.cpp
 	snes9x/memmap.cpp
 	snes9x/ppu.cpp
-	snes9x/sdd1.cpp
+	snes9x/sdd1.cpp)
+set(SOURCES
+	${SNES9X_SOURCES}
 	XSFConfig_SNSF.cpp
 	XSFConfigDialog_SNSF.cpp
 	XSFPlayer_SNSF.cpp)
 
+set(SNES9X_COMPILE_OPTIONS
+	$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wno-implicit-fallthrough -Wno-shift-negative-value>)
+
+set_source_files_properties(${SNES9X_SOURCES} PROPERTIES
+	COMPILE_OPTIONS "${SNES9X_COMPILE_OPTIONS}")
+
 add_library(in_snsf SHARED ${HEADERS} ${SOURCES})
+set_target_properties(in_snsf PROPERTIES PREFIX "")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})
 target_compile_options(in_snsf PUBLIC

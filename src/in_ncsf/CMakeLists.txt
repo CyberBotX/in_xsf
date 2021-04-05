@@ -39,6 +39,7 @@ set(SOURCES
 	XSFPlayer_NCSF.cpp)
 
 add_library(in_ncsf SHARED ${HEADERS} ${RESOURCES} ${SOURCES})
+set_target_properties(in_ncsf PROPERTIES PREFIX "")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
 source_group("Resource Files" FILES ${RESOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})

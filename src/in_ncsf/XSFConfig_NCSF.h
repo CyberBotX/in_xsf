@@ -54,9 +54,6 @@ protected:
 
 	friend class XSFConfig;
 	friend struct SoundViewData;
-#ifndef NDEBUG
-	bool useSoundViewDialog;
-#endif
 	unsigned interpolation;
 	std::bitset<16> mutes;
 
@@ -69,6 +66,7 @@ protected:
 	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
 
 #ifndef NDEBUG
+	bool useSoundViewDialog;
 	std::unique_ptr<SoundViewData> soundViewData;
 
 	static INT_PTR CALLBACK SoundViewDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);

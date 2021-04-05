@@ -6,17 +6,29 @@
  */
 
 #include <string>
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 #include <wx/arrstr.h>
 #include <wx/choice.h>
 #include <wx/gbsizer.h>
 #include <wx/listbox.h>
 #include <wx/stattext.h>
 #include <wx/valgen.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #include "XSFConfig.h"
 #include "XSFConfigDialog.h"
 #include "XSFConfigDialog_2SF.h"
 
-XSFConfigDialog_2SF::XSFConfigDialog_2SF(XSFConfig &config, wxWindow *parent, const wxString &title) : XSFConfigDialog(config, parent, title)
+XSFConfigDialog_2SF::XSFConfigDialog_2SF(XSFConfig &newConfig, wxWindow *parent, const wxString &title) : XSFConfigDialog(newConfig, parent, title)
 {
 	auto interpolationLabel = new wxStaticText(this->outputPanel, wxID_ANY, "Interpolation");
 	this->outputSizer->Add(interpolationLabel, { 4, 0 }, { 1, 1 }, wxALIGN_CENTER_VERTICAL | wxALL, 5);

@@ -6,6 +6,13 @@
  */
 
 #include <string>
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 #include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/choice.h>
@@ -19,6 +26,11 @@
 #include <wx/valgen.h>
 #include <wx/valnum.h>
 #include <wx/window.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #include "RegExValidator.h"
 #include "XSFConfig.h"
 #include "XSFConfigDialog.h"
@@ -29,7 +41,7 @@ enum
 };
 
 // This just sets up the base dialog box's controls, it does not do the auto-sizing at this stage.
-XSFConfigDialog::XSFConfigDialog(XSFConfig &config, wxWindow *parent, const wxString &title) : wxDialog(parent, wxID_ANY, title), config(config)
+XSFConfigDialog::XSFConfigDialog(XSFConfig &newConfig, wxWindow *parent, const wxString &title) : wxDialog(parent, wxID_ANY, title), config(newConfig)
 {
 	this->mainSizer = new wxGridBagSizer;
 

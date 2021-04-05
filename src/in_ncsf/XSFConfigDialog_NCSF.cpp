@@ -6,6 +6,13 @@
  */
 
 #include <string>
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 #include <wx/arrstr.h>
 #include <wx/checkbox.h>
 #include <wx/choice.h>
@@ -13,11 +20,16 @@
 #include <wx/listbox.h>
 #include <wx/stattext.h>
 #include <wx/valgen.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #include "XSFConfig.h"
 #include "XSFConfigDialog.h"
 #include "XSFConfigDialog_NCSF.h"
 
-XSFConfigDialog_NCSF::XSFConfigDialog_NCSF(XSFConfig &config, wxWindow *parent, const wxString &title) : XSFConfigDialog(config, parent, title)
+XSFConfigDialog_NCSF::XSFConfigDialog_NCSF(XSFConfig &newConfig, wxWindow *parent, const wxString &title) : XSFConfigDialog(newConfig, parent, title)
 {
 #ifndef NDEBUG
 	auto useSoundViewCheckBox = new wxCheckBox(this->generalPanel, wxID_ANY, "Use Sound View Window", wxDefaultPosition, wxDefaultSize, 0, wxGenericValidator{ &this->useSoundView });

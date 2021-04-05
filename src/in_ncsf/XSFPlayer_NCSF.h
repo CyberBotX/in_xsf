@@ -31,10 +31,10 @@ class XSFPlayer_NCSF : public XSFPlayer
 	std::unique_ptr<SDAT> sdat;
 	Player player;
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
+	std::bitset<16> mutes;
 #ifndef NDEBUG
 	bool useSoundViewDialog;
 #endif
-	std::bitset<16> mutes;
 
 	void MapNCSFSection(const std::vector<std::uint8_t> &section);
 	bool MapNCSF(XSFFile *xSFToLoad);

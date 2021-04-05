@@ -7,9 +7,21 @@
 
 #pragma once
 
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 #include <wx/msw/winundef.h>
 #include <wx/dialog.h>
 #include <wx/string.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 
 class wxGridBagSizer;
 class wxPanel;
@@ -23,7 +35,7 @@ class XSFConfigDialog : public wxDialog
 	wxGridBagSizer *mainSizer;
 	XSFConfig &config;
 public:
-	XSFConfigDialog(XSFConfig &config, wxWindow *parent, const wxString &title);
+	XSFConfigDialog(XSFConfig &newConfig, wxWindow *parent, const wxString &title);
 	void Finalize();
 
 	wxPanel *generalPanel;

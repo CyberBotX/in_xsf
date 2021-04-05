@@ -9,8 +9,20 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 #include <wx/app.h>
 #include <wx/nativewin.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #include "windowsh_wrapper.h"
 #include <windowsx.h>
 #include "XSFConfig.h"
@@ -101,7 +113,7 @@ public:
 	{
 	}
 
-	XSFConfigApp(HWND parent, XSFConfig *config) : parent(parent), config(config)
+	XSFConfigApp(HWND newParent, XSFConfig *newConfig) : parent(newParent), config(newConfig)
 	{
 	}
 
@@ -124,7 +136,19 @@ public:
 	}
 };
 
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 wxIMPLEMENT_APP_NO_MAIN(XSFConfigApp);
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 
 void XSFConfig::GenerateDialogs()
 {

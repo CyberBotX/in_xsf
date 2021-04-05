@@ -7,7 +7,19 @@
 
 #pragma once
 
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
 #include <wx/dynarray.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #include "XSFConfigDialog.h"
 
 class wxString;
@@ -17,7 +29,7 @@ class XSFConfig;
 class XSFConfigDialog_2SF : public XSFConfigDialog
 {
 public:
-	XSFConfigDialog_2SF(XSFConfig &config, wxWindow *parent, const wxString &title);
+	XSFConfigDialog_2SF(XSFConfig &newConfig, wxWindow *parent, const wxString &title);
 
 	int interpolation;
 	wxArrayInt mute;
