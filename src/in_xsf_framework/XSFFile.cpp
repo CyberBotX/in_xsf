@@ -17,9 +17,6 @@
 #include "XSFCommon.h"
 #include "XSFFile.h"
 #include "convert.h"
-#if defined(_WIN32) && !defined(_MSC_VER)
-# include "fstream_wfopen.h"
-#endif
 #include "zlib.h"
 
 static inline void Set32BitsLE(std::uint32_t input, std::uint8_t *output)
@@ -61,65 +58,33 @@ static inline std::string TrimWhitespace(const std::string &orig)
 	return LeftTrimWhitespace(RightTrimWhitespace(orig));
 }
 
-XSFFile::XSFFile() : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName("")
+XSFFile::XSFFile() : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), filePath()
 {
 }
 
-XSFFile::XSFFile(const std::string &filename) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(filename)
+XSFFile::XSFFile(const std::filesystem::path &path) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), filePath(path)
 {
-	this->ReadXSF(filename, 0, 0, true);
+	this->ReadXSF(path, 0, 0, true);
 }
 
-XSFFile::XSFFile(const std::string &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(filename)
+XSFFile::XSFFile(const std::filesystem::path &path, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), filePath(path)
 {
-	this->ReadXSF(filename, programSizeOffset, programHeaderSize);
+	this->ReadXSF(path, programSizeOffset, programHeaderSize);
 }
 
-#ifdef _WIN32
-XSFFile::XSFFile(const std::wstring &filename) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(ConvertFuncs::WStringToString(filename))
+void XSFFile::ReadXSF(const std::filesystem::path &path, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly)
 {
-	this->ReadXSF(filename, 0, 0, true);
-}
-
-XSFFile::XSFFile(const std::wstring &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize) : xSFType(0), hasFile(false), rawData(), reservedSection(), programSection(), tags(), fileName(ConvertFuncs::WStringToString(filename))
-{
-	this->ReadXSF(filename, programSizeOffset, programHeaderSize);
-}
-#endif
-
-void XSFFile::ReadXSF(const std::string &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly)
-{
-	if (!std::filesystem::is_regular_file(filename))
-		throw std::logic_error("File " + filename + " does not exist.");
+	if (!std::filesystem::is_regular_file(path))
+		throw std::logic_error("File " + path.string() + " does not exist.");
 
 	std::ifstream xSF;
 	xSF.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	xSF.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+	xSF.open(path, std::ifstream::in | std::ifstream::binary);
 
 	this->ReadXSF(xSF, programSizeOffset, programHeaderSize, readTagsOnly);
 
 	xSF.close();
 }
-
-#ifdef _WIN32
-void XSFFile::ReadXSF(const std::wstring &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly)
-{
-	if (!std::filesystem::is_regular_file(filename))
-		throw std::logic_error("File " + ConvertFuncs::WStringToString(filename) + " does not exist.");
-
-#if defined(_WIN32) && !defined(_MSC_VER)
-	ifstream_wfopen xSF;
-#else
-	std::ifstream xSF;
-#endif
-	xSF.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-	xSF.open(filename.c_str(), std::ifstream::in | std::ifstream::binary);
-
-	this->ReadXSF(xSF, programSizeOffset, programHeaderSize, readTagsOnly);
-
-	xSF.close();
-}
-#endif
 
 void XSFFile::ReadXSF(std::ifstream &xSF, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly)
 {
@@ -462,29 +427,21 @@ std::string XSFFile::GetFormattedTitle(const std::string &format) const
 	return formattedTitle;
 }
 
-std::string XSFFile::GetFilename() const
+std::filesystem::path XSFFile::GetFilepath() const
 {
-	return this->fileName;
+	return this->filePath;
 }
 
-std::string XSFFile::GetFilenameWithoutPath() const
+std::filesystem::path XSFFile::GetFilenameWithoutPath() const
 {
-	return std::filesystem::path(this->fileName).filename().string();
+	return this->filePath.filename();
 }
 
 void XSFFile::SaveFile() const
 {
-#if defined(_WIN32) && !defined(_MSC_VER)
-	ofstream_wfopen xSF;
-#else
 	std::ofstream xSF;
-#endif
 	xSF.exceptions(std::ofstream::failbit);
-#ifdef _WIN32
-	xSF.open(ConvertFuncs::StringToWString(this->fileName).c_str(), std::ofstream::out | std::ofstream::binary);
-#else
-	xSF.open(this->fileName.c_str(), std::ofstream::out | std::ofstream::binary);
-#endif
+	xSF.open(this->filePath, std::ofstream::out | std::ofstream::binary);
 
 	xSF.write(reinterpret_cast<const char *>(&this->rawData[0]), this->rawData.size());
 

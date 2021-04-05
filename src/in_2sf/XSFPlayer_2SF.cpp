@@ -30,10 +30,7 @@ class XSFPlayer_2SF : public XSFPlayer
 	bool RecursiveLoad2SF(XSFFile *xSFToLoad, int level);
 	bool Load2SF(XSFFile *xSFToLoad);
 public:
-	XSFPlayer_2SF(const std::string &filename);
-#ifdef _WIN32
-	XSFPlayer_2SF(const std::wstring &filename);
-#endif
+	XSFPlayer_2SF(const std::filesystem::path &path);
 	~XSFPlayer_2SF() override { this->Terminate(); }
 	bool Load() override;
 	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
@@ -43,17 +40,10 @@ public:
 const char *XSFPlayer::WinampDescription = "2SF Decoder";
 const char *XSFPlayer::WinampExts = "2sf;mini2sf\0DS Sound Format files (*.2sf;*.mini2sf)\0";
 
-XSFPlayer *XSFPlayer::Create(const std::string &fn)
+XSFPlayer *XSFPlayer::Create(const std::filesystem::path &path)
 {
-	return new XSFPlayer_2SF(fn);
+	return new XSFPlayer_2SF(path);
 }
-
-#ifdef _WIN32
-XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
-{
-	return new XSFPlayer_2SF(fn);
-}
-#endif
 
 volatile bool execute = false;
 
@@ -149,11 +139,7 @@ bool XSFPlayer_2SF::RecursiveLoad2SF(XSFFile *xSFToLoad, int level)
 {
 	if (level <= 10 && xSFToLoad->GetTagExists("_lib"))
 	{
-#ifdef _WIN32
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue("_lib")).wstring(), 4, 8);
-#else
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue("_lib")).string(), 4, 8);
-#endif
+		auto libxSF = std::make_unique<XSFFile>(xSFToLoad->GetFilepath().parent_path() / xSFToLoad->GetTagValue("_lib"), 4, 8);
 		if (!this->RecursiveLoad2SF(libxSF.get(), level + 1))
 			return false;
 	}
@@ -170,11 +156,7 @@ bool XSFPlayer_2SF::RecursiveLoad2SF(XSFFile *xSFToLoad, int level)
 		if (xSFToLoad->GetTagExists(libTag))
 		{
 			found = true;
-#ifdef _WIN32
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue(libTag)).wstring(), 4, 8);
-#else
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue(libTag)).string(), 4, 8);
-#endif
+			auto libxSF = std::make_unique<XSFFile>(xSFToLoad->GetFilepath().parent_path() / xSFToLoad->GetTagValue(libTag), 4, 8);
 			if (!this->RecursiveLoad2SF(libxSF.get(), level + 1))
 				return false;
 		}
@@ -190,17 +172,10 @@ bool XSFPlayer_2SF::Load2SF(XSFFile *xSFToLoad)
 	return this->RecursiveLoad2SF(xSFToLoad, 1);
 }
 
-XSFPlayer_2SF::XSFPlayer_2SF(const std::string &filename) : XSFPlayer()
+XSFPlayer_2SF::XSFPlayer_2SF(const std::filesystem::path &path) : XSFPlayer()
 {
-	this->xSF.reset(new XSFFile(filename, 4, 8));
+	this->xSF.reset(new XSFFile(path, 4, 8));
 }
-
-#ifdef _WIN32
-XSFPlayer_2SF::XSFPlayer_2SF(const std::wstring &filename) : XSFPlayer()
-{
-	this->xSF.reset(new XSFFile(filename, 4, 8));
-}
-#endif
 
 bool XSFPlayer_2SF::Load()
 {

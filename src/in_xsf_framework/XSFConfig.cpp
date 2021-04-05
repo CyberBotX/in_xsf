@@ -211,7 +211,7 @@ INT_PTR CALLBACK XSFConfig::InfoDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
 			EndDialog(hwndDlg, IDCANCEL);
 			break;
 		case WM_INITDIALOG:
-			SetWindowTextW(hwndDlg, ConvertFuncs::StringToWString(xSFFileInInfo->GetFilename()).c_str());
+			SetWindowTextW(hwndDlg, xSFFileInInfo->GetFilepath().wstring().c_str());
 			SetWindowTextW(GetDlgItem(hwndDlg, idInfoTitle), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("title")).c_str());
 			SetWindowTextW(GetDlgItem(hwndDlg, idInfoArtist), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("artist")).c_str());
 			SetWindowTextW(GetDlgItem(hwndDlg, idInfoGame), ConvertFuncs::StringToWString(xSFFileInInfo->GetTagValue("game")).c_str());

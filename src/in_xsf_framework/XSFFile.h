@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -31,26 +32,20 @@ enum class PeakType
 
 class XSFFile
 {
+private:
+	void ReadXSF(const std::filesystem::path &path, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
+	void ReadXSF(std::ifstream &xSF, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
 protected:
 	std::uint8_t xSFType;
 	bool hasFile;
 	std::vector<std::uint8_t> rawData, reservedSection, programSection;
 	TagList tags;
-	std::string fileName;
-	void ReadXSF(const std::string &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
-#ifdef _WIN32
-	void ReadXSF(const std::wstring &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
-#endif
-	void ReadXSF(std::ifstream &xSF, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize, bool readTagsOnly = false);
+	std::filesystem::path filePath;
 	std::string FormattedTitleOptionalBlock(const std::string &block, bool &hadReplacement, unsigned level) const;
 public:
 	XSFFile();
-	XSFFile(const std::string &filename);
-	XSFFile(const std::string &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize);
-#ifdef _WIN32
-	XSFFile(const std::wstring &filename);
-	XSFFile(const std::wstring &filename, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize);
-#endif
+	XSFFile(const std::filesystem::path &path);
+	XSFFile(const std::filesystem::path &path, std::uint32_t programSizeOffset, std::uint32_t programHeaderSize);
 	bool IsValidType(std::uint8_t type) const;
 	void Clear();
 	bool HasFile() const;
@@ -72,7 +67,7 @@ public:
 	unsigned long GetFadeMS(unsigned long defaultFade) const;
 	double GetVolume(VolumeType preferredVolumeType, PeakType preferredPeakType) const;
 	std::string GetFormattedTitle(const std::string &format) const;
-	std::string GetFilename() const;
-	std::string GetFilenameWithoutPath() const;
+	std::filesystem::path GetFilepath() const;
+	std::filesystem::path GetFilenameWithoutPath() const;
 	void SaveFile() const;
 };

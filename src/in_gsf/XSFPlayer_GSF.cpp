@@ -27,10 +27,7 @@
 class XSFPlayer_GSF : public XSFPlayer
 {
 public:
-	XSFPlayer_GSF(const std::string &filename);
-#ifdef _WIN32
-	XSFPlayer_GSF(const std::wstring &filename);
-#endif
+	XSFPlayer_GSF(const std::filesystem::path &path);
 	~XSFPlayer_GSF() override { this->Terminate(); }
 	bool Load() override;
 	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
@@ -40,17 +37,10 @@ public:
 const char *XSFPlayer::WinampDescription = "GSF Decoder";
 const char *XSFPlayer::WinampExts = "gsf;minigsf\0Game Boy Advance Sound Format files (*.gsf;*.minigsf)\0";
 
-XSFPlayer *XSFPlayer::Create(const std::string &fn)
+XSFPlayer *XSFPlayer::Create(const std::filesystem::path &path)
 {
-	return new XSFPlayer_GSF(fn);
+	return new XSFPlayer_GSF(path);
 }
-
-#ifdef _WIN32
-XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
-{
-	return new XSFPlayer_GSF(fn);
-}
-#endif
 
 static struct
 {
@@ -156,11 +146,7 @@ static bool RecursiveLoadGSF(XSFFile *xSF, int level)
 {
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
-#ifdef _WIN32
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).wstring(), 8, 12);
-#else
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).string(), 8, 12);
-#endif
+		auto libxSF = std::make_unique<XSFFile>(xSF->GetFilepath().parent_path() / xSF->GetTagValue("_lib"), 8, 12);
 		if (!RecursiveLoadGSF(libxSF.get(), level + 1))
 			return false;
 	}
@@ -177,11 +163,7 @@ static bool RecursiveLoadGSF(XSFFile *xSF, int level)
 		if (xSF->GetTagExists(libTag))
 		{
 			found = true;
-#ifdef _WIN32
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).wstring(), 8, 12);
-#else
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).string(), 8, 12);
-#endif
+			auto libxSF = std::make_unique<XSFFile>(xSF->GetFilepath().parent_path() / xSF->GetTagValue(libTag), 8, 12);
 			if (!RecursiveLoadGSF(libxSF.get(), level + 1))
 				return false;
 		}
@@ -198,17 +180,10 @@ static bool LoadGSF(XSFFile *xSF)
 	return RecursiveLoadGSF(xSF, 1);
 }
 
-XSFPlayer_GSF::XSFPlayer_GSF(const std::string &filename) : XSFPlayer()
+XSFPlayer_GSF::XSFPlayer_GSF(const std::filesystem::path &path) : XSFPlayer()
 {
-	this->xSF.reset(new XSFFile(filename, 8, 12));
+	this->xSF.reset(new XSFFile(path, 8, 12));
 }
-
-#ifdef _WIN32
-XSFPlayer_GSF::XSFPlayer_GSF(const std::wstring &filename) : XSFPlayer()
-{
-	this->xSF.reset(new XSFFile(filename, 8, 12));
-}
-#endif
 
 bool XSFPlayer_GSF::Load()
 {

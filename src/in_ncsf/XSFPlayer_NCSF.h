@@ -11,6 +11,7 @@
 #pragma once
 
 #include <bitset>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -41,10 +42,7 @@ class XSFPlayer_NCSF : public XSFPlayer
 	bool RecursiveLoadNCSF(XSFFile *xSFToLoad, int level);
 	bool LoadNCSF();
 public:
-	XSFPlayer_NCSF(const std::string &filename);
-#ifdef _WIN32
-	XSFPlayer_NCSF(const std::wstring &filename);
-#endif
+	XSFPlayer_NCSF(const std::filesystem::path &path);
 	~XSFPlayer_NCSF() override;
 	bool Load() override;
 	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;

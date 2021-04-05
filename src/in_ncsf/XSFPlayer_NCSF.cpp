@@ -30,17 +30,10 @@ const char *XSFPlayer::WinampExts = "ncsf;minincsf\0DS Nitro Composer Sound Form
 
 extern XSFConfig *xSFConfig;
 
-XSFPlayer *XSFPlayer::Create(const std::string &fn)
+XSFPlayer *XSFPlayer::Create(const std::filesystem::path &path)
 {
-	return new XSFPlayer_NCSF(fn);
+	return new XSFPlayer_NCSF(path);
 }
-
-#ifdef _WIN32
-XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
-{
-	return new XSFPlayer_NCSF(fn);
-}
-#endif
 
 void XSFPlayer_NCSF::MapNCSFSection(const std::vector<std::uint8_t> &section)
 {
@@ -72,11 +65,7 @@ bool XSFPlayer_NCSF::RecursiveLoadNCSF(XSFFile *xSFToLoad, int level)
 {
 	if (level <= 10 && xSFToLoad->GetTagExists("_lib"))
 	{
-#ifdef _WIN32
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue("_lib")).wstring(), 8, 12);
-#else
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue("_lib")).string(), 8, 12);
-#endif
+		auto libxSF = std::make_unique<XSFFile>(xSFToLoad->GetFilepath().parent_path() / xSFToLoad->GetTagValue("_lib"), 8, 12);
 		if (!this->RecursiveLoadNCSF(libxSF.get(), level + 1))
 			return false;
 	}
@@ -93,11 +82,7 @@ bool XSFPlayer_NCSF::RecursiveLoadNCSF(XSFFile *xSFToLoad, int level)
 		if (xSFToLoad->GetTagExists(libTag))
 		{
 			found = true;
-#ifdef _WIN32
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue(libTag)).wstring(), 8, 12);
-#else
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSFToLoad->GetFilename()).parent_path() / xSFToLoad->GetTagValue(libTag)).string(), 8, 12);
-#endif
+			auto libxSF = std::make_unique<XSFFile>(xSFToLoad->GetFilepath().parent_path() / xSFToLoad->GetTagValue(libTag), 8, 12);
 			if (!this->RecursiveLoadNCSF(libxSF.get(), level + 1))
 				return false;
 		}
@@ -111,25 +96,14 @@ bool XSFPlayer_NCSF::LoadNCSF()
 	return this->RecursiveLoadNCSF(this->xSF.get(), 1);
 }
 
-XSFPlayer_NCSF::XSFPlayer_NCSF(const std::string &filename) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
+XSFPlayer_NCSF::XSFPlayer_NCSF(const std::filesystem::path &path) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
 #ifndef NDEBUG
 	, useSoundViewDialog(false)
 #endif
 {
 	this->uses32BitSamplesClampedTo16Bit = true;
-	this->xSF.reset(new XSFFile(filename, 8, 12));
+	this->xSF.reset(new XSFFile(path, 8, 12));
 }
-
-#ifdef _WIN32
-XSFPlayer_NCSF::XSFPlayer_NCSF(const std::wstring &filename) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
-#ifndef NDEBUG
-	, useSoundViewDialog(false)
-#endif
-{
-	this->uses32BitSamplesClampedTo16Bit = true;
-	this->xSF.reset(new XSFFile(filename, 8, 12));
-}
-#endif
 
 #ifndef NDEBUG
 static HANDLE soundViewThreadHandle = INVALID_HANDLE_VALUE;

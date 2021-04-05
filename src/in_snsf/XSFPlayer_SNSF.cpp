@@ -37,10 +37,7 @@
 class XSFPlayer_SNSF : public XSFPlayer
 {
 public:
-	XSFPlayer_SNSF(const std::string &filename);
-#ifdef _WIN32
-	XSFPlayer_SNSF(const std::wstring &filename);
-#endif
+	XSFPlayer_SNSF(const std::filesystem::path &path);
 	~XSFPlayer_SNSF() override { this->Terminate(); }
 	bool Load() override;
 	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
@@ -52,17 +49,10 @@ const char *XSFPlayer::WinampExts = "snsf;minisnsf\0SNES Sound Format files (*.s
 
 extern XSFConfig *xSFConfig;
 
-XSFPlayer *XSFPlayer::Create(const std::string &fn)
+XSFPlayer *XSFPlayer::Create(const std::filesystem::path &path)
 {
-	return new XSFPlayer_SNSF(fn);
+	return new XSFPlayer_SNSF(path);
 }
-
-#ifdef _WIN32
-XSFPlayer *XSFPlayer::Create(const std::wstring &fn)
-{
-	return new XSFPlayer_SNSF(fn);
-}
-#endif
 
 static struct
 {
@@ -172,11 +162,7 @@ static bool RecursiveLoadSNSF(XSFFile *xSF, int level)
 {
 	if (level <= 10 && xSF->GetTagExists("_lib"))
 	{
-#ifdef _WIN32
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).wstring(), 4, 8);
-#else
-		auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue("_lib")).string(), 4, 8);
-#endif
+		auto libxSF = std::make_unique<XSFFile>(xSF->GetFilepath().parent_path() / xSF->GetTagValue("_lib"), 4, 8);
 		if (!RecursiveLoadSNSF(libxSF.get(), level + 1))
 			return false;
 	}
@@ -193,11 +179,7 @@ static bool RecursiveLoadSNSF(XSFFile *xSF, int level)
 		if (xSF->GetTagExists(libTag))
 		{
 			found = true;
-#ifdef _WIN32
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).wstring(), 4, 8);
-#else
-			auto libxSF = std::make_unique<XSFFile>((std::filesystem::path(xSF->GetFilename()).parent_path() / xSF->GetTagValue(libTag)).string(), 4, 8);
-#endif
+			auto libxSF = std::make_unique<XSFFile>(xSF->GetFilepath().parent_path() / xSF->GetTagValue(libTag), 4, 8);
 			if (!RecursiveLoadSNSF(libxSF.get(), level + 1))
 				return false;
 		}
@@ -216,17 +198,10 @@ static bool LoadSNSF(XSFFile *xSF)
 	return RecursiveLoadSNSF(xSF, 1);
 }
 
-XSFPlayer_SNSF::XSFPlayer_SNSF(const std::string &filename) : XSFPlayer()
+XSFPlayer_SNSF::XSFPlayer_SNSF(const std::filesystem::path &path) : XSFPlayer()
 {
-	this->xSF.reset(new XSFFile(filename, 4, 8));
+	this->xSF.reset(new XSFFile(path, 4, 8));
 }
-
-#ifdef _WIN32
-XSFPlayer_SNSF::XSFPlayer_SNSF(const std::wstring &filename) : XSFPlayer()
-{
-	this->xSF.reset(new XSFFile(filename, 4, 8));
-}
-#endif
 
 bool XSFPlayer_SNSF::Load()
 {

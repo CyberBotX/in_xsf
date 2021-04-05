@@ -165,7 +165,7 @@ int infoBox(const in_char *file, HWND hwndParent)
 			info += L"\n";
 		info += ConvertFuncs::StringToWString(keys[x] + "=" + tags[keys[x]]);
 	}
-	MessageBoxW(hwndParent, info.c_str(), ConvertFuncs::StringToWString(xSF->GetFilenameWithoutPath()).c_str(), MB_OK);
+	MessageBoxW(hwndParent, info.c_str(), xSF->GetFilenameWithoutPath().wstring().c_str(), MB_OK);
 	return INFOBOX_EDITED;
 }
 
@@ -391,7 +391,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfo(const char *fn, c
 {
 	try
 	{
-		if (!extendedXSFFile || extendedXSFFile->GetFilename() != fn)
+		if (!extendedXSFFile || extendedXSFFile->GetFilepath() != fn)
 			extendedXSFFile.reset(new XSFFile(fn));
 		return wrapperWinampSetExtendedFileInfo(data, val);
 	}
@@ -405,7 +405,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *f
 {
 	try
 	{
-		if (!extendedXSFFile || ConvertFuncs::StringToWString(extendedXSFFile->GetFilename()) != fn)
+		if (!extendedXSFFile || extendedXSFFile->GetFilepath() != fn)
 			extendedXSFFile.reset(new XSFFile(fn));
 		return wrapperWinampSetExtendedFileInfo(data, val);
 	}
@@ -417,7 +417,7 @@ extern "C" __declspec(dllexport) int winampSetExtendedFileInfoW(const wchar_t *f
 
 extern "C" __declspec(dllexport) int winampWriteExtendedFileInfo()
 {
-	if (!extendedXSFFile || extendedXSFFile->GetFilename().empty())
+	if (!extendedXSFFile || extendedXSFFile->GetFilepath().empty())
 		return 0;
 	extendedXSFFile->SaveFile();
 	return 1;
