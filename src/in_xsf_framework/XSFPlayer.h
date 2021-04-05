@@ -22,8 +22,8 @@
 class XSFPlayer
 {
 protected:
-	static const std::uint32_t CHECK_SILENCE_BIAS = 0x8000000;
-	static const std::uint32_t CHECK_SILENCE_LEVEL = 7;
+	static constexpr std::uint32_t CHECK_SILENCE_BIAS = 0x8000000;
+	static constexpr std::uint32_t CHECK_SILENCE_LEVEL = 7;
 
 	std::unique_ptr<XSFFile> xSF;
 	unsigned sampleRate, detectedSilenceSample, detectedSilenceSec, skipSilenceOnStartSec, lengthSample, fadeSample, currentSample;
