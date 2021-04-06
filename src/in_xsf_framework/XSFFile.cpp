@@ -166,9 +166,8 @@ void XSFFile::ReadXSF(std::ifstream &xSF, std::uint32_t programSizeOffset, std::
 				xSF.read(&rawtags[0], lengthOfTags);
 				std::string name, value;
 				bool onName = true;
-				for (unsigned x = 0; x < lengthOfTags; ++x)
+				for (auto curr : rawtags)
 				{
-					char curr = rawtags[x];
 					if (curr == 0x0A)
 					{
 						if (!name.empty() && !value.empty())
@@ -449,7 +448,7 @@ void XSFFile::SaveFile() const
 	if (!allTags.empty())
 	{
 		xSF.write("[TAG]", 5);
-		std::for_each(allTags.begin(), allTags.end(), [&](const std::string &tag)
+		for (const auto &tag : allTags)
 		{
 			xSF.write(tag.c_str(), tag.length());
 			xSF.write("\n", 1);

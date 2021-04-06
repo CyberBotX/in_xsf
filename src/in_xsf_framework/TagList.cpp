@@ -26,8 +26,8 @@ auto TagList::GetKeys() const -> const TagsList &
 auto TagList::GetTags() const -> TagsList
 {
 	TagsList allTags;
-	for (auto curr = this->tagsOrder.begin(), end = this->tagsOrder.end(); curr != end; ++curr)
-		allTags.push_back(*curr + "=" + this->tags.find(*curr)->second);
+	for (auto &curr : this->tagsOrder)
+		allTags.push_back(curr + "=" + this->tags.find(curr)->second);
 	return allTags;
 }
 

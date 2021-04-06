@@ -262,12 +262,9 @@ int Track::NoteOnTie(std::uint8_t key, int vel)
 // Original FSS Function: Track_ReleaseAllNotes
 void Track::ReleaseAllNotes()
 {
-	for (int i = 0; i < 16; ++i)
-	{
-		Channel &chn = this->ply->channels[i];
+	for (auto &chn : this->ply->channels)
 		if (chn.state > ChannelState::None && chn.trackId == this->trackId && chn.state != ChannelState::Release)
 			chn.Release();
-	}
 }
 
 enum class SSEQCommand

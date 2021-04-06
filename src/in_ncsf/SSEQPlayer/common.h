@@ -51,8 +51,8 @@ struct PseudoFile
 
 	template<typename T> typename std::enable_if_t<std::is_integral_v<T>> ReadLE(std::vector<T> &arr)
 	{
-		for (std::size_t i = 0, len = arr.size(); i < len; ++i)
-			arr[i] = this->ReadLE<T>();
+		for (auto &item : arr)
+			item = this->ReadLE<T>();
 	}
 
 	void ReadLE(std::vector<std::uint8_t> &arr)
