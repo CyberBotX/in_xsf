@@ -51,6 +51,15 @@ template<typename T> inline typename std::enable_if_t<std::is_integral_v<T>, T> 
 	return value + 1;
 }
 
+// Clamp a value between a minimum and maximum value
+template<typename T1, typename T2> inline void clamp(T1 &valueToClamp, const T2 &minValue, const T2 &maxValue)
+{
+	if (valueToClamp < minValue)
+		valueToClamp = minValue;
+	else if (valueToClamp > maxValue)
+		valueToClamp = maxValue;
+}
+
 inline void CopyToString(const std::wstring &src, wchar_t *dst)
 {
 	std::wcscpy(dst, src.c_str());
