@@ -243,7 +243,7 @@ target_compile_definitions(in_xsf_framework PUBLIC
 target_compile_options(in_xsf_framework PUBLIC
 	$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wall -Wctor-dtor-privacy -Wold-style-cast -Wextra -Wno-div-by-zero -Wfloat-equal -Wshadow -Winit-self -Wcast-qual -Wunreachable-code -Woverloaded-virtual -Wno-long-long -Wno-switch>
 	$<$<CXX_COMPILER_ID:GNU>:-Wlogical-op>
-	$<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4244 /wd6258 /wd26451 /wd28159>)
+	$<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4244 /wd4834 /wd6258 /wd26451 /wd28159>)
 target_include_directories(in_xsf_framework PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/winamp
