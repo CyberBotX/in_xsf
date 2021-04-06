@@ -7,9 +7,10 @@
 
 #pragma once
 
-#include <limits>
 #include <fstream>
+#include <limits>
 #include <string>
+#include <type_traits>
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <cstddef>
@@ -19,7 +20,7 @@
 #include "convert.h"
 
 // Code from http://learningcppisfun.blogspot.com/2010/04/comparing-floating-point-numbers.html
-template<typename T> inline bool fEqual(T x, T y, int N = 1)
+template<typename T> inline typename std::enable_if_t<std::is_floating_point_v<T>, bool> fEqual(T x, T y, int N = 1)
 {
 	T diff = std::abs(x - y);
 	T tolerance = N * std::numeric_limits<T>::epsilon();
@@ -40,7 +41,7 @@ inline std::uint32_t Get32BitsLE(std::ifstream &input)
 
 // Code from the following answer on Stack Overflow:
 // http://stackoverflow.com/a/15479212
-template<typename T> inline T NextHighestPowerOf2(T value)
+template<typename T> inline typename std::enable_if_t<std::is_integral_v<T>, T> NextHighestPowerOf2(T value)
 {
 	if (value < 1)
 		return 1;

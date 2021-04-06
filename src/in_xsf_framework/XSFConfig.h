@@ -26,17 +26,17 @@ private:
 	// enum versions
 	template<typename T> typename std::enable_if_t<std::is_enum_v<T>, T> GetValueInternal(const std::string &name, const T &defaultValue) const
 	{
-		return convertTo<T>(this->GetValueString(name, std::to_string(static_cast<std::underlying_type_t<T>>(defaultValue))));
+		return ConvertFuncs::To<T>(this->GetValueString(name, std::to_string(ConvertFuncs::ToIntegral(defaultValue))));
 	}
 	template<typename T> typename std::enable_if_t<std::is_enum_v<T>> SetValueInternal(const std::string &name, const T &value)
 	{
-		this->SetValueString(name, std::to_string(static_cast<std::underlying_type_t<T>>(value)));
+		this->SetValueString(name, std::to_string(ConvertFuncs::ToIntegral(value)));
 	}
 
 	// non-enum versions
 	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> && std::is_arithmetic_v<T>, T> GetValueInternal(const std::string &name, const T &defaultValue) const
 	{
-		return convertTo<T>(this->GetValueString(name, std::to_string(defaultValue)));
+		return ConvertFuncs::To<T>(this->GetValueString(name, std::to_string(defaultValue)));
 	}
 	template<typename T> typename std::enable_if_t<!std::is_enum_v<T> && std::is_arithmetic_v<T>> SetValueInternal(const std::string &name, const T &value)
 	{

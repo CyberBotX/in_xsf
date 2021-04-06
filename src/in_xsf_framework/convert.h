@@ -13,47 +13,6 @@
 #include <cstddef>
 #include "windowsh_wrapper.h"
 
-/*
- * Originally the convert* functions came from the C++ FAQ, Miscellaneous Technical Issues:
- * https://isocpp.org/wiki/faq/misc-technical-issues#convert-string-to-any
- *
- * They have been replaced with a couple functions that use the C++11 std::enable_if
- * construct along with various other type traits constructs to use the proper
- * string conversions.
- */
-template<typename T, typename S> inline typename std::enable_if_t<!std::is_enum_v<T> &&std::is_arithmetic_v<T>, T> convertTo(const std::basic_string<S> &s)
-{
-	if (std::is_integral_v<T>)
-	{
-		if (std::is_unsigned_v<T>)
-		{
-			if (std::is_same_v<unsigned long long, std::remove_cv_t<T>>)
-				return static_cast<T>(std::stoull(s));
-			else
-				return static_cast<T>(std::stoul(s));
-		}
-		else if (std::is_same_v<long long, std::remove_cv_t<T>>)
-			return static_cast<T>(std::stoll(s));
-		else if (std::is_same_v<long, std::remove_cv_t<T>>)
-			return static_cast<T>(std::stol(s));
-		else
-			return static_cast<T>(std::stoi(s));
-	}
-	else if (std::is_floating_point_v<T>)
-	{
-		if (std::is_same_v<long double, std::remove_cv_t<T>>)
-			return static_cast<T>(std::stold(s));
-		else if (std::is_same_v<double, std::remove_cv_t<T>>)
-			return static_cast<T>(std::stod(s));
-		else
-			return static_cast<T>(std::stof(s));
-	}
-}
-template<typename T, typename S> inline typename std::enable_if_t<std::is_enum_v<T>, T> convertTo(const std::basic_string<S> &s)
-{
-	return static_cast<T>(convertTo<std::underlying_type_t<T>>(s));
-}
-
 // Miscellaneous conversion functions
 class ConvertFuncs
 {
@@ -69,8 +28,55 @@ private:
 				return false;
 		return true;
 	}
-
 public:
+	/*
+	 * Originally the convert* functions came from the C++ FAQ, Miscellaneous Technical Issues:
+	 * https://isocpp.org/wiki/faq/misc-technical-issues#convert-string-to-any
+	 *
+	 * They have been replaced with a couple functions that use the C++11 std::enable_if
+	 * construct along with various other type traits constructs to use the proper
+	 * string conversions.
+	 */
+	template<typename T, typename S> static typename std::enable_if_t<!std::is_enum_v<T> && std::is_arithmetic_v<T>, T> To(const std::basic_string<S> &s)
+	{
+		if (std::is_integral_v<T>)
+		{
+			if (std::is_unsigned_v<T>)
+			{
+				if (std::is_same_v<unsigned long long, std::remove_cv_t<T>>)
+					return static_cast<T>(std::stoull(s));
+				else
+					return static_cast<T>(std::stoul(s));
+			}
+			else if (std::is_same_v<long long, std::remove_cv_t<T>>)
+				return static_cast<T>(std::stoll(s));
+			else if (std::is_same_v<long, std::remove_cv_t<T>>)
+				return static_cast<T>(std::stol(s));
+			else
+				return static_cast<T>(std::stoi(s));
+		}
+		else if (std::is_floating_point_v<T>)
+		{
+			if (std::is_same_v<long double, std::remove_cv_t<T>>)
+				return static_cast<T>(std::stold(s));
+			else if (std::is_same_v<double, std::remove_cv_t<T>>)
+				return static_cast<T>(std::stod(s));
+			else
+				return static_cast<T>(std::stof(s));
+		}
+	}
+
+	template<typename T, typename S> static typename std::enable_if_t<std::is_enum_v<T>, T> To(const std::basic_string<S> &s)
+	{
+		return static_cast<T>(ConvertFuncs::To<std::underlying_type_t<T>>(s));
+	}
+
+	// Comes from https://stackoverflow.com/a/14589519
+	template<typename T> static constexpr typename std::enable_if_t<std::is_enum_v<T>, std::underlying_type_t<T>> ToIntegral(const T &e)
+	{
+		return static_cast<std::underlying_type_t<T>>(e);
+	}
+
 	static unsigned long StringToMS(const std::string &time)
 	{
 		unsigned long hours = 0, minutes = 0;
@@ -99,13 +105,13 @@ public:
 		{
 			if (!ConvertFuncs::IsDigitsOnly(hoursStr))
 				return 0;
-			hours = convertTo<unsigned long>(hoursStr);
+			hours = ConvertFuncs::To<unsigned long>(hoursStr);
 		}
 		if (!minutesStr.empty())
 		{
 			if (!ConvertFuncs::IsDigitsOnly(minutesStr))
 				return 0;
-			minutes = convertTo<unsigned long>(minutesStr);
+			minutes = ConvertFuncs::To<unsigned long>(minutesStr);
 		}
 		if (!secondsStr.empty())
 		{
@@ -114,7 +120,7 @@ public:
 			std::size_t comma = secondsStr.find(',');
 			if (comma != std::string::npos)
 				secondsStr[comma] = '.';
-			seconds = convertTo<double>(secondsStr);
+			seconds = ConvertFuncs::To<double>(secondsStr);
 		}
 		seconds += minutes * 60 + hours * 1440;
 		return static_cast<unsigned long>(std::floor(seconds * 1000 + 0.5));

@@ -13,6 +13,7 @@
 #include "SSEQ.h"
 #include "common.h"
 #include "consts.h"
+#include "convert.h"
 
 Player::Player() : prio(0), nTracks(0), tempo(0), tempoCount(0), tempoRate(0), masterVol(0), sseqVol(0), sseq(nullptr), allowedChannels(0), sampleRate(0),
 	interpolation(Interpolation::None)
@@ -96,8 +97,8 @@ int Player::ChannelAlloc(ChannelAllocateType type, int priority)
 	static const std::uint8_t arraySizes[] = { sizeof(pcmChnArray), sizeof(psgChnArray), sizeof(noiseChnArray) };
 	static const std::uint8_t *const arrayArray[] = { pcmChnArray, psgChnArray, noiseChnArray };
 
-	auto chnArray = arrayArray[ToIntegral(type)];
-	int arraySize = arraySizes[ToIntegral(type)];
+	auto chnArray = arrayArray[ConvertFuncs::ToIntegral(type)];
+	int arraySize = arraySizes[ConvertFuncs::ToIntegral(type)];
 
 	int curChnNo = -1;
 	for (int i = 0; i < arraySize; ++i)
@@ -133,10 +134,10 @@ int Player::TrackAlloc()
 	for (int i = 0; i < FSS_MAXTRACKS; ++i)
 	{
 		Track &thisTrk = this->tracks[i];
-		if (!thisTrk.state[ToIntegral(TrackState::AllocateBit)])
+		if (!thisTrk.state[ConvertFuncs::ToIntegral(TrackState::AllocateBit)])
 		{
 			thisTrk.Zero();
-			thisTrk.state.set(ToIntegral(TrackState::AllocateBit));
+			thisTrk.state.set(ConvertFuncs::ToIntegral(TrackState::AllocateBit));
 			thisTrk.updateFlags.reset();
 			return i;
 		}

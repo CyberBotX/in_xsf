@@ -9,6 +9,7 @@
 #pragma once
 
 #include <map>
+#include <type_traits>
 #include <cstdint>
 #include "INFOEntry.h"
 
@@ -16,7 +17,7 @@ struct PseudoFile;
 
 template<typename T> struct INFORecord
 {
-	std::map<std::uint32_t, T> entries;
+	std::enable_if_t<std::is_base_of_v<INFOEntry, T>, std::map<std::uint32_t, T>> entries;
 
 	INFORecord();
 

@@ -23,6 +23,7 @@
 #include "XSFCommon.h"
 #include "common.h"
 #include "consts.h"
+#include "convert.h"
 
 NDSSoundRegister::NDSSoundRegister() : volumeMul(0), volumeDiv(0), panning(0), waveDuty(0), repeatMode(0), format(0), enable(false),
 	source(nullptr), timer(0), psgX(0), psgLast(0), psgLastCount(0), samplePosition(0), sampleIncrease(0), loopStart(0), length(0), totalLength(0)
@@ -123,7 +124,7 @@ void Channel::UpdatePorta(const Track &trk)
 	this->manualSweep = false;
 	this->sweepPitch = trk.sweepPitch;
 	this->sweepCnt = 0;
-	if (!trk.state[ToIntegral(TrackState::PortamentoBit)])
+	if (!trk.state[ConvertFuncs::ToIntegral(TrackState::PortamentoBit)])
 	{
 		this->sweepLen = 0;
 		return;
@@ -192,7 +193,7 @@ void Channel::UpdateTrack()
 	if (trackFlags.none())
 		return;
 
-	if (trackFlags[ToIntegral(TrackUpdateFlag::Length)])
+	if (trackFlags[ConvertFuncs::ToIntegral(TrackUpdateFlag::Length)])
 	{
 		ChannelState st = this->state;
 		if (st > ChannelState::Start)
@@ -203,30 +204,30 @@ void Channel::UpdateTrack()
 				++this->sweepCnt;
 		}
 	}
-	if (trackFlags[ToIntegral(TrackUpdateFlag::Volume)])
+	if (trackFlags[ConvertFuncs::ToIntegral(TrackUpdateFlag::Volume)])
 	{
 		this->UpdateVol(trk);
-		this->flags.set(ToIntegral(ChannelFlag::UpdateVolume));
+		this->flags.set(ConvertFuncs::ToIntegral(ChannelFlag::UpdateVolume));
 	}
-	if (trackFlags[ToIntegral(TrackUpdateFlag::Pan)])
+	if (trackFlags[ConvertFuncs::ToIntegral(TrackUpdateFlag::Pan)])
 	{
 		this->UpdatePan(trk);
-		this->flags.set(ToIntegral(ChannelFlag::UpdatePan));
+		this->flags.set(ConvertFuncs::ToIntegral(ChannelFlag::UpdatePan));
 	}
-	if (trackFlags[ToIntegral(TrackUpdateFlag::Timer)])
+	if (trackFlags[ConvertFuncs::ToIntegral(TrackUpdateFlag::Timer)])
 	{
 		this->UpdateTune(trk);
-		this->flags.set(ToIntegral(ChannelFlag::UpdateTimer));
+		this->flags.set(ConvertFuncs::ToIntegral(ChannelFlag::UpdateTimer));
 	}
-	if (trackFlags[ToIntegral(TrackUpdateFlag::Modulation)])
+	if (trackFlags[ConvertFuncs::ToIntegral(TrackUpdateFlag::Modulation)])
 	{
 		int oldType = this->modType;
 		int newType = trk.modType;
 		this->UpdateMod(trk);
 		if (oldType != newType)
 		{
-			this->flags.set(ToIntegral(getModFlag(oldType)));
-			this->flags.set(ToIntegral(getModFlag(newType)));
+			this->flags.set(ConvertFuncs::ToIntegral(getModFlag(oldType)));
+			this->flags.set(ConvertFuncs::ToIntegral(getModFlag(newType)));
 		}
 	}
 }
@@ -444,9 +445,9 @@ void Channel::Update()
 	bool bInStart = this->state == ChannelState::Start;
 	bool bPitchSweep = this->sweepPitch && this->sweepLen && this->sweepCnt <= this->sweepLen;
 	bool bModulation = !!this->modDepth;
-	bool bVolNeedUpdate = this->flags[ToIntegral(ChannelFlag::UpdateVolume)] || bNotInSustain;
-	bool bPanNeedUpdate = this->flags[ToIntegral(ChannelFlag::UpdatePan)] || bInStart;
-	bool bTmrNeedUpdate = this->flags[ToIntegral(ChannelFlag::UpdateTimer)] || bInStart || bPitchSweep;
+	bool bVolNeedUpdate = this->flags[ConvertFuncs::ToIntegral(ChannelFlag::UpdateVolume)] || bNotInSustain;
+	bool bPanNeedUpdate = this->flags[ConvertFuncs::ToIntegral(ChannelFlag::UpdatePan)] || bInStart;
+	bool bTmrNeedUpdate = this->flags[ConvertFuncs::ToIntegral(ChannelFlag::UpdateTimer)] || bInStart || bPitchSweep;
 	int modParam = 0;
 
 	switch (this->state)
@@ -548,7 +549,7 @@ void Channel::Update()
 			tmr = Timer_Adjust(tmr, totalAdj);
 		this->reg.timer = -tmr;
 		this->reg.sampleIncrease = (ARM7_CLOCK / static_cast<double>(this->ply->sampleRate * 2)) / (0x10000 - this->reg.timer);
-		this->flags.reset(ToIntegral(ChannelFlag::UpdateTimer));
+		this->flags.reset(ConvertFuncs::ToIntegral(ChannelFlag::UpdateTimer));
 	}
 
 	if (bVolNeedUpdate || bPanNeedUpdate)
@@ -576,7 +577,7 @@ void Channel::Update()
 
 			this->vol = static_cast<std::uint16_t>(((cr & SOUND_VOL(0x7F)) << 4) >> calcVolDivShift((cr & SOUND_VOLDIV(3)) >> 8));
 
-			this->flags.reset(ToIntegral(ChannelFlag::UpdateVolume));
+			this->flags.reset(ConvertFuncs::ToIntegral(ChannelFlag::UpdateVolume));
 		}
 
 		if (bPanNeedUpdate)
@@ -590,7 +591,7 @@ void Channel::Update()
 
 			cr &= ~SOUND_PAN(0x7F);
 			cr |= SOUND_PAN(realPan);
-			this->flags.reset(ToIntegral(ChannelFlag::UpdatePan));
+			this->flags.reset(ConvertFuncs::ToIntegral(ChannelFlag::UpdatePan));
 		}
 
 		this->tempReg.CR = cr;

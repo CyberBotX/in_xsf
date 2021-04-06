@@ -19,6 +19,7 @@
 #include "Track.h"
 #include "common.h"
 #include "consts.h"
+#include "convert.h"
 
 Track::Track()
 {
@@ -71,8 +72,8 @@ void Track::Zero()
 void Track::ClearState()
 {
 	this->state.reset();
-	this->state.set(ToIntegral(TrackState::AllocateBit));
-	this->state.set(ToIntegral(TrackState::NoteWait));
+	this->state.set(ConvertFuncs::ToIntegral(TrackState::AllocateBit));
+	this->state.set(ConvertFuncs::ToIntegral(TrackState::NoteWait));
 	this->prio = this->ply->prio + 64;
 
 	this->pos = this->startPos;
@@ -253,7 +254,7 @@ int Track::NoteOnTie(std::uint8_t key, int vel)
 	chn->UpdatePorta(*this);
 
 	this->portaKey = key;
-	chn->flags.set(ToIntegral(ChannelFlag::UpdateTimer));
+	chn->flags.set(ConvertFuncs::ToIntegral(ChannelFlag::UpdateTimer));
 
 	return i;
 }
@@ -493,10 +494,10 @@ static inline std::function<bool (std::int16_t, std::int16_t)> CompareFunc(int c
 void Track::Run()
 {
 	// Indicate "heartbeat" for this track
-	this->updateFlags.set(ToIntegral(TrackUpdateFlag::Length));
+	this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Length));
 
 	// Exit if the track has already ended
-	if (this->state[ToIntegral(TrackState::End)])
+	if (this->state[ConvertFuncs::ToIntegral(TrackState::End)])
 		return;
 
 	if (this->wait)
@@ -521,9 +522,9 @@ void Track::Run()
 			std::uint8_t key = static_cast<std::uint8_t>(cmd + this->transpose);
 			int vel = this->overriding.val<std::uint8_t>(pData, read8, true);
 			int len = this->overriding.val<int>(pData, readvl);
-			if (this->state[ToIntegral(TrackState::NoteWait)])
+			if (this->state[ConvertFuncs::ToIntegral(TrackState::NoteWait)])
 				this->wait = len;
-			if (this->state[ToIntegral(TrackState::TieBit)])
+			if (this->state[ConvertFuncs::ToIntegral(TrackState::TieBit)])
 				this->NoteOnTie(key, vel);
 			else
 				this->NoteOn(key, vel, len);
@@ -579,18 +580,18 @@ void Track::Run()
 
 				case SSEQCommand::Pan:
 					this->pan = this->overriding.val<std::uint8_t>(pData, read8) - 64;
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Pan));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Pan));
 					break;
 
 				case SSEQCommand::Volume:
 					this->vol = this->overriding.val<std::uint8_t>(pData, read8);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
 				case SSEQCommand::MasterVolume:
 					this->ply->masterVol = Cnv_Sust(this->overriding.val<std::uint8_t>(pData, read8));
 					for (std::uint8_t i = 0; i < this->ply->nTracks; ++i)
-						this->ply->tracks[this->ply->trackIds[i]].updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
+						this->ply->tracks[this->ply->trackIds[i]].updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
 				case SSEQCommand::Priority:
@@ -599,17 +600,17 @@ void Track::Run()
 					break;
 
 				case SSEQCommand::NoteWait:
-					this->state.set(ToIntegral(TrackState::NoteWait), !!read8(pData));
+					this->state.set(ConvertFuncs::ToIntegral(TrackState::NoteWait), !!read8(pData));
 					break;
 
 				case SSEQCommand::Tie:
-					this->state.set(ToIntegral(TrackState::TieBit), !!read8(pData));
+					this->state.set(ConvertFuncs::ToIntegral(TrackState::TieBit), !!read8(pData));
 					this->ReleaseAllNotes();
 					break;
 
 				case SSEQCommand::Expression:
 					this->expr = this->overriding.val<std::uint8_t>(pData, read8);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Volume));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Volume));
 					break;
 
 				case SSEQCommand::Tempo:
@@ -617,7 +618,7 @@ void Track::Run()
 					break;
 
 				case SSEQCommand::End:
-					this->state.set(ToIntegral(TrackState::End));
+					this->state.set(ConvertFuncs::ToIntegral(TrackState::End));
 					return;
 
 				case SSEQCommand::LoopStart:
@@ -652,12 +653,12 @@ void Track::Run()
 
 				case SSEQCommand::PitchBend:
 					this->pitchBend = this->overriding.val<std::int8_t>(pData, read8);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Timer));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Timer));
 					break;
 
 				case SSEQCommand::PitchBendRange:
 					this->pitchBendRange = read8(pData);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Timer));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Timer));
 					break;
 
 				//-----------------------------------------------------------------
@@ -686,24 +687,24 @@ void Track::Run()
 
 				case SSEQCommand::PortamentoKey:
 					this->portaKey = static_cast<std::uint8_t>(read8(pData) + this->transpose);
-					this->state.set(ToIntegral(TrackState::PortamentoBit));
+					this->state.set(ConvertFuncs::ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
 				case SSEQCommand::PortamentoFlag:
-					this->state.set(ToIntegral(TrackState::PortamentoBit), !!read8(pData));
+					this->state.set(ConvertFuncs::ToIntegral(TrackState::PortamentoBit), !!read8(pData));
 					// Update here?
 					break;
 
 				case SSEQCommand::PortamentoTime:
 					this->portaTime = this->overriding.val<std::uint8_t>(pData, read8);
-					this->state.set(ToIntegral(TrackState::PortamentoBit));
+					this->state.set(ConvertFuncs::ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
 				case SSEQCommand::SweepPitch:
 					this->sweepPitch = this->overriding.val<std::int16_t>(pData, read16);
-					this->state.set(ToIntegral(TrackState::PortamentoBit));
+					this->state.set(ConvertFuncs::ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
@@ -713,27 +714,27 @@ void Track::Run()
 
 				case SSEQCommand::ModulationDepth:
 					this->modDepth = this->overriding.val<std::uint8_t>(pData, read8);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
 				case SSEQCommand::ModulationSpeed:
 					this->modSpeed = this->overriding.val<std::uint8_t>(pData, read8);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
 				case SSEQCommand::ModulationType:
 					this->modType = read8(pData);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
 				case SSEQCommand::ModulationRange:
 					this->modRange = read8(pData);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
 				case SSEQCommand::ModulationDelay:
 					this->modDelay = this->overriding.val<std::uint16_t>(pData, read16);
-					this->updateFlags.set(ToIntegral(TrackUpdateFlag::Modulation));
+					this->updateFlags.set(ConvertFuncs::ToIntegral(TrackUpdateFlag::Modulation));
 					break;
 
 				//-----------------------------------------------------------------
@@ -744,7 +745,7 @@ void Track::Run()
 				{
 					this->overriding() = true;
 					this->overriding.cmd = read8(pData);
-					if ((this->overriding.cmd >= ToIntegral(SSEQCommand::SetVariable) && this->overriding.cmd <= ToIntegral(SSEQCommand::CompareNotEqualTo)) || this->overriding.cmd < 0x80)
+					if ((this->overriding.cmd >= ConvertFuncs::ToIntegral(SSEQCommand::SetVariable) && this->overriding.cmd <= ConvertFuncs::ToIntegral(SSEQCommand::CompareNotEqualTo)) || this->overriding.cmd < 0x80)
 						this->overriding.extraValue = read8(pData);
 					std::int16_t minVal = static_cast<std::int16_t>(read16(pData));
 					std::int16_t maxVal = static_cast<std::int16_t>(read16(pData));
@@ -759,7 +760,7 @@ void Track::Run()
 				case SSEQCommand::FromVariable:
 					this->overriding() = true;
 					this->overriding.cmd = read8(pData);
-					if ((this->overriding.cmd >= ToIntegral(SSEQCommand::SetVariable) && this->overriding.cmd <= ToIntegral(SSEQCommand::CompareNotEqualTo)) || this->overriding.cmd < 0x80)
+					if ((this->overriding.cmd >= ConvertFuncs::ToIntegral(SSEQCommand::SetVariable) && this->overriding.cmd <= ConvertFuncs::ToIntegral(SSEQCommand::CompareNotEqualTo)) || this->overriding.cmd < 0x80)
 						this->overriding.extraValue = read8(pData);
 					this->overriding.value = this->ply->variables[read8(pData)];
 					break;
@@ -774,7 +775,7 @@ void Track::Run()
 				{
 					std::int8_t varNo = this->overriding.val<std::int8_t>(pData, read8, true);
 					value = this->overriding.val<std::int16_t>(pData, read16);
-					if (cmd == ToIntegral(SSEQCommand::DivideVariable) && !value) // Division by 0, skip it to prevent crashing
+					if (cmd == ConvertFuncs::ToIntegral(SSEQCommand::DivideVariable) && !value) // Division by 0, skip it to prevent crashing
 						break;
 					this->ply->variables[varNo] = VarFunc(cmd)(this->ply->variables[varNo], static_cast<std::int16_t>(value));
 					break;
@@ -808,7 +809,7 @@ void Track::Run()
 						if (extraByte)
 						{
 							int extraCmd = read8(pData);
-							if ((extraCmd >= ToIntegral(SSEQCommand::SetVariable) && extraCmd <= ToIntegral(SSEQCommand::CompareNotEqualTo)) || extraCmd < 0x80)
+							if ((extraCmd >= ConvertFuncs::ToIntegral(SSEQCommand::SetVariable) && extraCmd <= ConvertFuncs::ToIntegral(SSEQCommand::CompareNotEqualTo)) || extraCmd < 0x80)
 								++cmdBytes;
 						}
 						*pData += cmdBytes;
@@ -822,7 +823,7 @@ void Track::Run()
 			}
 		}
 
-		if (cmd != ToIntegral(SSEQCommand::Random) && cmd != ToIntegral(SSEQCommand::FromVariable))
+		if (cmd != ConvertFuncs::ToIntegral(SSEQCommand::Random) && cmd != ConvertFuncs::ToIntegral(SSEQCommand::FromVariable))
 			this->overriding() = false;
 	}
 }

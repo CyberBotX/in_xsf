@@ -312,7 +312,7 @@ void XSFConfig_NCSF::RefreshSoundView()
 			}
 
 			static const std::wstring states[] = { L"NONE", L"START", L"ATTACK", L"DECAY", L"SUSTAIN", L"RELEASE" };
-			SetDlgItemTextW(hDlg, IDC_SOUND0STATE + chanId, states[ToIntegral(chn.state)].c_str());
+			SetDlgItemTextW(hDlg, IDC_SOUND0STATE + chanId, states[ConvertFuncs::ToIntegral(chn.state)].c_str());
 
 			SetDlgItemTextW(hDlg, IDC_SOUND0PNT + chanId, (L"samp #" + std::to_wstring(chn.reg.loopStart)).c_str());
 

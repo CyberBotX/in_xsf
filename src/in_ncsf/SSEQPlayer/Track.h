@@ -14,6 +14,7 @@
 #include <cstdint>
 #include "common.h"
 #include "consts.h"
+#include "convert.h"
 
 struct Player;
 
@@ -55,7 +56,7 @@ struct Track
 {
 	std::int8_t trackId;
 
-	std::bitset<ToIntegral(TrackState::Bits)> state;
+	std::bitset<ConvertFuncs::ToIntegral(TrackState::Bits)> state;
 	std::uint8_t num, prio;
 	Player *ply;
 
@@ -82,7 +83,7 @@ struct Track
 	std::uint8_t modType, modSpeed, modDepth, modRange;
 	std::uint16_t modDelay;
 
-	std::bitset<ToIntegral(TrackUpdateFlag::Bits)> updateFlags;
+	std::bitset<ConvertFuncs::ToIntegral(TrackUpdateFlag::Bits)> updateFlags;
 
 	Track();
 

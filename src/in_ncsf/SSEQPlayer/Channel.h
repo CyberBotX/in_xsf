@@ -18,6 +18,7 @@
 #include <cstdint>
 #include "common.h"
 #include "consts.h"
+#include "convert.h"
 
 struct SWAV;
 struct Track;
@@ -179,7 +180,7 @@ struct Channel
 	std::uint8_t prio;
 	bool manualSweep;
 
-	std::bitset<ToIntegral(ChannelFlag::Bits)> flags;
+	std::bitset<ConvertFuncs::ToIntegral(ChannelFlag::Bits)> flags;
 	std::int8_t pan; // -64 .. 63
 	std::int16_t extAmpl;
 

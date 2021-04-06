@@ -29,7 +29,7 @@ struct PseudoFile
 	{
 	}
 
-	template<typename T> T ReadLE()
+	template<typename T> typename std::enable_if_t<std::is_integral_v<T>, T> ReadLE()
 	{
 		T finalVal = 0;
 		for (std::size_t i = 0; i < sizeof(T); ++i)
@@ -37,7 +37,7 @@ struct PseudoFile
 		return finalVal;
 	}
 
-	template<typename T, std::size_t N> void ReadLE(T (&arr)[N])
+	template<typename T, std::size_t N> typename std::enable_if_t<std::is_integral_v<T>> ReadLE(T (&arr)[N])
 	{
 		for (std::size_t i = 0; i < N; ++i)
 			arr[i] = this->ReadLE<T>();
@@ -49,7 +49,7 @@ struct PseudoFile
 		this->pos += N;
 	}
 
-	template<typename T> void ReadLE(std::vector<T> &arr)
+	template<typename T> typename std::enable_if_t<std::is_integral_v<T>> ReadLE(std::vector<T> &arr)
 	{
 		for (std::size_t i = 0, len = arr.size(); i < len; ++i)
 			arr[i] = this->ReadLE<T>();
@@ -83,7 +83,7 @@ struct PseudoFile
  * as little-endian formating.
  */
 
-template<typename T> inline T ReadLE(const std::uint8_t *arr)
+template<typename T> inline typename std::enable_if_t<std::is_integral_v<T>, T> ReadLE(const std::uint8_t *arr)
 {
 	T finalVal = 0;
 	for (std::size_t i = 0; i < sizeof(T); ++i)
@@ -97,7 +97,7 @@ template<typename T> inline T ReadLE(const std::uint8_t *arr)
  * integers are in the format of 0x00, 16-bit integers are in the format of
  * 0x0000, and so on.
  */
-template<typename T> inline std::string NumToHexString(const T &num)
+template<typename T> inline typename std::enable_if_t<std::is_integral_v<T>, std::string> NumToHexString(const T &num)
 {
 	std::string hex;
 	std::uint8_t len = sizeof(T) * 2;
@@ -122,12 +122,6 @@ inline constexpr int REC_PLAYER = 4;
 inline constexpr int REC_GROUP = 5;
 inline constexpr int REC_PLAYER2 = 6;
 inline constexpr int REC_STRM = 7;
-
-// Comes from https://stackoverflow.com/a/14589519
-template<typename T> inline constexpr auto ToIntegral(const T &e)
-{
-	return static_cast<std::underlying_type_t<T>>(e);
-}
 
 template<std::size_t N> inline bool VerifyHeader(std::int8_t (&arr)[N], const std::string &header)
 {

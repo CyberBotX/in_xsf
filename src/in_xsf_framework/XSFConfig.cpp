@@ -270,8 +270,8 @@ void XSFConfig::InitializeConfigDialog(XSFConfigDialog *dialog)
 	dialog->skipSilenceOnStart = ConvertFuncs::MSToString(this->skipSilenceOnStartSec);
 	dialog->detectSilence = ConvertFuncs::MSToString(this->detectSilenceSec);
 	dialog->volume = this->volume;
-	dialog->replayGain = static_cast<std::underlying_type_t<VolumeType>>(this->volumeType);
-	dialog->clipProtect = static_cast<std::underlying_type_t<PeakType>>(this->peakType);
+	dialog->replayGain = ConvertFuncs::ToIntegral(this->volumeType);
+	dialog->clipProtect = ConvertFuncs::ToIntegral(this->peakType);
 	auto found = std::find(this->supportedSampleRates.begin(), this->supportedSampleRates.end(), this->sampleRate);
 	dialog->sampleRate = found == this->supportedSampleRates.end() ? 0 : found - this->supportedSampleRates.begin();
 	dialog->titleFormat = this->titleFormat;
@@ -287,8 +287,8 @@ void XSFConfig::ResetConfigDefaults(XSFConfigDialog *dialog)
 	dialog->skipSilenceOnStart = XSFConfig::initSkipSilenceOnStartSec;
 	dialog->detectSilence = XSFConfig::initDetectSilenceSec;
 	dialog->volume = XSFConfig::initVolume;
-	dialog->replayGain = static_cast<std::underlying_type_t<VolumeType>>(XSFConfig::initVolumeType);
-	dialog->clipProtect = static_cast<std::underlying_type_t<PeakType>>(XSFConfig::initPeakType);
+	dialog->replayGain = ConvertFuncs::ToIntegral(XSFConfig::initVolumeType);
+	dialog->clipProtect = ConvertFuncs::ToIntegral(XSFConfig::initPeakType);
 	auto found = std::find(this->supportedSampleRates.begin(), this->supportedSampleRates.end(), XSFConfig::initSampleRate);
 	dialog->sampleRate = found == this->supportedSampleRates.end() ? 0 : found - this->supportedSampleRates.begin();
 	dialog->titleFormat = XSFConfig::initTitleFormat;
