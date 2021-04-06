@@ -452,6 +452,6 @@ void XSFFile::SaveFile() const
 		{
 			xSF.write(tag.c_str(), tag.length());
 			xSF.write("\n", 1);
-		});
+		}
 	}
 }
