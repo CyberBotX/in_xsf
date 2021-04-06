@@ -563,7 +563,7 @@ void Channel::Update()
 			if (bModulation && this->modType == 1)
 				totalVol += modParam;
 			totalVol += AMPL_K;
-			clamp(totalVol, 0, AMPL_K);
+			totalVol = std::clamp(totalVol, 0, AMPL_K);
 
 			cr &= ~(SOUND_VOL(0x7F) | SOUND_VOLDIV(3));
 			cr |= SOUND_VOL(static_cast<int>(getvoltbl[totalVol]));
@@ -587,7 +587,7 @@ void Channel::Update()
 			if (bModulation && this->modType == 2)
 				realPan += modParam;
 			realPan += 64;
-			clamp(realPan, 0, 127);
+			realPan = std::clamp(realPan, 0, 127);
 
 			cr &= ~SOUND_PAN(0x7F);
 			cr |= SOUND_PAN(realPan);

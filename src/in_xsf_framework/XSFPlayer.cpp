@@ -167,8 +167,8 @@ bool XSFPlayer::FillBuffer(std::vector<std::uint8_t> &buf, unsigned &samplesWrit
 			double s1 = bufLong[2 * ofs] * scale, s2 = bufLong[2 * ofs + 1] * scale;
 			if (!this->uses32BitSamplesClampedTo16Bit)
 			{
-				clamp(s1, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
-				clamp(s2, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+				s1 = std::clamp<double>(s1, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+				s2 = std::clamp<double>(s2, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
 			}
 			bufLong[2 * ofs] = static_cast<std::int32_t>(s1);
 			bufLong[2 * ofs + 1] = static_cast<std::int32_t>(s2);
@@ -181,8 +181,8 @@ bool XSFPlayer::FillBuffer(std::vector<std::uint8_t> &buf, unsigned &samplesWrit
 		for (unsigned ofs = 0; ofs < bufsize; ++ofs)
 		{
 			std::int32_t s1 = bufLong[2 * ofs], s2 = bufLong[2 * ofs + 1];
-			clamp(s1, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
-			clamp(s2, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+			s1 = std::clamp<std::int32_t>(s1, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
+			s2 = std::clamp<std::int32_t>(s2, std::numeric_limits<std::int16_t>::min(), std::numeric_limits<std::int16_t>::max());
 			bufShort[2 * ofs] = static_cast<std::int16_t>(s1);
 			bufShort[2 * ofs + 1] = static_cast<std::int16_t>(s2);
 		}
