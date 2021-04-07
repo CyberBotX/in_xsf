@@ -25,8 +25,8 @@
 extern In_Module inMod;
 static const XSFFile *xSFFile = nullptr;
 XSFFile *xSFFileInInfo = nullptr;
-static XSFPlayer *xSFPlayer = nullptr;
-XSFConfig *xSFConfig = nullptr;
+static std::unique_ptr<XSFPlayer> xSFPlayer;
+std::unique_ptr<XSFConfig> xSFConfig;
 static bool paused;
 static int seek_needed;
 static double decode_pos_ms;
@@ -84,7 +84,7 @@ void config(HWND hwndParent)
 {
 	xSFConfig->CallConfigDialog(inMod.hDllInstance, hwndParent);
 	if (xSFPlayer)
-		xSFConfig->CopyConfigToMemory(xSFPlayer, false);
+		xSFConfig->CopyConfigToMemory(xSFPlayer.get(), false);
 }
 
 void about(HWND hwndParent)
@@ -94,7 +94,7 @@ void about(HWND hwndParent)
 
 void init()
 {
-	xSFConfig = XSFConfig::Create();
+	xSFConfig.reset(XSFConfig::Create());
 	xSFConfig->LoadConfig();
 	xSFConfig->GenerateDialogs();
 	xSFConfig->SetHInstance(inMod.hDllInstance);
@@ -102,8 +102,8 @@ void init()
 
 void quit()
 {
-	delete xSFPlayer;
-	delete xSFConfig;
+	xSFPlayer.reset();
+	xSFConfig.reset();
 }
 
 void getFileInfo(const in_char *file, in_char *title, int *length_in_ms)
@@ -196,7 +196,7 @@ int play(const in_char *fn)
 		inMod.VSASetInfo(tmpxSFPlayer->GetSampleRate(), NumChannels);
 		inMod.outMod->SetVolume(-666);
 
-		xSFPlayer = tmpxSFPlayer.release();
+		xSFPlayer = std::move(tmpxSFPlayer);
 		killThread = false;
 		thread_handle = CreateThread(nullptr, 0, playThread, &killThread, 0, nullptr);
 		return 0;
@@ -239,8 +239,7 @@ void stop()
 	}
 	inMod.outMod->Close();
 	inMod.SAVSADeInit();
-	delete xSFPlayer;
-	xSFPlayer = nullptr;
+	xSFPlayer.reset();
 	xSFFile = nullptr;
 }
 

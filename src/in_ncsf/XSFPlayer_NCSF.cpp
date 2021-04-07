@@ -130,19 +130,7 @@ static DWORD WINAPI soundViewThread(void *b)
 
 XSFPlayer_NCSF::~XSFPlayer_NCSF()
 {
-#ifndef NDEBUG
-	if (soundViewThreadHandle != INVALID_HANDLE_VALUE)
-	{
-		killSoundViewThread = true;
-		if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
-		{
-			TerminateThread(soundViewThreadHandle, 0);
-			static_cast<XSFConfig_NCSF *>(xSFConfig)->CloseSoundView();
-		}
-		CloseHandle(soundViewThreadHandle);
-		soundViewThreadHandle = INVALID_HANDLE_VALUE;
-	}
-#endif
+	this->Terminate();
 }
 
 bool XSFPlayer_NCSF::Load()
@@ -232,6 +220,20 @@ void XSFPlayer_NCSF::GenerateSamples(std::vector<std::uint8_t> &buf, unsigned of
 void XSFPlayer_NCSF::Terminate()
 {
 	this->player.Stop(true);
+
+#ifndef NDEBUG
+	if (soundViewThreadHandle != INVALID_HANDLE_VALUE)
+	{
+		killSoundViewThread = true;
+		if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
+		{
+			TerminateThread(soundViewThreadHandle, 0);
+			static_cast<XSFConfig_NCSF *>(xSFConfig)->CloseSoundView();
+		}
+		CloseHandle(soundViewThreadHandle);
+		soundViewThreadHandle = INVALID_HANDLE_VALUE;
+	}
+#endif
 }
 
 #ifndef NDEBUG
