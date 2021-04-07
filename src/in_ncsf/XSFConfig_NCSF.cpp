@@ -9,20 +9,18 @@
 #include <sstream>
 #include <string>
 #include <cstddef>
+#include <cstdint>
 #include "windowsh_wrapper.h"
 #include <windowsx.h>
+#include <CommCtrl.h>
+#include "SSEQPlayer/common.h"
+#include "SSEQPlayer/consts.h"
 #include "XSFConfig.h"
 #include "XSFConfig_NCSF.h"
 #include "XSFConfigDialog_NCSF.h"
 #include "XSFPlayer_NCSF.h"
 #include "convert.h"
-#ifndef NDEBUG
-# include <cstdint>
-# include "SSEQPlayer/common.h"
-# include "SSEQPlayer/consts.h"
-# include "resource.h"
-# include <CommCtrl.h>
-#endif
+#include "resource.h"
 
 class wxWindow;
 class XSFConfigDialog;
@@ -43,10 +41,7 @@ XSFConfig *XSFConfig::Create()
 	return new XSFConfig_NCSF();
 }
 
-XSFConfig_NCSF::XSFConfig_NCSF() : XSFConfig(), interpolation(0), mutes()
-#ifndef NDEBUG
-	, useSoundViewDialog(false), soundViewData()
-#endif
+XSFConfig_NCSF::XSFConfig_NCSF() : XSFConfig(), interpolation(0), mutes(), useSoundViewDialog(false), soundViewData()
 {
 	this->supportedSampleRates.push_back(8000);
 	this->supportedSampleRates.push_back(11025);
@@ -63,9 +58,7 @@ XSFConfig_NCSF::XSFConfig_NCSF() : XSFConfig(), interpolation(0), mutes()
 
 void XSFConfig_NCSF::LoadSpecificConfig()
 {
-#ifndef NDEBUG
 	this->useSoundViewDialog = this->configIO->GetValue("UseSoundViewDialog", XSFConfig_NCSF::initUseSoundViewDialog);
-#endif
 	this->interpolation = this->configIO->GetValue("Interpolation", XSFConfig_NCSF::initInterpolation);
 	std::stringstream mutesSS(this->configIO->GetValue("Mutes", XSFConfig_NCSF::initMutes));
 	mutesSS >> this->mutes;
@@ -73,9 +66,7 @@ void XSFConfig_NCSF::LoadSpecificConfig()
 
 void XSFConfig_NCSF::SaveSpecificConfig()
 {
-#ifndef NDEBUG
 	this->configIO->SetValue("UseSoundViewDialog", this->useSoundViewDialog);
-#endif
 	this->configIO->SetValue("Interpolation", this->interpolation);
 	this->configIO->SetValue("Mutes", this->mutes.to_string<char>());
 }
@@ -83,9 +74,7 @@ void XSFConfig_NCSF::SaveSpecificConfig()
 void XSFConfig_NCSF::InitializeSpecificConfigDialog(XSFConfigDialog *dialog)
 {
 	auto ncsfDialog = static_cast<XSFConfigDialog_NCSF *>(dialog);
-#ifndef NDEBUG
 	ncsfDialog->useSoundView = this->useSoundViewDialog;
-#endif
 	ncsfDialog->interpolation = static_cast<int>(this->interpolation);
 	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
 		if (this->mutes[x])
@@ -95,9 +84,7 @@ void XSFConfig_NCSF::InitializeSpecificConfigDialog(XSFConfigDialog *dialog)
 void XSFConfig_NCSF::ResetSpecificConfigDefaults(XSFConfigDialog *dialog)
 {
 	auto ncsfDialog = static_cast<XSFConfigDialog_NCSF *>(dialog);
-#ifndef NDEBUG
 	ncsfDialog->useSoundView = XSFConfig_NCSF::initUseSoundViewDialog;
-#endif
 	ncsfDialog->interpolation = XSFConfig_NCSF::initInterpolation;
 	ncsfDialog->mute.Clear();
 	auto tmpMutes = std::bitset<16>(XSFConfig_NCSF::initMutes);
@@ -109,9 +96,7 @@ void XSFConfig_NCSF::ResetSpecificConfigDefaults(XSFConfigDialog *dialog)
 void XSFConfig_NCSF::SaveSpecificConfigDialog(XSFConfigDialog *dialog)
 {
 	auto ncsfDialog = static_cast<XSFConfigDialog_NCSF *>(dialog);
-#ifndef NDEBUG
 	this->useSoundViewDialog = ncsfDialog->useSoundView;
-#endif
 	this->interpolation = ncsfDialog->interpolation;
 	for (std::size_t x = 0, numMutes = this->mutes.size(); x < numMutes; ++x)
 		this->mutes[x] = ncsfDialog->mute.Index(x) != wxNOT_FOUND;
@@ -120,9 +105,7 @@ void XSFConfig_NCSF::SaveSpecificConfigDialog(XSFConfigDialog *dialog)
 void XSFConfig_NCSF::CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool)
 {
 	auto NCSFPlayer = static_cast<XSFPlayer_NCSF *>(xSFPlayer);
-#ifndef NDEBUG
 	NCSFPlayer->SetUseSoundViewDialog(this->useSoundViewDialog);
-#endif
 	NCSFPlayer->SetInterpolation(this->interpolation);
 	NCSFPlayer->SetMutes(this->mutes);
 }
@@ -138,7 +121,6 @@ XSFConfigDialog *XSFConfig_NCSF::CreateDialogBox(wxWindow *window, const std::st
 	return new XSFConfigDialog_NCSF(*this, window, title);
 }
 
-#ifndef NDEBUG
 INT_PTR CALLBACK XSFConfig_NCSF::SoundViewDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	auto data = reinterpret_cast<SoundViewData *>(GetWindowLongW(hwndDlg, DWLP_USER));
@@ -352,4 +334,3 @@ void XSFConfig_NCSF::CloseSoundView()
 		this->soundViewData.reset();
 	}
 }
-#endif

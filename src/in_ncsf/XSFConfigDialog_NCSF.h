@@ -31,9 +31,7 @@ class XSFConfigDialog_NCSF : public XSFConfigDialog
 public:
 	XSFConfigDialog_NCSF(XSFConfig &newConfig, wxWindow *parent, const wxString &title);
 
-#ifndef NDEBUG
 	bool useSoundView;
-#endif
 	int interpolation;
 	wxArrayInt mute;
 };

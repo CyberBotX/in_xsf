@@ -96,16 +96,12 @@ bool XSFPlayer_NCSF::LoadNCSF()
 	return this->RecursiveLoadNCSF(this->xSF.get(), 1);
 }
 
-XSFPlayer_NCSF::XSFPlayer_NCSF(const std::filesystem::path &path) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes()
-#ifndef NDEBUG
-	, useSoundViewDialog(false)
-#endif
+XSFPlayer_NCSF::XSFPlayer_NCSF(const std::filesystem::path &path) : XSFPlayer(), sseq(0), sdatData(), sdat(), player(), secondsPerSample(0), secondsIntoPlayback(0), secondsUntilNextClock(0), mutes(), useSoundViewDialog(false)
 {
 	this->uses32BitSamplesClampedTo16Bit = true;
 	this->xSF.reset(new XSFFile(path, 8, 12));
 }
 
-#ifndef NDEBUG
 static HANDLE soundViewThreadHandle = INVALID_HANDLE_VALUE;
 static bool killSoundViewThread;
 
@@ -126,7 +122,6 @@ static DWORD WINAPI soundViewThread(void *b)
 	xSFConfig_NCSF->CloseSoundView();
 	return 0;
 }
-#endif
 
 XSFPlayer_NCSF::~XSFPlayer_NCSF()
 {
@@ -138,13 +133,11 @@ bool XSFPlayer_NCSF::Load()
 	if (!this->LoadNCSF())
 		return false;
 
-#ifndef NDEBUG
 	if (this->useSoundViewDialog)
 	{
 		killSoundViewThread = false;
 		soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
 	}
-#endif
 
 	PseudoFile file;
 	file.data = &this->sdatData;
@@ -221,7 +214,6 @@ void XSFPlayer_NCSF::Terminate()
 {
 	this->player.Stop(true);
 
-#ifndef NDEBUG
 	if (soundViewThreadHandle != INVALID_HANDLE_VALUE)
 	{
 		killSoundViewThread = true;
@@ -233,15 +225,12 @@ void XSFPlayer_NCSF::Terminate()
 		CloseHandle(soundViewThreadHandle);
 		soundViewThreadHandle = INVALID_HANDLE_VALUE;
 	}
-#endif
 }
 
-#ifndef NDEBUG
 void XSFPlayer_NCSF::SetUseSoundViewDialog(bool newUseSoundViewDialog)
 {
 	this->useSoundViewDialog = newUseSoundViewDialog;
 }
-#endif
 
 void XSFPlayer_NCSF::SetInterpolation(unsigned interpolation)
 {
@@ -253,9 +242,7 @@ void XSFPlayer_NCSF::SetMutes(const std::bitset<16> &newMutes)
 	this->mutes = newMutes;
 }
 
-#ifndef NDEBUG
 const Channel &XSFPlayer_NCSF::GetChannel(std::size_t chanNum) const
 {
 	return this->player.channels[chanNum];
 }
-#endif

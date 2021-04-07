@@ -15,9 +15,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#ifndef NDEBUG
-# include <cstddef>
-#endif
+#include <cstddef>
 #include <cstdint>
 #include "XSFPlayer.h"
 #include "SSEQPlayer/SDAT.h"
@@ -33,9 +31,7 @@ class XSFPlayer_NCSF : public XSFPlayer
 	Player player;
 	double secondsPerSample, secondsIntoPlayback, secondsUntilNextClock;
 	std::bitset<16> mutes;
-#ifndef NDEBUG
 	bool useSoundViewDialog;
-#endif
 
 	void MapNCSFSection(const std::vector<std::uint8_t> &section);
 	bool MapNCSF(XSFFile *xSFToLoad);
@@ -48,12 +44,8 @@ public:
 	void GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples) override;
 	void Terminate() override;
 
-#ifndef NDEBUG
 	void SetUseSoundViewDialog(bool newUseSoundViewDialog);
-#endif
 	void SetInterpolation(unsigned interpolation);
 	void SetMutes(const std::bitset<16> &newMutes);
-#ifndef NDEBUG
 	const Channel &GetChannel(std::size_t chanNum) const;
-#endif
 };

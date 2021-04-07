@@ -31,10 +31,8 @@
 
 XSFConfigDialog_NCSF::XSFConfigDialog_NCSF(XSFConfig &newConfig, wxWindow *parent, const wxString &title) : XSFConfigDialog(newConfig, parent, title)
 {
-#ifndef NDEBUG
 	auto useSoundViewCheckBox = new wxCheckBox(this->generalPanel, wxID_ANY, "Use Sound View Window", wxDefaultPosition, wxDefaultSize, 0, wxGenericValidator{ &this->useSoundView });
 	this->generalSizer->Add(useSoundViewCheckBox, { 5, 0 }, { 1, 2 }, wxALL, 5);
-#endif
 
 	auto interpolationLabel = new wxStaticText(this->outputPanel, wxID_ANY, "Interpolation");
 	this->outputSizer->Add(interpolationLabel, { 4, 0 }, { 1, 1 }, wxALIGN_CENTER_VERTICAL | wxALL, 5);
