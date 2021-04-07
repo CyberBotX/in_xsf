@@ -7,13 +7,14 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <vector>
 #include <cstdint>
 #include "XSFCommon.h"
 #include "XSFConfig.h"
 #include "XSFPlayer.h"
 
-extern XSFConfig *xSFConfig;
+extern std::unique_ptr<XSFConfig> xSFConfig;
 
 XSFPlayer::XSFPlayer() : xSF(), sampleRate(0), detectedSilenceSample(0), detectedSilenceSec(0), skipSilenceOnStartSec(5), lengthSample(0), fadeSample(0), currentSample(0),
 	prevSampleL(CHECK_SILENCE_BIAS), prevSampleR(CHECK_SILENCE_BIAS), lengthInMS(-1), fadeInMS(-1), volume(1.0), ignoreVolume(false), uses32BitSamplesClampedTo16Bit(false)

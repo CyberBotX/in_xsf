@@ -28,7 +28,7 @@
 const char *XSFPlayer::WinampDescription = "NCSF Decoder";
 const char *XSFPlayer::WinampExts = "ncsf;minincsf\0DS Nitro Composer Sound Format files (*.ncsf;*.minincsf)\0";
 
-extern XSFConfig *xSFConfig;
+extern std::unique_ptr<XSFConfig> xSFConfig;
 
 XSFPlayer *XSFPlayer::Create(const std::filesystem::path &path)
 {
@@ -107,7 +107,7 @@ static bool killSoundViewThread;
 
 static DWORD WINAPI soundViewThread(void *b)
 {
-	auto xSFConfig_NCSF = static_cast<XSFConfig_NCSF *>(xSFConfig);
+	auto xSFConfig_NCSF = static_cast<XSFConfig_NCSF *>(xSFConfig.get());
 	xSFConfig_NCSF->CallSoundView(static_cast<XSFPlayer_NCSF *>(b), xSFConfig->GetHInstance(), nullptr);
 	MSG msg;
 	while (!killSoundViewThread)
@@ -220,7 +220,7 @@ void XSFPlayer_NCSF::Terminate()
 		if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
 		{
 			TerminateThread(soundViewThreadHandle, 0);
-			static_cast<XSFConfig_NCSF *>(xSFConfig)->CloseSoundView();
+			static_cast<XSFConfig_NCSF *>(xSFConfig.get())->CloseSoundView();
 		}
 		CloseHandle(soundViewThreadHandle);
 		soundViewThreadHandle = INVALID_HANDLE_VALUE;

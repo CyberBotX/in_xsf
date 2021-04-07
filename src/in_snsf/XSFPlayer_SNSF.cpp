@@ -47,7 +47,7 @@ public:
 const char *XSFPlayer::WinampDescription = "SNSF Decoder";
 const char *XSFPlayer::WinampExts = "snsf;minisnsf\0SNES Sound Format files (*.snsf;*.minisnsf)\0";
 
-extern XSFConfig *xSFConfig;
+extern std::unique_ptr<XSFConfig> xSFConfig;
 
 XSFPlayer *XSFPlayer::Create(const std::filesystem::path &path)
 {
@@ -217,7 +217,7 @@ bool XSFPlayer_SNSF::Load()
 	Memory.Init();
 
 	S9xInitAPU();
-	XSFConfig_SNSF *xSFConfig_SNSF = dynamic_cast<XSFConfig_SNSF *>(xSFConfig);
+	XSFConfig_SNSF *xSFConfig_SNSF = dynamic_cast<XSFConfig_SNSF *>(xSFConfig.get());
 	if (xSFConfig_SNSF->resampler == 4)
 		S9xInitSound<SincResampler>(10, 0);
 	else if (xSFConfig_SNSF->resampler == 3)
