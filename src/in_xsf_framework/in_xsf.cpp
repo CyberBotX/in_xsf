@@ -6,9 +6,11 @@
  */
 
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 #include <cstddef>
@@ -28,18 +30,18 @@ XSFFile *xSFFileInInfo = nullptr;
 static std::unique_ptr<XSFPlayer> xSFPlayer;
 std::unique_ptr<XSFConfig> xSFConfig;
 static bool paused;
-static int seek_needed;
+static std::atomic_int seek_needed;
 static double decode_pos_ms;
-static HANDLE thread_handle = INVALID_HANDLE_VALUE;
-static bool killThread = false;
+static std::unique_ptr<std::thread> thread_handle;
+static std::atomic_bool killThread;
 
 static const unsigned NumChannels = 2;
 static const unsigned BitsPerSample = 16;
 
-DWORD WINAPI playThread(void *b)
+void playThread()
 {
 	bool done = false;
-	while (!*static_cast<bool *>(b))
+	while (!killThread)
 	{
 		if (seek_needed != -1)
 		{
@@ -55,7 +57,7 @@ DWORD WINAPI playThread(void *b)
 			if (!inMod.outMod->IsPlaying())
 			{
 				PostMessage(inMod.hMainWindow, WM_WA_MPEG_EOF, 0, 0);
-				return 0;
+				return;
 			}
 			Sleep(10);
 		}
@@ -77,7 +79,6 @@ DWORD WINAPI playThread(void *b)
 		else
 			Sleep(20);
 	}
-	return 0;
 }
 
 void config(HWND hwndParent)
@@ -198,7 +199,7 @@ int play(const in_char *fn)
 
 		xSFPlayer = std::move(tmpxSFPlayer);
 		killThread = false;
-		thread_handle = CreateThread(nullptr, 0, playThread, &killThread, 0, nullptr);
+		thread_handle.reset(new std::thread(playThread));
 		return 0;
 	}
 	catch (const std::exception &)
@@ -226,17 +227,9 @@ int isPaused()
 
 void stop()
 {
-	if (thread_handle != INVALID_HANDLE_VALUE)
-	{
-		killThread = true;
-		if (WaitForSingleObject(thread_handle, 2000) == WAIT_TIMEOUT)
-		{
-			MessageBoxW(inMod.hMainWindow, L"error asking thread to die!", L"error killing decode thread", 0);
-			TerminateThread(thread_handle, 0);
-		}
-		CloseHandle(thread_handle);
-		thread_handle = INVALID_HANDLE_VALUE;
-	}
+	killThread = true;
+	thread_handle->join();
+	thread_handle.reset();
 	inMod.outMod->Close();
 	inMod.SAVSADeInit();
 	xSFPlayer.reset();

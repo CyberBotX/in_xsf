@@ -9,10 +9,12 @@
  */
 
 #include <algorithm>
+#include <atomic>
 #include <bitset>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 #include <cstddef>
 #include <cstdint>
@@ -102,13 +104,13 @@ XSFPlayer_NCSF::XSFPlayer_NCSF(const std::filesystem::path &path) : XSFPlayer(),
 	this->xSF.reset(new XSFFile(path, 8, 12));
 }
 
-static HANDLE soundViewThreadHandle = INVALID_HANDLE_VALUE;
-static bool killSoundViewThread;
+static std::unique_ptr<std::thread> soundViewThreadHandle;
+static std::atomic_bool killSoundViewThread;
 
-static DWORD WINAPI soundViewThread(void *b)
+static void soundViewThread(XSFPlayer_NCSF *player)
 {
 	auto xSFConfig_NCSF = static_cast<XSFConfig_NCSF *>(xSFConfig.get());
-	xSFConfig_NCSF->CallSoundView(static_cast<XSFPlayer_NCSF *>(b), xSFConfig->GetHInstance(), nullptr);
+	xSFConfig_NCSF->CallSoundView(player, xSFConfig->GetHInstance(), nullptr);
 	MSG msg;
 	while (!killSoundViewThread)
 	{
@@ -120,7 +122,6 @@ static DWORD WINAPI soundViewThread(void *b)
 		}
 	}
 	xSFConfig_NCSF->CloseSoundView();
-	return 0;
 }
 
 XSFPlayer_NCSF::~XSFPlayer_NCSF()
@@ -136,7 +137,7 @@ bool XSFPlayer_NCSF::Load()
 	if (this->useSoundViewDialog)
 	{
 		killSoundViewThread = false;
-		soundViewThreadHandle = CreateThread(nullptr, 0, soundViewThread, this, 0, nullptr);
+		soundViewThreadHandle.reset(new std::thread(soundViewThread, this));
 	}
 
 	PseudoFile file;
@@ -214,17 +215,9 @@ void XSFPlayer_NCSF::Terminate()
 {
 	this->player.Stop(true);
 
-	if (soundViewThreadHandle != INVALID_HANDLE_VALUE)
-	{
-		killSoundViewThread = true;
-		if (WaitForSingleObject(soundViewThreadHandle, 2000) == WAIT_TIMEOUT)
-		{
-			TerminateThread(soundViewThreadHandle, 0);
-			static_cast<XSFConfig_NCSF *>(xSFConfig.get())->CloseSoundView();
-		}
-		CloseHandle(soundViewThreadHandle);
-		soundViewThreadHandle = INVALID_HANDLE_VALUE;
-	}
+	killSoundViewThread = true;
+	soundViewThreadHandle->join();
+	soundViewThreadHandle.reset();
 }
 
 void XSFPlayer_NCSF::SetUseSoundViewDialog(bool newUseSoundViewDialog)
