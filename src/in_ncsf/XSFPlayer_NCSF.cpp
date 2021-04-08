@@ -156,11 +156,6 @@ bool XSFPlayer_NCSF::Load()
 	return XSFPlayer::Load();
 }
 
-static inline std::int32_t muldiv7(std::int32_t val, std::uint8_t mul)
-{
-	return mul == 127 ? val : ((val * mul) >> 7);
-}
-
 void XSFPlayer_NCSF::GenerateSamples(std::vector<std::uint8_t> &buf, unsigned offset, unsigned samples)
 {
 	unsigned long mute = this->mutes.to_ulong();

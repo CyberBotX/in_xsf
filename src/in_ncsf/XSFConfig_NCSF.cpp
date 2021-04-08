@@ -231,11 +231,6 @@ static inline void ProgressSetPosImmediate(HWND hDlg, int nIDDlgItem, int nPos)
 	}
 }
 
-static inline std::int32_t muldiv7(std::int32_t val, std::uint8_t mul)
-{
-	return mul == 127 ? val : ((val * mul) >> 7);
-}
-
 void XSFConfig_NCSF::RefreshSoundView()
 {
 	auto player = this->soundViewData->player;

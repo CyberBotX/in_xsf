@@ -129,6 +129,11 @@ template<std::size_t N> inline bool VerifyHeader(std::int8_t (&arr)[N], const st
 	return arrHeader == header;
 }
 
+inline std::int32_t muldiv7(std::int32_t val, std::uint8_t mul)
+{
+	return mul == 127 ? val : ((val * mul) >> 7);
+}
+
 /*
  * The remaining functions in this file come from the FeOS Sound System source code.
  */
