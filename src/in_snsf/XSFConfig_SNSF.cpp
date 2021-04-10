@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "windowsh_wrapper.h"
+#include "XSFApp.h"
 #include "XSFConfig.h"
 #include "XSFConfig_SNSF.h"
 #include "XSFConfigDialog_SNSF.h"
@@ -25,17 +26,14 @@ class wxWindow;
 class XSFConfigDialog;
 class XSFPlayer;
 
-enum
-{
-	idSixteenBitSound = 1000,
-	idReverseStereo,
-	idResampler,
-	idMutes
-};
-
 const unsigned XSFConfig::initSampleRate = 44100;
 const std::string XSFConfig::commonName = "SNSF Decoder";
 const std::string XSFConfig::versionNumber = "0.9b";
+
+XSFApp *XSFApp::Create()
+{
+	return new XSFApp();
+}
 
 XSFConfig *XSFConfig::Create()
 {

@@ -15,7 +15,21 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
+#include <wx/app.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #include "windowsh_wrapper.h"
+#include "XSFApp.h"
 #include "XSFCommon.h"
 #include "XSFConfig.h"
 #include "XSFFile.h"
@@ -28,6 +42,7 @@ extern In_Module inMod;
 static const XSFFile *xSFFile = nullptr;
 XSFFile *xSFFileInInfo = nullptr;
 static std::unique_ptr<XSFPlayer> xSFPlayer;
+std::unique_ptr<XSFApp> xSFApp;
 std::unique_ptr<XSFConfig> xSFConfig;
 static bool paused;
 static std::atomic_int seek_needed;
@@ -83,7 +98,7 @@ void playThread()
 
 void config(HWND hwndParent)
 {
-	xSFConfig->CallConfigDialog(inMod.hDllInstance, hwndParent);
+	xSFConfig->CallConfigDialog(hwndParent);
 	if (xSFPlayer)
 		xSFConfig->CopyConfigToMemory(xSFPlayer.get(), false);
 }
@@ -95,6 +110,9 @@ void about(HWND hwndParent)
 
 void init()
 {
+	wxEntryStart(inMod.hDllInstance);
+	xSFApp.reset(XSFApp::Create());
+	wxApp::SetInstance(xSFApp.get());
 	xSFConfig.reset(XSFConfig::Create());
 	xSFConfig->LoadConfig();
 	xSFConfig->GenerateDialogs();
@@ -105,6 +123,8 @@ void quit()
 {
 	xSFPlayer.reset();
 	xSFConfig.reset();
+	xSFApp.reset();
+	wxEntryCleanup();
 }
 
 void getFileInfo(const in_char *file, in_char *title, int *length_in_ms)

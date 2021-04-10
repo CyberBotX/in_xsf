@@ -9,22 +9,9 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wold-style-cast"
-#elif defined(__clang__)
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wold-style-cast"
-#endif
-#include <wx/app.h>
-#include <wx/nativewin.h>
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
-#elif defined(__clang__)
-# pragma clang diagnostic pop
-#endif
 #include "windowsh_wrapper.h"
 #include <windowsx.h>
+#include "XSFApp.h"
 #include "XSFConfig.h"
 #include "XSFConfigDialog.h"
 #include "XSFFile.h"
@@ -103,52 +90,6 @@ void XSFConfig::SaveConfig()
 
 	this->SaveSpecificConfig();
 }
-
-class XSFConfigApp : public wxApp
-{
-	HWND parent;
-	XSFConfig *config;
-public:
-	XSFConfigApp() : parent(nullptr), config(nullptr)
-	{
-	}
-
-	XSFConfigApp(HWND newParent, XSFConfig *newConfig) : parent(newParent), config(newConfig)
-	{
-	}
-
-	bool OnInit() override
-	{
-		// NOTE: This is only good enough to make it so the dialog box isn't shown on the taskbar, it is not good enough to make the dialog modal to Winamp's preferences screen... it'll actually crash if someone changes to another section of preferences...
-
-		auto window = new wxNativeContainerWindow(this->parent);
-		auto dialog = this->config->CreateDialogBox(window, XSFConfig::commonName + " v" + XSFConfig::versionNumber);
-		dialog->Finalize();
-		this->config->InitializeConfigDialog(dialog);
-		if (dialog->ShowModal() == wxID_OK)
-		{
-			this->config->SaveConfigDialog(dialog);
-			this->config->SaveConfig();
-		}
-		dialog->Destroy();
-		window->Destroy();
-		return true;
-	}
-};
-
-#ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wold-style-cast"
-#elif defined(__clang__)
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wold-style-cast"
-#endif
-wxIMPLEMENT_APP_NO_MAIN(XSFConfigApp);
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
-#elif defined(__clang__)
-# pragma clang diagnostic pop
-#endif
 
 void XSFConfig::GenerateDialogs()
 {
@@ -248,13 +189,11 @@ INT_PTR CALLBACK XSFConfig::InfoDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wPara
 	return true;
 }
 
-void XSFConfig::CallConfigDialog(HINSTANCE hInstance, HWND hwndParent)
+extern std::unique_ptr<XSFApp> xSFApp;
+
+void XSFConfig::CallConfigDialog(HWND hwndParent)
 {
-	auto app = new XSFConfigApp(hwndParent, this);
-	wxApp::SetInstance(app);
-	wxEntryStart(hInstance);
-	app->OnInit();
-	wxEntryCleanup();
+	xSFApp->ConfigDialog(hwndParent, this);
 }
 
 void XSFConfig::CallInfoDialog(HINSTANCE hInstance, HWND hwndParent)

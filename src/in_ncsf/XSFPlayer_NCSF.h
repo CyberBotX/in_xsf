@@ -17,9 +17,9 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
-#include "XSFPlayer.h"
-#include "SSEQPlayer/SDAT.h"
 #include "SSEQPlayer/Player.h"
+#include "SSEQPlayer/SDAT.h"
+#include "XSFPlayer.h"
 
 class XSFFile;
 

@@ -10,6 +10,7 @@
 #include <string>
 #include <cstddef>
 #include "windowsh_wrapper.h"
+#include "XSFApp.h"
 #include "XSFConfig.h"
 #include "XSFConfig_2SF.h"
 #include "XSFConfigDialog_2SF.h"
@@ -21,15 +22,14 @@ class wxWindow;
 class XSFConfigDialog;
 class XSFPlayer;
 
-enum
-{
-	idInterpolation = 1000,
-	idMutes
-};
-
 const unsigned XSFConfig::initSampleRate = static_cast<unsigned>(DESMUME_SAMPLE_RATE);
 const std::string XSFConfig::commonName = "2SF Decoder";
 const std::string XSFConfig::versionNumber = "0.9b";
+
+XSFApp *XSFApp::Create()
+{
+	return new XSFApp();
+}
 
 XSFConfig *XSFConfig::Create()
 {

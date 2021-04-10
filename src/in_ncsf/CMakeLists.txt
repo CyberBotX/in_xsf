@@ -14,12 +14,11 @@ set(HEADERS
 	SSEQPlayer/SWAV.h
 	SSEQPlayer/SYMBSection.h
 	SSEQPlayer/Track.h
-	resource.h
+	SoundView.h
+	XSFApp_NCSF.h
 	XSFConfig_NCSF.h
 	XSFConfigDialog_NCSF.h
 	XSFPlayer_NCSF.h)
-set(RESOURCES
-	in_ncsf.rc)
 set(SOURCES
 	SSEQPlayer/Channel.cpp
 	SSEQPlayer/FATSection.cpp
@@ -34,14 +33,15 @@ set(SOURCES
 	SSEQPlayer/SWAV.cpp
 	SSEQPlayer/SYMBSection.cpp
 	SSEQPlayer/Track.cpp
+	SoundView.cpp
+	XSFApp_NCSF.cpp
 	XSFConfig_NCSF.cpp
 	XSFConfigDialog_NCSF.cpp
 	XSFPlayer_NCSF.cpp)
 
-add_library(in_ncsf SHARED ${HEADERS} ${RESOURCES} ${SOURCES})
+add_library(in_ncsf SHARED ${HEADERS} ${SOURCES})
 set_target_properties(in_ncsf PROPERTIES PREFIX "")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${HEADERS})
-source_group("Resource Files" FILES ${RESOURCES})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES ${SOURCES})
 target_compile_options(in_ncsf PUBLIC
 	$<$<CXX_COMPILER_ID:MSVC>:/wd6011 /wd6385 /wd26819>)

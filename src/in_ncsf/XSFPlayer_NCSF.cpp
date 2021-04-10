@@ -18,19 +18,35 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#elif defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
+#include <wx/app.h>
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#elif defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 #include <zlib.h>
+#include "SSEQPlayer/common.h"
+#include "SSEQPlayer/consts.h"
+#include "SSEQPlayer/Player.h"
+#include "SSEQPlayer/SDAT.h"
+#include "XSFApp.h"
+#include "XSFApp_NCSF.h"
 #include "XSFCommon.h"
 #include "XSFConfig_NCSF.h"
 #include "XSFPlayer_NCSF.h"
-#include "SSEQPlayer/SDAT.h"
-#include "SSEQPlayer/Player.h"
-#include "SSEQPlayer/common.h"
-#include "SSEQPlayer/consts.h"
 
 const char *XSFPlayer::WinampDescription = "NCSF Decoder";
 const char *XSFPlayer::WinampExts = "ncsf;minincsf\0DS Nitro Composer Sound Format files (*.ncsf;*.minincsf)\0";
 
 extern std::unique_ptr<XSFConfig> xSFConfig;
+extern std::unique_ptr<XSFApp> xSFApp;
 
 XSFPlayer *XSFPlayer::Create(const std::filesystem::path &path)
 {
@@ -105,23 +121,10 @@ XSFPlayer_NCSF::XSFPlayer_NCSF(const std::filesystem::path &path) : XSFPlayer(),
 }
 
 static std::unique_ptr<std::thread> soundViewThreadHandle;
-static std::atomic_bool killSoundViewThread;
 
 static void soundViewThread(XSFPlayer_NCSF *player)
 {
-	auto xSFConfig_NCSF = static_cast<XSFConfig_NCSF *>(xSFConfig.get());
-	xSFConfig_NCSF->CallSoundView(player, xSFConfig->GetHInstance(), nullptr);
-	MSG msg;
-	while (!killSoundViewThread)
-	{
-		xSFConfig_NCSF->RefreshSoundView();
-		if (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
-		}
-	}
-	xSFConfig_NCSF->CloseSoundView();
+	static_cast<XSFApp_NCSF *>(xSFApp.get())->CreateSoundView(static_cast<XSFConfig_NCSF *>(xSFConfig.get()), player);
 }
 
 XSFPlayer_NCSF::~XSFPlayer_NCSF()
@@ -135,10 +138,7 @@ bool XSFPlayer_NCSF::Load()
 		return false;
 
 	if (this->useSoundViewDialog)
-	{
-		killSoundViewThread = false;
 		soundViewThreadHandle.reset(new std::thread(soundViewThread, this));
-	}
 
 	PseudoFile file;
 	file.data = &this->sdatData;
@@ -210,9 +210,12 @@ void XSFPlayer_NCSF::Terminate()
 {
 	this->player.Stop(true);
 
-	killSoundViewThread = true;
-	soundViewThreadHandle->join();
-	soundViewThreadHandle.reset();
+	if (soundViewThreadHandle)
+	{
+		static_cast<XSFApp_NCSF *>(xSFApp.get())->DestroySoundView();
+		soundViewThreadHandle->join();
+		soundViewThreadHandle.reset();
+	}
 }
 
 void XSFPlayer_NCSF::SetUseSoundViewDialog(bool newUseSoundViewDialog)

@@ -10,6 +10,7 @@
 #include <string>
 #include <cstddef>
 #include "windowsh_wrapper.h"
+#include "XSFApp.h"
 #include "XSFConfig.h"
 #include "XSFConfig_GSF.h"
 #include "XSFConfigDialog_GSF.h"
@@ -20,15 +21,14 @@ class wxWindow;
 class XSFConfigDialog;
 class XSFPlayer;
 
-enum
-{
-	idLowPassFiltering = 1000,
-	idMutes
-};
-
 const unsigned XSFConfig::initSampleRate = 44100;
 const std::string XSFConfig::commonName = "GSF Decoder";
 const std::string XSFConfig::versionNumber = "0.9b";
+
+XSFApp *XSFApp::Create()
+{
+	return new XSFApp();
+}
 
 XSFConfig *XSFConfig::Create()
 {

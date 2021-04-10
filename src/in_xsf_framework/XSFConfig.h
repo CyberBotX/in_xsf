@@ -101,7 +101,7 @@ public:
 	void SaveConfig();
 	void GenerateDialogs();
 	static INT_PTR CALLBACK InfoDialogProcStatic(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	void CallConfigDialog(HINSTANCE hInstance, HWND hwndParent);
+	void CallConfigDialog(HWND hwndParent);
 	void CallInfoDialog(HINSTANCE hInstance, HWND hwndParent);
 	void InitializeConfigDialog(XSFConfigDialog *dialog);
 	void ResetConfigDefaults(XSFConfigDialog *dialog);
