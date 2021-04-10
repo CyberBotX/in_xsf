@@ -181,7 +181,13 @@ void SoundView::OnIdle(wxIdleEvent &evt)
 	evt.RequestMore();
 }
 
-void SoundView::Refresh()
+void SoundView::SyncToConfig()
+{
+	for (int i = 0; i < 16; ++i)
+		this->channelData[i].muteCheckBox->SetValue(this->config->mutes[i]);
+}
+
+void SoundView::Update()
 {
 	auto ncsfPlayer = this->player;
 	std::string buf;
@@ -269,10 +275,4 @@ void SoundView::Refresh()
 
 		chnData.lastState = chn.state;
 	}
-}
-
-void SoundView::SyncToConfig()
-{
-	for (int i = 0; i < 16; ++i)
-		this->channelData[i].muteCheckBox->SetValue(this->config->mutes[i]);
 }

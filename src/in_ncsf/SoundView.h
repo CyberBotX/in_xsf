@@ -55,8 +55,8 @@ class SoundView : public wxDialog
 public:
 	SoundView(wxWindow *parent, XSFConfig_NCSF *ncsfConfig, XSFPlayer_NCSF *ncsfPlayer);
 	void OnIdle(wxIdleEvent &evt);
-	void Refresh();
 	void SyncToConfig();
+	void Update();
 
 	XSFConfig_NCSF *config;
 	XSFPlayer_NCSF *player;
