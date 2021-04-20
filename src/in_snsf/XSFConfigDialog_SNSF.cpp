@@ -31,19 +31,19 @@
 
 XSFConfigDialog_SNSF::XSFConfigDialog_SNSF(XSFConfig &newConfig, wxWindow *parent, const wxString &title) : XSFConfigDialog(newConfig, parent, title)
 {
-	auto reverseStereoCheckBox = new wxCheckBox(this->outputPanel, wxID_ANY, "Reverse Stereo", wxDefaultPosition, wxDefaultSize, 0, wxGenericValidator{ &this->reverseStereo });
-	this->outputSizer->Add(reverseStereoCheckBox, { 4, 0 }, { 1, 2 }, wxALL, 5);
+	auto separateEchoBufferCheckBox = new wxCheckBox(this->outputPanel, wxID_ANY, "Separate Echo Buffer", wxDefaultPosition, wxDefaultSize, 0, wxGenericValidator{ &this->separateEchoBuffer });
+	this->outputSizer->Add(separateEchoBufferCheckBox, { 4, 0 }, { 1, 2 }, wxALL, 5);
 
-	auto resamplerLabel = new wxStaticText(this->outputPanel, wxID_ANY, "Resampler");
-	this->outputSizer->Add(resamplerLabel, { 5, 0 }, { 1, 1 }, wxALIGN_CENTER_VERTICAL | wxALL, 5);
-	wxArrayString resamplerChoices;
-	resamplerChoices.Add("Linear Resampler");
-	resamplerChoices.Add("Hermite Resampler");
-	resamplerChoices.Add("Bspline Resampler");
-	resamplerChoices.Add("Osculating Resampler");
-	resamplerChoices.Add("Sinc Resampler");
-	auto resamplerChoice = new wxChoice(this->outputPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, resamplerChoices, 0, wxGenericValidator{ &this->resampler });
-	this->outputSizer->Add(resamplerChoice, { 5, 1 }, { 1, 1 }, wxALL, 5);
+	auto interpolationLabel = new wxStaticText(this->outputPanel, wxID_ANY, "Interpolation");
+	this->outputSizer->Add(interpolationLabel, { 5, 0 }, { 1, 1 }, wxALIGN_CENTER_VERTICAL | wxALL, 5);
+	wxArrayString interpolationChoices;
+	interpolationChoices.Add("None");
+	interpolationChoices.Add("Linear");
+	interpolationChoices.Add("Guassian");
+	interpolationChoices.Add("Cubic");
+	interpolationChoices.Add("Sinc");
+	auto interpolationChoice = new wxChoice(this->outputPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, interpolationChoices, 0, wxGenericValidator{ &this->interpolation });
+	this->outputSizer->Add(interpolationChoice, { 5, 1 }, { 1, 1 }, wxALL, 5);
 
 	auto muteLabel = new wxStaticText(this->outputPanel, wxID_ANY, "Mute");
 	this->outputSizer->Add(muteLabel, { 6, 0 }, { 1, 1 }, wxALIGN_CENTER_VERTICAL | wxALL, 5);

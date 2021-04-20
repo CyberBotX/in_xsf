@@ -3,10 +3,6 @@
  * By Naram Qashat (CyberBotX) [cyberbotx@cyberbotx.com]
  *
  * Partially based on the vio*sf framework
- *
- * NOTE: 16-bit sound is always enabled, the player is currently limited to
- * creating a 16-bit PCM for Winamp and can not handle 8-bit sound from
- * snes9x.
  */
 
 #pragma once
@@ -23,12 +19,13 @@ class XSFPlayer;
 class XSFConfig_SNSF : public XSFConfig
 {
 protected:
-	static constexpr bool /*initSixteenBitSound = true, */initReverseStereo = false;
-	static constexpr unsigned initResampler = 1;
+	static constexpr bool initSeparateEchoBuffer = false;
+	static constexpr unsigned initInterpolation = 2;
 	inline static const std::string initMutes = "00000000";
 
 	friend class XSFConfig;
-	bool /*sixteenBitSound, */reverseStereo;
+	bool separateEchoBuffer;
+	unsigned interpolation;
 	std::bitset<8> mutes;
 
 	XSFConfig_SNSF();
@@ -39,8 +36,6 @@ protected:
 	void SaveSpecificConfigDialog(XSFConfigDialog *dialog) override;
 	void CopySpecificConfigToMemory(XSFPlayer *xSFPlayer, bool preLoad) override;
 public:
-	unsigned resampler;
-
 	void About(HWND parent) override;
 	XSFConfigDialog *CreateDialogBox(wxWindow *window, const std::string &title) override;
 };

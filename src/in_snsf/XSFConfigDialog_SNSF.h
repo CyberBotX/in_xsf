@@ -31,7 +31,7 @@ class XSFConfigDialog_SNSF : public XSFConfigDialog
 public:
 	XSFConfigDialog_SNSF(XSFConfig &newConfig, wxWindow *parent, const wxString &title);
 
-	bool reverseStereo;
-	int resampler;
+	bool separateEchoBuffer;
+	int interpolation;
 	wxArrayInt mute;
 };

@@ -20,18 +20,13 @@
 #include <cstdint>
 #include <zlib.h>
 #include "XSFCommon.h"
-#include "XSFConfig_SNSF.h"
+#include "XSFConfig.h"
 #include "XSFPlayer.h"
 
 #undef min
 #undef max
 
 #include "snes9x/apu/apu.h"
-#include "snes9x/apu/linear_resampler.h"
-#include "snes9x/apu/hermite_resampler.h"
-#include "snes9x/apu/bspline_resampler.h"
-#include "snes9x/apu/osculating_resampler.h"
-#include "snes9x/apu/sinc_resampler.h"
 #include "snes9x/memmap.h"
 
 class XSFPlayer_SNSF : public XSFPlayer
@@ -211,23 +206,12 @@ bool XSFPlayer_SNSF::Load()
 	Settings.SoundSync = true;
 	Settings.Mute = false;
 	Settings.SoundPlaybackRate = this->sampleRate;
-	Settings.SixteenBitSound = true;
 	Settings.Stereo = true;
 
 	Memory.Init();
 
 	S9xInitAPU();
-	XSFConfig_SNSF *xSFConfig_SNSF = dynamic_cast<XSFConfig_SNSF *>(xSFConfig.get());
-	if (xSFConfig_SNSF->resampler == 4)
-		S9xInitSound<SincResampler>(10, 0);
-	else if (xSFConfig_SNSF->resampler == 3)
-		S9xInitSound<OsculatingResampler>(10, 0);
-	else if (xSFConfig_SNSF->resampler == 2)
-		S9xInitSound<BsplineResampler>(10, 0);
-	else if (xSFConfig_SNSF->resampler == 1)
-		S9xInitSound<HermiteResampler>(10, 0);
-	else
-		S9xInitSound<LinearResampler>(10, 0);
+	S9xInitSound(10);
 
 	if (!buffer.Init())
 		return false;
