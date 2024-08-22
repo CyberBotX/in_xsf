@@ -695,7 +695,6 @@ void Track::Run()
 
 				case SSEQCommand::PortamentoTime:
 					this->portaTime = this->overriding.val<std::uint8_t>(pData, read8);
-					this->state.set(ConvertFuncs::ToIntegral(TrackState::PortamentoBit));
 					// Update here?
 					break;
 
